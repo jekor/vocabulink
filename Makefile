@@ -1,11 +1,13 @@
-# Vocabulink flashcard CGI
+# Vocabulink CGI
 
-all : flashcard.fcgi
+FCGI = vocabulink.fcgi
 
-flashcard.fcgi : *.lhs Flashcard/*lhs
-	ghc -Wall -threaded -package fastcgi --make -o flashcard.fcgi $?
+all : $(FCGI)
+
+vocabulink.fcgi : Vocabulink.lhs Vocabulink/*lhs
+	ghc -Wall -threaded -package fastcgi --make -o $(FCGI) $?
 
 install :
-	install -o root -g root flashcard.fcgi /usr/local/bin
-	-killall flashcard.fcgi
-	spawn-fcgi -f "/usr/local/bin/flashcard.fcgi 2>> /tmp/flashcard.error.log" -p 10033 -u lighttpd -g lighttpd
+	install -o root -g root $(FCGI) /usr/local/bin
+	-killall $(FCGI)
+	spawn-fcgi -f "/usr/local/bin/$(FCGI) 2>> /tmp/vocabulink.error.log" -p 10033 -u lighttpd -g lighttpd
