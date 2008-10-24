@@ -1,12 +1,18 @@
 > module Vocabulink.Pages where
 
 > import Text.XHtml.Strict
+> import Codec.Binary.UTF8.String
 
 A common idiom is to use concatHtml for an element's contents.
 
 > infixl 3 <<|
 > (<<|) :: (Html -> Html) -> [Html] -> Html
 > h <<| l = h << concatHtml l
+
+José
+
+> testPage :: String
+> testPage =  renderHtml $ h1 << encodeString "日本語"
 
 > newCardPage :: String
 > newCardPage =  renderHtml $

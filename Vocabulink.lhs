@@ -14,11 +14,12 @@
 > import Network.URI
 
 > import Text.ParserCombinators.Parsec hiding (getInput, try)
+> import Text.Regex.PCRE ((=~))
+> import Text.XHtml.Strict (renderHtml, stringToHtml, (+++))
+> import Codec.Binary.UTF8.String
 
 > import Database.HDBC
 > import Database.HDBC.PostgreSQL
-
-> import Text.XHtml.Strict (renderHtml, stringToHtml, (+++))
 
 > import Vocabulink.Pages
 
@@ -55,14 +56,21 @@ should also ensure that the parameters are not empty strings.
 >                        Just x  -> return x
 >     where required x = x ++ " parameter is required."
 
-Add a member to the database.
+Add a member to the database. We're going to do validation of acceptable
+username characters at this level because PostgreSQL's CHECK constraint doesn't
+handle Unicode regular expressions properly.
+
+A username should be allowed to have any alphanumeric characters (in any
+language) and URL-safe punctuation.
 
 > addMember :: String -> String -> String -> IO ()
 > addMember username email password =
->     do quickInsertCGI "INSERT INTO member (username, email, password_hash) \
->                       \VALUES (?, ?, crypt(?, gen_salt('bf')))"
->                       [toSql username, toSql email, toSql password] errMsg
->          `catchSql` (\ e -> logSqlError e >> error errMsg)
+>     do if username =~ "^[\\p{L}\\p{Nd}$-_.+!*'(),]{3,}$"
+>           then quickInsertCGI "INSERT INTO member (username, email, password_hash) \
+>                               \VALUES (?, ?, crypt(?, gen_salt('bf')))"
+>                               [toSql (encodeString username), toSql email, toSql password] errMsg
+>                  `catchSql` (\ e -> logSqlError e >> error errMsg)
+>           else error "Invalid characters in username or username isn't long enough (minimum of 3 characters)."
 >              where errMsg = "Failed to add member."
 
 > addMember' :: CGI CGIResult
@@ -130,6 +138,8 @@ We handle all requests in this module using a dispatcher.
 >           displayError e = throwCGI e
 
 > dispatch :: String -> [String] -> CGI CGIResult
+> dispatch "GET" ["test"] = do setHeader "Content-Type" "text/html; charset=utf-8"
+>                              output testPage
 > dispatch "GET" ["card","new"] = output newCardPage
 > dispatch "GET" ["card",c] = getCard' c
 > dispatch "GET" ["member","new"] = output newMemberPage
