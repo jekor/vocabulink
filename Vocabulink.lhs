@@ -14,13 +14,13 @@
 > import Network.URI
 
 > import Text.ParserCombinators.Parsec hiding (getInput, try)
-> import Text.Regex.PCRE ((=~))
 > import Text.XHtml.Strict (renderHtml, stringToHtml, (+++))
 > import Codec.Binary.UTF8.String
 
 > import Database.HDBC
 > import Database.HDBC.PostgreSQL
 
+> import Vocabulink.Utils
 > import Vocabulink.Pages
 
 > db :: IO Connection
@@ -40,21 +40,43 @@ it doesn't.
 > quickInsertCGI :: String -> [SqlValue] -> String -> IO ()
 > quickInsertCGI sql vs err =
 >     do n <- quickInsert sql vs
->        if n == 1
->           then return ()
->           else do logCGI $ "Query modified " ++ show n ++ " rows."
->                   throwIO (DynException (toDyn $ err))
+>        n == 1 ? return () $ do
+>          logCGI $ "Query modified " ++ show n ++ " rows."
+>          throwIO (DynException (toDyn $ err))
+
+Encode a string to UTF8 and convert to a SQL value (or skip encoding if there
+is no string).
+
+> toSql' :: String -> SqlValue
+> toSql' =  toSql . encodeString
+
+> toSql'' :: Maybe String -> SqlValue
+> toSql'' s = isNothing s ? SqlNull $ toSql $ encodeString (fromJust s)
 
 getParameters works for string parameters. There is no type conversion. This
 should also ensure that the parameters are not empty strings.
 
-> requestString :: String -> CGI String
-> requestString r = do s <- getInput r
->                      case s of
->                        Nothing -> throwCGI $ DynException (toDyn $ required r)
->                        Just "" -> throwCGI $ DynException (toDyn $ required r)
->                        Just x  -> return x
->     where required x = x ++ " parameter is required."
+It might be nice to eventually have a context-sensitive way of getting CGI
+inputs, similar to the context-sensitive regular expression operators in
+Text.Regex. Things like :: String and :: Maybe String would be convenient.
+
+> class CGIInputContext o where
+>   getGET :: String -> CGI o
+
+> instance CGIInputContext String where
+>   getGET r = do s <- getInput r
+>                 case s of
+>                   Nothing -> throwCGI $ DynException (toDyn $ required r)
+>                   Just "" -> throwCGI $ DynException (toDyn $ required r)
+>                   Just x  -> return $ decodeString x
+>                where required x = x ++ " parameter is required."
+
+> instance CGIInputContext (Maybe String) where
+>   getGET r = do s <- getInput r
+>                 case s of
+>                   Nothing -> return Nothing
+>                   Just "" -> return Nothing
+>                   Just x  -> return $ Just (decodeString x)
 
 Add a member to the database. We're going to do validation of acceptable
 username characters at this level because PostgreSQL's CHECK constraint doesn't
@@ -63,21 +85,22 @@ handle Unicode regular expressions properly.
 A username should be allowed to have any alphanumeric characters (in any
 language) and URL-safe punctuation.
 
-> addMember :: String -> String -> String -> IO ()
-> addMember username email password =
->     do if username =~ "^[\\p{L}\\p{Nd}$-_.+!*'(),]{3,}$"
->           then quickInsertCGI "INSERT INTO member (username, email, password_hash) \
->                               \VALUES (?, ?, crypt(?, gen_salt('bf')))"
->                               [toSql (encodeString username), toSql email, toSql password] errMsg
->                  `catchSql` (\ e -> logSqlError e >> error errMsg)
->           else error "Invalid characters in username or username isn't long enough (minimum of 3 characters)."
->              where errMsg = "Failed to add member."
+> addMember :: String -> String -> Maybe String -> IO ()
+> addMember username password email =
+>     (length username) < 3  ? error "Your username must have 3 characters or more."  $
+>     (length username) > 32 ? error "Your username must have 32 characters or less." $
+>     -- TODO: Add password constraints?
+>     quickInsertCGI "INSERT INTO member (username, email, password_hash) \
+>                    \VALUES (?, ?, crypt(?, gen_salt('bf')))"
+>                    [toSql' username, toSql'' email, toSql' password] errMsg
+>        `catchSql` (logSqlError >> error errMsg)
+>            where errMsg = "Failed to add member."
 
 > addMember' :: CGI CGIResult
 > addMember' = do
->     username <- requestString "username"
->     password <- requestString "password"
->     email    <- requestString "email"
+>     username <- getGET "username"
+>     password <- getGET "password"
+>     email    <- getGET "email"
 >     liftIO $ addMember username password email
 >     output $ "Welcome!"
 
@@ -87,7 +110,7 @@ Add a flashcard to the database. Provide a Flashcard and a username.
 > addCard f u = do quickInsertCGI  "INSERT INTO card (username, question, answer) \
 >                                  \VALUES (?, ?, ?)"
 >                                  [toSql u, toSql (fst f), toSql (snd f)] errMsg
->               `catchSql` (\ e -> logSqlError e >> error errMsg)
+>               `catchSql` (logSqlError >> error errMsg)
 >                   where errMsg = "Failed to add card."
 
 > addCard' :: CGI CGIResult
@@ -107,8 +130,7 @@ Add a flashcard to the database. Provide a Flashcard and a username.
 >                  let [question, answer] = map fromSql (fromMaybe [toSql "", toSql ""] row) in
 >                      return $ Just (question, answer)
 >                  `catchSql` logError
->                      where logError e = do error $ show e
->                                            return Nothing
+>                      where logError e = error (show e) >> return Nothing
 
 > intFromString :: String -> IO (Either Exception Integer)
 > intFromString s = try (readIO s >>= return)
@@ -128,6 +150,7 @@ We handle all requests in this module using a dispatcher.
 > dispatch' :: CGI CGIResult
 > dispatch' =  do uri <- requestURI
 >                 method <- requestMethod
+>                 setHeader "Content-Type" "text/html; charset=utf-8"
 >                 case (pathPart uri) of
 >                   Left err    -> outputError 500 (show err) []
 >                   Right []    -> outputError 400 "Request not understood." []
@@ -138,8 +161,7 @@ We handle all requests in this module using a dispatcher.
 >           displayError e = throwCGI e
 
 > dispatch :: String -> [String] -> CGI CGIResult
-> dispatch "GET" ["test"] = do setHeader "Content-Type" "text/html; charset=utf-8"
->                              output testPage
+> dispatch "GET" ["test"] = output testPage
 > dispatch "GET" ["card","new"] = output newCardPage
 > dispatch "GET" ["card",c] = getCard' c
 > dispatch "GET" ["member","new"] = output newMemberPage
@@ -165,5 +187,14 @@ to an appropriate logfile.
 > logSqlError e = do logCGI $ "SQL Error: " ++ (init (seErrorMsg e))
 >                    return ()
 
+It would be nice to have a way to hijack outputError in order to change the
+encoding, but I don't know of a way to short of modifying the source of
+Network.CGI. I'm going to leave it be for now as I'll probably end up with my
+own error output functions in time.
+
+> handleErrors' :: CGI CGIResult -> CGI CGIResult
+> handleErrors' r = do setHeader "Content-Type" "text/html; charset=utf-8"
+>                      handleErrors r
+
 > main  :: IO ()
-> main  =  runFastCGIConcurrent' forkIO 10 (handleErrors dispatch')
+> main  =  runFastCGIConcurrent' forkIO 10 (handleErrors' dispatch')

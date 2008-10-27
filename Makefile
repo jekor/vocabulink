@@ -5,7 +5,7 @@ FCGI = vocabulink.fcgi
 all : $(FCGI)
 
 vocabulink.fcgi : Vocabulink.lhs Vocabulink/*lhs
-	ghc -Wall -threaded -package fastcgi --make -o $(FCGI) $^
+	ghc -Wall -fglasgow-exts -threaded -package fastcgi --make -o $(FCGI) $^
 
 install :
 	install -o root -g root $(FCGI) /usr/local/bin

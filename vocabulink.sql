@@ -6,9 +6,9 @@
 
 CREATE TABLE member (
        member_no SERIAL PRIMARY KEY,
-       username character varying(18) NOT NULL UNIQUE,
+       username character varying(32) NOT NULL UNIQUE,
        join_date timestamp with time zone NOT NULL DEFAULT current_timestamp,
-       email text NOT NULL,
+       email text,
        password_hash text NOT NULL
 );
 COMMENT ON COLUMN member.member_no IS 'I debated about using the username as a primary key. In the end, I decided against it. Performance and space concerns won me over. It''s also nice to have a numeric reference to a member in case we need to refer to a member in some context where Unicode characters aren''t valid.';
