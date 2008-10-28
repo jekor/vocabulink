@@ -1,7 +1,9 @@
 > module Vocabulink.Pages where
 
+> import Vocabulink.Member
+
+> import Network.CGI
 > import Text.XHtml.Strict
-> import Codec.Binary.UTF8.String
 
 A common idiom is to use concatHtml for an element's contents.
 
@@ -9,10 +11,12 @@ A common idiom is to use concatHtml for an element's contents.
 > (<<|) :: (Html -> Html) -> [Html] -> Html
 > h <<| l = h << concatHtml l
 
-José
-
-> testPage :: String
-> testPage =  renderHtml $ h1 << encodeString "日本語"
+> testPage :: CGI CGIResult
+> testPage = do
+>   username <- loggedInAs
+>   case username of
+>     Nothing -> output (renderHtml $ h1 << "日本語")
+>     Just un -> output (renderHtml $ h1 << ("Hello " ++ un))
 
 > newCardPage :: String
 > newCardPage =  renderHtml $
@@ -44,3 +48,17 @@ José
 >           input ! [name "email", thetype "text"],
 >           br,
 >           input ! [thetype "submit", value "Join"]]]
+
+> loginPage :: String
+> loginPage = renderHtml $
+>   header << thetitle << "Log In" +++
+>   body <<|
+>     [ h1 << "Log In",
+>       form ! [action "", method "post"] <<|
+>         [ label << "Username:",
+>           input ! [name "username", thetype "text"],
+>           br,
+>           label << "Password:",
+>           input ! [name "password", thetype "password"],
+>           br,
+>           input ! [thetype "submit", value "Log In"]]]

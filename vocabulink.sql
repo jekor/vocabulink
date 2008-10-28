@@ -7,7 +7,7 @@
 CREATE TABLE member (
        member_no SERIAL PRIMARY KEY,
        username character varying(32) NOT NULL UNIQUE,
-       join_date timestamp with time zone NOT NULL DEFAULT current_timestamp,
+       join_date timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
        email text,
        password_hash text NOT NULL
 );

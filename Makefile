@@ -11,3 +11,6 @@ install :
 	install -o root -g root $(FCGI) /usr/local/bin
 	-killall $(FCGI)
 	spawn-fcgi -f "/usr/local/bin/$(FCGI) 2>> /tmp/vocabulink.error.log" -p 10033 -u lighttpd -g lighttpd
+
+test :
+	ghci -fglasgow-exts Vocabulink.lhs
