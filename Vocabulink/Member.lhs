@@ -41,7 +41,7 @@ language) and URL-safe punctuation.
 >   password <- getInput' "password"
 >   email    <- getInput' "email"
 >   liftIO $ addMember username password email
->   output' $ "Welcome!"
+>   output $ "Welcome!"
 
 > memberNumber :: String -> IO (Integer)
 > memberNumber username = do

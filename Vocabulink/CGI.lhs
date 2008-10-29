@@ -4,14 +4,6 @@
 
 > import Network.FastCGI
 
-Make sure that we output only UTF-8 encoded text.
-
-> output' :: MonadCGI m => String -> m CGIResult
-> output' = output . encodeString
-
-> outputError' :: (MonadCGI m, MonadIO m) => Int -> String -> [String] -> m CGIResult
-> outputError' code err msgs = outputError code (encodeString err) msgs
-
 It's nice to have a single function that can retrieve an HTTP GET paramater for
 us and do whatever's necessary to return a value in the context we need it in.
 This idea came from Text.Regex's (=~).
