@@ -4,8 +4,9 @@
 > import Vocabulink.Pages
 
 > import Vocabulink.Member
-> import Vocabulink.Idea
+> import Vocabulink.Lexeme
 
+> import Codec.Binary.UTF8.String
 > import Control.Concurrent (forkIO)
 > import Network.FastCGI
 > import Network.URI
@@ -24,11 +25,11 @@ We handle all requests using a dispatcher.
 >                   Left err    -> outputError 500 (show err) []
 >                   Right []    -> outputError 400 "Request not understood." []
 >                   Right path' -> dispatch method path'
->     where pathPart = (parse pathComponents "") . uriPath
+>     where pathPart = (parse pathComponents "") . decodeString . unEscapeString . uriPath
 
 > dispatch :: String -> [String] -> CGI CGIResult
 > dispatch "GET" [""] = testPage
-> dispatch "GET" ["idea","new"] = newIdeaPage
+> dispatch "GET" ["lexeme",x] = lexemePage x
 > dispatch "GET" ["member","join"] = output newMemberPage
 > dispatch "GET" ["member","login"] = output loginPage
 > dispatch "GET" x = do

@@ -16,12 +16,14 @@ COMMENT ON COLUMN member.username IS 'I want to allow usernames to include any U
 COMMENT ON COLUMN member.email IS 'In order to allow any reasonable email address from members, the regexp for email addresses is ^[\p{L}\p{N}\p{P}\p{S}]+@[\p{L}\p{N}\p{P}\p{S}]+$. Again, this should accept Unicode characters';
 COMMENT ON COLUMN member.password_hash IS 'The member''s password is stored as a hash, calculated by the pgcrypto contrib functions. See /usr/share/postgresql/contrib/pgcrypto.sql. The actual function used is crypt(?, gen_salt(''bf'')) (bf is for blowfish)';
 
-CREATE TABLE idea (
-       idea_no SERIAL PRIMARY KEY,
-       representation TEXT NOT NULL,
-       created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- For our purposes, a lexeme is any text or symbol which can be linked. Each lexeme has a lemma, which is the canonical representation of different forms of the lexeme.
+-- Lexemes include "日本語", "語", "五", "5", "five", "language", "にほんご" and "に".
+-- Lexemes automatically exist. They are not represented by a relation. The lexeme relation is only for linking various lexeme forms to their lemma.
+
+CREATE TABLE lexeme (
+       lemma TEXT,
+       lexeme TEXT
 );
-COMMENT ON TABLE idea IS 'An idea is a concept, word, image---anything concrete and brief. Examples of ideas are "日本語", "日", "sun", "language", and "にほんご".';
 
 CREATE TABLE link_type (
        type_name TEXT PRIMARY KEY,
@@ -35,10 +37,10 @@ INSERT INTO link_type (type_name, description, color)
 
 CREATE TABLE link (
        link_no SERIAL PRIMARY KEY,
-       origin_idea INTEGER REFERENCES idea (idea_no) ON UPDATE CASCADE,
-       destination_idea INTEGER REFERENCES idea (idea_no) ON UPDATE CASCADE,
+       origin_lexeme INTEGER REFERENCES idea (idea_no) ON UPDATE CASCADE,
+       destination_lexeme INTEGER REFERENCES idea (idea_no) ON UPDATE CASCADE,
        -- type? story, picture, etc.
-       type_name TEXT REFERENCES link_type (type_name) ON UPDATE CASCADE,
+       link_type TEXT REFERENCES link_type (type_name) ON UPDATE CASCADE,
        representation TEXT,
        rating REAL,
        author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
