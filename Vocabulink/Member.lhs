@@ -29,11 +29,10 @@ language) and URL-safe punctuation.
 >     (length username) > 32 ? error "Your username must have 32 characters or less." $
 >     (length password) > 72 ? error "Your password must have 72 characters or less." $
 >     -- TODO: Add password constraints?
->     quickInsertCGI "INSERT INTO member (username, email, password_hash) \
->                    \VALUES (?, ?, crypt(?, gen_salt('bf')))"
->                    [toSql' username, toSql' email, toSql' password] errMsg
->        `catchSql` (\e -> logSqlError e >> error errMsg)
->            where errMsg = "Failed to add member."
+>     quickInsert "INSERT INTO member (username, email, password_hash) \
+>                 \VALUES (?, ?, crypt(?, gen_salt('bf')))"
+>                 [toSql' username, toSql' email, toSql' password]
+>        `catchSql` (\e -> logSqlError e >> error "Failed to add member.")
 
 > addMember' :: CGI CGIResult
 > addMember' = do
@@ -45,16 +44,16 @@ language) and URL-safe punctuation.
 
 > memberNumber :: String -> IO (Integer)
 > memberNumber username = do
->   number <- quickQuery1' "SELECT member_no FROM member \
->                          \WHERE username = ?" [toSql' username]
+>   number <- query1 "SELECT member_no FROM member \
+>                    \WHERE username = ?" [toSql' username]
 >   case number of
 >     Nothing -> error "Failed to retrieve member number from username."
 >     Just n  -> return (fromSql n)
 
 > memberName :: Integer -> IO (String)
 > memberName member_no = do
->   username <- quickQuery1' "SELECT username FROM member \
->                            \WHERE member_no = ?" [toSql member_no]
+>   username <- query1 "SELECT username FROM member \
+>                      \WHERE member_no = ?" [toSql member_no]
 >   case username of
 >     Nothing -> error "Failed to retrieve username from member number."
 >     Just n -> return (fromSql n)
@@ -64,9 +63,9 @@ information in the database.
 
 > validPassword :: String -> String -> IO (Bool)
 > validPassword username password = do
->   match <- quickQuery1' "SELECT password_hash = crypt(?, password_hash) \
->                         \FROM member WHERE username = ?"
->                         [toSql' password, toSql' username]
+>   match <- query1 "SELECT password_hash = crypt(?, password_hash) \
+>                   \FROM member WHERE username = ?"
+>                   [toSql' password, toSql' username]
 >   case match of
 >     Just x -> let b = fromSql x in
 >                   return b
@@ -122,16 +121,16 @@ the digest.
 > authToken :: Integer -> String -> IO (AuthToken)
 > authToken member_no ip = do
 >   utc <- getPOSIXTime
->   let expires = utc + posixDayLength in do
->       -- TODO: Use a proper key.
->       digest' <- digestToken $ AuthToken { expiry    = expires,
->                                            member    = member_no,
->                                            ipAddress = ip,
->                                            digest    = "" }
->       return AuthToken { expiry    = expires,
->                          member    = member_no,
->                          ipAddress = ip,
->                          digest    = digest' }
+>   let expires = utc + posixDayLength
+>   -- TODO: Use a proper key.
+>   digest' <- digestToken $ AuthToken { expiry    = expires,
+>                                        member    = member_no,
+>                                        ipAddress = ip,
+>                                        digest    = "" }
+>   return AuthToken { expiry    = expires,
+>                      member    = member_no,
+>                      ipAddress = ip,
+>                      digest    = digest' }
 
 Eventually, we need to rotate the key used to generate the HMAC, while still
 storing old keys long enough to use them for any valid login session. Without
@@ -162,19 +161,42 @@ Returns the member number or Nothing if the cookie is invalid or expired.
 > expired :: POSIXTime -> POSIXTime -> Bool
 > expired now ex = (floor ex :: Integer) - (floor now :: Integer) < 0
 
-> loggedInAs :: CGI (Maybe String)
-> loggedInAs = do
+-- > loggedInAs :: CGI (Maybe String)
+-- > loggedInAs = do
+-- >   authCookie <- getCookie "auth"
+-- >   case authCookie of
+-- >     Nothing -> return Nothing
+-- >     Just c  -> do
+-- >       ip <- remoteAddr
+-- >       member_no <- liftIO $ verifyMember c ip
+-- >       case member_no of
+-- >         Nothing -> return Nothing
+-- >         Just n  -> do
+-- >           name <- liftIO $ memberName n
+-- >           return (Just name)
+
+> loginNumber :: CGI (Integer)
+> loginNumber = do
 >   authCookie <- getCookie "auth"
 >   case authCookie of
->     Nothing -> return Nothing
+>     Nothing -> return 0
 >     Just c  -> do
 >       ip <- remoteAddr
->       member_no <- liftIO $ verifyMember c ip
->       case member_no of
->         Nothing -> return Nothing
->         Just n  -> do
->           name <- liftIO $ memberName n
->           return (Just name)
+>       memberNo <- liftIO $ verifyMember c ip
+>       case memberNo of
+>         Nothing -> return 0 -- anonymous
+>         Just n  -> return n
+
+> loginName :: CGI (String)
+> loginName = do
+>   n <- loginNumber
+>   name <- liftIO $ memberName n
+>   return name
+
+> loggedIn :: CGI (Bool)
+> loggedIn = do
+>   n <- loginNumber
+>   return $ n > 0
 
 If we want to set the expiration, we have to muck around with CalendarTimes and
 use something like
@@ -201,7 +223,7 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 >       setCookie Cookie { cookieName    = "auth",
 >                          cookieValue   = (show authTok),
 >                          cookieExpires = Nothing,
->                          cookieDomain  = Just "vocabulink.lan",
+>                          cookieDomain  = Just "vocabulink.com",
 >                          cookiePath    = Just "/",
 >                          cookieSecure  = False }
 >       redirect "/"

@@ -1,7 +1,5 @@
 > module Vocabulink.DB where
 
-> import Vocabulink.Utils
-
 > import Codec.Binary.UTF8.String
 > import Database.HDBC
 > import Database.HDBC.PostgreSQL
@@ -11,29 +9,15 @@
 > db :: IO Connection
 > db =  connectPostgreSQL "host=localhost dbname=vocabulink user=vocabulink password=phae9Xom"
 
-It's often tedious to work with transactions if you're just inserting 1 tuple.
+Sometimes you just want to query a single value.
 
-> quickInsert :: String -> [SqlValue] -> IO Integer
-> quickInsert sql vs = do conn <- db
->                         withTransaction conn (\_ -> run conn sql vs >>= return)
-
-Run a quick insert that should modify (add) 1 row or log and throw an error if
-it doesn't.
-
-> quickInsertCGI :: String -> [SqlValue] -> String -> IO ()
-> quickInsertCGI sql vs err = do
->   n <- quickInsert sql vs
->   n == 1 ? return () $ do
->     logCGI $ "Query modified " ++ show n ++ " rows."
->     error err
-
-> quickQuery1' :: String -> [SqlValue] -> IO (Maybe SqlValue)
-> quickQuery1' sql vs = do
+> query1 :: String -> [SqlValue] -> IO (Maybe SqlValue)
+> query1 sql vs = do
 >   conn <- db
->   quickQuery1'' conn sql vs
+>   query1c conn sql vs
 
-> quickQuery1'' :: IConnection conn => conn -> String -> [SqlValue] -> IO (Maybe SqlValue)
-> quickQuery1'' conn sql vs = do
+> query1c :: IConnection conn => conn -> String -> [SqlValue] -> IO (Maybe SqlValue)
+> query1c conn sql vs = do
 >   query <- prepare conn sql
 >   execute query vs
 >   row <- fetchRow query
@@ -43,6 +27,40 @@ it doesn't.
 >     Just r  -> case r of
 >                []      -> return Nothing
 >                (x:_)   -> return (Just x)
+>   `catchSql` (\e -> logSqlError e >> error (show e))
+
+It's often tedious to work with transactions if you're just inserting 1 tuple.
+
+> quickInsert :: String -> [SqlValue] -> IO ()
+> quickInsert sql vs = do
+>   conn <- db
+>   withTransaction conn (\_ -> run conn sql vs >> return ())
+
+Run a quick insert and return the sequence number it created.
+
+> quickInsertSeqNo :: String -> [SqlValue] -> String -> IO (Maybe Integer)
+> quickInsertSeqNo sql vs seqName = do
+>   conn <- db
+>   withTransaction conn (\_ -> do 
+>                           run conn sql vs
+>                           seqNo <- query1c conn "SELECT currval(?)"
+>                                                      [toSql' seqName]
+>                           case seqNo of
+>                             Just n -> return $ fromSql n
+>                             Nothing -> return Nothing)
+
+Run a quick insert that should modify (add) 1 row or log and throw an error if
+it doesn't.
+
+I'm not sure if this is necessary, since the database should throw an exception
+on a failed insert. I'll leave it here for a while.
+
+-- > quickInsert' :: String -> [SqlValue] -> String -> IO ()
+-- > quickInsert' sql vs err = do
+-- >   n <- quickInsert sql vs
+-- >   n == 1 ? return () $ do
+-- >     logCGI $ "Query modified " ++ show n ++ " rows."
+-- >     error err
 
 logSqlError will write the error to stderr where it should be picked up and added
 to an appropriate logfile.

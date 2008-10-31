@@ -5,6 +5,7 @@
 
 > import Vocabulink.Member
 > import Vocabulink.Lexeme
+> import Vocabulink.Link
 
 > import Codec.Binary.UTF8.String
 > import Control.Concurrent (forkIO)
@@ -30,6 +31,8 @@ We handle all requests using a dispatcher.
 > dispatch :: String -> [String] -> CGI CGIResult
 > dispatch "GET" [""] = testPage
 > dispatch "GET" ["lexeme",x] = lexemePage x
+> dispatch "GET" ["link"] = newLinkPage
+> dispatch "GET" ["link",n] = linkPage (read n :: Integer)
 > dispatch "GET" ["member","join"] = output newMemberPage
 > dispatch "GET" ["member","login"] = output loginPage
 > dispatch "GET" x = do
@@ -42,6 +45,7 @@ with 404).
 
 > dispatch "POST" ["member","join"] = addMember'
 > dispatch "POST" ["member","login"] = login'
+> dispatch "POST" ["link"] = linkLexemes'
 > dispatch "POST" _ = outputError 404 "Resource not found or POST not allowed on it." []
 
 > dispatch _ _ = outputMethodNotAllowed ["GET", "POST"]

@@ -4,7 +4,7 @@ FCGI = vocabulink.fcgi
 
 all : $(FCGI)
 
-vocabulink.fcgi : Vocabulink.lhs Vocabulink/*lhs
+vocabulink.fcgi : Vocabulink.lhs Vocabulink/*.lhs
 	ghc -Wall -fglasgow-exts -threaded -package fastcgi --make -o $(FCGI) $^
 
 install :
@@ -14,3 +14,6 @@ install :
 
 test :
 	ghci -fglasgow-exts Vocabulink.lhs
+
+sloc : Vocabulink.lhs Vocabulink/*.lhs
+	echo $^ | xargs -n 1 lhs2TeX --code | wc --lines

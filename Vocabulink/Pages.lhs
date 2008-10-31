@@ -3,16 +3,13 @@
 > import Vocabulink.Utils
 > import Vocabulink.Member
 
-> import Codec.Binary.UTF8.String
 > import Network.CGI
 > import Text.XHtml.Strict
 
 > testPage :: CGI CGIResult
 > testPage = do
->   username <- loggedInAs
->   case username of
->     Nothing -> output (renderHtml $ h1 << encodeString "日本語")
->     Just un -> output (renderHtml $ h1 << ("Hello " ++ un))
+>   username <- loginName
+>   output $ renderHtml $ h1 << ("Hello " ++ username)
 
 > newMemberPage :: String
 > newMemberPage = renderHtml $
