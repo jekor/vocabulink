@@ -23,55 +23,47 @@ handle Unicode regular expressions properly.
 A username should be allowed to have any alphanumeric characters (in any
 language) and URL-safe punctuation.
 
-> addMember :: String -> String -> Maybe String -> IO ()
-> addMember username password email =
+> addMember :: IConnection conn => conn -> String -> String -> Maybe String -> IO ()
+> addMember c username password email =
 >     (length username) < 3  ? error "Your username must have 3 characters or more."  $
 >     (length username) > 32 ? error "Your username must have 32 characters or less." $
 >     (length password) > 72 ? error "Your password must have 72 characters or less." $
 >     -- TODO: Add password constraints?
->     quickInsert "INSERT INTO member (username, email, password_hash) \
->                 \VALUES (?, ?, crypt(?, gen_salt('bf')))"
->                 [toSql' username, toSql' email, toSql' password]
->        `catchSql` (\e -> logSqlError e >> error "Failed to add member.")
+>     quickInsert c "INSERT INTO member (username, email, password_hash) \
+>                   \VALUES (?, ?, crypt(?, gen_salt('bf')))"
+>                   [toSql' username, toSql' email, toSql' password]
+>     `catchSqlE` "Failed to add member."
 
 > addMember' :: CGI CGIResult
 > addMember' = do
+>   c <- liftIO db
 >   username <- getInput' "username"
 >   password <- getInput' "password"
 >   email    <- getInput' "email"
->   liftIO $ addMember username password email
+>   liftIO $ addMember c username password email
 >   output $ "Welcome!"
 
-> memberNumber :: String -> IO (Integer)
-> memberNumber username = do
->   number <- query1 "SELECT member_no FROM member \
->                    \WHERE username = ?" [toSql' username]
->   case number of
->     Nothing -> error "Failed to retrieve member number from username."
->     Just n  -> return (fromSql n)
+> memberNumber :: IConnection conn => conn -> String -> IO (Integer)
+> memberNumber c username = do
+>   fromSql `liftM` query1e c "SELECT member_no FROM member \
+>                             \WHERE username = ?" [toSql' username]
+>   `catchSqlE` "Failed to retrieve member number from username."
 
-> memberName :: Integer -> IO (String)
-> memberName member_no = do
->   username <- query1 "SELECT username FROM member \
->                      \WHERE member_no = ?" [toSql member_no]
->   case username of
->     Nothing -> error "Failed to retrieve username from member number."
->     Just n -> return (fromSql n)
+> memberName :: IConnection conn => conn -> Integer -> IO (String)
+> memberName c member_no = do
+>   fromSql' `liftM` query1e c "SELECT username FROM member \
+>                              \WHERE member_no = ?" [toSql member_no]
+>   `catchSqlE` "Failed to retrieve username from member number."
 
 Login attempts to match the username and password supplied against the
 information in the database.
 
-> validPassword :: String -> String -> IO (Bool)
-> validPassword username password = do
->   match <- query1 "SELECT password_hash = crypt(?, password_hash) \
->                   \FROM member WHERE username = ?"
->                   [toSql' password, toSql' username]
->   case match of
->     Just x -> let b = fromSql x in
->                   return b
->     _      -> return False -- TODO: Log/handle errors.
->   `catchSql` (\e -> logSqlError e >> error errMsg)
->       where errMsg = "Internal authentication failure (this is not your fault)."
+> validPassword :: IConnection conn => conn -> String -> String -> IO (Bool)
+> validPassword c username password = do
+>   fromSql `liftM` query1e c "SELECT password_hash = crypt(?, password_hash) \
+>                             \FROM member WHERE username = ?"
+>                             [toSql' password, toSql' username]
+>   `catchSqlE` "Internal authentication failure (this is not your fault)."
 
 Each time a user logs in, we send an authentication cookie to their browser.
 The cookie is an digest of some state information we store in our database
@@ -161,20 +153,6 @@ Returns the member number or Nothing if the cookie is invalid or expired.
 > expired :: POSIXTime -> POSIXTime -> Bool
 > expired now ex = (floor ex :: Integer) - (floor now :: Integer) < 0
 
--- > loggedInAs :: CGI (Maybe String)
--- > loggedInAs = do
--- >   authCookie <- getCookie "auth"
--- >   case authCookie of
--- >     Nothing -> return Nothing
--- >     Just c  -> do
--- >       ip <- remoteAddr
--- >       member_no <- liftIO $ verifyMember c ip
--- >       case member_no of
--- >         Nothing -> return Nothing
--- >         Just n  -> do
--- >           name <- liftIO $ memberName n
--- >           return (Just name)
-
 > loginNumber :: CGI (Integer)
 > loginNumber = do
 >   authCookie <- getCookie "auth"
@@ -189,8 +167,9 @@ Returns the member number or Nothing if the cookie is invalid or expired.
 
 > loginName :: CGI (String)
 > loginName = do
+>   c <- liftIO db
 >   n <- loginNumber
->   name <- liftIO $ memberName n
+>   name <- liftIO $ memberName c n
 >   return name
 
 > loggedIn :: CGI (Bool)
@@ -213,11 +192,12 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 
 > login' :: CGI CGIResult
 > login' = do
+>   c <- liftIO db
 >   username  <- getInput' "username"
->   member_no <- liftIO $ memberNumber username
+>   member_no <- liftIO $ memberNumber c username
 >   password <- getInput' "password"
 >   ip <- remoteAddr
->   valid <- liftIO $ validPassword username password
+>   valid <- liftIO $ validPassword c username password
 >   not valid ? error "Login failed." $ do
 >       authTok <- liftIO $ authToken member_no ip
 >       setCookie Cookie { cookieName    = "auth",
