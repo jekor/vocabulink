@@ -32,7 +32,7 @@ language) and URL-safe punctuation.
 >     quickInsert c "INSERT INTO member (username, email, password_hash) \
 >                   \VALUES (?, ?, crypt(?, gen_salt('bf')))"
 >                   [toSql' username, toSql' email, toSql' password]
->     `catchSqlE` "Failed to add member."
+>       `catchSqlE` "Failed to add member."
 
 > addMember' :: CGI CGIResult
 > addMember' = do
@@ -47,13 +47,13 @@ language) and URL-safe punctuation.
 > memberNumber c username = do
 >   fromSql `liftM` query1e c "SELECT member_no FROM member \
 >                             \WHERE username = ?" [toSql' username]
->   `catchSqlE` "Failed to retrieve member number from username."
+>     `catchSqlE` "Failed to retrieve member number from username."
 
 > memberName :: IConnection conn => conn -> Integer -> IO (String)
 > memberName c member_no = do
 >   fromSql' `liftM` query1e c "SELECT username FROM member \
 >                              \WHERE member_no = ?" [toSql member_no]
->   `catchSqlE` "Failed to retrieve username from member number."
+>     `catchSqlE` "Failed to retrieve username from member number."
 
 Login attempts to match the username and password supplied against the
 information in the database.
@@ -63,7 +63,7 @@ information in the database.
 >   fromSql `liftM` query1e c "SELECT password_hash = crypt(?, password_hash) \
 >                             \FROM member WHERE username = ?"
 >                             [toSql' password, toSql' username]
->   `catchSqlE` "Internal authentication failure (this is not your fault)."
+>     `catchSqlE` "Internal authentication failure (this is not your fault)."
 
 Each time a user logs in, we send an authentication cookie to their browser.
 The cookie is an digest of some state information we store in our database

@@ -12,6 +12,9 @@ install :
 	-killall $(FCGI)
 	spawn-fcgi -f "/usr/local/bin/$(FCGI) 2>> /tmp/vocabulink.error.log" -p 10033 -u lighttpd -g lighttpd
 
+clean:
+	rm *.o *.hi Vocabulink/*.o Vocabulink/*.hi
+
 test :
 	ghci -fglasgow-exts Vocabulink.lhs
 

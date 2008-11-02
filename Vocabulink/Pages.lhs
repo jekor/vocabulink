@@ -1,15 +1,21 @@
 > module Vocabulink.Pages where
 
-> import Vocabulink.Utils
+> import Vocabulink.Html
 > import Vocabulink.Member
 
 > import Network.CGI
+> import Network.CGI.Protocol
+> import Network.CGI.Monad
 > import Text.XHtml.Strict
 
 > testPage :: CGI CGIResult
 > testPage = do
 >   username <- loginName
->   output $ renderHtml $ h1 << ("Hello " ++ username)
+>   vars <- getVars
+>   inputs <- cgiGet cgiInputs
+>   output $ renderHtml $ h1 << ("Hello " ++ username) +++
+>     paragraph << (pre << map (\x -> show x ++ "\n") vars) +++
+>                  (pre << show inputs)
 
 > newMemberPage :: String
 > newMemberPage = renderHtml $

@@ -1,23 +1,24 @@
 > module Vocabulink.CGI where
 
 > import Codec.Binary.UTF8.String
-
+> import Control.Exception
 > import Network.FastCGI
 
 It's nice to have a single function that can retrieve an HTTP GET paramater for
 us and do whatever's necessary to return a value in the context we need it in.
 This idea came from Text.Regex's (=~).
 
-> class CGIInputContext o where
->   getInput' :: String -> CGI o
+> class CGIInputContext a where
+>   getInputDefault :: String -> a -> CGI a
+>   getInput' :: String -> CGI a
 
 > instance CGIInputContext String where
->   getInput' r = do s <- getInput r
->                    case s of
->                      Nothing -> error $ required r
->                      Just "" -> error $ required r
->                      Just x  -> return $ decodeString x
->                   where required x = x ++ " parameter is required."
+>   getInputDefault r d = do s <- getInput r
+>                            case s of
+>                              Nothing -> return d
+>                              Just "" -> return d
+>                              Just s' -> return $ decodeString s'
+>   getInput' r = getInputDefault r $ error $ r ++ " parameter is required."
 
 > instance CGIInputContext (Maybe String) where
 >   getInput' r = do s <- getInput r
@@ -25,6 +26,36 @@ This idea came from Text.Regex's (=~).
 >                      Nothing -> return Nothing
 >                      Just "" -> return Nothing
 >                      Just x  -> return $ Just (decodeString x)
+>
+>   getInputDefault = error "Trying to get a default input for Maybe type."
+
+> instance CGIInputContext Integer where
+>   getInputDefault r d = do
+>     s <- getInput r
+>     case s of
+>       Nothing -> return d
+>       Just s' -> do
+>         i <- liftIO $ try $ readIO s'
+>         case i of
+>           Left _   -> return d
+>           Right i' -> return i'
+>   getInput' r = getInputDefault r $ error $
+>                   r ++ " parameter is required and must be an integer."
+
+There should be some way to combine this and the above declaration.
+
+> instance CGIInputContext Int where
+>   getInputDefault r d = do
+>     s <- getInput r
+>     case s of
+>       Nothing -> return d
+>       Just s' -> do
+>         i <- liftIO $ try $ readIO s'
+>         case i of
+>           Left _   -> return d
+>           Right i' -> return i'
+>   getInput' r = getInputDefault r $ error $
+>                   r ++ " parameter is required and must be an integer."
 
 It would be nice to have a way to hijack outputError in order to change the
 encoding, but I don't know of a way to short of modifying the source of
@@ -34,3 +65,12 @@ own error output functions in time.
 > handleErrors' :: CGI CGIResult -> CGI CGIResult
 > handleErrors' r = do setHeader "Content-Type" "text/html; charset=utf-8"
 >                      handleErrors r
+
+With getting variables, if it fails, it should just error out.
+
+> getVarE :: String -> CGI String
+> getVarE s = do
+>   var <- getVar s
+>   case var of
+>     Nothing -> error "Failed to retrieve environment variables."
+>     Just v  -> return v

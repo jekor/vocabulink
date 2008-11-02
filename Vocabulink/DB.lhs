@@ -120,3 +120,11 @@ have to do.
 >   toSql' (Just s) = toSql $ encodeString s
 >   fromSql' (SqlString s) = Just (decodeString s)
 >   fromSql' _             = Nothing -- SqlNull and everything else
+
+> instance SqlType' Integer where
+>   toSql' = toSql
+>   fromSql' = fromSql
+
+> instance SqlType' Int where
+>   toSql' = toSql
+>   fromSql' = fromSql

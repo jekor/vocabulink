@@ -2,6 +2,7 @@
 
 > import Vocabulink.CGI
 > import Vocabulink.DB
+> import Vocabulink.Html
 > import Vocabulink.Member
 > import Vocabulink.Utils
 
@@ -9,6 +10,12 @@
 > import Database.HDBC
 > import Network.CGI
 > import Text.XHtml.Strict
+
+> linkHtml :: String -> String -> Html
+> linkHtml origin destination = concatHtml
+>   [ thespan ! [theclass "lexeme"] << encodeString origin,
+>     image ! [src "http://s.vocabulink.com/black.png", width "20%", height "1"],
+>     thespan ! [theclass "lexeme"] << encodeString destination ]
 
 > newLinkPage :: CGI CGIResult
 > newLinkPage = do
@@ -22,11 +29,8 @@
 >                    thetype "text/css"] << noHtml ] +++
 >     body <<|
 >       [ form ! [action "", method "post"] <<|
->          [ paragraph ! [identifier "baseline"] <<|
->              [ thespan ! [theclass "lexeme"] << encodeString origin,
->                image ! [src "http://s.vocabulink.com/black.png", width "20%",
->                         height "1"],
->                thespan ! [theclass "lexeme"] << encodeString destination ],
+>          [ thediv ! [identifier "baseline", theclass "link"] <<
+>              (linkHtml origin destination),
 >            paragraph ! [identifier "association"] <<|
 >              [ textarea ! [name "association", cols "80", rows "20"] <<
 >                  "Describe the association here.",
@@ -40,7 +44,7 @@
 >                   \VALUES (?, ?, 'association', 'en', ?, ?)"
 >                   [toSql' origin, toSql' destination, toSql' association, toSql n]
 >                   "link_link_no_seq"
->   `catchSqlE` "Failed to establish link."
+>     `catchSqlE` "Failed to establish link."
 
 > linkLexemes' :: CGI CGIResult
 > linkLexemes' = do
@@ -54,27 +58,64 @@
 >     Just n  -> redirect $ "/link/" ++ (show n)
 >     Nothing -> error "Failed to establish link."
 
-> linkPage :: Integer -> CGI CGIResult
-> linkPage n = do
+> linkPage :: String -> CGI CGIResult
+> linkPage link = do
+>   no <- liftIO $ intFromString link
+>   case no of
+>     Left  _ -> outputError 400 "Links are identified by numbers only." []
+>     Right n -> do
+>       c <- liftIO db
+>       ts <- liftIO $ quickQuery c "SELECT origin, destination, representation FROM link \
+>                                   \WHERE link_no = ?" [toSql n]
+>                        `catchSqlE` "Failed to retrieve link."
+>       case ts of
+>         [x@[_,_,_]] -> do
+>             let [origin, destination, association] = map fromSql' x
+>             output $ renderHtml $
+>               header <<|
+>                 [ thetitle << ((encodeString origin) ++ " -> " ++ (encodeString destination)),
+>                   thelink ! [href "http://s.vocabulink.com/lexeme.css",
+>                              rel "stylesheet",
+>                              thetype "text/css"] << noHtml ] +++
+>               body <<|
+>                 [ thediv ! [identifier "baseline", theclass "link"] <<
+>                     linkHtml origin destination,
+>                   paragraph ! [identifier "association"] << encodeString association ]
+>         _ -> error "Link does not exist or failed to retrieve."
+
+Generate a page of links for the specified member or all members (for Nothing).
+
+> linksPage :: Maybe Integer -> CGI CGIResult
+> linksPage memberNo = do
 >   c <- liftIO db
->   ts <- liftIO $ quickQuery c "SELECT origin, destination, representation FROM link \
->                               \WHERE link_no = ?" [toSql n]
->                  `catchSqlE` "Failed to retrieve link."
->   case ts of
->     [x@[_,_,_]] -> do
->         let [origin, destination, association] = map fromSql' x
->         output $ renderHtml $
->           header <<|
->             [ thetitle << ((encodeString origin) ++ " -> " ++ (encodeString destination)),
->               thelink ! [href "http://s.vocabulink.com/lexeme.css",
->                          rel "stylesheet",
->                          thetype "text/css"] << noHtml ] +++
->           body <<|
->             [ thediv <<|
->                [ paragraph ! [identifier "baseline"] <<|
->                    [ thespan ! [theclass "lexeme"] << encodeString origin,
->                      image ! [src "http://s.vocabulink.com/black.png", width "20%",
->                               height "1"],
->                      thespan ! [theclass "lexeme"] << encodeString destination ],
->                  paragraph ! [identifier "association"] << encodeString association ] ]
->     _ -> error "Link does not exist or failed to retrieve."
+>   pg  <- getInputDefault "pg" 1
+>   n   <- getInputDefault "n" 25
+>   links <- liftIO $ getLinks c memberNo ((pg - 1) * n) (n + 1)
+>     `catchSqlE` "Failed to retrieve links."
+>   pagerControl <- pager n pg $ (length links) + ((pg - 1) * n)
+>   output $ renderHtml $ header <<|
+>     [ thetitle << "links",
+>       thelink ! [href "http://s.vocabulink.com/lexeme.css",
+>                  rel "stylesheet",
+>                  thetype "text/css"] << noHtml ] +++
+>     body <<| (take n $ map displayLink links) +++ pagerControl
+
+> getLinks :: IConnection conn => conn -> Maybe Integer -> Int -> Int -> IO [[SqlValue]]
+> getLinks c memberNo offset limit =
+>   case memberNo of
+>     Nothing -> quickQuery c "SELECT link_no, origin, destination FROM link \
+>                             \ORDER BY link_no OFFSET ? LIMIT ?" $
+>                             [toSql offset, toSql limit]
+>     Just n  -> quickQuery c "SELECT link_no, origin, destination FROM link \
+>                             \WHERE author = ? \
+>                             \ORDER BY link_no OFFSET ? LIMIT ?" $
+>                             [toSql n, toSql offset, toSql limit]
+
+> displayLink :: [SqlValue] -> Html
+> displayLink [no, origin, destination] = 
+>   let no' = fromSql no :: Integer
+>       origin' = fromSql' origin :: String
+>       destination' = fromSql' destination :: String in
+>   thediv ! [theclass "link"] << anchor ! [href $ "/link/" ++ (show no')] <<
+>     linkHtml origin' destination'
+> displayLink _ = thediv ! [theclass "link"] << "Link is malformed."

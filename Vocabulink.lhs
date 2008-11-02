@@ -6,7 +6,6 @@
 > import Vocabulink.Member
 > import Vocabulink.Lexeme
 > import Vocabulink.Link
-> import Vocabulink.Utils
 
 > import Codec.Binary.UTF8.String
 > import Control.Concurrent (forkIO)
@@ -33,11 +32,11 @@ We handle all requests using a dispatcher.
 > dispatch "GET" [""] = testPage
 > dispatch "GET" ["lexeme",x] = lexemePage x
 > dispatch "GET" ["link"] = newLinkPage
-> dispatch "GET" ["link",x] = do
->   num <- liftIO $ intFromString x
->   case num of
->     Left  _ -> outputError 400 "Links are identified by numbers only." []
->     Right n -> linkPage n
+> dispatch "GET" ["link",x] = linkPage x
+> dispatch "GET" ["links"] = linksPage Nothing
+> dispatch "GET" ["my","links"] = do
+>   n <- loginNumber
+>   linksPage (Just n)
 > dispatch "GET" ["member","join"] = output newMemberPage
 > dispatch "GET" ["member","login"] = output loginPage
 > dispatch "GET" x = do
