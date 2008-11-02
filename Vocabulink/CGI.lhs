@@ -72,5 +72,17 @@ With getting variables, if it fails, it should just error out.
 > getVarE s = do
 >   var <- getVar s
 >   case var of
->     Nothing -> error "Failed to retrieve environment variables."
+>     Nothing -> error "Failed to retrieve environment variable."
 >     Just v  -> return v
+
+...or we could provide a default value.
+
+> getVarDefault :: String -> String -> CGI String
+> getVarDefault s d = do
+>   var <- getVar s
+>   case var of
+>     Nothing -> return d
+>     Just v  -> return v
+
+> referer :: CGI String
+> referer = getVarDefault "HTTP_REFERER" "http://www.vocabulink.com/"

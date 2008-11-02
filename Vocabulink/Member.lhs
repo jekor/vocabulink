@@ -44,22 +44,22 @@ language) and URL-safe punctuation.
 >   output $ "Welcome!"
 
 > memberNumber :: IConnection conn => conn -> String -> IO (Integer)
-> memberNumber c username = do
+> memberNumber c username =
 >   fromSql `liftM` query1e c "SELECT member_no FROM member \
 >                             \WHERE username = ?" [toSql' username]
 >     `catchSqlE` "Failed to retrieve member number from username."
 
 > memberName :: IConnection conn => conn -> Integer -> IO (String)
-> memberName c member_no = do
+> memberName c memberNo =
 >   fromSql' `liftM` query1e c "SELECT username FROM member \
->                              \WHERE member_no = ?" [toSql member_no]
+>                              \WHERE member_no = ?" [toSql memberNo]
 >     `catchSqlE` "Failed to retrieve username from member number."
 
 Login attempts to match the username and password supplied against the
 information in the database.
 
 > validPassword :: IConnection conn => conn -> String -> String -> IO (Bool)
-> validPassword c username password = do
+> validPassword c username password =
 >   fromSql `liftM` query1e c "SELECT password_hash = crypt(?, password_hash) \
 >                             \FROM member WHERE username = ?"
 >                             [toSql' password, toSql' username]

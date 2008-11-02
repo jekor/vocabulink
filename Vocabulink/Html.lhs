@@ -16,6 +16,17 @@ A common idiom is to use concatHtml for an element's contents.
 > (<<|) :: (Html -> Html) -> [Html] -> Html
 > h <<| l = h << concatHtml l
 
+page expects title to already be UTF8 encoded if necessary.
+
+> page :: String -> [String] -> ([Html] -> Html)
+> page t ss = \b -> header <<
+>   (thetitle << t +++ concatHtml (map styleLink ss)) +++
+>   body <<| b
+
+> styleLink :: String -> Html
+> styleLink s = thelink ! [href ("http://s.vocabulink.com/" ++ s ++ ".css"),
+>                          rel "stylesheet", thetype "text/css"] << noHtml
+
 It's nice to abstract away creating an element to page the results of a
 multi-page query. This will preserve all of the query string in the links it
 generates while it replaces the "n" (number of records per page) and "page"

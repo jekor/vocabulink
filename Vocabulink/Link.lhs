@@ -21,21 +21,16 @@
 > newLinkPage = do
 >   origin <- getInput' "origin"
 >   destination <- getInput' "destination"
->   output $ renderHtml $
->     header <<|
->       [ thetitle << ((encodeString origin) ++ " -> " ++ (encodeString destination)),
->         thelink ! [href "http://s.vocabulink.com/lexeme.css",
->                    rel "stylesheet",
->                    thetype "text/css"] << noHtml ] +++
->     body <<|
->       [ form ! [action "", method "post"] <<|
->          [ thediv ! [identifier "baseline", theclass "link"] <<
->              (linkHtml origin destination),
->            paragraph ! [identifier "association"] <<|
->              [ textarea ! [name "association", cols "80", rows "20"] <<
->                  "Describe the association here.",
->                br,
->                input ! [thetype "submit", value "Associate"] ] ] ]
+>   let t = (encodeString origin) ++ " -> " ++ (encodeString destination)
+>   output $ renderHtml $ page t ["lexeme"]
+>     [ form ! [action "", method "post"] <<|
+>        [ thediv ! [identifier "baseline", theclass "link"] <<
+>            (linkHtml origin destination),
+>          paragraph ! [identifier "association"] <<|
+>            [ textarea ! [name "association", cols "80", rows "20"] <<
+>                "Describe the association here.",
+>              br,
+>              input ! [thetype "submit", value "Associate"] ] ] ]
 
 > linkLexemes :: IConnection conn => conn -> String -> String -> String -> Integer -> IO (Maybe Integer)
 > linkLexemes c origin destination association n = do
@@ -71,16 +66,11 @@
 >       case ts of
 >         [x@[_,_,_]] -> do
 >             let [origin, destination, association] = map fromSql' x
->             output $ renderHtml $
->               header <<|
->                 [ thetitle << ((encodeString origin) ++ " -> " ++ (encodeString destination)),
->                   thelink ! [href "http://s.vocabulink.com/lexeme.css",
->                              rel "stylesheet",
->                              thetype "text/css"] << noHtml ] +++
->               body <<|
->                 [ thediv ! [identifier "baseline", theclass "link"] <<
->                     linkHtml origin destination,
->                   paragraph ! [identifier "association"] << encodeString association ]
+>                 t = origin ++ " -> " ++ destination
+>             output $ renderHtml $ page t ["lexeme"]
+>               [ thediv ! [identifier "baseline", theclass "link"] <<
+>                   linkHtml origin destination,
+>                 paragraph ! [identifier "association"] << encodeString association ]
 >         _ -> error "Link does not exist or failed to retrieve."
 
 Generate a page of links for the specified member or all members (for Nothing).
@@ -93,12 +83,8 @@ Generate a page of links for the specified member or all members (for Nothing).
 >   links <- liftIO $ getLinks c memberNo ((pg - 1) * n) (n + 1)
 >     `catchSqlE` "Failed to retrieve links."
 >   pagerControl <- pager n pg $ (length links) + ((pg - 1) * n)
->   output $ renderHtml $ header <<|
->     [ thetitle << "links",
->       thelink ! [href "http://s.vocabulink.com/lexeme.css",
->                  rel "stylesheet",
->                  thetype "text/css"] << noHtml ] +++
->     body <<| (take n $ map displayLink links) +++ pagerControl
+>   output $ renderHtml $ page "Links" ["lexeme"]
+>     [ (take n $ map displayLink links) +++ pagerControl ]
 
 > getLinks :: IConnection conn => conn -> Maybe Integer -> Int -> Int -> IO [[SqlValue]]
 > getLinks c memberNo offset limit =

@@ -38,11 +38,6 @@ This is like quickQuery but in the DbM monad.
 
 Sometimes you just want to query a single value.
 
--- > query1 :: String -> [SqlValue] -> IO (Maybe SqlValue)
--- > query1 sql vs = do
--- >   conn <- db
--- >   query1c conn sql vs
-
 > query1 :: IConnection conn => conn -> String -> [SqlValue] -> IO (Maybe SqlValue)
 > query1 c sql vs = do
 >   query <- prepare c sql
@@ -52,9 +47,9 @@ Sometimes you just want to query a single value.
 >   case row of
 >     Nothing -> return Nothing
 >     Just r  -> case r of
->                []      -> return Nothing
+>                []      -> throwDyn $ SqlError {seState = "", seNativeError = 0,
+>                                                seErrorMsg = "Empty tuple."}
 >                (x:_)   -> return (Just x)
->   `catchSql` (\e -> logSqlError e >> error (show e))
 
 Sometimes we want to query a value without wanting to bother checking to see if
 we actually received a value. We'd rather just get an exception, since we don't
@@ -80,8 +75,8 @@ semantic problem than show users that Prelude.head failed.
 It's often tedious to work with transactions if you're just inserting 1 tuple.
 
 > quickInsert :: IConnection conn => conn -> String -> [SqlValue] -> IO ()
-> quickInsert c' sql vs = do
->   withTransaction c' $ \c -> run c sql vs >> return ()
+> quickInsert c sql vs = do
+>   withTransaction c $ \c' -> run c' sql vs >> return ()
 
 Run a quick insert and return the sequence number it created.
 

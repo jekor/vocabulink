@@ -7,10 +7,11 @@
 CREATE TABLE member (
        member_no SERIAL PRIMARY KEY,
        username CHARACTER VARYING(32) NOT NULL UNIQUE,
-       join_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       join_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        email TEXT,
        password_hash TEXT NOT NULL
 );
+COMMENT ON COLUMN member IS 'At some point in time we may want to store a member''s timezone and locale so that we can report dates and times accurately to them. For example, "Your next review is scheduled on November 3rd at 10:48." For now we just use relative times ("Your next review is scheduled for 18 hours from now.").';
 COMMENT ON COLUMN member.member_no IS 'I debated about using the username as a primary key. In the end, I decided against it. Performance and space concerns won me over. It''s also nice to have a numeric reference to a member in case we need to refer to a member in some context where Unicode characters aren''t valid.';
 COMMENT ON COLUMN member.username IS 'I want to allow usernames to include any URL-safe characters, including alphanumeric Unicode characters. The regexp for username is ^[\p{L}\p{Nd}$-_.+!*''(),]{3,}$. Because usernames will be used in URLs, and displayed in various places, I want to keep them to a reasonable size. This was also a motivation for making the difficult decision to disallow spaces.';
 COMMENT ON COLUMN member.email IS 'In order to allow any reasonable email address from members, the regexp for email addresses is ^[\p{L}\p{N}\p{P}\p{S}]+@[\p{L}\p{N}\p{P}\p{S}]+$. Again, this should accept Unicode characters';
@@ -28,15 +29,15 @@ CREATE TABLE lexeme (
        lemma TEXT NOT NULL
 );
 
-CREATE TABLE lingvo (
+CREATE TABLE language (
        abbr CHARACTER VARYING (2) PRIMARY KEY,
-       lingvo_name TEXT
+       name TEXT
 );
 COMMENT ON COLUMN lingvo.abbr IS 'For now we stick to a 2-letter language code (ISO 639-1). This doesn''t allow us to represent all possible languages like a 3-letter code (ISO 639-2) would. But it''s more familiar.';
 INSERT INTO lingvo (abbr, lingvo_name) VALUES ('en', 'English');
 
 CREATE TABLE link_type (
-       type_name TEXT PRIMARY KEY,
+       name TEXT PRIMARY KEY,
        description TEXT NOT NULL,
        color INTEGER NOT NULL
 );
@@ -50,13 +51,13 @@ CREATE TABLE link (
        origin TEXT NOT NULL,
        destination TEXT NOT NULL,
        -- type? story, picture, etc.
-       link_type TEXT REFERENCES link_type (type_name) ON UPDATE CASCADE,
-       lingvo CHARACTER VARYING (2) REFERENCES lingvo (abbr) ON UPDATE CASCADE,
+       link_type TEXT REFERENCES link_type (name) ON UPDATE CASCADE,
+       language CHARACTER VARYING (2) REFERENCES language (abbr) ON UPDATE CASCADE,
        representation TEXT,
        rating REAL,
        author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
-       created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-       updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+       created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp
 );
 COMMENT ON TABLE link IS 'A link is an association between 2 ideas in a single direction. (A reverse association would require another link.)';
 COMMENT ON COLUMN link.origin IS 'lexeme (lemma)';
@@ -73,3 +74,21 @@ CREATE TABLE link_set_member (
        link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE,
        PRIMARY KEY (set_no, link_no)
 );
+
+CREATE TABLE link_to_review (
+       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
+       link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE,
+       target_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       PRIMARY KEY (member_no, link_no)
+);
+COMMENT ON COLUMN link_to_review.target_time IS 'Target is the date and time at which this link should come up for review. The link will be reviewed sometime after that. All new links for review are currently scheduled for immediate review.';
+
+CREATE TABLE link_review (
+       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
+       link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE,
+       target_time TIMESTAMP WITH TIME ZONE NOT NULL,
+       actual_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       recall REAL NOT NULL,
+       PRIMARY KEY (member_no, link_no, actual_time)
+);
+COMMENT ON COLUMN link_review.recall IS 'Recall is a measure of how easy or complete the memory of a link was. 1.0 is perfect recall. 0.0 means "no clue".';
