@@ -227,7 +227,7 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 > loginPage :: CGI CGIResult
 > loginPage = do
 >   referer' <- referer
->   output $ renderHtml $ page "Log In" []
+>   outputHtml $ page "Log In" []
 >     [ h1 << "Log In",
 >       form ! [action "", method "post"] <<|
 >         [ input ! [name "referer", thetype "hidden", value referer'],

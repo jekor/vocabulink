@@ -3,9 +3,11 @@
 > import Vocabulink.CGI
 > import Vocabulink.DB
 > import Vocabulink.Html
+> import Vocabulink.Link
 > import Vocabulink.Member
 > import Vocabulink.Utils
 
+> import Codec.Binary.UTF8.String
 > import Database.HDBC
 > import Network.CGI
 > import Text.XHtml.Strict
@@ -43,7 +45,13 @@ Review the next link in the queue.
 >     Just n  -> reviewLinkPage $ fromSql n
 
 > reviewLinkPage :: Integer -> CGI CGIResult
-> reviewLinkPage _ = output $ "blah"
+> reviewLinkPage linkNo = do
+>   c <- liftIO db
+>   (origin,_) <- liftIO $ getLink c linkNo
+>   outputHtml $ page ("Review " ++ origin ++ " -> ?")
+>                     [CSS "lexeme", JS "review"]
+>     [ thediv ! [identifier "baseline", theclass "link"] <<
+>         linkHtml (encodeString origin) (anchor ! [identifier "show"] << "Show") ]
 
 > noLinksToReviewPage :: IConnection conn => conn -> Integer -> CGI CGIResult
 > noLinksToReviewPage c memberNo = do
@@ -53,7 +61,7 @@ Review the next link in the queue.
 >                Just diff -> paragraph <<
 >                               ("Your next link for review is in " ++
 >                                (timeDiffToString diff))
->   output $ renderHtml $ page t ["lexeme"]
+>   outputHtml $ page t [CSS "lexeme"]
 >     [ h1 << t,
 >       paragraph << "You don't have any links to review.",
 >       next ]
@@ -68,28 +76,3 @@ Review the next link in the queue.
 >   case next of
 >     Nothing -> return Nothing
 >     Just n  -> return $ Just (fromSql n)
-
-> reviewHtml :: IConnection conn => conn -> Integer -> Integer -> IO (Html)
-> reviewHtml c memberNo linkNo = do
->   if memberNo == 0
->     then return $ paragraph ! [theclass "review-box login"] <<
->                     anchor ! [href "/member/login"] << "Login to Review" 
->     else do
->       r <- reviewing c memberNo linkNo
->       return $ r ? paragraph ! [theclass "review-box reviewing"] << "Reviewing" $
->                    form ! [action ("/review/" ++ (show linkNo)),
->                            method "post", theclass "review-box review"] <<
->                      input ! [thetype "submit", name "review", value "Review"]
-
-Determine whether or not a member is already reviewing this link. This will be
-true only if the member is currently reviewing the link, not if they've
-reviewed it in the past but removed it from their review.
-
-> reviewing :: IConnection conn => conn -> Integer -> Integer -> IO (Bool)
-> reviewing c memberNo linkNo = do
->   r <- query1 c "SELECT link_no FROM link_to_review \
->                 \WHERE member_no = ? AND link_no = ? LIMIT 1"
->                 [toSql memberNo, toSql linkNo]
->   case r of
->     Nothing -> return False
->     Just _  -> return True

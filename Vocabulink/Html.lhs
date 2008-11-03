@@ -16,16 +16,27 @@ A common idiom is to use concatHtml for an element's contents.
 > (<<|) :: (Html -> Html) -> [Html] -> Html
 > h <<| l = h << concatHtml l
 
+This is another common pattern.
+
+> outputHtml :: Html -> CGI CGIResult
+> outputHtml = output . renderHtml
+
+> data Dependency = CSS String | JS String
+
 page expects title to already be UTF8 encoded if necessary.
 
-> page :: String -> [String] -> ([Html] -> Html)
-> page t ss = \b -> header <<
->   (thetitle << t +++ concatHtml (map styleLink ss)) +++
+> page :: String -> [Dependency] -> ([Html] -> Html)
+> page t ds = \b -> header <<
+>   (thetitle << t +++ concatHtml (map includeDep ds)) +++
 >   body <<| b
 
-> styleLink :: String -> Html
-> styleLink s = thelink ! [href ("http://s.vocabulink.com/" ++ s ++ ".css"),
->                          rel "stylesheet", thetype "text/css"] << noHtml
+> includeDep :: Dependency -> Html
+> includeDep (CSS css) =
+>   thelink ! [href ("http://s.vocabulink.com/" ++ css ++ ".css"),
+>              rel "stylesheet", thetype "text/css"] << noHtml
+> includeDep (JS js) =
+>   script ! [src ("http://s.vocabulink.com/" ++ js ++ ".js"),
+>             thetype "text/javascript"] << noHtml
 
 It's nice to abstract away creating an element to page the results of a
 multi-page query. This will preserve all of the query string in the links it

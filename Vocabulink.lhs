@@ -67,7 +67,7 @@ with 404).
 >   username <- loginName
 >   vars <- getVars
 >   inputs <- cgiGet cgiInputs
->   output $ renderHtml $ page "Test Page" []
+>   outputHtml $ page "Test Page" []
 >     [ h1 << ("Hello " ++ username),
 >       paragraph << (pre << map (\x -> show x ++ "\n") vars) +++
 >                  (pre << show inputs),

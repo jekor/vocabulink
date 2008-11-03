@@ -90,6 +90,8 @@ CREATE TABLE link_review (
        target_time TIMESTAMP WITH TIME ZONE NOT NULL,
        actual_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        recall REAL NOT NULL,
+       recall_time REAL NOT NULL,
        PRIMARY KEY (member_no, link_no, actual_time)
 );
 COMMENT ON COLUMN link_review.recall IS 'Recall is a measure of how easy or complete the memory of a link was. 1.0 is perfect recall. 0.0 means "no clue".';
+COMMENT ON COLUMN link_review.recall_time IS 'Recall time is the amount of time taken to recall (or not) the destination of a link. It could be measured as the time between when the page is displayed and when the destination lexeme is shown (using JavaScript).';
