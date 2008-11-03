@@ -1,17 +1,20 @@
 > module Main where
 
 > import Vocabulink.CGI
-> import Vocabulink.Pages
-> import Vocabulink.Member
+> import Vocabulink.Html
 > import Vocabulink.Lexeme
 > import Vocabulink.Link
+> import Vocabulink.Member
 > import Vocabulink.Review
 
 > import Codec.Binary.UTF8.String
 > import Control.Concurrent (forkIO)
+> import Network.CGI.Monad
+> import Network.CGI.Protocol
 > import Network.FastCGI
 > import Network.URI
 > import Text.ParserCombinators.Parsec hiding (getInput, try)
+> import Text.XHtml.Strict
 
 > main :: IO ()
 > main =  runFastCGIConcurrent' forkIO 10 (handleErrors' dispatch')
@@ -20,12 +23,12 @@ We handle all requests using a dispatcher.
 
 > dispatch' :: CGI CGIResult
 > dispatch' =  do uri <- requestURI
->                 method <- requestMethod
+>                 method' <- requestMethod
 >                 setHeader "Content-Type" "text/html; charset=utf-8"
 >                 case (pathPart uri) of
 >                   Left err    -> outputError 500 (show err) []
 >                   Right []    -> outputError 400 "Request not understood." []
->                   Right path' -> dispatch method path'
+>                   Right path' -> dispatch method' path'
 >     where pathPart = (parse pathComponents "") . decodeString . unEscapeString . uriPath
 
 > dispatch :: String -> [String] -> CGI CGIResult
@@ -39,7 +42,7 @@ We handle all requests using a dispatcher.
 >   linksPage (Just n)
 > dispatch "GET" ["review"] = reviewLink
 > dispatch "GET" ["member","join"] = output newMemberPage
-> dispatch "GET" ["member","login"] = output loginPage
+> dispatch "GET" ["member","login"] = loginPage
 > dispatch "GET" x = do
 >   logCGI $ "404: " ++ (show x)
 >   outputError 404 "" []
@@ -58,3 +61,14 @@ with 404).
 
 > pathComponents :: Parser [String]
 > pathComponents =  char '/' >> sepBy (many (noneOf "/")) (char '/')
+
+> testPage :: CGI CGIResult
+> testPage = do
+>   username <- loginName
+>   vars <- getVars
+>   inputs <- cgiGet cgiInputs
+>   output $ renderHtml $ page "Test Page" []
+>     [ h1 << ("Hello " ++ username),
+>       paragraph << (pre << map (\x -> show x ++ "\n") vars) +++
+>                  (pre << show inputs),
+>       paragraph << anchor ! [href "."] << "test" ]

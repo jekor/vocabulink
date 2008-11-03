@@ -76,15 +76,16 @@ CREATE TABLE link_set_member (
 );
 
 CREATE TABLE link_to_review (
-       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
+       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE CHECK (member_no <> 0),
        link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE,
        target_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        PRIMARY KEY (member_no, link_no)
 );
+COMMENT ON COLUMN link_to_review.member_no IS 'Anonymous members cannot schedule reviews. That would be chaos. It''s also confusing if you hadn''t realized that you weren''t logged in.';
 COMMENT ON COLUMN link_to_review.target_time IS 'Target is the date and time at which this link should come up for review. The link will be reviewed sometime after that. All new links for review are currently scheduled for immediate review.';
 
 CREATE TABLE link_review (
-       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
+       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE CHECK (member_no <> 0),
        link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE,
        target_time TIMESTAMP WITH TIME ZONE NOT NULL,
        actual_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,

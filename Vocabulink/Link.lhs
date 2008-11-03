@@ -4,6 +4,7 @@
 > import Vocabulink.DB
 > import Vocabulink.Html
 > import Vocabulink.Member
+> import Vocabulink.Review
 > import Vocabulink.Utils
 
 > import Codec.Binary.UTF8.String
@@ -60,15 +61,18 @@
 >     Left  _ -> outputError 400 "Links are identified by numbers only." []
 >     Right n -> do
 >       c <- liftIO db
+>       memberNo <- loginNumber
 >       ts <- liftIO $ quickQuery c "SELECT origin, destination, representation FROM link \
 >                                   \WHERE link_no = ?" [toSql n]
 >                        `catchSqlE` "Failed to retrieve link."
+>       review <- liftIO $ reviewHtml c memberNo n
 >       case ts of
 >         [x@[_,_,_]] -> do
 >             let [origin, destination, association] = map fromSql' x
 >                 t = origin ++ " -> " ++ destination
 >             output $ renderHtml $ page t ["lexeme"]
->               [ thediv ! [identifier "baseline", theclass "link"] <<
+>               [ review,
+>                 thediv ! [identifier "baseline", theclass "link"] <<
 >                   linkHtml origin destination,
 >                 paragraph ! [identifier "association"] << encodeString association ]
 >         _ -> error "Link does not exist or failed to retrieve."

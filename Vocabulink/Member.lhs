@@ -1,8 +1,9 @@
 > module Vocabulink.Member where
 
-> import Vocabulink.Utils
 > import Vocabulink.CGI
 > import Vocabulink.DB
+> import Vocabulink.Html
+> import Vocabulink.Utils
 
 > import Control.Monad
 > import Data.ByteString.Char8 (pack)
@@ -11,10 +12,10 @@
 > import Data.List
 > import Data.Time.Clock.POSIX
 > import Database.HDBC
-> import Network.FastCGI
+> import Network.CGI
 > import System.IO
-> import Text.ParserCombinators.Parsec
-> import Text.ParserCombinators.Parsec.Prim
+> import Text.ParserCombinators.Parsec hiding (label)
+> import Text.XHtml.Strict
 
 Add a member to the database. We're going to do validation of acceptable
 username characters at this level because PostgreSQL's CHECK constraint doesn't
@@ -24,24 +25,39 @@ A username should be allowed to have any alphanumeric characters (in any
 language) and URL-safe punctuation.
 
 > addMember :: IConnection conn => conn -> String -> String -> Maybe String -> IO ()
-> addMember c username password email =
+> addMember c username passwd email =
 >     (length username) < 3  ? error "Your username must have 3 characters or more."  $
 >     (length username) > 32 ? error "Your username must have 32 characters or less." $
->     (length password) > 72 ? error "Your password must have 72 characters or less." $
+>     (length passwd)   > 72 ? error "Your password must have 72 characters or less." $
 >     -- TODO: Add password constraints?
 >     quickInsert c "INSERT INTO member (username, email, password_hash) \
 >                   \VALUES (?, ?, crypt(?, gen_salt('bf')))"
->                   [toSql' username, toSql' email, toSql' password]
+>                   [toSql' username, toSql' email, toSql' passwd]
 >       `catchSqlE` "Failed to add member."
 
 > addMember' :: CGI CGIResult
 > addMember' = do
 >   c <- liftIO db
 >   username <- getInput' "username"
->   password <- getInput' "password"
+>   passwd   <- getInput' "password"
 >   email    <- getInput' "email"
->   liftIO $ addMember c username password email
+>   liftIO $ addMember c username passwd email
 >   output $ "Welcome!"
+
+> newMemberPage :: String
+> newMemberPage = renderHtml $ page "Join Vocabulink" []
+>   [ h1 << "Join Vocabulink",
+>     form ! [action "", method "post"] <<|
+>       [ label << "Username:",
+>         input ! [name "username", thetype "text"],
+>         br,
+>         label << "Password:",
+>         input ! [name "password", thetype "password"],
+>         br,
+>         label << "Email:",
+>         input ! [name "email", thetype "text"],
+>         br,
+>         input ! [thetype "submit", value "Join"]]]
 
 > memberNumber :: IConnection conn => conn -> String -> IO (Integer)
 > memberNumber c username =
@@ -59,10 +75,10 @@ Login attempts to match the username and password supplied against the
 information in the database.
 
 > validPassword :: IConnection conn => conn -> String -> String -> IO (Bool)
-> validPassword c username password =
+> validPassword c username passwd =
 >   fromSql `liftM` query1e c "SELECT password_hash = crypt(?, password_hash) \
 >                             \FROM member WHERE username = ?"
->                             [toSql' password, toSql' username]
+>                             [toSql' passwd, toSql' username]
 >     `catchSqlE` "Internal authentication failure (this is not your fault)."
 
 Each time a user logs in, we send an authentication cookie to their browser.
@@ -169,8 +185,7 @@ Returns the member number or Nothing if the cookie is invalid or expired.
 > loginName = do
 >   c <- liftIO db
 >   n <- loginNumber
->   name <- liftIO $ memberName c n
->   return name
+>   liftIO $ memberName c n >>= return
 
 > loggedIn :: CGI (Bool)
 > loggedIn = do
@@ -195,9 +210,10 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 >   c <- liftIO db
 >   username  <- getInput' "username"
 >   member_no <- liftIO $ memberNumber c username
->   password <- getInput' "password"
+>   passwd    <- getInput' "password"
+>   referer'  <- getInputDefault "referer" "/"
 >   ip <- remoteAddr
->   valid <- liftIO $ validPassword c username password
+>   valid <- liftIO $ validPassword c username passwd
 >   not valid ? error "Login failed." $ do
 >       authTok <- liftIO $ authToken member_no ip
 >       setCookie Cookie { cookieName    = "auth",
@@ -206,4 +222,20 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 >                          cookieDomain  = Just "vocabulink.com",
 >                          cookiePath    = Just "/",
 >                          cookieSecure  = False }
->       redirect "/"
+>       redirect referer'
+
+> loginPage :: CGI CGIResult
+> loginPage = do
+>   referer' <- referer
+>   output $ renderHtml $ page "Log In" []
+>     [ h1 << "Log In",
+>       form ! [action "", method "post"] <<|
+>         [ input ! [name "referer", thetype "hidden", value referer'],
+>           label << "Username:",
+>           input ! [name "username", thetype "text"],
+>           br,
+>           label << "Password:",
+>           input ! [name "password", thetype "password"],
+>           br,
+>           input ! [thetype "submit", value "Log In"]],
+>       paragraph << ("Not a member? " +++ anchor ! [href "/member/join"] << "Join!") ]
