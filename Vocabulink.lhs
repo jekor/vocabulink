@@ -40,7 +40,7 @@ We handle all requests using a dispatcher.
 > dispatch "GET" ["my","links"] = do
 >   n <- loginNumber
 >   linksPage (Just n)
-> dispatch "GET" ["review"] = reviewLink
+> dispatch "GET" ["review","next"] = reviewLink
 > dispatch "GET" ["member","join"] = output newMemberPage
 > dispatch "GET" ["member","login"] = loginPage
 > dispatch "GET" x = do
@@ -54,7 +54,13 @@ with 404).
 > dispatch "POST" ["member","join"] = addMember'
 > dispatch "POST" ["member","login"] = login'
 > dispatch "POST" ["link"] = linkLexemes'
-> dispatch "POST" ["review",x] = newReview x
+
+Each link for review can be added to a set. Most people will only use their
+default (unnamed) set.
+
+> dispatch "POST" ["review","set",x] = newReview x
+> dispatch "POST" ["review",x] = linkReviewed' x
+
 > dispatch "POST" _ = outputError 404 "Resource not found or POST not allowed on it." []
 
 > dispatch _ _ = outputMethodNotAllowed ["GET", "POST"]

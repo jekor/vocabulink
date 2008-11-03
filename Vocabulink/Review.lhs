@@ -13,22 +13,28 @@
 > import Text.XHtml.Strict
 > import System.Time
 
-> scheduleReview :: IConnection conn => conn -> Integer -> Integer -> IO ()
-> scheduleReview c memberNo linkNo = do
+We'll add the logic for review sets later.
+
+> scheduleReview :: IConnection conn => conn -> Integer -> Integer -> String -> IO ()
+> scheduleReview c memberNo linkNo _ = do
 >   quickInsert c "INSERT INTO link_to_review (member_no, link_no) \
 >                 \VALUES (?, ?)" [toSql memberNo, toSql linkNo]
 >     `catchSqlE` "You already have this link scheduled for review or there was an error."
 
 > newReview :: String -> CGI CGIResult
-> newReview link = do
+> newReview set = do
 >   c <- liftIO db
 >   memberNo <- loginNumber
->   no <- liftIO $ intFromString link
->   case no of
->     Left  _ -> outputError 400 "Links are identified by numbers only." []
->     Right n -> do
->       liftIO $ scheduleReview c memberNo n
->       referer >>= redirect
+>   if memberNo == 0
+>     then redirect "/member/login"
+>     else do
+>       link <- getInput' "link"
+>       no <- liftIO $ intFromString link
+>       case no of
+>         Left  _ -> outputError 400 "Links are identified by numbers only." []
+>         Right n -> do
+>           liftIO $ scheduleReview c memberNo n set
+>           referer >>= redirect
 
 Review the next link in the queue.
 
@@ -41,7 +47,7 @@ Review the next link in the queue.
 >                               \ORDER BY target_time ASC LIMIT 1" [toSql memberNo]
 >                        `catchSqlE` "Failed to retrieve next link for review."
 >   case linkNo of
->     Nothing -> noLinksToReviewPage c memberNo
+>     Nothing -> noLinksToReviewPage
 >     Just n  -> reviewLinkPage $ fromSql n
 
 > reviewLinkPage :: Integer -> CGI CGIResult
@@ -49,30 +55,62 @@ Review the next link in the queue.
 >   c <- liftIO db
 >   (origin,_) <- liftIO $ getLink c linkNo
 >   outputHtml $ page ("Review " ++ origin ++ " -> ?")
->                     [CSS "lexeme", JS "review"]
+>                     [CSS "lexeme", JS "MochiKit", JS "review"]
 >     [ thediv ! [identifier "baseline", theclass "link"] <<
->         linkHtml (encodeString origin) (anchor ! [identifier "show"] << "Show") ]
+>         linkHtml (encodeString origin) (anchor ! [identifier "hidden-lexeme",
+>                                                   href "#"] << "Show"),
+>       form ! [action ("/review/" ++ (show linkNo)), method "post"] <<|
+>         [ input ! [thetype "hidden", identifier "recall-time", name "recall-time"],
+>           input ! [thetype "submit", value "Next"] ] ]
 
-> noLinksToReviewPage :: IConnection conn => conn -> Integer -> CGI CGIResult
-> noLinksToReviewPage c memberNo = do
->   nextReview <- liftIO $ nextReviewTime c memberNo
->   let next = case nextReview of
->                Nothing   -> noHtml
->                Just diff -> paragraph <<
->                               ("Your next link for review is in " ++
->                                (timeDiffToString diff))
+> noLinksToReviewPage :: CGI CGIResult
+> noLinksToReviewPage = do
 >   outputHtml $ page t [CSS "lexeme"]
 >     [ h1 << t,
->       paragraph << "You don't have any links to review.",
->       next ]
->     where t = "No Links to Review"
+>       paragraph << "Take a break! You don't have any links to review right now." ]
+>         where t = "No Links to Review"
 
 > nextReviewTime :: IConnection conn => conn -> Integer -> IO (Maybe TimeDiff)
 > nextReviewTime c memberNo = do
->   next <- query1 c "SELECT target_time - current_timestamp FROM link_to_review \
+>   next <- query1 c "SELECT extract(epoch FROM (target_time - current_timestamp)) \
+>                    \FROM link_to_review \
 >                    \WHERE member_no = ? AND target_time > current_timestamp \
 >                    \ORDER BY target_time ASC LIMIT 1" [toSql memberNo]
 >             `catchSqlE` "Failed to determine next review time."
 >   case next of
 >     Nothing -> return Nothing
 >     Just n  -> return $ Just (fromSql n)
+
+> linkReviewed' :: String -> CGI CGIResult
+> linkReviewed' link = do
+>   memberNo <- loginNumber
+>   linkNo <- liftIO $ intFromString link
+>   if memberNo == 0
+>     then redirect "/member/login"
+>     else case linkNo of
+>            Left  _ -> outputError 400 "Links are identified by numbers only." []
+>            Right n -> do
+>              c <- liftIO db
+>              recallTime <- getInput' "recall-time"
+>              liftIO $ linkReviewed c memberNo n recallTime
+>              redirect "/review/next"
+
+Note that a link was reviewed and schedule the next review. For testing
+purposes, we schedule the review forward an hour.
+
+> linkReviewed :: IConnection conn => conn -> Integer -> Integer -> Int -> IO ()
+> linkReviewed c memberNo linkNo recallTime =
+>   withTransaction c $ \c' -> do
+>       run c' "INSERT INTO link_review (member_no, link_no, recall, \
+>                                       \recall_time, target_time) \
+>              \VALUES (?, ?, 1.0, ?, \
+>                      \(SELECT target_time FROM link_to_review \
+>              \WHERE member_no = ? AND link_no = ?))"
+>              [toSql memberNo, toSql linkNo, toSql recallTime,
+>               toSql memberNo, toSql linkNo]
+>       run c' "UPDATE link_to_review \
+>              \SET target_time = current_timestamp + interval '1 hour' \
+>              \WHERE member_no = ? AND link_no = ?"
+>              [toSql memberNo, toSql linkNo]
+>       return ()
+>     `catchSqlE` "Failed to record review of link."
