@@ -53,14 +53,16 @@ Review the next link in the queue.
 > reviewLinkPage :: Integer -> CGI CGIResult
 > reviewLinkPage linkNo = do
 >   c <- liftIO db
->   (origin,_) <- liftIO $ getLink c linkNo
+>   (o,d) <- liftIO $ getLink c linkNo
+>   let origin = encodeString o
+>       destination = encodeString d
 >   outputHtml $ page ("Review " ++ origin ++ " -> ?")
 >                     [CSS "lexeme", JS "MochiKit", JS "review"]
 >     [ thediv ! [identifier "baseline", theclass "link"] <<
->         linkHtml (encodeString origin) (anchor ! [identifier "hidden-lexeme",
->                                                   href "#"] << "Show"),
+>         linkHtml origin (anchor ! [identifier "lexeme-cover", href "#"] << "?"),
 >       form ! [action ("/review/" ++ (show linkNo)), method "post"] <<|
 >         [ input ! [thetype "hidden", identifier "recall-time", name "recall-time"],
+>           input ! [thetype "hidden", identifier "hidden-lexeme", value destination],
 >           input ! [thetype "submit", value "Next"] ] ]
 
 > noLinksToReviewPage :: CGI CGIResult
