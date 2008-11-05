@@ -1,22 +1,24 @@
 # Vocabulink CGI
 
-FCGI = vocabulink.fcgi
+fcgi := vocabulink.fcgi
 
-all : $(FCGI)
+lhss := $(shell find . -name "*.lhs" -print)
 
-vocabulink.fcgi : Vocabulink.lhs Vocabulink/*.lhs
-	ghc -Wall -fglasgow-exts -threaded -package fastcgi --make -o $(FCGI) $^
+all : $(fcgi)
+
+vocabulink.fcgi : $(lhss)
+	ghc -Wall -fglasgow-exts -threaded -package fastcgi --make -o $(fcgi) $^
 
 install :
-	install -o root -g root $(FCGI) /usr/local/bin
-	-killall $(FCGI)
-	spawn-fcgi -f "/usr/local/bin/$(FCGI) 2>> /tmp/vocabulink.error.log" -p 10033 -u lighttpd -g lighttpd
+	install -o root -g root $(fcgi) /usr/local/bin
+	-killall $(fcgi)
+	spawn-fcgi -f "/usr/local/bin/$(fcgi) 2>> /tmp/vocabulink.error.log" -p 10033 -u lighttpd -g lighttpd
 
 clean:
-	rm *.o *.hi Vocabulink/*.o Vocabulink/*.hi
+	find . -name "*.o" -o -name "*.hi" -print0 | xargs -0 rm
 
 test :
 	ghci -fglasgow-exts Vocabulink.lhs
 
-sloc : Vocabulink.lhs Vocabulink/*.lhs
+sloc : $(lhss)
 	echo $^ | xargs -n 1 lhs2TeX --code | wc --lines

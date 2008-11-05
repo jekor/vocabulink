@@ -107,3 +107,18 @@ purposes, we schedule the review forward an hour.
 >              [toSql memberNo, toSql linkNo]
 >       return ()
 >     `catchSqlE` "Failed to record review of link."
+
+Determine the previous interval in days.
+
+> previousInterval :: Integer -> Integer -> IO (Maybe TimeDiff)
+> previousInterval memberNo linkNo = do
+>   c <- liftIO db
+>   handleSql (\e -> logSqlError e >> return Nothing) $ do
+>     d <- query1 c "SELECT current_timestampblah - \
+>                          \(SELECT actual_time FROM link_review \
+>                           \WHERE member_no = ? AND link_no = ? \
+>                           \ORDER BY actual_time DESC LIMIT 1)"
+>                   [toSql memberNo, toSql linkNo]
+>     case d of
+>       Nothing -> return Nothing
+>       Just d' -> return $ Just (fromSql d')
