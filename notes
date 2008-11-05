@@ -27,5 +27,9 @@ AKA Why Should I Use Vocabulink?
 ** install pgcrypt (used for hashing passwords)
 *** \i /usr/share/postgresql-8.3/contrib/pgcrypto.sql
 ** \c vocabulink vocabulink
-* competition
+* Resources
 ** http://flashcarddb.com/
+** http://ichi2.net/anki/index.html
+** http://spicyelephant.com/
+** http://crammage.com/
+** http://people.pwf.cam.ac.uk/ssb22/gradint/

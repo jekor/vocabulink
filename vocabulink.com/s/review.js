@@ -10,7 +10,7 @@ function setupSignals () {
 function showLexeme (lexemeCover, hiddenLexeme, startTime) {
     var stopTime = new Date();
     var recallTime = stopTime.getTime() - startTime.getTime();
-    swapDOM(lexemeCover, SPAN({'class': 'lexeme'}, hiddenLexeme));
+    swapDOM(lexemeCover, document.createTextNode(hiddenLexeme));
     setNodeAttribute($('recall-time'), 'value', recallTime);
     stop();
 }

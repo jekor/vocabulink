@@ -13,6 +13,7 @@
 > import Data.Time.Clock.POSIX
 > import Database.HDBC
 > import Network.CGI
+> import Network.URI
 > import System.IO
 > import Text.ParserCombinators.Parsec hiding (label)
 > import Text.XHtml.Strict
@@ -24,15 +25,18 @@ handle Unicode regular expressions properly.
 A username should be allowed to have any alphanumeric characters (in any
 language) and URL-safe punctuation.
 
-> addMember :: IConnection conn => conn -> String -> String -> Maybe String -> IO ()
+This returns the new member number.
+
+> addMember :: IConnection conn => conn -> String -> String -> Maybe String -> IO (Maybe Integer)
 > addMember c username passwd email =
 >     (length username) < 3  ? error "Your username must have 3 characters or more."  $
 >     (length username) > 32 ? error "Your username must have 32 characters or less." $
 >     (length passwd)   > 72 ? error "Your password must have 72 characters or less." $
 >     -- TODO: Add password constraints?
->     quickInsert c "INSERT INTO member (username, email, password_hash) \
->                   \VALUES (?, ?, crypt(?, gen_salt('bf')))"
->                   [toSql' username, toSql' email, toSql' passwd]
+>     quickInsertNo c "INSERT INTO member (username, email, password_hash) \
+>                     \VALUES (?, ?, crypt(?, gen_salt('bf')))"
+>                     [toSql' username, toSql' email, toSql' passwd]
+>                     "member_member_no_seq"
 >       `catchSqlE` "Failed to add member."
 
 > addMember' :: CGI CGIResult
@@ -41,8 +45,13 @@ language) and URL-safe punctuation.
 >   username <- getInput' "username"
 >   passwd   <- getInput' "password"
 >   email    <- getInput' "email"
->   liftIO $ addMember c username passwd email
->   output $ "Welcome!"
+>   memberNo <- liftIO $ addMember c username passwd email
+>   case memberNo of
+>     Nothing -> error "Failed to add member."
+>     Just no -> do
+>       ip <- remoteAddr
+>       setAuthCookie no ip
+>       redirect "/"
 
 > newMemberPage :: String
 > newMemberPage = renderHtml $ page "Join Vocabulink" []
@@ -209,28 +218,49 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 > login' = do
 >   c <- liftIO db
 >   username  <- getInput' "username"
->   member_no <- liftIO $ memberNumber c username
+>   memberNo  <- liftIO $ memberNumber c username
 >   passwd    <- getInput' "password"
->   referer'  <- getInputDefault "referer" "/"
+>   redirect' <- getInputDefault "redirect" "/"
 >   ip <- remoteAddr
 >   valid <- liftIO $ validPassword c username passwd
 >   not valid ? error "Login failed." $ do
->       authTok <- liftIO $ authToken member_no ip
->       setCookie Cookie { cookieName    = "auth",
->                          cookieValue   = (show authTok),
->                          cookieExpires = Nothing,
->                          cookieDomain  = Just "vocabulink.com",
->                          cookiePath    = Just "/",
->                          cookieSecure  = False }
->       redirect referer'
+>     setAuthCookie memberNo ip
+>     redirect redirect'
+
+> setAuthCookie :: Integer -> String -> CGI ()
+> setAuthCookie memberNo ip = do
+>   authTok <- liftIO $ authToken memberNo ip
+>   setCookie Cookie { cookieName    = "auth",
+>                      cookieValue   = (show authTok),
+>                      cookieExpires = Nothing,
+>                      cookieDomain  = Just "vocabulink.com",
+>                      cookiePath    = Just "/",
+>                      cookieSecure  = False }
+
+> logout' :: CGI CGIResult
+> logout' = do
+>   redirect' <- getInputDefault "redirect" "/"
+>   deleteCookie Cookie { cookieName   = "auth",
+>                         cookieDomain = Just "vocabulink.com",
+>                         cookiePath   = Just "/",
+>                         -- The following are only here to get rid of GHC warnings.
+>                         cookieValue  = "",
+>                         cookieExpires = Nothing,
+>                         cookieSecure = False }
+>   redirect redirect'
+
+> logoutForm :: Html
+> logoutForm = form ! [action "/member/logout", method "post"] <<
+>                input ! [thetype "submit", value "Log Out"]
 
 > loginPage :: CGI CGIResult
 > loginPage = do
->   referer' <- referer
+>   referer'  <- referer
+>   redirect' <- getInputDefault "redirect" referer'
 >   outputHtml $ page "Log In" []
 >     [ h1 << "Log In",
 >       form ! [action "", method "post"] <<|
->         [ input ! [name "referer", thetype "hidden", value referer'],
+>         [ input ! [name "redirect", thetype "hidden", value redirect'],
 >           label << "Username:",
 >           input ! [name "username", thetype "text"],
 >           br,
@@ -239,3 +269,11 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 >           br,
 >           input ! [thetype "submit", value "Log In"]],
 >       paragraph << ("Not a member? " +++ anchor ! [href "/member/join"] << "Join!") ]
+
+> loginRedirectPage :: CGI String
+> loginRedirectPage = do
+>   request <- getVarE "REQUEST_URI"
+>   return $ "/member/login?redirect=" ++ escapeURIString isUnescapedInURI request
+
+> redirectToLoginPage :: CGI CGIResult
+> redirectToLoginPage = loginRedirectPage >>= redirect

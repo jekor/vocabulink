@@ -33,6 +33,8 @@ We handle all requests using a dispatcher.
 
 > dispatch :: String -> [String] -> CGI CGIResult
 > dispatch "GET" [""] = testPage
+> dispatch "GET" ["blah","di"] = testPage
+> dispatch "GET" ["lexeme",""] = outputError 404 "Lexeme is required." []
 > dispatch "GET" ["lexeme",x] = lexemePage x
 > dispatch "GET" ["link"] = newLinkPage
 > dispatch "GET" ["link",x] = linkPage x
@@ -40,26 +42,32 @@ We handle all requests using a dispatcher.
 > dispatch "GET" ["my","links"] = do
 >   n <- loginNumber
 >   linksPage (Just n)
-> dispatch "GET" ["review","next"] = reviewLink
-> dispatch "GET" ["member","join"] = output newMemberPage
-> dispatch "GET" ["member","login"] = loginPage
-> dispatch "GET" x = do
->   logCGI $ "404: " ++ (show x)
->   outputError 404 "" []
+
+Each link for review can be added to a set. Most people will only use their
+default (unnamed) set.
+
+> dispatch method' ("review":xs) = do
+>   memberNo <- loginNumber
+>   if memberNo == 0
+>      then redirectToLoginPage
+>      else case (method',xs) of
+>             ("GET",["next"])   -> reviewLink memberNo
+>             ("POST",["set",x]) -> newReview memberNo x
+>             ("POST",[x])       -> linkReviewed' memberNo x
+>             (m,x)              -> output404 (m:x)
+
+> dispatch "GET"  ["member","join"] = output newMemberPage
+> dispatch "POST" ["member","join"] = addMember'
+> dispatch "GET"  ["member","login"] = loginPage
+> dispatch "POST" ["member","login"] = login'
+> dispatch "POST" ["member","logout"] = logout'
+> dispatch "GET" x = output404 x
 
 It would be nice to automatically respond with "Method Not Allowed" on pages
 that exist but don't take the POST/whatever method (as opposed to responding
 with 404).
 
-> dispatch "POST" ["member","join"] = addMember'
-> dispatch "POST" ["member","login"] = login'
 > dispatch "POST" ["link"] = linkLexemes'
-
-Each link for review can be added to a set. Most people will only use their
-default (unnamed) set.
-
-> dispatch "POST" ["review","set",x] = newReview x
-> dispatch "POST" ["review",x] = linkReviewed' x
 
 > dispatch "POST" _ = outputError 404 "Resource not found or POST not allowed on it." []
 
@@ -68,6 +76,9 @@ default (unnamed) set.
 > pathComponents :: Parser [String]
 > pathComponents =  char '/' >> sepBy (many (noneOf "/")) (char '/')
 
+> output404 :: [String] -> CGI CGIResult
+> output404 = outputError 404 "Resource not found."
+
 > testPage :: CGI CGIResult
 > testPage = do
 >   username <- loginName
@@ -75,6 +86,7 @@ default (unnamed) set.
 >   inputs <- cgiGet cgiInputs
 >   outputHtml $ page "Test Page" []
 >     [ h1 << ("Hello " ++ username),
+>       logoutForm,
 >       paragraph << (pre << map (\x -> show x ++ "\n") vars) +++
 >                  (pre << show inputs),
 >       paragraph << anchor ! [href "."] << "test" ]

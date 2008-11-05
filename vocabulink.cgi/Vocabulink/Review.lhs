@@ -4,7 +4,6 @@
 > import Vocabulink.DB
 > import Vocabulink.Html
 > import Vocabulink.Link
-> import Vocabulink.Member
 > import Vocabulink.Utils
 
 > import Codec.Binary.UTF8.String
@@ -21,27 +20,22 @@ We'll add the logic for review sets later.
 >                 \VALUES (?, ?)" [toSql memberNo, toSql linkNo]
 >     `catchSqlE` "You already have this link scheduled for review or there was an error."
 
-> newReview :: String -> CGI CGIResult
-> newReview set = do
+> newReview :: Integer -> String -> CGI CGIResult
+> newReview memberNo set = do
 >   c <- liftIO db
->   memberNo <- loginNumber
->   if memberNo == 0
->     then redirect "/member/login"
->     else do
->       link <- getInput' "link"
->       no <- liftIO $ intFromString link
->       case no of
->         Left  _ -> outputError 400 "Links are identified by numbers only." []
->         Right n -> do
->           liftIO $ scheduleReview c memberNo n set
->           referer >>= redirect
+>   link <- getInput' "link"
+>   no <- liftIO $ intFromString link
+>   case no of
+>     Left  _ -> outputError 400 "Links are identified by numbers only." []
+>     Right n -> do
+>       liftIO $ scheduleReview c memberNo n set
+>       referer >>= redirect
 
 Review the next link in the queue.
 
-> reviewLink :: CGI CGIResult
-> reviewLink = do
+> reviewLink :: Integer -> CGI CGIResult
+> reviewLink memberNo = do
 >   c <- liftIO db
->   memberNo <- loginNumber
 >   linkNo <- liftIO $ query1 c "SELECT link_no FROM link_to_review \
 >                               \WHERE member_no = ? AND current_timestamp >= target_time \
 >                               \ORDER BY target_time ASC LIMIT 1" [toSql memberNo]
@@ -83,19 +77,16 @@ Review the next link in the queue.
 >     Nothing -> return Nothing
 >     Just n  -> return $ Just (fromSql n)
 
-> linkReviewed' :: String -> CGI CGIResult
-> linkReviewed' link = do
->   memberNo <- loginNumber
+> linkReviewed' :: Integer -> String -> CGI CGIResult
+> linkReviewed' memberNo link = do
 >   linkNo <- liftIO $ intFromString link
->   if memberNo == 0
->     then redirect "/member/login"
->     else case linkNo of
->            Left  _ -> outputError 400 "Links are identified by numbers only." []
->            Right n -> do
->              c <- liftIO db
->              recallTime <- getInput' "recall-time"
->              liftIO $ linkReviewed c memberNo n recallTime
->              redirect "/review/next"
+>   case linkNo of
+>     Left  _ -> outputError 400 "Links are identified by numbers only." []
+>     Right n -> do
+>       c <- liftIO db
+>       recallTime <- getInput' "recall-time"
+>       liftIO $ linkReviewed c memberNo n recallTime
+>       redirect "/review/next"
 
 Note that a link was reviewed and schedule the next review. For testing
 purposes, we schedule the review forward an hour.
