@@ -27,9 +27,23 @@ AKA Why Should I Use Vocabulink?
 ** install pgcrypt (used for hashing passwords)
 *** \i /usr/share/postgresql-8.3/contrib/pgcrypto.sql
 ** \c vocabulink vocabulink
+* Reviews
+** via email or SMS at the exact time necessary for review (with excludable ranges)
+* Link Sets
+** 100 most common words
 * Resources
 ** http://flashcarddb.com/
 ** http://ichi2.net/anki/index.html
 ** http://spicyelephant.com/
 ** http://crammage.com/
 ** http://people.pwf.cam.ac.uk/ssb22/gradint/
+** http://www.wordbuddy.com/
+** http://www.studystack.com/
+** http://www.flashcardexchange.com/
+** http://www.studycell.com/
+** http://www.foreignlanguagehome.com/topics/learning/
+** http://www.amazon.com/Italian-Association-Michael-Gruneberg/dp/0844294489/ref=sr_1_1?ie=UTF8&s=books&qid=1225906864&sr=1-1
+** http://en.wikipedia.org/wiki/Mnemonic_goroawase_system
+** http://en.wikipedia.org/wiki/Giordano_Memorization_System_-_GMS
+** http://mp3languagelearning.com/
+*** Interesting premise that verbs are the most important and should be learned first because a language is abstract.

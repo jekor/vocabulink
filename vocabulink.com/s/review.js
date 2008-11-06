@@ -12,5 +12,6 @@ function showLexeme (lexemeCover, hiddenLexeme, startTime) {
     var recallTime = stopTime.getTime() - startTime.getTime();
     swapDOM(lexemeCover, document.createTextNode(hiddenLexeme));
     setNodeAttribute($('recall-time'), 'value', recallTime);
+    showElement($('recall-buttons'));
     stop();
 }

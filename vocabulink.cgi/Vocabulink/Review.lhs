@@ -6,13 +6,13 @@
 > import Vocabulink.Link
 > import Vocabulink.Utils
 
+> import Vocabulink.Review.SM2
+
 > import Codec.Binary.UTF8.String
 > import Database.HDBC
 > import Network.CGI
 > import Text.XHtml.Strict
 > import System.Time
-
-We'll add the logic for review sets later.
 
 > scheduleReview :: IConnection conn => conn -> Integer -> Integer -> String -> IO ()
 > scheduleReview c memberNo linkNo _ = do
@@ -57,7 +57,12 @@ Review the next link in the queue.
 >       form ! [action ("/review/" ++ (show linkNo)), method "post"] <<|
 >         [ input ! [thetype "hidden", identifier "recall-time", name "recall-time"],
 >           input ! [thetype "hidden", identifier "hidden-lexeme", value destination],
->           input ! [thetype "submit", value "Next"] ] ]
+>           fieldset ! [identifier "recall-buttons", thestyle "display: none"] <<|
+>             map recallButton [0..5] ] ]
+
+> recallButton :: Integer -> Html
+> recallButton i = let q :: Double = (fromIntegral i) / 5 in
+>                  button ! [name "recall", value (show q)] << show i
 
 > noLinksToReviewPage :: CGI CGIResult
 > noLinksToReviewPage = do
@@ -84,41 +89,47 @@ Review the next link in the queue.
 >     Left  _ -> outputError 400 "Links are identified by numbers only." []
 >     Right n -> do
 >       c <- liftIO db
+>       recall <- getInput' "recall"
 >       recallTime <- getInput' "recall-time"
->       liftIO $ linkReviewed c memberNo n recallTime
+>       liftIO $ linkReviewed c memberNo n recall recallTime
 >       redirect "/review/next"
 
 Note that a link was reviewed and schedule the next review. For testing
 purposes, we schedule the review forward an hour.
 
-> linkReviewed :: IConnection conn => conn -> Integer -> Integer -> Int -> IO ()
-> linkReviewed c memberNo linkNo recallTime =
+> linkReviewed :: IConnection conn => conn -> Integer -> Integer -> Double -> Integer -> IO ()
+> linkReviewed c memberNo linkNo recall recallTime = do
+>   previous <- previousInterval c memberNo linkNo
+>   seconds <- reviewInterval c memberNo linkNo previous recall
 >   withTransaction c $ \c' -> do
 >       run c' "INSERT INTO link_review (member_no, link_no, recall, \
 >                                       \recall_time, target_time) \
->              \VALUES (?, ?, 1.0, ?, \
+>              \VALUES (?, ?, ?, ?, \
 >                      \(SELECT target_time FROM link_to_review \
 >              \WHERE member_no = ? AND link_no = ?))"
->              [toSql memberNo, toSql linkNo, toSql recallTime,
->               toSql memberNo, toSql linkNo]
->       run c' "UPDATE link_to_review \
->              \SET target_time = current_timestamp + interval '1 hour' \
->              \WHERE member_no = ? AND link_no = ?"
+>              [toSql memberNo, toSql linkNo, toSql recall,
+>               toSql recallTime, toSql memberNo, toSql linkNo]
+>       let s = case seconds of
+>                 Nothing -> 0 -- Review ASAP
+>                 Just s' -> s'
+>       run c' ("UPDATE link_to_review \
+>               \SET target_time = current_timestamp + interval \
+>               \'" ++ (show s) ++ " seconds" ++ "' \
+>               \WHERE member_no = ? AND link_no = ?")
 >              [toSql memberNo, toSql linkNo]
 >       return ()
 >     `catchSqlE` "Failed to record review of link."
 
-Determine the previous interval in days.
+Determine the previous interval in seconds.
 
-> previousInterval :: Integer -> Integer -> IO (Maybe TimeDiff)
-> previousInterval memberNo linkNo = do
->   c <- liftIO db
->   handleSql (\e -> logSqlError e >> return Nothing) $ do
->     d <- query1 c "SELECT current_timestampblah - \
->                          \(SELECT actual_time FROM link_review \
->                           \WHERE member_no = ? AND link_no = ? \
->                           \ORDER BY actual_time DESC LIMIT 1)"
+> previousInterval :: IConnection conn => conn -> Integer -> Integer -> IO (Integer)
+> previousInterval c memberNo linkNo = do
+>   handleSql (\e -> logSqlError e >> error "Failed to determine previous review interval.") $ do
+>     d <- query1 c "SELECT extract(epoch from current_timestamp - \
+>                        \(SELECT actual_time FROM link_review \
+>                         \WHERE member_no = ? AND link_no = ? \
+>                         \ORDER BY actual_time DESC LIMIT 1))"
 >                   [toSql memberNo, toSql linkNo]
 >     case d of
->       Nothing -> return Nothing
->       Just d' -> return $ Just (fromSql d')
+>       Nothing -> return 0
+>       Just d' -> return $ fromSql d'

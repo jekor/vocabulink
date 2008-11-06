@@ -57,6 +57,19 @@ There should be some way to combine this and the above declaration.
 >   getInput' r = getInputDefault r $ error $
 >                   r ++ " parameter is required and must be an integer."
 
+> instance CGIInputContext Double where
+>   getInputDefault r d = do
+>     s <- getInput r
+>     case s of
+>       Nothing -> return d
+>       Just s' -> do
+>         i <- liftIO $ try $ readIO s'
+>         case i of
+>           Left _   -> return d
+>           Right i' -> return i'
+>   getInput' r = getInputDefault r $ error $
+>                   r ++ " parameter is required and must be a number."
+
 It would be nice to have a way to hijack outputError in order to change the
 encoding, but I don't know of a way to short of modifying the source of
 Network.CGI. I'm going to leave it be for now as I'll probably end up with my
