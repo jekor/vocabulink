@@ -8,6 +8,8 @@
 > import Network.CGI
 > import System.IO
 
+> import Vocabulink.CGI
+
 > db :: IO Connection
 > db =  connectPostgreSQL "host=localhost dbname=vocabulink user=vocabulink password=phae9Xom"
 
@@ -89,13 +91,6 @@ Run a quick insert and return the sequence number it created.
 >                           case seqNo of
 >                             Just n -> return $ fromSql n
 >                             Nothing -> return Nothing
-
-logSqlError will write the error to stderr where it should be picked up and added
-to an appropriate logfile.
-
-> logSqlError :: SqlError -> IO ()
-> logSqlError e = do logCGI $ "SQL Error: " ++ (init (seErrorMsg e))
->                    return ()
 
 Let's define some helpers to keep from forgetting to decode/encode UTF8
 strings. Ultimately, I'd like to have a UTF8String type that could use the type
