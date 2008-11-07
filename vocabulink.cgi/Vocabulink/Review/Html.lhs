@@ -1,7 +1,6 @@
 > module Vocabulink.Review.Html where
 
 > import Vocabulink.DB
-> import Vocabulink.Html
 > import Vocabulink.Utils
 
 > import Database.HDBC
@@ -18,9 +17,9 @@ For now, all links are added to the default review set.
 >       r <- reviewing c memberNo linkNo
 >       return $ r ? paragraph ! [theclass "review-box reviewing"] << "Reviewing" $
 >                    form ! [action ("/review/set" ++ "/"),
->                            method "post", theclass "review-box review"] <<|
->                      [ input ! [thetype "hidden", name "link", value (show linkNo)],
->                        input ! [thetype "submit", name "review", value "Review"] ]
+>                            method "post", theclass "review-box review"] <<
+>                      [ hidden "link" (show linkNo),
+>                        submit "review" "Review" ]
 
 Determine whether or not a member is already reviewing this link. This will be
 true only if the member is currently reviewing the link, not if they've

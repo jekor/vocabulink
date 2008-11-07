@@ -2,6 +2,7 @@
 
 > import Codec.Binary.UTF8.String
 > import Control.Exception
+> import Data.Maybe (fromMaybe)
 > import Database.HDBC
 > import Network.FastCGI
 > import System.IO.Error (isUserError, ioeGetErrorString)
@@ -118,23 +119,6 @@ outputError c m es =
          page <- errorPage c m es 
          output $ renderHtml page
 
-With getting variables, if it fails, it should just error out.
-
-> getVarE :: String -> CGI String
-> getVarE s = do
->   var <- getVar s
->   case var of
->     Nothing -> error "Failed to retrieve environment variable."
->     Just v  -> return v
-
-...or we could provide a default value.
-
-> getVarDefault :: String -> String -> CGI String
-> getVarDefault s d = do
->   var <- getVar s
->   case var of
->     Nothing -> return d
->     Just v  -> return v
-
 > referer :: CGI String
-> referer = getVarDefault "HTTP_REFERER" "http://www.vocabulink.com/"
+> referer = do ref <- getVar "HTTP_REFERER"
+>              return $ fromMaybe "http://www.vocabulink.com/" ref

@@ -15,7 +15,7 @@
 
 origin should already be UTF8 encoded.
 
-> linkHtml :: String -> Html -> Html
+> linkHtml :: Html -> Html -> Html
 > linkHtml origin destination = concatHtml
 >   [ thespan ! [theclass "lexeme"] << origin,
 >     image ! [src "http://s.vocabulink.com/black.png", width "20%", height "1"],
@@ -36,14 +36,14 @@ origin should already be UTF8 encoded.
 >   destination <- encodeString `liftM` getInput' "destination"
 >   let t = origin ++ " -> " ++ destination
 >   outputHtml $ page t [CSS "lexeme"]
->     [ form ! [action "", method "post"] <<|
+>     [ form ! [action "", method "post"] <<
 >        [ thediv ! [identifier "baseline", theclass "link"] <<
->            (linkHtml origin $ stringToHtml destination),
->          paragraph ! [identifier "association"] <<|
+>            linkHtml (stringToHtml origin) (stringToHtml destination),
+>          paragraph ! [identifier "association"] <<
 >            [ textarea ! [name "association", cols "80", rows "20"] <<
 >                "Describe the association here.",
 >              br,
->              input ! [thetype "submit", value "Associate"] ] ] ]
+>              submit "" "Associate" ] ] ]
 
 > linkLexemes :: IConnection conn => conn -> String -> String -> String -> Integer -> IO (Maybe Integer)
 > linkLexemes c origin destination association n = do
@@ -85,7 +85,7 @@ origin should already be UTF8 encoded.
 >             outputHtml $ page t [CSS "lexeme"]
 >               [ review,
 >                 thediv ! [identifier "baseline", theclass "link"] <<
->                   linkHtml origin (stringToHtml destination),
+>                   linkHtml (stringToHtml origin) (stringToHtml destination),
 >                 paragraph ! [identifier "association"] << association ]
 >         _ -> error "Link does not exist or failed to retrieve."
 
@@ -119,5 +119,5 @@ Generate a page of links for the specified member or all members (for Nothing).
 >       origin' = fromSql' origin :: String
 >       destination' = fromSql' destination :: String in
 >   thediv ! [theclass "link"] << anchor ! [href $ "/link/" ++ (show no')] <<
->     linkHtml (encodeString origin') (stringToHtml (encodeString destination'))
+>     linkHtml (stringToHtml (encodeString origin')) (stringToHtml (encodeString destination'))
 > displayLink _ = thediv ! [theclass "link"] << "Link is malformed."

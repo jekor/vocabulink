@@ -1,6 +1,5 @@
 > module Vocabulink.Html where
 
-> import Vocabulink.CGI
 > import Vocabulink.Utils
 
 > import Codec.Binary.UTF8.String
@@ -10,13 +9,7 @@
 > import Text.Regex.Posix
 > import Text.XHtml.Strict
 
-A common idiom is to use concatHtml for an element's contents.
-
-> infixr 7 <<|
-> (<<|) :: (Html -> Html) -> [Html] -> Html
-> h <<| l = h << concatHtml l
-
-This is another common pattern.
+This is a common pattern.
 
 > outputHtml :: Html -> CGI CGIResult
 > outputHtml = output . renderHtml
@@ -28,7 +21,12 @@ page expects title to already be UTF8 encoded if necessary.
 > page :: String -> [Dependency] -> ([Html] -> Html)
 > page t ds = \b -> header <<
 >   (thetitle << t +++ concatHtml (map includeDep ds)) +++
->   body <<| b
+>   body << b
+
+> stdPage :: String -> Maybe String -> [Dependency] -> ([Html] -> Html)
+> stdPage t username deps = \b -> header <<
+>   (thetitle << t +++ concatHtml (map includeDep deps)) +++
+>   body << headerBar username +++ concatHtml b
 
 > includeDep :: Dependency -> Html
 > includeDep (CSS css) =
@@ -37,6 +35,26 @@ page expects title to already be UTF8 encoded if necessary.
 > includeDep (JS js) =
 >   script ! [src ("http://s.vocabulink.com/" ++ js ++ ".js"),
 >             thetype "text/javascript"] << noHtml
+
+> headerBar :: Maybe String -> Html
+> headerBar username =
+>   thediv ! [identifier "header-bar"] <<
+>     [ loginBox username ]
+
+Create a login or logout form based on whether or not the user's logged in.
+
+> loginBox :: Maybe String -> Html
+> loginBox username =
+>   case username of
+>     Nothing -> form ! [theclass "loginout login", action "/member/login", method "post"] <<
+>                  [ label << "Username:",
+>                    textfield "username",
+>                    label << "Password:",
+>                    password "password",
+>                    submit "" "Log In" ]
+>     Just n  -> form ! [theclass "loginout logout", action "/member/logout", method "post"] <<
+>                  [ stringToHtml n,
+>                    submit "" "Log Out" ]
 
 It's nice to abstract away creating an element to page the results of a
 multi-page query. This will preserve all of the query string in the links it
@@ -59,12 +77,12 @@ And now for the HTML.
 
 > pager :: Int -> Int -> Int -> CGI Html
 > pager n pg total = do
->   q <- getVarE "QUERY_STRING"
+>   q <- getVar "QUERY_STRING"
 >   uri <- requestURI
 >   let pth  = uriPath uri
->       q'   = decodeString q
+>       q'   = maybe "" decodeString q
 >       prev = pageQueryString n (pg - 1) q'
 >       next = pageQueryString n (pg + 1) q'
->   return $ paragraph ! [theclass "pager"] << thespan ! [theclass "controls"] <<|
+>   return $ paragraph ! [theclass "pager"] << thespan ! [theclass "controls"] <<
 >     [ (pg > 1 ? anchor ! [href (pth ++ prev), theclass "prev"] $ thespan ! [theclass "prev"]) << "Previous",
 >       ((pg * n < total) ? anchor ! [href (pth ++ next), theclass "next"] $ thespan ! [theclass "next"]) << "Next" ]

@@ -8,7 +8,7 @@
 > import Control.Monad
 > import Data.ByteString.Char8 (pack)
 > import Data.Digest.OpenSSL.HMAC
-> import Data.Maybe
+> import Data.Maybe (fromMaybe)
 > import Data.List
 > import Data.Time.Clock.POSIX
 > import Database.HDBC
@@ -56,39 +56,49 @@ This returns the new member number.
 > newMemberPage :: String
 > newMemberPage = renderHtml $ page "Join Vocabulink" []
 >   [ h1 << "Join Vocabulink",
->     form ! [action "", method "post"] <<|
+>     form ! [action "", method "post"] <<
 >       [ label << "Username:",
->         input ! [name "username", thetype "text"],
+>         textfield "username",
 >         br,
 >         label << "Password:",
->         input ! [name "password", thetype "password"],
+>         password "password",
 >         br,
 >         label << "Email:",
->         input ! [name "email", thetype "text"],
+>         textfield "email",
 >         br,
->         input ! [thetype "submit", value "Join"]]]
+>         submit "" "Join" ] ]
 
 > memberNumber :: IConnection conn => conn -> String -> IO (Integer)
-> memberNumber c username =
->   fromSql `liftM` query1e c "SELECT member_no FROM member \
->                             \WHERE username = ?" [toSql' username]
->     `catchSqlE` "Failed to retrieve member number from username."
+> memberNumber c username = do
+>   n <- query1 c "SELECT member_no FROM member \
+>                 \WHERE username = ?" [toSql' username]
+>          `catchSqlE` "Failed to retrieve member number from username."
+>   return $ maybe (error "fail") fromSql' n
 
 > memberName :: IConnection conn => conn -> Integer -> IO (String)
-> memberName c memberNo =
->   fromSql' `liftM` query1e c "SELECT username FROM member \
+> memberName c memberNo = do
+>   n <- query1 c "SELECT username FROM member \
 >                              \WHERE member_no = ?" [toSql memberNo]
->     `catchSqlE` "Failed to retrieve username from member number."
+>          `catchSqlE` "Failed to retrieve username from member number."
+>   return $ maybe (error "fail") fromSql' n
+
+Sometimes we don't care about anonymous.
+
+> memberName' :: IConnection conn => conn -> Integer -> IO (Maybe String)
+> memberName' c memberNo = case memberNo of
+>                            0 -> return Nothing
+>                            _ -> memberName c memberNo >>= \n -> return $ Just n
 
 Login attempts to match the username and password supplied against the
 information in the database.
 
 > validPassword :: IConnection conn => conn -> String -> String -> IO (Bool)
-> validPassword c username passwd =
->   fromSql `liftM` query1e c "SELECT password_hash = crypt(?, password_hash) \
+> validPassword c username passwd = do
+>   n <- query1 c "SELECT password_hash = crypt(?, password_hash) \
 >                             \FROM member WHERE username = ?"
 >                             [toSql' passwd, toSql' username]
->     `catchSqlE` "Internal authentication failure (this is not your fault)."
+>          `catchSqlE` "Internal authentication failure (this is not your fault)."
+>   return $ maybe (error "fail") fromSql n
 
 Each time a user logs in, we send an authentication cookie to their browser.
 The cookie is an digest of some state information we store in our database
@@ -172,7 +182,7 @@ Returns the member number or Nothing if the cookie is invalid or expired.
 >       utc <- getPOSIXTime
 >       valid <- verifyTokenDigest a
 >       if valid && ip == (ipAddress a) && (not $ expired utc (expiry a))
->          then return (Just (member a))
+>          then return $ Just (member a)
 >          else return Nothing
 
 > expired :: POSIXTime -> POSIXTime -> Bool
@@ -186,15 +196,18 @@ Returns the member number or Nothing if the cookie is invalid or expired.
 >     Just c  -> do
 >       ip <- remoteAddr
 >       memberNo <- liftIO $ verifyMember c ip
->       case memberNo of
->         Nothing -> return 0 -- anonymous
->         Just n  -> return n
+>       return $ fromMaybe 0 memberNo -- 0 == anonymous
 
 > loginName :: CGI (String)
 > loginName = do
 >   c <- liftIO db
 >   n <- loginNumber
->   liftIO $ memberName c n >>= return
+>   liftIO $ memberName c n
+
+> loginName' :: IConnection conn => conn -> CGI (Maybe String)
+> loginName' c = do
+>   n <- loginNumber
+>   liftIO $ memberName' c n
 
 > loggedIn :: CGI (Bool)
 > loggedIn = do
@@ -220,7 +233,8 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 >   username  <- getInput' "username"
 >   memberNo  <- liftIO $ memberNumber c username
 >   passwd    <- getInput' "password"
->   redirect' <- getInputDefault "redirect" "/"
+>   ref       <- referer
+>   redirect' <- getInputDefault "redirect" ref
 >   ip <- remoteAddr
 >   valid <- liftIO $ validPassword c username passwd
 >   not valid ? error "Login failed." $ do
@@ -251,7 +265,7 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 
 > logoutForm :: Html
 > logoutForm = form ! [action "/member/logout", method "post"] <<
->                input ! [thetype "submit", value "Log Out"]
+>                submit "" "Log Out"
 
 > loginPage :: CGI CGIResult
 > loginPage = do
@@ -259,21 +273,22 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 >   redirect' <- getInputDefault "redirect" referer'
 >   outputHtml $ page "Log In" []
 >     [ h1 << "Log In",
->       form ! [action "", method "post"] <<|
->         [ input ! [name "redirect", thetype "hidden", value redirect'],
+>       form ! [action "", method "post"] <<
+>         [ hidden "redirect" redirect',
 >           label << "Username:",
->           input ! [name "username", thetype "text"],
+>           textfield "username",
 >           br,
 >           label << "Password:",
->           input ! [name "password", thetype "password"],
+>           password "password",
 >           br,
->           input ! [thetype "submit", value "Log In"]],
+>           submit "" "Log In" ],
 >       paragraph << ("Not a member? " +++ anchor ! [href "/member/join"] << "Join!") ]
 
 > loginRedirectPage :: CGI String
 > loginRedirectPage = do
->   request <- getVarE "REQUEST_URI"
->   return $ "/member/login?redirect=" ++ escapeURIString isUnescapedInURI request
+>   request <- getVar "REQUEST_URI"
+>   let request' = fromMaybe "/" request
+>   return $ "/member/login?redirect=" ++ escapeURIString isUnescapedInURI request'
 
 > redirectToLoginPage :: CGI CGIResult
 > redirectToLoginPage = loginRedirectPage >>= redirect

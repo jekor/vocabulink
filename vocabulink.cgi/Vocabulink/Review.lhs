@@ -9,7 +9,9 @@
 > import Vocabulink.Review.SM2
 
 > import Codec.Binary.UTF8.String
+> import Control.Monad (liftM)
 > import Database.HDBC
+> import Data.Maybe (fromMaybe)
 > import Network.CGI
 > import Text.XHtml.Strict
 > import System.Time
@@ -40,9 +42,7 @@ Review the next link in the queue.
 >                               \WHERE member_no = ? AND current_timestamp >= target_time \
 >                               \ORDER BY target_time ASC LIMIT 1" [toSql memberNo]
 >                        `catchSqlE` "Failed to retrieve next link for review."
->   case linkNo of
->     Nothing -> noLinksToReviewPage
->     Just n  -> reviewLinkPage $ fromSql n
+>   maybe noLinksToReviewPage reviewLinkPage (fromSql `liftM` linkNo)
 
 > reviewLinkPage :: Integer -> CGI CGIResult
 > reviewLinkPage linkNo = do
@@ -53,11 +53,11 @@ Review the next link in the queue.
 >   outputHtml $ page ("Review " ++ origin ++ " -> ?")
 >                     [CSS "lexeme", JS "MochiKit", JS "review"]
 >     [ thediv ! [identifier "baseline", theclass "link"] <<
->         linkHtml origin (anchor ! [identifier "lexeme-cover", href "#"] << "?"),
->       form ! [action ("/review/" ++ (show linkNo)), method "post"] <<|
->         [ input ! [thetype "hidden", identifier "recall-time", name "recall-time"],
->           input ! [thetype "hidden", identifier "hidden-lexeme", value destination],
->           fieldset ! [identifier "recall-buttons", thestyle "display: none"] <<|
+>         linkHtml (stringToHtml origin) (anchor ! [identifier "lexeme-cover", href "#"] << "?"),
+>       form ! [action ("/review/" ++ (show linkNo)), method "post"] <<
+>         [ hidden "recall-time" "",
+>           hidden "hidden-lexeme" destination,
+>           fieldset ! [identifier "recall-buttons", thestyle "display: none"] <<
 >             map recallButton [0..5] ] ]
 
 > recallButton :: Integer -> Html
@@ -78,9 +78,7 @@ Review the next link in the queue.
 >                    \WHERE member_no = ? AND target_time > current_timestamp \
 >                    \ORDER BY target_time ASC LIMIT 1" [toSql memberNo]
 >             `catchSqlE` "Failed to determine next review time."
->   case next of
->     Nothing -> return Nothing
->     Just n  -> return $ Just (fromSql n)
+>   return $ fromSql `liftM` next
 
 > linkReviewed' :: Integer -> String -> CGI CGIResult
 > linkReviewed' memberNo link = do
@@ -109,9 +107,7 @@ purposes, we schedule the review forward an hour.
 >              \WHERE member_no = ? AND link_no = ?))"
 >              [toSql memberNo, toSql linkNo, toSql recall,
 >               toSql recallTime, toSql memberNo, toSql linkNo]
->       let s = case seconds of
->                 Nothing -> 0 -- Review ASAP
->                 Just s' -> s'
+>       let s = fromMaybe 0 seconds
 >       run c' ("UPDATE link_to_review \
 >               \SET target_time = current_timestamp + interval \
 >               \'" ++ (show s) ++ " seconds" ++ "' \
@@ -124,12 +120,10 @@ Determine the previous interval in seconds.
 
 > previousInterval :: IConnection conn => conn -> Integer -> Integer -> IO (Integer)
 > previousInterval c memberNo linkNo = do
->   handleSql (\e -> logSqlError e >> error "Failed to determine previous review interval.") $ do
->     d <- query1 c "SELECT extract(epoch from current_timestamp - \
+>   d <- query1 c "SELECT extract(epoch from current_timestamp - \
 >                        \(SELECT actual_time FROM link_review \
 >                         \WHERE member_no = ? AND link_no = ? \
 >                         \ORDER BY actual_time DESC LIMIT 1))"
 >                   [toSql memberNo, toSql linkNo]
->     case d of
->       Nothing -> return 0
->       Just d' -> return $ fromSql d'
+>     `catchSqlE` "Failed to determine previous review interval."
+>   return $ maybe 0 fromSql d

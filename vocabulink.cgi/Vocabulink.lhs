@@ -1,6 +1,7 @@
 > module Main where
 
 > import Vocabulink.CGI
+> import Vocabulink.DB
 > import Vocabulink.Html
 > import Vocabulink.Lexeme
 > import Vocabulink.Link
@@ -9,6 +10,10 @@
 
 > import Codec.Binary.UTF8.String
 > import Control.Concurrent (forkIO)
+
+-- > import Control.Monad.Trans (lift)
+-- > import Control.Monad.Reader (Reader, runReader, ReaderT, runReaderT, ask)
+
 > import Network.CGI.Monad
 > import Network.CGI.Protocol
 > import Network.FastCGI
@@ -81,12 +86,25 @@ with 404).
 
 > testPage :: CGI CGIResult
 > testPage = do
->   username <- loginName
+>   c <- liftIO db
+>   username <- loginName' c
 >   vars <- getVars
 >   inputs <- cgiGet cgiInputs
->   outputHtml $ page "Test Page" []
->     [ h1 << ("Hello " ++ username),
->       logoutForm,
+>   outputHtml $ stdPage "Test Page" username []
+>     [ h1 << "Test Page",
 >       paragraph << (pre << map (\x -> show x ++ "\n") vars) +++
->                  (pre << show inputs),
+>                    (pre << show inputs),
 >       paragraph << anchor ! [href "."] << "test" ]
+
+-- > testPage :: CGI CGIResult
+-- > testPage = do
+-- >   c <- liftIO db
+-- >   username <- loginName' c
+-- >   output $ runReaderT testPage' username
+
+-- > testPage' :: ReaderT (Maybe String) CGI String
+-- > testPage' = do
+-- >   username <- ask
+-- >   return $ renderHtml $ stdPage "Test Page" username []
+-- >     [ h1 << "Monad Transformers!",
+-- >       paragraph << "Robots in disguise." ]
