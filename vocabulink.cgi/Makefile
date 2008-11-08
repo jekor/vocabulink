@@ -20,5 +20,13 @@ clean:
 test :
 	ghci -fglasgow-exts Vocabulink.lhs
 
-sloc : $(lhss)
-	echo $^ | xargs -n 1 lhs2TeX --code | wc --lines
+metrics : $(lhss)
+	@echo -e -n "\tSLOC: "
+	@echo $^ | xargs -n 1 lhs2TeX --code | wc --lines | tr -d "\n"
+	@echo -e -n "\tsource chars: "
+	@echo $^ | xargs -n 1 lhs2TeX --code | wc --chars | tr -d "\n"
+	@echo -e -n "\t  total chars: "
+	@cat $^ | wc --chars | tr -d "\n"
+	@echo
+	@echo
+	@ls -l $^
