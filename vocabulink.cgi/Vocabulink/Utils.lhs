@@ -1,6 +1,6 @@
 > module Vocabulink.Utils where
 
-> import Control.Exception
+> import Control.Exception (Exception, try)
 
 > if' :: Bool -> a -> a -> a
 > if' True  x _ = x

@@ -1,15 +1,10 @@
 > module Vocabulink.DB where
 
-> import Codec.Binary.UTF8.String
-> import Control.Monad.Reader
+> import Vocabulink.CGI (logSqlError)
+
+> import Codec.Binary.UTF8.String (encodeString, decodeString)
+> import Control.Monad (liftM)
 > import Database.HDBC
-> import Database.HDBC.PostgreSQL
-> import System.IO
-
-> import Vocabulink.CGI
-
-> db :: IO Connection
-> db =  connectPostgreSQL "host=localhost dbname=vocabulink user=vocabulink password=phae9Xom"
 
 Most of the time, if we have a SQL error, we're not prepared for it. We want to
 log it and fail with some message to the user.
@@ -40,12 +35,12 @@ It's often tedious to work with transactions if you're just inserting 1 tuple.
 Run a quick insert and return the sequence number it created.
 
 > quickInsertNo :: IConnection conn => conn -> String -> [SqlValue] -> String -> IO (Maybe Integer)
-> quickInsertNo c' sql vs seqName = do
->   withTransaction c' $ \c -> do 
->                           run c sql vs
->                           seqNo <- query1 c "SELECT currval(?)"
->                                             [toSql' seqName]
->                           return $ fromSql `liftM` seqNo
+> quickInsertNo c sql vs seqName = do
+>   withTransaction c $ \c' -> do
+>     run c' sql vs
+>     seqNo <- query1 c' "SELECT currval(?)"
+>                        [toSql' seqName]
+>     return $ fromSql `liftM` seqNo
 
 Let's define some helpers to keep from forgetting to decode/encode UTF8
 strings. Ultimately, I'd like to have a UTF8String type that could use the type

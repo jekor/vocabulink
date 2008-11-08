@@ -1,32 +1,27 @@
 > module Main where
 
-> import Vocabulink.CGI
-> import Vocabulink.DB
-> import Vocabulink.Html
-> import Vocabulink.Lexeme
-> import Vocabulink.Link
-> import Vocabulink.Member
-> import Vocabulink.Review
+> import Vocabulink.CGI (handleErrors', App, runApp)
+> import Vocabulink.Html (outputHtml, stdPage)
+> import Vocabulink.Lexeme (lexemePage)
+> import Vocabulink.Link (newLinkPage, linkPage, linksPage, linkLexemes')
+> import Vocabulink.Member (login', logout', loginNumber, loginName', redirectToLoginPage, newMemberPage, addMember', loginPage)
+> import Vocabulink.Review (newReview, reviewLink, linkReviewed')
 
-> import Codec.Binary.UTF8.String
+> import Codec.Binary.UTF8.String (decodeString)
 > import Control.Concurrent (forkIO)
-
--- > import Control.Monad.Trans (lift)
--- > import Control.Monad.Reader (Reader, runReader, ReaderT, runReaderT, ask)
-
-> import Network.CGI.Monad
-> import Network.CGI.Protocol
+> import Network.CGI.Monad (cgiGet)
+> import Network.CGI.Protocol (cgiInputs)
 > import Network.FastCGI
-> import Network.URI
-> import Text.ParserCombinators.Parsec hiding (getInput, try)
+> import Network.URI (unEscapeString, uriPath)
+> import Text.ParserCombinators.Parsec (Parser, parse, char, sepBy, many, noneOf)
 > import Text.XHtml.Strict
 
 > main :: IO ()
-> main =  runFastCGIConcurrent' forkIO 10 (handleErrors' dispatch')
+> main =  runFastCGIConcurrent' forkIO 10 (handleErrors' (runApp dispatch'))
 
 We handle all requests using a dispatcher.
 
-> dispatch' :: CGI CGIResult
+> dispatch' :: App CGIResult
 > dispatch' =  do uri <- requestURI
 >                 method' <- requestMethod
 >                 setHeader "Content-Type" "text/html; charset=utf-8"
@@ -36,17 +31,14 @@ We handle all requests using a dispatcher.
 >                   Right path' -> dispatch method' path'
 >     where pathPart = (parse pathComponents "") . decodeString . unEscapeString . uriPath
 
-> dispatch :: String -> [String] -> CGI CGIResult
+> dispatch :: String -> [String] -> App CGIResult
 > dispatch "GET" [""] = testPage
 > dispatch "GET" ["blah","di"] = testPage
 > dispatch "GET" ["lexeme",""] = outputError 404 "Lexeme is required." []
 > dispatch "GET" ["lexeme",x] = lexemePage x
 > dispatch "GET" ["link"] = newLinkPage
 > dispatch "GET" ["link",x] = linkPage x
-> dispatch "GET" ["links"] = linksPage Nothing
-> dispatch "GET" ["my","links"] = do
->   n <- loginNumber
->   linksPage (Just n)
+> dispatch "GET" ["links"] = linksPage
 
 Each link for review can be added to a set. Most people will only use their
 default (unnamed) set.
@@ -81,13 +73,12 @@ with 404).
 > pathComponents :: Parser [String]
 > pathComponents =  char '/' >> sepBy (many (noneOf "/")) (char '/')
 
-> output404 :: [String] -> CGI CGIResult
+> output404 :: [String] -> App CGIResult
 > output404 = outputError 404 "Resource not found."
 
-> testPage :: CGI CGIResult
+> testPage :: App CGIResult
 > testPage = do
->   c <- liftIO db
->   username <- loginName' c
+>   username <- loginName'
 >   vars <- getVars
 >   inputs <- cgiGet cgiInputs
 >   outputHtml $ stdPage "Test Page" username []
@@ -95,16 +86,3 @@ with 404).
 >       paragraph << (pre << map (\x -> show x ++ "\n") vars) +++
 >                    (pre << show inputs),
 >       paragraph << anchor ! [href "."] << "test" ]
-
--- > testPage :: CGI CGIResult
--- > testPage = do
--- >   c <- liftIO db
--- >   username <- loginName' c
--- >   output $ runReaderT testPage' username
-
--- > testPage' :: ReaderT (Maybe String) CGI String
--- > testPage' = do
--- >   username <- ask
--- >   return $ renderHtml $ stdPage "Test Page" username []
--- >     [ h1 << "Monad Transformers!",
--- >       paragraph << "Robots in disguise." ]

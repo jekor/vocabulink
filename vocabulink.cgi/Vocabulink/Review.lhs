@@ -1,53 +1,53 @@
 > module Vocabulink.Review where
 
-> import Vocabulink.CGI
-> import Vocabulink.DB
-> import Vocabulink.Html
-> import Vocabulink.Link
-> import Vocabulink.Utils
+> import Vocabulink.Review.SM2 (reviewInterval)
 
-> import Vocabulink.Review.SM2
+> import Vocabulink.CGI (App, getInput', referer)
+> import Vocabulink.DB (query1, quickInsert, catchSqlE)
+> import Vocabulink.Html (outputHtml, page, Dependency(..))
+> import Vocabulink.Link (getLink, linkHtml)
+> import Vocabulink.Utils (intFromString)
 
-> import Codec.Binary.UTF8.String
+> import Codec.Binary.UTF8.String (encodeString)
 > import Control.Monad (liftM)
-> import Database.HDBC
+> import Control.Monad.Reader (ask)
+> import Database.HDBC (withTransaction, run, toSql, fromSql)
 > import Data.Maybe (fromMaybe)
-> import Network.CGI
+> import Network.FastCGI (CGIResult, liftIO, outputError, redirect)
 > import Text.XHtml.Strict
-> import System.Time
+> import System.Time (TimeDiff)
 
-> scheduleReview :: IConnection conn => conn -> Integer -> Integer -> String -> IO ()
-> scheduleReview c memberNo linkNo _ = do
->   quickInsert c "INSERT INTO link_to_review (member_no, link_no) \
->                 \VALUES (?, ?)" [toSql memberNo, toSql linkNo]
->     `catchSqlE` "You already have this link scheduled for review or there was an error."
+> scheduleReview :: Integer -> Integer -> String -> App ()
+> scheduleReview memberNo linkNo _ = do
+>   c <- ask
+>   liftIO $ quickInsert c "INSERT INTO link_to_review (member_no, link_no) \
+>                          \VALUES (?, ?)" [toSql memberNo, toSql linkNo]
+>              `catchSqlE` "You already have this link scheduled for review or there was an error."
 
-> newReview :: Integer -> String -> CGI CGIResult
+> newReview :: Integer -> String -> App CGIResult
 > newReview memberNo set = do
->   c <- liftIO db
 >   link <- getInput' "link"
 >   no <- liftIO $ intFromString link
 >   case no of
 >     Left  _ -> outputError 400 "Links are identified by numbers only." []
 >     Right n -> do
->       liftIO $ scheduleReview c memberNo n set
+>       scheduleReview memberNo n set
 >       referer >>= redirect
 
 Review the next link in the queue.
 
-> reviewLink :: Integer -> CGI CGIResult
+> reviewLink :: Integer -> App CGIResult
 > reviewLink memberNo = do
->   c <- liftIO db
+>   c <- ask
 >   linkNo <- liftIO $ query1 c "SELECT link_no FROM link_to_review \
 >                               \WHERE member_no = ? AND current_timestamp >= target_time \
 >                               \ORDER BY target_time ASC LIMIT 1" [toSql memberNo]
 >                        `catchSqlE` "Failed to retrieve next link for review."
 >   maybe noLinksToReviewPage reviewLinkPage (fromSql `liftM` linkNo)
 
-> reviewLinkPage :: Integer -> CGI CGIResult
+> reviewLinkPage :: Integer -> App CGIResult
 > reviewLinkPage linkNo = do
->   c <- liftIO db
->   (o,d) <- liftIO $ getLink c linkNo
+>   (o,d) <- getLink linkNo
 >   let origin = encodeString o
 >       destination = encodeString d
 >   outputHtml $ page ("Review " ++ origin ++ " -> ?")
@@ -64,42 +64,43 @@ Review the next link in the queue.
 > recallButton i = let q :: Double = (fromIntegral i) / 5 in
 >                  button ! [name "recall", value (show q)] << show i
 
-> noLinksToReviewPage :: CGI CGIResult
+> noLinksToReviewPage :: App CGIResult
 > noLinksToReviewPage = do
 >   outputHtml $ page t [CSS "lexeme"]
 >     [ h1 << t,
 >       paragraph << "Take a break! You don't have any links to review right now." ]
 >         where t = "No Links to Review"
 
-> nextReviewTime :: IConnection conn => conn -> Integer -> IO (Maybe TimeDiff)
-> nextReviewTime c memberNo = do
->   next <- query1 c "SELECT extract(epoch FROM (target_time - current_timestamp)) \
->                    \FROM link_to_review \
->                    \WHERE member_no = ? AND target_time > current_timestamp \
->                    \ORDER BY target_time ASC LIMIT 1" [toSql memberNo]
->             `catchSqlE` "Failed to determine next review time."
+> nextReviewTime :: Integer -> App (Maybe TimeDiff)
+> nextReviewTime memberNo = do
+>   c <- ask
+>   next <- liftIO $ query1 c "SELECT extract(epoch FROM (target_time - current_timestamp)) \
+>                             \FROM link_to_review \
+>                             \WHERE member_no = ? AND target_time > current_timestamp \
+>                             \ORDER BY target_time ASC LIMIT 1" [toSql memberNo]
+>                      `catchSqlE` "Failed to determine next review time."
 >   return $ fromSql `liftM` next
 
-> linkReviewed' :: Integer -> String -> CGI CGIResult
+> linkReviewed' :: Integer -> String -> App CGIResult
 > linkReviewed' memberNo link = do
 >   linkNo <- liftIO $ intFromString link
 >   case linkNo of
 >     Left  _ -> outputError 400 "Links are identified by numbers only." []
 >     Right n -> do
->       c <- liftIO db
 >       recall <- getInput' "recall"
 >       recallTime <- getInput' "recall-time"
->       liftIO $ linkReviewed c memberNo n recall recallTime
+>       linkReviewed memberNo n recall recallTime
 >       redirect "/review/next"
 
 Note that a link was reviewed and schedule the next review. For testing
 purposes, we schedule the review forward an hour.
 
-> linkReviewed :: IConnection conn => conn -> Integer -> Integer -> Double -> Integer -> IO ()
-> linkReviewed c memberNo linkNo recall recallTime = do
->   previous <- previousInterval c memberNo linkNo
->   seconds <- reviewInterval c memberNo linkNo previous recall
->   withTransaction c $ \c' -> do
+> linkReviewed :: Integer -> Integer -> Double -> Integer -> App ()
+> linkReviewed memberNo linkNo recall recallTime = do
+>   previous <- previousInterval memberNo linkNo
+>   seconds <- reviewInterval memberNo linkNo previous recall
+>   c <- ask
+>   liftIO $ withTransaction c $ \c' -> do
 >       run c' "INSERT INTO link_review (member_no, link_no, recall, \
 >                                       \recall_time, target_time) \
 >              \VALUES (?, ?, ?, ?, \
@@ -118,12 +119,13 @@ purposes, we schedule the review forward an hour.
 
 Determine the previous interval in seconds.
 
-> previousInterval :: IConnection conn => conn -> Integer -> Integer -> IO (Integer)
-> previousInterval c memberNo linkNo = do
->   d <- query1 c "SELECT extract(epoch from current_timestamp - \
->                        \(SELECT actual_time FROM link_review \
->                         \WHERE member_no = ? AND link_no = ? \
->                         \ORDER BY actual_time DESC LIMIT 1))"
->                   [toSql memberNo, toSql linkNo]
->     `catchSqlE` "Failed to determine previous review interval."
+> previousInterval :: Integer -> Integer -> App (Integer)
+> previousInterval memberNo linkNo = do
+>   c <- ask
+>   d <- liftIO $ query1 c "SELECT extract(epoch from current_timestamp - \
+>                                 \(SELECT actual_time FROM link_review \
+>                                  \WHERE member_no = ? AND link_no = ? \
+>                                  \ORDER BY actual_time DESC LIMIT 1))"
+>                          [toSql memberNo, toSql linkNo]
+>                   `catchSqlE` "Failed to determine previous review interval."
 >   return $ maybe 0 fromSql d

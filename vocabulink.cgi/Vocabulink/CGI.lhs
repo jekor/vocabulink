@@ -1,82 +1,33 @@
 > module Vocabulink.CGI where
 
-> import Codec.Binary.UTF8.String
-> import Control.Exception
+> import Codec.Binary.UTF8.String (decodeString)
+> import Control.Exception (Exception(..), try)
+> import Control.Monad.Trans (lift)
+> import Control.Monad.Reader (ReaderT, MonadReader, runReaderT)
 > import Data.Maybe (fromMaybe)
-> import Database.HDBC
+> import Database.HDBC (disconnect, sqlExceptions, SqlError(..))
+> import Database.HDBC.PostgreSQL (connectPostgreSQL, Connection)
+> import Network.CGI.Monad (MonadCGI(..))
 > import Network.FastCGI
 > import System.IO.Error (isUserError, ioeGetErrorString)
 
-It's nice to have a single function that can retrieve an HTTP GET paramater for
-us and do whatever's necessary to return a value in the context we need it in.
-This idea came from Text.Regex's (=~).
+> newtype AppT m a = App (ReaderT Connection (CGIT m) a)
+>   deriving (Monad, MonadIO, MonadReader Connection)
 
-> class CGIInputContext a where
->   getInputDefault :: String -> a -> CGI a
->   getInput' :: String -> CGI a
+> type App a = AppT IO a
 
-> instance CGIInputContext String where
->   getInputDefault r d = do s <- getInput r
->                            case s of
->                              Nothing -> return d
->                              Just "" -> return d
->                              Just s' -> return $ decodeString s'
->   getInput' r = getInputDefault r $ error $ r ++ " parameter is required."
+> instance MonadCGI (AppT IO) where
+>   cgiAddHeader n v = App $ lift $ cgiAddHeader n v
+>   cgiGet x = App $ lift $ cgiGet x
 
-> instance CGIInputContext (Maybe String) where
->   getInput' r = do s <- getInput r
->                    case s of
->                      Nothing -> return Nothing
->                      Just "" -> return Nothing
->                      Just x  -> return $ Just (decodeString x)
->
->   getInputDefault = error "Trying to get a default input for Maybe type."
+Let's make getting at a database handle and user information easier.
 
-> instance CGIInputContext Integer where
->   getInputDefault r d = do
->     s <- getInput r
->     case s of
->       Nothing -> return d
->       Just s' -> do
->         i <- liftIO $ try $ readIO s'
->         case i of
->           Left _   -> return d
->           Right i' -> return i'
->   getInput' r = getInputDefault r $ error $
->                   r ++ " parameter is required and must be an integer."
-
-There should be some way to combine this and the above declaration.
-
-> instance CGIInputContext Int where
->   getInputDefault r d = do
->     s <- getInput r
->     case s of
->       Nothing -> return d
->       Just s' -> do
->         i <- liftIO $ try $ readIO s'
->         case i of
->           Left _   -> return d
->           Right i' -> return i'
->   getInput' r = getInputDefault r $ error $
->                   r ++ " parameter is required and must be an integer."
-
-> instance CGIInputContext Double where
->   getInputDefault r d = do
->     s <- getInput r
->     case s of
->       Nothing -> return d
->       Just s' -> do
->         i <- liftIO $ try $ readIO s'
->         case i of
->           Left _   -> return d
->           Right i' -> return i'
->   getInput' r = getInputDefault r $ error $
->                   r ++ " parameter is required and must be a number."
-
-It would be nice to have a way to hijack outputError in order to change the
-encoding, but I don't know of a way to short of modifying the source of
-Network.CGI. I'm going to leave it be for now as I'll probably end up with my
-own error output functions in time.
+> runApp :: App CGIResult -> CGI CGIResult
+> runApp (App a) = do
+>   c <- liftIO $ connectPostgreSQL "host=localhost dbname=vocabulink user=vocabulink password=phae9Xom"
+>   res <- runReaderT a c
+>   liftIO $ disconnect c
+>   return res
 
 > handleErrors' :: CGI CGIResult -> CGI CGIResult
 > handleErrors' = flip catchCGI outputException'
@@ -90,6 +41,67 @@ own error output functions in time.
 >                               _              -> liftIO $ return [show e]
 >                  Just se -> liftIO (logSqlError se >> return ["Database error."])
 >           ioe ie = if isUserError ie then [ioeGetErrorString ie] else [show ie]
+
+It's nice to have a single function that can retrieve an HTTP GET paramater for
+us and do whatever's necessary to return a value in the context we need it in.
+This idea came from Text.Regex's (=~).
+
+> class CGIInputContext a where
+>   getInputDefault :: a -> String -> App a
+>   getInput' :: String -> App a
+
+> instance CGIInputContext String where
+>   getInputDefault d r = do i <- getInput r
+>                            return $ maybe d (decodeString) i
+>   getInput' r = getInputDefault (error $ "Parameter '" ++ r ++ "' is required.") r
+
+> instance CGIInputContext (Maybe String) where
+>   getInputDefault d r = do i <- getInput r
+>                            return $ maybe d (Just . decodeString) i
+>   getInput' = getInputDefault Nothing
+
+> instance CGIInputContext Integer where
+>   getInputDefault d r = do
+>     s <- getInput r
+>     case s of
+>       Nothing -> return d
+>       Just s' -> do
+>         i <- liftIO $ try $ readIO s'
+>         case i of
+>           Left _   -> return d
+>           Right i' -> return i'
+>   getInput' r = getInputDefault (error $ "Parameter '" ++ r ++ "' is required.") r
+
+There should be some way to combine this and the above declaration.
+
+> instance CGIInputContext Int where
+>   getInputDefault d r = do
+>     s <- getInput r
+>     case s of
+>       Nothing -> return d
+>       Just s' -> do
+>         i <- liftIO $ try $ readIO s'
+>         case i of
+>           Left _   -> return d
+>           Right i' -> return i'
+>   getInput' r = getInputDefault (error $ "Parameter '" ++ r ++ "' is required and must be an integer.") r
+
+> instance CGIInputContext Double where
+>   getInputDefault d r = do
+>     s <- getInput r
+>     case s of
+>       Nothing -> return d
+>       Just s' -> do
+>         i <- liftIO $ try $ readIO s'
+>         case i of
+>           Left _   -> return d
+>           Right i' -> return i'
+>   getInput' r = getInputDefault (error $ "Parameter '" ++ r ++ "' is required and must be a number.") r
+
+It would be nice to have a way to hijack outputError in order to change the
+encoding, but I don't know of a way to short of modifying the source of
+Network.CGI. I'm going to leave it be for now as I'll probably end up with my
+own error output functions in time.
 
 logSqlError will write the error to stderr where it should be picked up and added
 to an appropriate logfile.
@@ -119,6 +131,6 @@ outputError c m es =
          page <- errorPage c m es 
          output $ renderHtml page
 
-> referer :: CGI String
+> referer :: App String
 > referer = do ref <- getVar "HTTP_REFERER"
 >              return $ fromMaybe "http://www.vocabulink.com/" ref

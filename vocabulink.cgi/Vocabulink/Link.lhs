@@ -1,16 +1,17 @@
 > module Vocabulink.Link where
 
-> import Vocabulink.CGI
-> import Vocabulink.DB
-> import Vocabulink.Html
-> import Vocabulink.Member
-> import Vocabulink.Review.Html
-> import Vocabulink.Utils
+> import Vocabulink.CGI (App, getInput', getInputDefault)
+> import Vocabulink.DB (quickInsertNo, catchSqlE, fromSql', toSql')
+> import Vocabulink.Html (outputHtml, page, Dependency(..), pager)
+> import Vocabulink.Member (loginNumber)
+> import Vocabulink.Review.Html (reviewHtml)
+> import Vocabulink.Utils (intFromString)
 
-> import Codec.Binary.UTF8.String
-> import Control.Monad
-> import Database.HDBC
-> import Network.CGI
+> import Codec.Binary.UTF8.String (encodeString)
+> import Control.Monad (liftM)
+> import Control.Monad.Reader (ask)
+> import Database.HDBC (quickQuery', toSql, fromSql, SqlValue)
+> import Network.FastCGI (CGIResult, liftIO, redirect, outputError)
 > import Text.XHtml.Strict
 
 origin should already be UTF8 encoded.
@@ -21,16 +22,17 @@ origin should already be UTF8 encoded.
 >     image ! [src "http://s.vocabulink.com/black.png", width "20%", height "1"],
 >     thespan ! [theclass "lexeme"] << destination ]
 
-> getLink :: IConnection conn => conn -> Integer -> IO (String, String)
-> getLink c linkNo = do
->   r <- quickQuery c "SELECT origin, destination FROM link \
->                     \WHERE link_no = ?" [toSql linkNo]
->          `catchSqlE` "Link not found."
+> getLink :: Integer -> App (String, String)
+> getLink linkNo = do
+>   c <- ask
+>   r <- liftIO $ quickQuery' c "SELECT origin, destination FROM link \
+>                               \WHERE link_no = ?" [toSql linkNo]
+>                   `catchSqlE` "Link not found."
 >   case r of
 >     [[o,d]] -> return (fromSql' o, fromSql' d)
 >     _       -> error "Link not found."
 
-> newLinkPage :: CGI CGIResult
+> newLinkPage :: App CGIResult
 > newLinkPage = do
 >   origin <- encodeString `liftM` getInput' "origin"
 >   destination <- encodeString `liftM` getInput' "destination"
@@ -45,39 +47,39 @@ origin should already be UTF8 encoded.
 >              br,
 >              submit "" "Associate" ] ] ]
 
-> linkLexemes :: IConnection conn => conn -> String -> String -> String -> Integer -> IO (Maybe Integer)
-> linkLexemes c origin destination association n = do
->   quickInsertNo c "INSERT INTO link (origin, destination, link_type, \
->                                     \language, representation, author) \
->                   \VALUES (?, ?, 'association', 'en', ?, ?)"
->                   [toSql' origin, toSql' destination, toSql' association, toSql n]
->                   "link_link_no_seq"
->     `catchSqlE` "Failed to establish link."
+> linkLexemes :: String -> String -> String -> Integer -> App (Maybe Integer)
+> linkLexemes origin destination association n = do
+>   c <- ask
+>   liftIO $ quickInsertNo c "INSERT INTO link (origin, destination, link_type, \
+>                                              \language, representation, author) \
+>                            \VALUES (?, ?, 'association', 'en', ?, ?)"
+>                            [toSql' origin, toSql' destination, toSql' association, toSql n]
+>                            "link_link_no_seq"
+>              `catchSqlE` "Failed to establish link."
 
-> linkLexemes' :: CGI CGIResult
+> linkLexemes' :: App CGIResult
 > linkLexemes' = do
->   c <- liftIO db
 >   origin <- getInput' "origin"
 >   destination <- getInput' "destination"
 >   association <- getInput' "association"
 >   loginNo <- loginNumber
->   linkNo <- liftIO $ linkLexemes c origin destination association loginNo
+>   linkNo <- linkLexemes origin destination association loginNo
 >   case linkNo of
 >     Just n  -> redirect $ "/link/" ++ (show n)
 >     Nothing -> error "Failed to establish link."
 
-> linkPage :: String -> CGI CGIResult
+> linkPage :: String -> App CGIResult
 > linkPage link = do
 >   no <- liftIO $ intFromString link
 >   case no of
 >     Left  _ -> outputError 400 "Links are identified by numbers only." []
 >     Right n -> do
->       c <- liftIO db
 >       memberNo <- loginNumber
->       ts <- liftIO $ quickQuery c "SELECT origin, destination, representation FROM link \
->                                   \WHERE link_no = ?" [toSql n]
+>       c <- ask
+>       ts <- liftIO $ quickQuery' c "SELECT origin, destination, representation FROM link \
+>                                    \WHERE link_no = ?" [toSql n]
 >                        `catchSqlE` "Failed to retrieve link."
->       review <- liftIO $ reviewHtml c memberNo n
+>       review <- reviewHtml memberNo n
 >       case ts of
 >         [x@[_,_,_]] -> do
 >             let [origin, destination, association] = map (encodeString . fromSql') x
@@ -91,27 +93,22 @@ origin should already be UTF8 encoded.
 
 Generate a page of links for the specified member or all members (for Nothing).
 
-> linksPage :: Maybe Integer -> CGI CGIResult
-> linksPage memberNo = do
->   c <- liftIO db
->   pg  <- getInputDefault "pg" 1
->   n   <- getInputDefault "n" 25
->   links <- liftIO $ getLinks c memberNo ((pg - 1) * n) (n + 1)
->     `catchSqlE` "Failed to retrieve links."
+> linksPage :: App CGIResult
+> linksPage = do
+>   pg  <- getInputDefault 1 "pg"
+>   n   <- getInputDefault 25 "n"
+>   links <- getLinks ((pg - 1) * n) (n + 1)
 >   pagerControl <- pager n pg $ (length links) + ((pg - 1) * n)
 >   outputHtml $ page "Links" [CSS "lexeme"]
 >     [ (take n $ map displayLink links) +++ pagerControl ]
 
-> getLinks :: IConnection conn => conn -> Maybe Integer -> Int -> Int -> IO [[SqlValue]]
-> getLinks c memberNo offset limit =
->   case memberNo of
->     Nothing -> quickQuery c "SELECT link_no, origin, destination FROM link \
->                             \ORDER BY link_no OFFSET ? LIMIT ?" $
->                             [toSql offset, toSql limit]
->     Just n  -> quickQuery c "SELECT link_no, origin, destination FROM link \
->                             \WHERE author = ? \
->                             \ORDER BY link_no OFFSET ? LIMIT ?" $
->                             [toSql n, toSql offset, toSql limit]
+> getLinks :: Int -> Int -> App [[SqlValue]]
+> getLinks offset limit = do
+>   c <- ask
+>   liftIO $ quickQuery' c "SELECT link_no, origin, destination FROM link \
+>                          \ORDER BY link_no OFFSET ? LIMIT ?"
+>                          [toSql offset, toSql limit]
+>              `catchSqlE` "Failed to retrieve links."
 
 > displayLink :: [SqlValue] -> Html
 > displayLink [no, origin, destination] = 

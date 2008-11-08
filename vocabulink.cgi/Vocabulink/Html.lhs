@@ -1,17 +1,18 @@
 > module Vocabulink.Html where
 
-> import Vocabulink.Utils
+> import Vocabulink.CGI (App)
+> import Vocabulink.Utils ((?))
 
-> import Codec.Binary.UTF8.String
-> import Network.CGI
-> import Network.URI
-> import Text.Regex
-> import Text.Regex.Posix
+> import Codec.Binary.UTF8.String (decodeString)
+> import Network.FastCGI (CGIResult, output, getVar, requestURI)
+> import Network.URI (uriPath)
+> import Text.Regex (mkRegex, subRegex)
+> import Text.Regex.Posix ((=~))
 > import Text.XHtml.Strict
 
 This is a common pattern.
 
-> outputHtml :: Html -> CGI CGIResult
+> outputHtml :: Html -> App CGIResult
 > outputHtml = output . renderHtml
 
 > data Dependency = CSS String | JS String
@@ -75,7 +76,7 @@ First, we the query string.
 
 And now for the HTML.
 
-> pager :: Int -> Int -> Int -> CGI Html
+> pager :: Int -> Int -> Int -> App Html
 > pager n pg total = do
 >   q <- getVar "QUERY_STRING"
 >   uri <- requestURI

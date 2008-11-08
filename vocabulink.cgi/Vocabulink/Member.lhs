@@ -1,21 +1,19 @@
 > module Vocabulink.Member where
 
-> import Vocabulink.CGI
-> import Vocabulink.DB
-> import Vocabulink.Html
-> import Vocabulink.Utils
+> import Vocabulink.CGI (App, getInput', getInputDefault, referer)
+> import Vocabulink.DB (query1, quickInsertNo, toSql', fromSql', catchSqlE)
+> import Vocabulink.Html (outputHtml, page)
+> import Vocabulink.Utils ((?))
 
-> import Control.Monad
+> import Control.Monad.Reader (ask)
 > import Data.ByteString.Char8 (pack)
-> import Data.Digest.OpenSSL.HMAC
+> import Data.Digest.OpenSSL.HMAC (hmac, sha1)
 > import Data.Maybe (fromMaybe)
-> import Data.List
-> import Data.Time.Clock.POSIX
-> import Database.HDBC
-> import Network.CGI
-> import Network.URI
-> import System.IO
-> import Text.ParserCombinators.Parsec hiding (label)
+> import Data.Time.Clock.POSIX (POSIXTime, getPOSIXTime, posixDayLength)
+> import Database.HDBC (toSql, fromSql)
+> import Network.FastCGI
+> import Network.URI (escapeURIString, isUnescapedInURI)
+> import qualified Text.ParserCombinators.Parsec as P
 > import Text.XHtml.Strict
 
 Add a member to the database. We're going to do validation of acceptable
@@ -27,25 +25,25 @@ language) and URL-safe punctuation.
 
 This returns the new member number.
 
-> addMember :: IConnection conn => conn -> String -> String -> Maybe String -> IO (Maybe Integer)
-> addMember c username passwd email =
->     (length username) < 3  ? error "Your username must have 3 characters or more."  $
+> addMember :: String -> String -> Maybe String -> App (Maybe Integer)
+> addMember username passwd email = do
+>   c <- ask
+>   (length username) < 3  ? error "Your username must have 3 characters or more."  $
 >     (length username) > 32 ? error "Your username must have 32 characters or less." $
 >     (length passwd)   > 72 ? error "Your password must have 72 characters or less." $
 >     -- TODO: Add password constraints?
->     quickInsertNo c "INSERT INTO member (username, email, password_hash) \
->                     \VALUES (?, ?, crypt(?, gen_salt('bf')))"
->                     [toSql' username, toSql' email, toSql' passwd]
->                     "member_member_no_seq"
->       `catchSqlE` "Failed to add member."
+>     liftIO $ quickInsertNo c "INSERT INTO member (username, email, password_hash) \
+>                            \VALUES (?, ?, crypt(?, gen_salt('bf')))"
+>                            [toSql' username, toSql' email, toSql' passwd]
+>                            "member_member_no_seq"
+>                `catchSqlE` "Failed to add member."
 
-> addMember' :: CGI CGIResult
+> addMember' :: App CGIResult
 > addMember' = do
->   c <- liftIO db
 >   username <- getInput' "username"
 >   passwd   <- getInput' "password"
 >   email    <- getInput' "email"
->   memberNo <- liftIO $ addMember c username passwd email
+>   memberNo <- addMember username passwd email
 >   case memberNo of
 >     Nothing -> error "Failed to add member."
 >     Just no -> do
@@ -68,36 +66,39 @@ This returns the new member number.
 >         br,
 >         submit "" "Join" ] ]
 
-> memberNumber :: IConnection conn => conn -> String -> IO (Integer)
-> memberNumber c username = do
->   n <- query1 c "SELECT member_no FROM member \
->                 \WHERE username = ?" [toSql' username]
->          `catchSqlE` "Failed to retrieve member number from username."
+> memberNumber :: String -> App (Integer)
+> memberNumber username = do
+>   c <- ask
+>   n <- liftIO $ query1 c "SELECT member_no FROM member \
+>                          \WHERE username = ?" [toSql' username]
+>                   `catchSqlE` "Failed to retrieve member number from username."
 >   return $ maybe (error "fail") fromSql' n
 
-> memberName :: IConnection conn => conn -> Integer -> IO (String)
-> memberName c memberNo = do
->   n <- query1 c "SELECT username FROM member \
->                              \WHERE member_no = ?" [toSql memberNo]
->          `catchSqlE` "Failed to retrieve username from member number."
+> memberName :: Integer -> App (String)
+> memberName memberNo = do
+>   c <- ask
+>   n <- liftIO $ query1 c "SELECT username FROM member \
+>                          \WHERE member_no = ?" [toSql memberNo]
+>                   `catchSqlE` "Failed to retrieve username from member number."
 >   return $ maybe (error "fail") fromSql' n
 
 Sometimes we don't care about anonymous.
 
-> memberName' :: IConnection conn => conn -> Integer -> IO (Maybe String)
-> memberName' c memberNo = case memberNo of
->                            0 -> return Nothing
->                            _ -> memberName c memberNo >>= \n -> return $ Just n
+> memberName' :: Integer -> App (Maybe String)
+> memberName' memberNo = case memberNo of
+>                          0 -> return Nothing
+>                          _ -> memberName memberNo >>= \n -> return $ Just n
 
 Login attempts to match the username and password supplied against the
 information in the database.
 
-> validPassword :: IConnection conn => conn -> String -> String -> IO (Bool)
-> validPassword c username passwd = do
->   n <- query1 c "SELECT password_hash = crypt(?, password_hash) \
->                             \FROM member WHERE username = ?"
->                             [toSql' passwd, toSql' username]
->          `catchSqlE` "Internal authentication failure (this is not your fault)."
+> validPassword :: String -> String -> App (Bool)
+> validPassword username passwd = do
+>   c <- ask
+>   n <- liftIO $ query1 c "SELECT password_hash = crypt(?, password_hash) \
+>                          \FROM member WHERE username = ?"
+>                          [toSql' passwd, toSql' username]
+>                   `catchSqlE` "Internal authentication failure (this is not your fault)."
 >   return $ maybe (error "fail") fromSql n
 
 Each time a user logs in, we send an authentication cookie to their browser.
@@ -122,23 +123,23 @@ storing session state on our end.
 
 This really needs some cleanup.
 
-> authTokenParser :: Parser AuthToken
+> authTokenParser :: P.Parser AuthToken
 > authTokenParser = do
->   string "exp="
->   seconds <- manyTill anyChar $ char '&'
->   string "no="
->   member_no <- manyTill anyChar $ char '&'
->   string "ip="
->   ip <- manyTill anyChar $ char '&'
->   string "mac="
->   digest' <- many1 anyChar
+>   P.string "exp="
+>   seconds <- P.manyTill P.anyChar $ P.char '&'
+>   P.string "no="
+>   member_no <- P.manyTill P.anyChar $ P.char '&'
+>   P.string "ip="
+>   ip <- P.manyTill P.anyChar $ P.char '&'
+>   P.string "mac="
+>   digest' <- P.many1 P.anyChar
 >   return AuthToken { expiry    = fromInteger (read seconds) :: POSIXTime,
 >                      member    = read member_no,
 >                      ipAddress = ip,
 >                      digest    = digest' }
 
 > parseAuthToken :: String -> Maybe AuthToken
-> parseAuthToken s = case parse authTokenParser "" s of
+> parseAuthToken s = case P.parse authTokenParser "" s of
 >                    Left e  -> error (show e)
 >                    Right x -> Just x
 
@@ -188,7 +189,7 @@ Returns the member number or Nothing if the cookie is invalid or expired.
 > expired :: POSIXTime -> POSIXTime -> Bool
 > expired now ex = (floor ex :: Integer) - (floor now :: Integer) < 0
 
-> loginNumber :: CGI (Integer)
+> loginNumber :: App (Integer)
 > loginNumber = do
 >   authCookie <- getCookie "auth"
 >   case authCookie of
@@ -198,18 +199,17 @@ Returns the member number or Nothing if the cookie is invalid or expired.
 >       memberNo <- liftIO $ verifyMember c ip
 >       return $ fromMaybe 0 memberNo -- 0 == anonymous
 
-> loginName :: CGI (String)
+> loginName :: App (String)
 > loginName = do
->   c <- liftIO db
 >   n <- loginNumber
->   liftIO $ memberName c n
+>   memberName n
 
-> loginName' :: IConnection conn => conn -> CGI (Maybe String)
-> loginName' c = do
+> loginName' :: App (Maybe String)
+> loginName' = do
 >   n <- loginNumber
->   liftIO $ memberName' c n
+>   memberName' n
 
-> loggedIn :: CGI (Bool)
+> loggedIn :: App (Bool)
 > loggedIn = do
 >   n <- loginNumber
 >   return $ n > 0
@@ -227,21 +227,20 @@ use something like
 For now, I'm just going to let it expire at the end of the session. If the
 session lasts longer than the expiration time, we can invalidate the cookie.
 
-> login' :: CGI CGIResult
+> login' :: App CGIResult
 > login' = do
->   c <- liftIO db
 >   username  <- getInput' "username"
->   memberNo  <- liftIO $ memberNumber c username
+>   memberNo  <- memberNumber username
 >   passwd    <- getInput' "password"
 >   ref       <- referer
->   redirect' <- getInputDefault "redirect" ref
+>   redirect' <- getInputDefault ref "redirect"
 >   ip <- remoteAddr
->   valid <- liftIO $ validPassword c username passwd
+>   valid <- validPassword username passwd
 >   not valid ? error "Login failed." $ do
 >     setAuthCookie memberNo ip
 >     redirect redirect'
 
-> setAuthCookie :: Integer -> String -> CGI ()
+> setAuthCookie :: Integer -> String -> App ()
 > setAuthCookie memberNo ip = do
 >   authTok <- liftIO $ authToken memberNo ip
 >   setCookie Cookie { cookieName    = "auth",
@@ -251,9 +250,9 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 >                      cookiePath    = Just "/",
 >                      cookieSecure  = False }
 
-> logout' :: CGI CGIResult
+> logout' :: App CGIResult
 > logout' = do
->   redirect' <- getInputDefault "redirect" "/"
+>   redirect' <- getInputDefault "/" "redirect"
 >   deleteCookie Cookie { cookieName   = "auth",
 >                         cookieDomain = Just "vocabulink.com",
 >                         cookiePath   = Just "/",
@@ -267,10 +266,10 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 > logoutForm = form ! [action "/member/logout", method "post"] <<
 >                submit "" "Log Out"
 
-> loginPage :: CGI CGIResult
+> loginPage :: App CGIResult
 > loginPage = do
 >   referer'  <- referer
->   redirect' <- getInputDefault "redirect" referer'
+>   redirect' <- getInputDefault referer' "redirect"
 >   outputHtml $ page "Log In" []
 >     [ h1 << "Log In",
 >       form ! [action "", method "post"] <<
@@ -284,11 +283,11 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 >           submit "" "Log In" ],
 >       paragraph << ("Not a member? " +++ anchor ! [href "/member/join"] << "Join!") ]
 
-> loginRedirectPage :: CGI String
+> loginRedirectPage :: App String
 > loginRedirectPage = do
 >   request <- getVar "REQUEST_URI"
 >   let request' = fromMaybe "/" request
 >   return $ "/member/login?redirect=" ++ escapeURIString isUnescapedInURI request'
 
-> redirectToLoginPage :: CGI CGIResult
+> redirectToLoginPage :: App CGIResult
 > redirectToLoginPage = loginRedirectPage >>= redirect
