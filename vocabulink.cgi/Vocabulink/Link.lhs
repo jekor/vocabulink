@@ -25,7 +25,7 @@ this lexeme is defined. If not, we assume it to be canonical.
 >                              \WHERE lexeme = ?" [toSql' l]
 >   case lemma of
 >     Just lm -> redirect $ "/lexeme/" ++ encodeString (fromSql' lm)
->     Nothing -> stdPage (encodeString l) [CSS "lexeme"]
+>     Nothing -> stdPage (encodeString l) [CSS "link"]
 >       [ form ! [action "/link", method "get"] <<
 >         [ hidden "origin" (encodeString l),
 >           thediv ! [identifier "baseline", theclass "link"] <<
@@ -56,7 +56,7 @@ origin should already be UTF8 encoded.
 >   origin <- encodeString `liftM` getInput' "origin"
 >   destination <- encodeString `liftM` getInput' "destination"
 >   let t = origin ++ " -> " ++ destination
->   stdPage t [CSS "lexeme"]
+>   stdPage t [CSS "link"]
 >     [ form ! [action "", method "post"] <<
 >        [ thediv ! [identifier "baseline", theclass "link"] <<
 >            linkHtml (stringToHtml origin) (stringToHtml destination),
@@ -103,7 +103,7 @@ origin should already be UTF8 encoded.
 >           [x@[_,_,_]] -> do
 >               let [origin, destination, association] = map (encodeString . fromSql') x
 >                   t = origin ++ " -> " ++ destination
->               stdPage t [CSS "lexeme"]
+>               stdPage t [CSS "link"]
 >                 [ review,
 >                   thediv ! [identifier "baseline", theclass "link"] <<
 >                     linkHtml (stringToHtml origin) (stringToHtml destination),
@@ -118,7 +118,7 @@ Generate a page of links for the specified member or all members (for Nothing).
 >   n   <- getInputDefault 25 "n"
 >   links <- getLinks ((pg - 1) * n) (n + 1)
 >   pagerControl <- pager n pg $ (length links) + ((pg - 1) * n)
->   stdPage "Links" [CSS "lexeme"]
+>   stdPage "Links" [CSS "link"]
 >     [ (take n $ map displayLink links) +++ pagerControl ]
 
 > getLinks :: Int -> Int -> App [[SqlValue]]
@@ -147,7 +147,7 @@ We'll stick to just searching through 10 results per page for now.
 >   pg  <- getInputDefault 1 "pg"
 >   links <- searchLinks term ((pg - 1) * n) (n + 1)
 >   pagerControl <- pager n pg $ (length links) + ((pg - 1) * n)
->   stdPage "Search Results" [CSS "lexeme"]
+>   stdPage "Search Results" [CSS "link"]
 >     [ h1 << "Search Results",
 >       (take n $ map displayLink links) +++ pagerControl ]
 

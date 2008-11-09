@@ -4,7 +4,7 @@
 
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput', referer)
-> import Vocabulink.DB (query1, quickInsert, catchSqlE)
+> import Vocabulink.DB (query1, quickInsert, catchSqlE, catchSqlD)
 > import Vocabulink.Html (stdPage, Dependency(..))
 > import Vocabulink.Link (getLink, linkHtml)
 > import Vocabulink.Utils (intFromString)
@@ -52,7 +52,7 @@ Review the next link in the queue.
 >   let origin = encodeString o
 >       destination = encodeString d
 >   stdPage ("Review " ++ origin ++ " -> ?")
->           [CSS "lexeme", JS "MochiKit", JS "review"]
+>           [CSS "link", JS "MochiKit", JS "review"]
 >     [ thediv ! [identifier "baseline", theclass "link"] <<
 >         linkHtml (stringToHtml origin) (anchor ! [identifier "lexeme-cover", href "#"] << "?"),
 >       form ! [action ("/review/" ++ (show linkNo)), method "post"] <<
@@ -67,10 +67,21 @@ Review the next link in the queue.
 
 > noLinksToReviewPage :: App CGIResult
 > noLinksToReviewPage = do
->   stdPage t [CSS "lexeme"]
+>   stdPage t [CSS "link"]
 >     [ h1 << t,
 >       paragraph << "Take a break! You don't have any links to review right now." ]
 >         where t = "No Links to Review"
+
+Get the number of links that a user has for review.
+
+> numLinksToReview :: Integer -> App Integer
+> numLinksToReview memberNo = do
+>   c <- asks db
+>   n <- liftIO $ query1 c "SELECT COUNT(*) FROM link_to_review \
+>                          \WHERE member_no = ? AND current_timestamp > target_time"
+>                          [toSql memberNo]
+>                   `catchSqlD` (Just (toSql (0 :: Integer)))
+>   return $ maybe (0 :: Integer) fromSql n
 
 > nextReviewTime :: Integer -> App (Maybe TimeDiff)
 > nextReviewTime memberNo = do

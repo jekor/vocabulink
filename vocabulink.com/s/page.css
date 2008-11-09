@@ -1,0 +1,92 @@
+/* This file is for site-wide styling. This will be used for all standard pages. */
+
+/* Initialize the page and provide helpers. */
+
+body {
+  margin: 0;
+}
+
+.clear {
+  clear: both;
+}
+
+/* Header Bar */
+
+#header-bar {
+  background-color: #CCC;
+  margin: 0;
+  padding-top: 1ex;
+  padding-bottom: 1ex;
+}
+
+#header-bar .logo, #header-bar .login-box, #header-bar .search-box, #header-bar .review-box {
+  display: inline;
+  margin-right: 1em;
+}
+
+#header-bar .logo {
+  font-size: larger;
+  font-family: sans-serif;
+  margin-left: 1em;
+  float: left;
+  color: black;
+}
+#header-bar a.logo {
+  text-decoration: none;
+}
+
+#header-bar .search-box, #header-bar .login-box, #header-bar .review-box {
+  float: right;
+}
+
+.login-box #username, .login-box #password {
+  width: 7em;
+}
+
+.login-box.logout input {
+  margin-left: 1em;
+}
+
+a.review-box {
+  text-decoration: none;
+  color: black;
+}
+a.review-box:hover {
+  text-decoration: underline;
+}
+
+/* The Pager is used to page results that won't fit on a single page. */
+
+.pager {
+  text-align: center;
+  margin-top: 2em;
+}
+
+/* Group controls in a box so that they can be logically associated. */
+.pager .controls {
+  border: 1px solid black;
+  background-color: #DDD;
+  padding: 0.5em;
+}
+
+/* Links should never turn the "visited" color for paging. It's logically
+   correct, but people have come to expect otherwise. */
+.pager a {
+  color: blue;
+  text-decoration: none;
+}
+.pager a:hover {
+  text-decoration: underline;
+}
+
+/* Grey out controls that can't be used. */
+.pager span.prev {
+  color: #666;
+}
+.pager span.next {
+  color: #666;
+}
+
+.pager .controls .next {
+  margin-left: 2em;
+}

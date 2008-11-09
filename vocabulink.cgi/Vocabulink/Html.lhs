@@ -3,6 +3,8 @@
 > import Vocabulink.App
 > import Vocabulink.Utils ((?))
 
+> import {-# SOURCE #-} Vocabulink.Review (numLinksToReview)
+
 > import Codec.Binary.UTF8.String (decodeString)
 > import Control.Monad.Reader (asks)
 > import Network.FastCGI (CGIResult, output, getVar, requestURI)
@@ -13,24 +15,16 @@
 
 This is a common pattern.
 
-> outputHtml :: Html -> App CGIResult
-> outputHtml = output . renderHtml
-
 > data Dependency = CSS String | JS String
 
-page expects title to already be UTF8 encoded if necessary.
-
-> page :: String -> [Dependency] -> ([Html] -> Html)
-> page t ds = \b -> header <<
->   (thetitle << t +++ concatHtml (map includeDep ds)) +++
->   body << b
+stdPage expects title to already be UTF8 encoded if necessary.
 
 > stdPage :: String -> [Dependency] -> [Html] -> App CGIResult
 > stdPage t deps h = do
->   username <- asks memberName
->   outputHtml $ header <<
->     (thetitle << t +++ concatHtml (map includeDep deps)) +++
->     body << headerBar username +++ concatHtml h
+>   headerB <- headerBar
+>   output $ renderHtml $ header <<
+>     (thetitle << t +++ concatHtml (map includeDep ((CSS "page"):deps))) +++
+>     body << headerB +++ concatHtml h
 
 > includeDep :: Dependency -> Html
 > includeDep (CSS css) =
@@ -40,30 +34,48 @@ page expects title to already be UTF8 encoded if necessary.
 >   script ! [src ("http://s.vocabulink.com/" ++ js ++ ".js"),
 >             thetype "text/javascript"] << noHtml
 
-> headerBar :: Maybe String -> Html
-> headerBar username =
->   thediv ! [identifier "header-bar"] <<
->     [ loginBox username,
->       searchBox ]
+> headerBar :: App Html
+> headerBar = do
+>   username <- asks memberName
+>   review <- reviewBox
+>   return $ thediv ! [identifier "header-bar"] <<
+>     [ anchor ! [theclass "logo", href "/"] << "Vocabulink",
+>       loginBox username,
+>       searchBox,
+>       review,
+>       thediv ! [theclass "clear"] << noHtml ]
 
 Create a login or logout form based on whether or not the user's logged in.
 
 > loginBox :: Maybe String -> Html
 > loginBox username =
 >   case username of
->     Nothing -> form ! [theclass "loginout login", action "/member/login", method "post"] <<
+>     Nothing -> form ! [theclass "login-box login", action "/member/login", method "post"] <<
 >                  [ label << "Username:",
 >                    textfield "username",
 >                    label << "Password:",
 >                    password "password",
 >                    submit "" "Log In" ]
->     Just n  -> form ! [theclass "loginout logout", action "/member/logout", method "post"] <<
+>     Just n  -> form ! [theclass "login-box logout", action "/member/logout", method "post"] <<
 >                  [ stringToHtml n,
 >                    submit "" "Log Out" ]
 
 > searchBox :: Html
-> searchBox = form ! [theclass "search", action "/search", method "get"] <<
->   [ label << "Search:", textfield "q" ]
+> searchBox = form ! [theclass "search-box", action "/search", method "get"] <<
+>   [ textfield "q", submit "" "Search" ]
+
+> reviewBox :: App Html
+> reviewBox = do
+>   memberNo <- asks memberNumber
+>   case memberNo of
+>     Nothing  -> return noHtml
+>     Just memberNo' -> do
+>       n <- numLinksToReview memberNo'
+>       let r = case n of
+>                 0  -> anchor ! [href "/links", theclass "review-box"] << "No links to review"
+>                 n' -> anchor ! [href "/review/next", theclass "review-box"] <<
+>                         [ (strong << show n') +++ " links to review" ]
+>       return r
 
 It's nice to abstract away creating an element to page the results of a
 multi-page query. This will preserve all of the query string in the links it

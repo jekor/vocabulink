@@ -1,4 +1,4 @@
-> module Vocabulink.DB where
+> module Vocabulink.DB (catchSqlE, catchSqlD, query1, quickInsert, quickInsertNo, SqlType'(..)) where
 
 > import Vocabulink.CGI (logSqlError)
 
@@ -11,6 +11,12 @@ log it and fail with some message to the user.
 
 > catchSqlE :: IO a -> String -> IO a
 > catchSqlE sql msg = sql `catchSql` (\e -> logSqlError e >> error msg)
+
+Instead of erroring out, return a default value. Useful for errors that I don't
+want the entire page crashing on.
+
+> catchSqlD :: IO a -> a -> IO a
+> catchSqlD sql d = sql `catchSql` (\e -> logSqlError e >> return d)
 
 Sometimes you just want to query a single value.
 
