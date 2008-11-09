@@ -1,9 +1,10 @@
 > module Vocabulink.Html where
 
-> import Vocabulink.CGI (App)
+> import Vocabulink.App
 > import Vocabulink.Utils ((?))
 
 > import Codec.Binary.UTF8.String (decodeString)
+> import Control.Monad.Reader (asks)
 > import Network.FastCGI (CGIResult, output, getVar, requestURI)
 > import Network.URI (uriPath)
 > import Text.Regex (mkRegex, subRegex)
@@ -24,10 +25,12 @@ page expects title to already be UTF8 encoded if necessary.
 >   (thetitle << t +++ concatHtml (map includeDep ds)) +++
 >   body << b
 
-> stdPage :: String -> Maybe String -> [Dependency] -> ([Html] -> Html)
-> stdPage t username deps = \b -> header <<
->   (thetitle << t +++ concatHtml (map includeDep deps)) +++
->   body << headerBar username +++ concatHtml b
+> stdPage :: String -> [Dependency] -> App (Html -> Html)
+> stdPage t deps = do
+>   username <- asks memberName
+>   return $ \b -> header <<
+>     (thetitle << t +++ concatHtml (map includeDep deps)) +++
+>     body << headerBar username +++ b
 
 > includeDep :: Dependency -> Html
 > includeDep (CSS css) =

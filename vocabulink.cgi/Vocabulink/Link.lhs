@@ -1,9 +1,10 @@
 > module Vocabulink.Link where
 
-> import Vocabulink.CGI (App, AppEnv(..), getInput', getInputDefault)
+> import Vocabulink.App
+> import Vocabulink.CGI (getInput', getInputDefault)
 > import Vocabulink.DB (query1, quickInsertNo, catchSqlE, fromSql', toSql')
-> import Vocabulink.Html (outputHtml, page, Dependency(..), pager)
-> import Vocabulink.Member (loginNumber)
+> import Vocabulink.Html (outputHtml, page, Dependency(..), pager, stdPage)
+> import Vocabulink.Member (withMemberNumber)
 > import Vocabulink.Review.Html (reviewHtml)
 > import Vocabulink.Utils (intFromString)
 
@@ -76,38 +77,38 @@ origin should already be UTF8 encoded.
 >              `catchSqlE` "Failed to establish link."
 
 > linkLexemes' :: App CGIResult
-> linkLexemes' = do
->   origin <- getInput' "origin"
->   destination <- getInput' "destination"
->   association <- getInput' "association"
->   loginNo <- loginNumber
->   linkNo <- linkLexemes origin destination association loginNo
->   case linkNo of
->     Just n  -> redirect $ "/link/" ++ (show n)
->     Nothing -> error "Failed to establish link."
+> linkLexemes' =
+>   withMemberNumber $ \memberNo -> do
+>     origin <- getInput' "origin"
+>     destination <- getInput' "destination"
+>     association <- getInput' "association"
+>     linkNo <- linkLexemes origin destination association memberNo
+>     case linkNo of
+>       Just n  -> redirect $ "/link/" ++ (show n)
+>       Nothing -> error "Failed to establish link."
 
 > linkPage :: String -> App CGIResult
-> linkPage link = do
->   no <- liftIO $ intFromString link
->   case no of
->     Left  _ -> outputError 400 "Links are identified by numbers only." []
->     Right n -> do
->       memberNo <- loginNumber
->       c <- asks db
->       ts <- liftIO $ quickQuery' c "SELECT origin, destination, representation FROM link \
->                                    \WHERE link_no = ?" [toSql n]
->                        `catchSqlE` "Failed to retrieve link."
->       review <- reviewHtml memberNo n
->       case ts of
->         [x@[_,_,_]] -> do
->             let [origin, destination, association] = map (encodeString . fromSql') x
->                 t = origin ++ " -> " ++ destination
->             outputHtml $ page t [CSS "lexeme"]
->               [ review,
->                 thediv ! [identifier "baseline", theclass "link"] <<
->                   linkHtml (stringToHtml origin) (stringToHtml destination),
->                 paragraph ! [identifier "association"] << association ]
->         _ -> error "Link does not exist or failed to retrieve."
+> linkPage link =
+>   withMemberNumber $ \memberNo -> do
+>     no <- liftIO $ intFromString link
+>     case no of
+>       Left  _ -> outputError 400 "Links are identified by numbers only." []
+>       Right n -> do
+>         c <- asks db
+>         ts <- liftIO $ quickQuery' c "SELECT origin, destination, representation FROM link \
+>                                      \WHERE link_no = ?" [toSql n]
+>                          `catchSqlE` "Failed to retrieve link."
+>         review <- reviewHtml memberNo n
+>         case ts of
+>           [x@[_,_,_]] -> do
+>               let [origin, destination, association] = map (encodeString . fromSql') x
+>                   t = origin ++ " -> " ++ destination
+>               outputHtml $ page t [CSS "lexeme"]
+>                 [ review,
+>                   thediv ! [identifier "baseline", theclass "link"] <<
+>                     linkHtml (stringToHtml origin) (stringToHtml destination),
+>                   paragraph ! [identifier "association"] << association ]
+>           _ -> error "Link does not exist or failed to retrieve."
 
 Generate a page of links for the specified member or all members (for Nothing).
 
@@ -136,3 +137,42 @@ Generate a page of links for the specified member or all members (for Nothing).
 >   thediv ! [theclass "link"] << anchor ! [href $ "/link/" ++ (show no')] <<
 >     linkHtml (stringToHtml (encodeString origin')) (stringToHtml (encodeString destination'))
 > displayLink _ = thediv ! [theclass "link"] << "Link is malformed."
+
+We'll stick to just searching through 10 results per page for now.
+
+> searchPage :: App CGIResult
+> searchPage = do
+>   term <- getInput' "q"
+>   let n = 10
+>   pg  <- getInputDefault 1 "pg"
+>   links <- searchLinks term ((pg - 1) * n) (n + 1)
+>   pagerControl <- pager n pg $ (length links) + ((pg - 1) * n)
+>   sPage <- stdPage "Search Results" [CSS "lexeme"]
+>   outputHtml $ sPage <<
+>     [ h1 << "Search Results",
+>       (take n $ map displayLink links) +++ pagerControl ]
+
+This is a basic search that searches through the origin and destination names
+of the links in the database.
+
+> searchLinks :: String -> Int -> Int -> App [[SqlValue]]
+> searchLinks term offset limit = do
+>   c <- asks db
+>   liftIO $ quickQuery' c "SELECT link_no, origin, destination \
+>                          \FROM link WHERE origin = ? OR destination = ? \
+>                          \OFFSET ? LIMIT ?"
+>                          [toSql' term, toSql' term, toSql offset, toSql limit]
+>              `catchSqlE` "Failed to search links."
+
+-- > searchLinks :: String -> Int -> Int -> App [(Integer, String, String)]
+-- > searchLinks term = do
+-- >   c <- asks db
+-- >   results <- liftIO $
+-- >     quickQuery' c "SELECT link_no, origin, destination \
+-- >                   \FROM link WHERE origin = ? OR destination = ? \
+-- >                   \OFFSET ? LIMIT ?"
+-- >                   [toSql' term, toSql' term]
+-- >   return $ catMaybes $ map tuplize results
+-- >       where tuplize :: [SqlValue] -> Maybe (Integer, String, String)
+-- >             tuplize [l,o,d] = Just (fromSql l, fromSql' o, fromSql' d)
+-- >             tuplize _       = Nothing

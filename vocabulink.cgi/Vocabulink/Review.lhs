@@ -2,7 +2,8 @@
 
 > import Vocabulink.Review.SM2 (reviewInterval)
 
-> import Vocabulink.CGI (App, AppEnv(..), getInput', referer)
+> import Vocabulink.App
+> import Vocabulink.CGI (getInput', referer)
 > import Vocabulink.DB (query1, quickInsert, catchSqlE)
 > import Vocabulink.Html (outputHtml, page, Dependency(..))
 > import Vocabulink.Link (getLink, linkHtml)

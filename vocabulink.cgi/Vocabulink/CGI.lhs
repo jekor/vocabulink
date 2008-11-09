@@ -1,35 +1,13 @@
 > module Vocabulink.CGI where
 
+> import Vocabulink.App (App)
+
 > import Codec.Binary.UTF8.String (decodeString)
 > import Control.Exception (Exception(..), try)
-> import Control.Monad.Trans (lift)
-> import Control.Monad.Reader (ReaderT, MonadReader, runReaderT)
 > import Data.Maybe (fromMaybe)
-> import Database.HDBC (sqlExceptions, SqlError(..), IConnection, disconnect)
-> import Database.HDBC.PostgreSQL (connectPostgreSQL, Connection)
-> import Network.CGI.Monad (MonadCGI(..))
+> import Database.HDBC (sqlExceptions, SqlError(..))
 > import Network.FastCGI
 > import System.IO.Error (isUserError, ioeGetErrorString)
-
-Let's make getting at a database handle easier.
-
-> data AppEnv = AppEnv { db :: Connection }
-
-> newtype AppT m a = App (ReaderT AppEnv (CGIT m) a)
->   deriving (Monad, MonadIO, MonadReader AppEnv)
-
-> type App a = AppT IO a
-
-> instance MonadCGI (AppT IO) where
->   cgiAddHeader n v = App $ lift $ cgiAddHeader n v
->   cgiGet x = App $ lift $ cgiGet x
-
-> runApp :: App CGIResult -> CGI CGIResult
-> runApp (App a) = do
->   c <- liftIO $ connectPostgreSQL "host=localhost dbname=vocabulink user=vocabulink password=phae9Xom"
->   res <- runReaderT a $ AppEnv {db = c}
->   liftIO $ disconnect c
->   return res
 
 > handleErrors' :: CGI CGIResult -> CGI CGIResult
 > handleErrors' = flip catchCGI outputException'
@@ -62,42 +40,27 @@ This idea came from Text.Regex's (=~).
 >                            return $ maybe d (Just . decodeString) i
 >   getInput' = getInputDefault Nothing
 
-> instance CGIInputContext Integer where
->   getInputDefault d r = do
->     s <- getInput r
->     case s of
->       Nothing -> return d
->       Just s' -> do
->         i <- liftIO $ try $ readIO s'
->         case i of
->           Left _   -> return d
->           Right i' -> return i'
->   getInput' r = getInputDefault (error $ "Parameter '" ++ r ++ "' is required.") r
+> getInputDefaultNumeric :: (Num a, Read a) => a -> String -> App a
+> getInputDefaultNumeric d r = do
+>   s <- getInput r
+>   case s of
+>     Nothing -> return d
+>     Just s' -> do
+>       i <- liftIO $ try $ readIO s'
+>       case i of
+>         Left _   -> return d
+>         Right i' -> return i'
 
-There should be some way to combine this and the above declaration.
+> instance CGIInputContext Integer where
+>   getInputDefault = getInputDefaultNumeric
+>   getInput' r = getInputDefault (error $ "Parameter '" ++ r ++ "' is required and must be a whole number.") r
 
 > instance CGIInputContext Int where
->   getInputDefault d r = do
->     s <- getInput r
->     case s of
->       Nothing -> return d
->       Just s' -> do
->         i <- liftIO $ try $ readIO s'
->         case i of
->           Left _   -> return d
->           Right i' -> return i'
->   getInput' r = getInputDefault (error $ "Parameter '" ++ r ++ "' is required and must be an integer.") r
+>   getInputDefault = getInputDefaultNumeric
+>   getInput' r = getInputDefault (error $ "Parameter '" ++ r ++ "' is required and must be a whole number.") r
 
 > instance CGIInputContext Double where
->   getInputDefault d r = do
->     s <- getInput r
->     case s of
->       Nothing -> return d
->       Just s' -> do
->         i <- liftIO $ try $ readIO s'
->         case i of
->           Left _   -> return d
->           Right i' -> return i'
+>   getInputDefault = getInputDefaultNumeric
 >   getInput' r = getInputDefault (error $ "Parameter '" ++ r ++ "' is required and must be a number.") r
 
 It would be nice to have a way to hijack outputError in order to change the

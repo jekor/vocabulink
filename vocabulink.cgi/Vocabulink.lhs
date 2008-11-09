@@ -1,9 +1,10 @@
 > module Main where
 
-> import Vocabulink.CGI (App, runApp, handleErrors')
+> import Vocabulink.App
+> import Vocabulink.CGI (handleErrors')
 > import Vocabulink.Html (outputHtml, stdPage)
-> import Vocabulink.Link (lexemePage, newLinkPage, linkPage, linksPage, linkLexemes')
-> import Vocabulink.Member (login', logout', loginNumber, loginName', redirectToLoginPage, newMemberPage, addMember', loginPage)
+> import Vocabulink.Link (lexemePage, newLinkPage, linkPage, linksPage, linkLexemes', searchPage)
+> import Vocabulink.Member (withMemberNumber, login, logout, newMemberPage, addMember', loginPage)
 > import Vocabulink.Review (newReview, reviewLink, linkReviewed')
 
 > import Codec.Binary.UTF8.String (decodeString)
@@ -38,27 +39,24 @@ We handle all requests using a dispatcher.
 > dispatch "GET" ["link"] = newLinkPage
 > dispatch "GET" ["link",x] = linkPage x
 > dispatch "GET" ["links"] = linksPage
-
--- > dispatch "GET" ["search"] = searchPage
+> dispatch "GET" ["search"] = searchPage
 
 Each link for review can be added to a set. Most people will only use their
 default (unnamed) set.
 
-> dispatch method' ("review":xs) = do
->   memberNo <- loginNumber
->   if memberNo == 0
->      then redirectToLoginPage
->      else case (method',xs) of
->             ("GET",["next"])   -> reviewLink memberNo
->             ("POST",["set",x]) -> newReview memberNo x
->             ("POST",[x])       -> linkReviewed' memberNo x
->             (m,x)              -> output404 (m:x)
+> dispatch method' ("review":xs) =
+>   withMemberNumber $ \memberNo ->
+>     case (method',xs) of
+>       ("GET",["next"])   -> reviewLink memberNo
+>       ("POST",["set",x]) -> newReview memberNo x
+>       ("POST",[x])       -> linkReviewed' memberNo x
+>       (m,x)              -> output404 (m:x)
 
 > dispatch "GET"  ["member","join"] = output newMemberPage
 > dispatch "POST" ["member","join"] = addMember'
 > dispatch "GET"  ["member","login"] = loginPage
-> dispatch "POST" ["member","login"] = login'
-> dispatch "POST" ["member","logout"] = logout'
+> dispatch "POST" ["member","login"] = login
+> dispatch "POST" ["member","logout"] = logout
 > dispatch "GET" x = output404 x
 
 It would be nice to automatically respond with "Method Not Allowed" on pages
@@ -79,10 +77,10 @@ with 404).
 
 > testPage :: App CGIResult
 > testPage = do
->   username <- loginName'
 >   vars <- getVars
 >   inputs <- cgiGet cgiInputs
->   outputHtml $ stdPage "Test Page" username []
+>   page <- stdPage "Test Page" []
+>   outputHtml $ page <<
 >     [ h1 << "Test Page",
 >       paragraph << (pre << map (\x -> show x ++ "\n") vars) +++
 >                    (pre << show inputs),

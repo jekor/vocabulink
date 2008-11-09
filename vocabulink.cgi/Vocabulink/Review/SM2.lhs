@@ -4,12 +4,11 @@ SuperMemo algorithm SM-2
 
 http://www.supermemo.com/english/ol/sm2.htm
 
-> import Vocabulink.CGI (App, AppEnv(..))
+> import Vocabulink.App
 > import Vocabulink.DB (quickInsert, catchSqlE)
 
 > import Control.Monad.Reader (asks)
 > import Database.HDBC (quickQuery, run, withTransaction, toSql, fromSql)
-> import Network.FastCGI (liftIO)
 
 > interval :: Double -> Integer -> Double -> Double
 > interval _ 1 _  = 1.0

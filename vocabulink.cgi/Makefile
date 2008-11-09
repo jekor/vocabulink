@@ -20,7 +20,7 @@ clean:
 test :
 	ghci -fglasgow-exts Vocabulink.lhs
 
-metrics : $(lhss)
+metrics : $(lhss) $(shell find . -name "*.lhs-boot" -print)
 	@echo -e -n "\tSLOC: "
 	@echo $^ | xargs -n 1 lhs2TeX --code | wc --lines | tr -d "\n"
 	@echo -e -n "\tsource chars: "

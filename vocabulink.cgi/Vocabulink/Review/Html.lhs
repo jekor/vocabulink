@@ -1,6 +1,6 @@
 > module Vocabulink.Review.Html where
 
-> import Vocabulink.CGI (App, AppEnv(..))
+> import Vocabulink.App
 > import Vocabulink.DB (query1)
 > import Vocabulink.Utils ((?))
 
