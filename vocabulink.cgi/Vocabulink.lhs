@@ -1,9 +1,8 @@
 > module Main where
 
-> import Vocabulink.CGI (handleErrors', App, runApp)
+> import Vocabulink.CGI (App, runApp, handleErrors')
 > import Vocabulink.Html (outputHtml, stdPage)
-> import Vocabulink.Lexeme (lexemePage)
-> import Vocabulink.Link (newLinkPage, linkPage, linksPage, linkLexemes')
+> import Vocabulink.Link (lexemePage, newLinkPage, linkPage, linksPage, linkLexemes')
 > import Vocabulink.Member (login', logout', loginNumber, loginName', redirectToLoginPage, newMemberPage, addMember', loginPage)
 > import Vocabulink.Review (newReview, reviewLink, linkReviewed')
 
@@ -39,6 +38,8 @@ We handle all requests using a dispatcher.
 > dispatch "GET" ["link"] = newLinkPage
 > dispatch "GET" ["link",x] = linkPage x
 > dispatch "GET" ["links"] = linksPage
+
+-- > dispatch "GET" ["search"] = searchPage
 
 Each link for review can be added to a set. Most people will only use their
 default (unnamed) set.

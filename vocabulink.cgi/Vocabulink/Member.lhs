@@ -1,11 +1,11 @@
 > module Vocabulink.Member where
 
-> import Vocabulink.CGI (App, getInput', getInputDefault, referer)
+> import Vocabulink.CGI (App, AppEnv(..), getInput', getInputDefault, referer)
 > import Vocabulink.DB (query1, quickInsertNo, toSql', fromSql', catchSqlE)
 > import Vocabulink.Html (outputHtml, page)
 > import Vocabulink.Utils ((?))
 
-> import Control.Monad.Reader (ask)
+> import Control.Monad.Reader (asks)
 > import Data.ByteString.Char8 (pack)
 > import Data.Digest.OpenSSL.HMAC (hmac, sha1)
 > import Data.Maybe (fromMaybe)
@@ -27,7 +27,7 @@ This returns the new member number.
 
 > addMember :: String -> String -> Maybe String -> App (Maybe Integer)
 > addMember username passwd email = do
->   c <- ask
+>   c <- asks db
 >   (length username) < 3  ? error "Your username must have 3 characters or more."  $
 >     (length username) > 32 ? error "Your username must have 32 characters or less." $
 >     (length passwd)   > 72 ? error "Your password must have 72 characters or less." $
@@ -68,7 +68,7 @@ This returns the new member number.
 
 > memberNumber :: String -> App (Integer)
 > memberNumber username = do
->   c <- ask
+>   c <- asks db
 >   n <- liftIO $ query1 c "SELECT member_no FROM member \
 >                          \WHERE username = ?" [toSql' username]
 >                   `catchSqlE` "Failed to retrieve member number from username."
@@ -76,7 +76,7 @@ This returns the new member number.
 
 > memberName :: Integer -> App (String)
 > memberName memberNo = do
->   c <- ask
+>   c <- asks db
 >   n <- liftIO $ query1 c "SELECT username FROM member \
 >                          \WHERE member_no = ?" [toSql memberNo]
 >                   `catchSqlE` "Failed to retrieve username from member number."
@@ -94,7 +94,7 @@ information in the database.
 
 > validPassword :: String -> String -> App (Bool)
 > validPassword username passwd = do
->   c <- ask
+>   c <- asks db
 >   n <- liftIO $ query1 c "SELECT password_hash = crypt(?, password_hash) \
 >                          \FROM member WHERE username = ?"
 >                          [toSql' passwd, toSql' username]

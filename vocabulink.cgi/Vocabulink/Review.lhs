@@ -2,7 +2,7 @@
 
 > import Vocabulink.Review.SM2 (reviewInterval)
 
-> import Vocabulink.CGI (App, getInput', referer)
+> import Vocabulink.CGI (App, AppEnv(..), getInput', referer)
 > import Vocabulink.DB (query1, quickInsert, catchSqlE)
 > import Vocabulink.Html (outputHtml, page, Dependency(..))
 > import Vocabulink.Link (getLink, linkHtml)
@@ -10,7 +10,7 @@
 
 > import Codec.Binary.UTF8.String (encodeString)
 > import Control.Monad (liftM)
-> import Control.Monad.Reader (ask)
+> import Control.Monad.Reader (asks)
 > import Database.HDBC (withTransaction, run, toSql, fromSql)
 > import Data.Maybe (fromMaybe)
 > import Network.FastCGI (CGIResult, liftIO, outputError, redirect)
@@ -19,7 +19,7 @@
 
 > scheduleReview :: Integer -> Integer -> String -> App ()
 > scheduleReview memberNo linkNo _ = do
->   c <- ask
+>   c <- asks db
 >   liftIO $ quickInsert c "INSERT INTO link_to_review (member_no, link_no) \
 >                          \VALUES (?, ?)" [toSql memberNo, toSql linkNo]
 >              `catchSqlE` "You already have this link scheduled for review or there was an error."
@@ -38,7 +38,7 @@ Review the next link in the queue.
 
 > reviewLink :: Integer -> App CGIResult
 > reviewLink memberNo = do
->   c <- ask
+>   c <- asks db
 >   linkNo <- liftIO $ query1 c "SELECT link_no FROM link_to_review \
 >                               \WHERE member_no = ? AND current_timestamp >= target_time \
 >                               \ORDER BY target_time ASC LIMIT 1" [toSql memberNo]
@@ -73,7 +73,7 @@ Review the next link in the queue.
 
 > nextReviewTime :: Integer -> App (Maybe TimeDiff)
 > nextReviewTime memberNo = do
->   c <- ask
+>   c <- asks db
 >   next <- liftIO $ query1 c "SELECT extract(epoch FROM (target_time - current_timestamp)) \
 >                             \FROM link_to_review \
 >                             \WHERE member_no = ? AND target_time > current_timestamp \
@@ -99,7 +99,7 @@ purposes, we schedule the review forward an hour.
 > linkReviewed memberNo linkNo recall recallTime = do
 >   previous <- previousInterval memberNo linkNo
 >   seconds <- reviewInterval memberNo linkNo previous recall
->   c <- ask
+>   c <- asks db
 >   liftIO $ withTransaction c $ \c' -> do
 >       run c' "INSERT INTO link_review (member_no, link_no, recall, \
 >                                       \recall_time, target_time) \
@@ -121,7 +121,7 @@ Determine the previous interval in seconds.
 
 > previousInterval :: Integer -> Integer -> App (Integer)
 > previousInterval memberNo linkNo = do
->   c <- ask
+>   c <- asks db
 >   d <- liftIO $ query1 c "SELECT extract(epoch from current_timestamp - \
 >                                 \(SELECT actual_time FROM link_review \
 >                                  \WHERE member_no = ? AND link_no = ? \

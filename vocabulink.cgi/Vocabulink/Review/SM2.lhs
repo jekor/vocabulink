@@ -4,10 +4,10 @@ SuperMemo algorithm SM-2
 
 http://www.supermemo.com/english/ol/sm2.htm
 
-> import Vocabulink.CGI (App)
+> import Vocabulink.CGI (App, AppEnv(..))
 > import Vocabulink.DB (quickInsert, catchSqlE)
 
-> import Control.Monad.Reader (ask)
+> import Control.Monad.Reader (asks)
 > import Database.HDBC (quickQuery, run, withTransaction, toSql, fromSql)
 > import Network.FastCGI (liftIO)
 
@@ -39,7 +39,7 @@ This should return Nothing if the item needs to be repeated immediately.
 > reviewInterval memberNo linkNo previous recall = do
 >   let p = daysFromSeconds previous
 >       q :: Integer = round $ recall * 5 -- The algorithm expects 0-5, not 0-1.
->   c <- ask
+>   c <- asks db
 >   stats <- liftIO $ quickQuery c "SELECT n, EF FROM link_sm2 \
 >                                  \WHERE member_no = ? AND link_no = ?"
 >                                  [toSql memberNo, toSql linkNo]
@@ -70,7 +70,7 @@ This should return Nothing if the item needs to be repeated immediately.
 
 > createSM2 :: Integer -> Integer -> Integer -> Double -> App ()
 > createSM2 memberNo linkNo n ef = do
->   c <- ask
+>   c <- asks db
 >   liftIO $ quickInsert c "INSERT INTO link_sm2 (member_no, link_no, n, EF) \
 >                          \VALUES (?, ?, ?, ?)"
 >                          [toSql memberNo, toSql linkNo, toSql n, toSql ef]
@@ -78,7 +78,7 @@ This should return Nothing if the item needs to be repeated immediately.
 
 > updateSM2 :: Integer -> Integer -> Integer -> Double -> App ()
 > updateSM2 memberNo linkNo n ef = do
->   c <- ask
+>   c <- asks db
 >   liftIO $ withTransaction c $ \c' ->
 >     run c' "UPDATE link_sm2 SET n = ?, EF = ? \
 >            \WHERE member_no = ? AND link_no = ?"

@@ -40,7 +40,8 @@ page expects title to already be UTF8 encoded if necessary.
 > headerBar :: Maybe String -> Html
 > headerBar username =
 >   thediv ! [identifier "header-bar"] <<
->     [ loginBox username ]
+>     [ loginBox username,
+>       searchBox ]
 
 Create a login or logout form based on whether or not the user's logged in.
 
@@ -56,6 +57,10 @@ Create a login or logout form based on whether or not the user's logged in.
 >     Just n  -> form ! [theclass "loginout logout", action "/member/logout", method "post"] <<
 >                  [ stringToHtml n,
 >                    submit "" "Log Out" ]
+
+> searchBox :: Html
+> searchBox = form ! [theclass "search", action "/search", method "get"] <<
+>   [ label << "Search:", textfield "q" ]
 
 It's nice to abstract away creating an element to page the results of a
 multi-page query. This will preserve all of the query string in the links it

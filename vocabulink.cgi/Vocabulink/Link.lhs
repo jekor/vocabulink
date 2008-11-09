@@ -1,7 +1,7 @@
 > module Vocabulink.Link where
 
-> import Vocabulink.CGI (App, getInput', getInputDefault)
-> import Vocabulink.DB (quickInsertNo, catchSqlE, fromSql', toSql')
+> import Vocabulink.CGI (App, AppEnv(..), getInput', getInputDefault)
+> import Vocabulink.DB (query1, quickInsertNo, catchSqlE, fromSql', toSql')
 > import Vocabulink.Html (outputHtml, page, Dependency(..), pager)
 > import Vocabulink.Member (loginNumber)
 > import Vocabulink.Review.Html (reviewHtml)
@@ -9,10 +9,28 @@
 
 > import Codec.Binary.UTF8.String (encodeString)
 > import Control.Monad (liftM)
-> import Control.Monad.Reader (ask)
+> import Control.Monad.Reader (asks)
 > import Database.HDBC (quickQuery', toSql, fromSql, SqlValue)
 > import Network.FastCGI (CGIResult, liftIO, redirect, outputError)
 > import Text.XHtml.Strict
+
+When retrieving the page for a lexeme, we first check to see if a lemma for
+this lexeme is defined. If not, we assume it to be canonical.
+
+> lexemePage :: String -> App CGIResult
+> lexemePage l = do
+>   c <- asks db
+>   lemma <- liftIO $ query1 c "SELECT lemma FROM lexeme \
+>                              \WHERE lexeme = ?" [toSql' l]
+>   case lemma of
+>     Just lm -> redirect $ "/lexeme/" ++ encodeString (fromSql' lm)
+>     Nothing -> outputHtml $ page (encodeString l) [CSS "lexeme"]
+>       [ form ! [action "/link", method "get"] <<
+>         [ hidden "origin" (encodeString l),
+>           thediv ! [identifier "baseline", theclass "link"] <<
+>             linkHtml (stringToHtml l)
+>                      (textfield "destination" +++
+>                       submit "" "link") ] ]
 
 origin should already be UTF8 encoded.
 
@@ -24,7 +42,7 @@ origin should already be UTF8 encoded.
 
 > getLink :: Integer -> App (String, String)
 > getLink linkNo = do
->   c <- ask
+>   c <- asks db
 >   r <- liftIO $ quickQuery' c "SELECT origin, destination FROM link \
 >                               \WHERE link_no = ?" [toSql linkNo]
 >                   `catchSqlE` "Link not found."
@@ -49,7 +67,7 @@ origin should already be UTF8 encoded.
 
 > linkLexemes :: String -> String -> String -> Integer -> App (Maybe Integer)
 > linkLexemes origin destination association n = do
->   c <- ask
+>   c <- asks db
 >   liftIO $ quickInsertNo c "INSERT INTO link (origin, destination, link_type, \
 >                                              \language, representation, author) \
 >                            \VALUES (?, ?, 'association', 'en', ?, ?)"
@@ -75,7 +93,7 @@ origin should already be UTF8 encoded.
 >     Left  _ -> outputError 400 "Links are identified by numbers only." []
 >     Right n -> do
 >       memberNo <- loginNumber
->       c <- ask
+>       c <- asks db
 >       ts <- liftIO $ quickQuery' c "SELECT origin, destination, representation FROM link \
 >                                    \WHERE link_no = ?" [toSql n]
 >                        `catchSqlE` "Failed to retrieve link."
@@ -104,7 +122,7 @@ Generate a page of links for the specified member or all members (for Nothing).
 
 > getLinks :: Int -> Int -> App [[SqlValue]]
 > getLinks offset limit = do
->   c <- ask
+>   c <- asks db
 >   liftIO $ quickQuery' c "SELECT link_no, origin, destination FROM link \
 >                          \ORDER BY link_no OFFSET ? LIMIT ?"
 >                          [toSql offset, toSql limit]

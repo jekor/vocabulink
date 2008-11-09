@@ -5,14 +5,18 @@
 > import Control.Monad.Trans (lift)
 > import Control.Monad.Reader (ReaderT, MonadReader, runReaderT)
 > import Data.Maybe (fromMaybe)
-> import Database.HDBC (disconnect, sqlExceptions, SqlError(..))
+> import Database.HDBC (sqlExceptions, SqlError(..), IConnection, disconnect)
 > import Database.HDBC.PostgreSQL (connectPostgreSQL, Connection)
 > import Network.CGI.Monad (MonadCGI(..))
 > import Network.FastCGI
 > import System.IO.Error (isUserError, ioeGetErrorString)
 
-> newtype AppT m a = App (ReaderT Connection (CGIT m) a)
->   deriving (Monad, MonadIO, MonadReader Connection)
+Let's make getting at a database handle easier.
+
+> data AppEnv = AppEnv { db :: Connection }
+
+> newtype AppT m a = App (ReaderT AppEnv (CGIT m) a)
+>   deriving (Monad, MonadIO, MonadReader AppEnv)
 
 > type App a = AppT IO a
 
@@ -20,12 +24,10 @@
 >   cgiAddHeader n v = App $ lift $ cgiAddHeader n v
 >   cgiGet x = App $ lift $ cgiGet x
 
-Let's make getting at a database handle and user information easier.
-
 > runApp :: App CGIResult -> CGI CGIResult
 > runApp (App a) = do
 >   c <- liftIO $ connectPostgreSQL "host=localhost dbname=vocabulink user=vocabulink password=phae9Xom"
->   res <- runReaderT a c
+>   res <- runReaderT a $ AppEnv {db = c}
 >   liftIO $ disconnect c
 >   return res
 
