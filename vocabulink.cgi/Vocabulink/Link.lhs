@@ -1,18 +1,17 @@
 > module Vocabulink.Link where
 
 > import Vocabulink.App
-> import Vocabulink.CGI (getInput', getInputDefault)
-> import Vocabulink.DB (query1, quickInsertNo, catchSqlE, fromSql', toSql')
-> import Vocabulink.Html (stdPage, Dependency(..), pager)
+> import Vocabulink.CGI (getInput', getInputDefault, referer)
+> import Vocabulink.DB (query1, queryColumn, quickStmt, quickInsertNo, catchSqlE, fromSql', toSql')
+> import Vocabulink.Html (stdPage, Dependency(..), pager, simpleChoice, onclick)
 > import Vocabulink.Member (withMemberNumber)
 > import Vocabulink.Review.Html (reviewHtml)
-> import Vocabulink.Utils (intFromString)
 
 > import Codec.Binary.UTF8.String (encodeString)
 > import Control.Monad (liftM)
 > import Control.Monad.Reader (asks)
 > import Database.HDBC (quickQuery', toSql, fromSql, SqlValue)
-> import Network.FastCGI (CGIResult, liftIO, redirect, outputError)
+> import Network.FastCGI (CGIResult, liftIO, redirect)
 > import Text.XHtml.Strict
 
 When retrieving the page for a lexeme, we first check to see if a lemma for
@@ -51,18 +50,34 @@ origin should already be UTF8 encoded.
 >     [[o,d]] -> return (fromSql' o, fromSql' d)
 >     _       -> error "Link not found."
 
+Return the types of links sorted by how common they should be.
+
+Eventually we'll want to cache this.
+
+> linkTypes :: App [String]
+> linkTypes = do
+>   c <- asks db
+>   types <- liftIO $ queryColumn c
+>     "SELECT link_type, COUNT(*) AS count FROM link \
+>     \GROUP BY link_type ORDER BY count" []
+>              `catchSqlE` "Failed to retrieve link types."
+>   return $ map fromSql' types
+
 > newLinkPage :: App CGIResult
 > newLinkPage = do
 >   origin <- encodeString `liftM` getInput' "origin"
 >   destination <- encodeString `liftM` getInput' "destination"
+>   types <- linkTypes
 >   let t = origin ++ " -> " ++ destination
 >   stdPage t [CSS "link"]
 >     [ form ! [action "", method "post"] <<
 >        [ thediv ! [identifier "baseline", theclass "link"] <<
 >            linkHtml (stringToHtml origin) (stringToHtml destination),
 >          paragraph ! [identifier "association"] <<
->            [ textarea ! [name "association", cols "80", rows "20"] <<
->                "Describe the association here.",
+>            [ simpleChoice "link-type" types, br,
+>              textarea ! [name "association", cols "80", rows "20",
+>                          onclick "this.innerHTML=''"] <<
+>                "Write a story linking the two words here.",
 >              br,
 >              submit "" "Associate" ] ] ]
 
@@ -87,28 +102,39 @@ origin should already be UTF8 encoded.
 >       Just n  -> redirect $ "/link/" ++ (show n)
 >       Nothing -> error "Failed to establish link."
 
-> linkPage :: String -> App CGIResult
-> linkPage link =
->   withMemberNumber $ \memberNo -> do
->     no <- liftIO $ intFromString link
->     case no of
->       Left  _ -> outputError 400 "Links are identified by numbers only." []
->       Right n -> do
->         c <- asks db
->         ts <- liftIO $ quickQuery' c "SELECT origin, destination, representation FROM link \
->                                      \WHERE link_no = ?" [toSql n]
->                          `catchSqlE` "Failed to retrieve link."
->         review <- reviewHtml memberNo n
->         case ts of
->           [x@[_,_,_]] -> do
->               let [origin, destination, association] = map (encodeString . fromSql') x
->                   t = origin ++ " -> " ++ destination
->               stdPage t [CSS "link"]
->                 [ review,
->                   thediv ! [identifier "baseline", theclass "link"] <<
->                     linkHtml (stringToHtml origin) (stringToHtml destination),
->                   paragraph ! [identifier "association"] << association ]
->           _ -> error "Link does not exist or failed to retrieve."
+> linkPage :: Integer -> App CGIResult
+> linkPage linkNo = do
+>   memberNo <- asks memberNumber
+>   c <- asks db
+>   ts <- liftIO $ quickQuery' c "SELECT origin, destination, representation, \
+>                                       \author = ? \
+>                                \FROM link \
+>                                \WHERE link_no = ?" [toSql memberNo, toSql linkNo]
+>                    `catchSqlE` "Failed to retrieve link."
+>   review <- reviewHtml linkNo
+>   case ts of
+>     [[o,d,a,ow]] -> do
+>         let [origin, destination, association] = map fromSql' [o,d,a]
+>             owner = fromSql' ow
+>             t     = origin ++ " -> " ++ destination
+>         ops <- linkOperations linkNo owner
+>         stdPage t [CSS "link"]
+>           [ review,
+>             ops,
+>             thediv ! [identifier "baseline", theclass "link"] <<
+>               linkHtml (stringToHtml $ encodeString origin) (stringToHtml $ encodeString destination),
+>             paragraph ! [identifier "association"] << encodeString association ]
+>     _ -> error "Link does not exist or failed to retrieve."
+
+> linkOperations :: Integer -> Bool -> App Html
+> linkOperations n True = do
+>   c <- asks db
+>   deleted <- liftIO $ query1 c "SELECT deleted FROM link WHERE link_no = ?" [toSql n]
+>   case fromSql `liftM` deleted of
+>     Just True -> return $ stringToHtml "Deleted"
+>     _         -> return $ form ! [action ("/link/" ++ (show n) ++ "/delete"), method "post"] <<
+>                    submit "" "Delete"
+> linkOperations _ False = return noHtml
 
 Generate a page of links for the specified member or all members (for Nothing).
 
@@ -125,6 +151,7 @@ Generate a page of links for the specified member or all members (for Nothing).
 > getLinks offset limit = do
 >   c <- asks db
 >   liftIO $ quickQuery' c "SELECT link_no, origin, destination FROM link \
+>                          \WHERE deleted = FALSE \
 >                          \ORDER BY link_no OFFSET ? LIMIT ?"
 >                          [toSql offset, toSql limit]
 >              `catchSqlE` "Failed to retrieve links."
@@ -138,6 +165,15 @@ Generate a page of links for the specified member or all members (for Nothing).
 >     linkHtml (stringToHtml (encodeString origin')) (stringToHtml (encodeString destination'))
 > displayLink _ = thediv ! [theclass "link"] << "Link is malformed."
 
+> deleteLink :: Integer -> App CGIResult
+> deleteLink linkNo = do
+>   ref <- referer
+>   c <- asks db
+>   liftIO $ quickStmt c "UPDATE link SET deleted = TRUE \
+>                        \WHERE link_no = ?" [toSql linkNo]
+>              `catchSqlE` "Failed to delete link."
+>   redirect ref
+
 We'll stick to just searching through 10 results per page for now.
 
 > searchPage :: App CGIResult
@@ -147,9 +183,11 @@ We'll stick to just searching through 10 results per page for now.
 >   pg  <- getInputDefault 1 "pg"
 >   links <- searchLinks term ((pg - 1) * n) (n + 1)
 >   pagerControl <- pager n pg $ (length links) + ((pg - 1) * n)
->   stdPage "Search Results" [CSS "link"]
->     [ h1 << "Search Results",
->       (take n $ map displayLink links) +++ pagerControl ]
+>   case links of
+>     [] -> redirect $ "/lexeme/" ++ (encodeString term)
+>     _  -> stdPage "Search Results" [CSS "link"]
+>             [ h1 << "Search Results",
+>              (take n $ map displayLink links) +++ pagerControl ]
 
 This is a basic search that searches through the origin and destination names
 of the links in the database.
@@ -162,16 +200,3 @@ of the links in the database.
 >                          \OFFSET ? LIMIT ?"
 >                          [toSql' term, toSql' term, toSql offset, toSql limit]
 >              `catchSqlE` "Failed to search links."
-
--- > searchLinks :: String -> Int -> Int -> App [(Integer, String, String)]
--- > searchLinks term = do
--- >   c <- asks db
--- >   results <- liftIO $
--- >     quickQuery' c "SELECT link_no, origin, destination \
--- >                   \FROM link WHERE origin = ? OR destination = ? \
--- >                   \OFFSET ? LIMIT ?"
--- >                   [toSql' term, toSql' term]
--- >   return $ catMaybes $ map tuplize results
--- >       where tuplize :: [SqlValue] -> Maybe (Integer, String, String)
--- >             tuplize [l,o,d] = Just (fromSql l, fromSql' o, fromSql' d)
--- >             tuplize _       = Nothing

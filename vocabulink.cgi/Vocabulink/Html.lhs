@@ -1,4 +1,4 @@
-> module Vocabulink.Html where
+> module Vocabulink.Html (Dependency(..), stdPage, pager, simpleChoice, onclick) where
 
 > import Vocabulink.App
 > import Vocabulink.Utils ((?))
@@ -107,3 +107,12 @@ And now for the HTML.
 >   return $ paragraph ! [theclass "pager"] << thespan ! [theclass "controls"] <<
 >     [ (pg > 1 ? anchor ! [href (pth ++ prev), theclass "prev"] $ thespan ! [theclass "prev"]) << "Previous",
 >       ((pg * n < total) ? anchor ! [href (pth ++ next), theclass "next"] $ thespan ! [theclass "next"]) << "Next" ]
+
+Sometimes you just want a choice box where the displayed choices match their values.
+
+> simpleChoice :: String -> [String] -> Html
+> simpleChoice n choices =
+>   select ! [name n] << [ option ! [value choice] << choice | choice <- choices ]
+
+> onclick :: String -> HtmlAttr
+> onclick = strAttr "onclick"

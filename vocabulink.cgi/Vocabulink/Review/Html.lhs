@@ -12,13 +12,14 @@
 
 For now, all links are added to the default review set.
 
-> reviewHtml :: Integer -> Integer -> App (Html)
-> reviewHtml memberNo linkNo = do
->   if memberNo == 0
->     then return $ paragraph ! [theclass "review-box login"] <<
->                     anchor ! [href "/member/login"] << "Login to Review" 
->     else do
->       r <- reviewing memberNo linkNo
+> reviewHtml :: Integer -> App (Html)
+> reviewHtml linkNo = do
+>   memberNo <- asks memberNumber
+>   case memberNo of
+>     Nothing -> return $ paragraph ! [theclass "review-box login"] <<
+>                           anchor ! [href "/member/login"] << "Login to Review" 
+>     Just n  -> do
+>       r <- reviewing n linkNo
 >       return $ r ? paragraph ! [theclass "review-box reviewing"] << "Reviewing" $
 >                    form ! [action ("/review/set" ++ "/"),
 >                            method "post", theclass "review-box review"] <<

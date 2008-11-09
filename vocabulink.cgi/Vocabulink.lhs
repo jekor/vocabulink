@@ -3,9 +3,10 @@
 > import Vocabulink.App
 > import Vocabulink.CGI (handleErrors')
 > import Vocabulink.Html (stdPage)
-> import Vocabulink.Link (lexemePage, newLinkPage, linkPage, linksPage, linkLexemes', searchPage)
+> import Vocabulink.Link (lexemePage, newLinkPage, linkPage, linksPage, linkLexemes', searchPage, deleteLink)
 > import Vocabulink.Member (withMemberNumber, login, logout, newMemberPage, addMember', loginPage)
 > import Vocabulink.Review (newReview, reviewLink, linkReviewed')
+> import Vocabulink.Utils (intFromString)
 
 > import Codec.Binary.UTF8.String (decodeString)
 > import Control.Concurrent (forkIO)
@@ -37,7 +38,6 @@ We handle all requests using a dispatcher.
 > dispatch "GET" ["lexeme",""] = outputError 404 "Lexeme is required." []
 > dispatch "GET" ["lexeme",x] = lexemePage x
 > dispatch "GET" ["link"] = newLinkPage
-> dispatch "GET" ["link",x] = linkPage x
 > dispatch "GET" ["links"] = linksPage
 > dispatch "GET" ["search"] = searchPage
 
@@ -51,6 +51,15 @@ default (unnamed) set.
 >       ("POST",["set",x]) -> newReview memberNo x
 >       ("POST",[x])       -> linkReviewed' memberNo x
 >       (m,x)              -> output404 (m:x)
+
+> dispatch method' ("link":x:o) = do
+>   n <- liftIO $ intFromString x
+>   case n of
+>     Nothing -> outputError 400 "Links are identified by numbers only." []
+>     Just n' -> case (method', o) of
+>                  ("GET",[]) -> linkPage n'
+>                  ("POST",["delete"]) -> deleteLink n'
+>                  (m,y) -> output404 (m:y)
 
 > dispatch "GET"  ["member","join"] = newMemberPage
 > dispatch "POST" ["member","join"] = addMember'

@@ -5,7 +5,7 @@ SuperMemo algorithm SM-2
 http://www.supermemo.com/english/ol/sm2.htm
 
 > import Vocabulink.App
-> import Vocabulink.DB (quickInsert, catchSqlE)
+> import Vocabulink.DB (quickStmt, catchSqlE)
 
 > import Control.Monad.Reader (asks)
 > import Database.HDBC (quickQuery, run, withTransaction, toSql, fromSql)
@@ -70,9 +70,9 @@ This should return Nothing if the item needs to be repeated immediately.
 > createSM2 :: Integer -> Integer -> Integer -> Double -> App ()
 > createSM2 memberNo linkNo n ef = do
 >   c <- asks db
->   liftIO $ quickInsert c "INSERT INTO link_sm2 (member_no, link_no, n, EF) \
->                          \VALUES (?, ?, ?, ?)"
->                          [toSql memberNo, toSql linkNo, toSql n, toSql ef]
+>   liftIO $ quickStmt c "INSERT INTO link_sm2 (member_no, link_no, n, EF) \
+>                        \VALUES (?, ?, ?, ?)"
+>                        [toSql memberNo, toSql linkNo, toSql n, toSql ef]
 >              `catchSqlE` "Failed to create an SM-2 record."
 
 > updateSM2 :: Integer -> Integer -> Integer -> Double -> App ()

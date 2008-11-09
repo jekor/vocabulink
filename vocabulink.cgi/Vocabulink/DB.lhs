@@ -1,9 +1,10 @@
-> module Vocabulink.DB (catchSqlE, catchSqlD, query1, quickInsert, quickInsertNo, SqlType'(..)) where
+> module Vocabulink.DB (catchSqlE, catchSqlD, query1, queryColumn, quickStmt, quickInsertNo, SqlType'(..)) where
 
 > import Vocabulink.CGI (logSqlError)
 
 > import Codec.Binary.UTF8.String (encodeString, decodeString)
 > import Control.Monad (liftM)
+> import Data.Maybe (catMaybes)
 > import Database.HDBC
 
 Most of the time, if we have a SQL error, we're not prepared for it. We want to
@@ -32,10 +33,22 @@ Sometimes you just want to query a single value.
 > sqlFst (x:_) = Just x
 > sqlFst _     = Nothing
 
-It's often tedious to work with transactions if you're just inserting 1 tuple.
+queryColumn is like query1, but for multiple rows.
 
-> quickInsert :: IConnection conn => conn -> String -> [SqlValue] -> IO ()
-> quickInsert c sql vs = do
+> queryColumn :: IConnection conn => conn -> String -> [SqlValue] -> IO [SqlValue]
+> queryColumn c sql vs = do
+>   rows <- quickQuery c sql vs
+>   return $ catMaybes $ map safeHead rows
+
+> safeHead :: [a] -> Maybe a
+> safeHead []    = Nothing
+> safeHead (x:_) = Just x
+
+It's often tedious to work with transactions if you're just issuing a single
+statement.
+
+> quickStmt :: IConnection conn => conn -> String -> [SqlValue] -> IO ()
+> quickStmt c sql vs = do
 >   withTransaction c $ \c' -> run c' sql vs >> return ()
 
 Run a quick insert and return the sequence number it created.
@@ -72,5 +85,9 @@ have to do.
 >   fromSql' = fromSql
 
 > instance SqlType' Int where
+>   toSql' = toSql
+>   fromSql' = fromSql
+
+> instance SqlType' Bool where
 >   toSql' = toSql
 >   fromSql' = fromSql

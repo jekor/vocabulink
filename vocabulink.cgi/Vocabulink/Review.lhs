@@ -4,7 +4,7 @@
 
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput', referer)
-> import Vocabulink.DB (query1, quickInsert, catchSqlE, catchSqlD)
+> import Vocabulink.DB (query1, quickStmt, catchSqlE, catchSqlD)
 > import Vocabulink.Html (stdPage, Dependency(..))
 > import Vocabulink.Link (getLink, linkHtml)
 > import Vocabulink.Utils (intFromString)
@@ -12,7 +12,7 @@
 > import Codec.Binary.UTF8.String (encodeString)
 > import Control.Monad (liftM)
 > import Control.Monad.Reader (asks)
-> import Database.HDBC (withTransaction, run, toSql, fromSql)
+> import Database.HDBC (withTransaction, run, toSql, fromSql, iToSql)
 > import Data.Maybe (fromMaybe)
 > import Network.FastCGI (CGIResult, liftIO, outputError, redirect)
 > import Text.XHtml.Strict
@@ -21,18 +21,18 @@
 > scheduleReview :: Integer -> Integer -> String -> App ()
 > scheduleReview memberNo linkNo _ = do
 >   c <- asks db
->   liftIO $ quickInsert c "INSERT INTO link_to_review (member_no, link_no) \
->                          \VALUES (?, ?)" [toSql memberNo, toSql linkNo]
+>   liftIO $ quickStmt c "INSERT INTO link_to_review (member_no, link_no) \
+>                        \VALUES (?, ?)" [toSql memberNo, toSql linkNo]
 >              `catchSqlE` "You already have this link scheduled for review or there was an error."
 
 > newReview :: Integer -> String -> App CGIResult
 > newReview memberNo set = do
 >   link <- getInput' "link"
->   no <- liftIO $ intFromString link
->   case no of
->     Left  _ -> outputError 400 "Links are identified by numbers only." []
->     Right n -> do
->       scheduleReview memberNo n set
+>   n <- liftIO $ intFromString link
+>   case n of
+>     Nothing -> outputError 400 "Links are identified by numbers only." []
+>     Just n' -> do
+>       scheduleReview memberNo n' set
 >       referer >>= redirect
 
 Review the next link in the queue.
@@ -80,7 +80,7 @@ Get the number of links that a user has for review.
 >   n <- liftIO $ query1 c "SELECT COUNT(*) FROM link_to_review \
 >                          \WHERE member_no = ? AND current_timestamp > target_time"
 >                          [toSql memberNo]
->                   `catchSqlD` (Just (toSql (0 :: Integer)))
+>                   `catchSqlD` (Just (iToSql 0))
 >   return $ maybe (0 :: Integer) fromSql n
 
 > nextReviewTime :: Integer -> App (Maybe TimeDiff)
@@ -95,13 +95,13 @@ Get the number of links that a user has for review.
 
 > linkReviewed' :: Integer -> String -> App CGIResult
 > linkReviewed' memberNo link = do
->   linkNo <- liftIO $ intFromString link
->   case linkNo of
->     Left  _ -> outputError 400 "Links are identified by numbers only." []
->     Right n -> do
+>   n <- liftIO $ intFromString link
+>   case n of
+>     Nothing -> outputError 400 "Links are identified by numbers only." []
+>     Just n' -> do
 >       recall <- getInput' "recall"
 >       recallTime <- getInput' "recall-time"
->       linkReviewed memberNo n recall recallTime
+>       linkReviewed memberNo n' recall recallTime
 >       redirect "/review/next"
 
 Note that a link was reviewed and schedule the next review. For testing
