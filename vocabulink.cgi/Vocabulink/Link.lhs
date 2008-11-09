@@ -3,7 +3,7 @@
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput', getInputDefault)
 > import Vocabulink.DB (query1, quickInsertNo, catchSqlE, fromSql', toSql')
-> import Vocabulink.Html (outputHtml, page, Dependency(..), pager, stdPage)
+> import Vocabulink.Html (stdPage, Dependency(..), pager)
 > import Vocabulink.Member (withMemberNumber)
 > import Vocabulink.Review.Html (reviewHtml)
 > import Vocabulink.Utils (intFromString)
@@ -25,7 +25,7 @@ this lexeme is defined. If not, we assume it to be canonical.
 >                              \WHERE lexeme = ?" [toSql' l]
 >   case lemma of
 >     Just lm -> redirect $ "/lexeme/" ++ encodeString (fromSql' lm)
->     Nothing -> outputHtml $ page (encodeString l) [CSS "lexeme"]
+>     Nothing -> stdPage (encodeString l) [CSS "lexeme"]
 >       [ form ! [action "/link", method "get"] <<
 >         [ hidden "origin" (encodeString l),
 >           thediv ! [identifier "baseline", theclass "link"] <<
@@ -56,7 +56,7 @@ origin should already be UTF8 encoded.
 >   origin <- encodeString `liftM` getInput' "origin"
 >   destination <- encodeString `liftM` getInput' "destination"
 >   let t = origin ++ " -> " ++ destination
->   outputHtml $ page t [CSS "lexeme"]
+>   stdPage t [CSS "lexeme"]
 >     [ form ! [action "", method "post"] <<
 >        [ thediv ! [identifier "baseline", theclass "link"] <<
 >            linkHtml (stringToHtml origin) (stringToHtml destination),
@@ -103,7 +103,7 @@ origin should already be UTF8 encoded.
 >           [x@[_,_,_]] -> do
 >               let [origin, destination, association] = map (encodeString . fromSql') x
 >                   t = origin ++ " -> " ++ destination
->               outputHtml $ page t [CSS "lexeme"]
+>               stdPage t [CSS "lexeme"]
 >                 [ review,
 >                   thediv ! [identifier "baseline", theclass "link"] <<
 >                     linkHtml (stringToHtml origin) (stringToHtml destination),
@@ -118,7 +118,7 @@ Generate a page of links for the specified member or all members (for Nothing).
 >   n   <- getInputDefault 25 "n"
 >   links <- getLinks ((pg - 1) * n) (n + 1)
 >   pagerControl <- pager n pg $ (length links) + ((pg - 1) * n)
->   outputHtml $ page "Links" [CSS "lexeme"]
+>   stdPage "Links" [CSS "lexeme"]
 >     [ (take n $ map displayLink links) +++ pagerControl ]
 
 > getLinks :: Int -> Int -> App [[SqlValue]]
@@ -147,8 +147,7 @@ We'll stick to just searching through 10 results per page for now.
 >   pg  <- getInputDefault 1 "pg"
 >   links <- searchLinks term ((pg - 1) * n) (n + 1)
 >   pagerControl <- pager n pg $ (length links) + ((pg - 1) * n)
->   sPage <- stdPage "Search Results" [CSS "lexeme"]
->   outputHtml $ sPage <<
+>   stdPage "Search Results" [CSS "lexeme"]
 >     [ h1 << "Search Results",
 >       (take n $ map displayLink links) +++ pagerControl ]
 

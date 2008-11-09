@@ -5,7 +5,7 @@
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput', referer)
 > import Vocabulink.DB (query1, quickInsert, catchSqlE)
-> import Vocabulink.Html (outputHtml, page, Dependency(..))
+> import Vocabulink.Html (stdPage, Dependency(..))
 > import Vocabulink.Link (getLink, linkHtml)
 > import Vocabulink.Utils (intFromString)
 
@@ -51,8 +51,8 @@ Review the next link in the queue.
 >   (o,d) <- getLink linkNo
 >   let origin = encodeString o
 >       destination = encodeString d
->   outputHtml $ page ("Review " ++ origin ++ " -> ?")
->                     [CSS "lexeme", JS "MochiKit", JS "review"]
+>   stdPage ("Review " ++ origin ++ " -> ?")
+>           [CSS "lexeme", JS "MochiKit", JS "review"]
 >     [ thediv ! [identifier "baseline", theclass "link"] <<
 >         linkHtml (stringToHtml origin) (anchor ! [identifier "lexeme-cover", href "#"] << "?"),
 >       form ! [action ("/review/" ++ (show linkNo)), method "post"] <<
@@ -67,7 +67,7 @@ Review the next link in the queue.
 
 > noLinksToReviewPage :: App CGIResult
 > noLinksToReviewPage = do
->   outputHtml $ page t [CSS "lexeme"]
+>   stdPage t [CSS "lexeme"]
 >     [ h1 << t,
 >       paragraph << "Take a break! You don't have any links to review right now." ]
 >         where t = "No Links to Review"

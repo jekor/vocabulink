@@ -23,6 +23,8 @@ test :
 metrics : $(lhss) $(shell find . -name "*.lhs-boot" -print)
 	@echo -e -n "\tSLOC: "
 	@echo $^ | xargs -n 1 lhs2TeX --code | wc --lines | tr -d "\n"
+	@echo -e -n "\tgzipped bytes: "
+	@echo $^ | xargs -n 1 lhs2TeX --code | gzip | wc --bytes | tr -d "\n"
 	@echo -e -n "\tsource chars: "
 	@echo $^ | xargs -n 1 lhs2TeX --code | wc --chars | tr -d "\n"
 	@echo -e -n "\t  total chars: "

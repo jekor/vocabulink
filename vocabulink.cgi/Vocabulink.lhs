@@ -2,7 +2,7 @@
 
 > import Vocabulink.App
 > import Vocabulink.CGI (handleErrors')
-> import Vocabulink.Html (outputHtml, stdPage)
+> import Vocabulink.Html (stdPage)
 > import Vocabulink.Link (lexemePage, newLinkPage, linkPage, linksPage, linkLexemes', searchPage)
 > import Vocabulink.Member (withMemberNumber, login, logout, newMemberPage, addMember', loginPage)
 > import Vocabulink.Review (newReview, reviewLink, linkReviewed')
@@ -52,7 +52,7 @@ default (unnamed) set.
 >       ("POST",[x])       -> linkReviewed' memberNo x
 >       (m,x)              -> output404 (m:x)
 
-> dispatch "GET"  ["member","join"] = output newMemberPage
+> dispatch "GET"  ["member","join"] = newMemberPage
 > dispatch "POST" ["member","join"] = addMember'
 > dispatch "GET"  ["member","login"] = loginPage
 > dispatch "POST" ["member","login"] = login
@@ -79,8 +79,7 @@ with 404).
 > testPage = do
 >   vars <- getVars
 >   inputs <- cgiGet cgiInputs
->   page <- stdPage "Test Page" []
->   outputHtml $ page <<
+>   stdPage "Test Page" []
 >     [ h1 << "Test Page",
 >       paragraph << (pre << map (\x -> show x ++ "\n") vars) +++
 >                    (pre << show inputs),

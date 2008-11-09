@@ -3,7 +3,7 @@
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput', getInputDefault, referer)
 > import Vocabulink.DB (query1, quickInsertNo, toSql', fromSql', catchSqlE)
-> import Vocabulink.Html (outputHtml, page)
+> import Vocabulink.Html (stdPage)
 > import Vocabulink.Utils ((?))
 
 > import Vocabulink.Member.Auth (setAuthCookie)
@@ -60,8 +60,8 @@ This returns the new member number.
 >       setAuthCookie n ip
 >       redirect "/"
 
-> newMemberPage :: String
-> newMemberPage = renderHtml $ page "Join Vocabulink" []
+> newMemberPage :: App CGIResult
+> newMemberPage = stdPage "Join Vocabulink" []
 >   [ h1 << "Join Vocabulink",
 >     form ! [action "", method "post"] <<
 >       [ label << "Username:",
@@ -141,7 +141,7 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 > loginPage = do
 >   referer'  <- referer
 >   redirect' <- getInputDefault referer' "redirect"
->   outputHtml $ page "Log In" []
+>   stdPage "Log In" []
 >     [ h1 << "Log In",
 >       form ! [action "", method "post"] <<
 >         [ hidden "redirect" redirect',

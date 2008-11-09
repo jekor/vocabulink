@@ -25,12 +25,12 @@ page expects title to already be UTF8 encoded if necessary.
 >   (thetitle << t +++ concatHtml (map includeDep ds)) +++
 >   body << b
 
-> stdPage :: String -> [Dependency] -> App (Html -> Html)
-> stdPage t deps = do
+> stdPage :: String -> [Dependency] -> [Html] -> App CGIResult
+> stdPage t deps h = do
 >   username <- asks memberName
->   return $ \b -> header <<
+>   outputHtml $ header <<
 >     (thetitle << t +++ concatHtml (map includeDep deps)) +++
->     body << headerBar username +++ b
+>     body << headerBar username +++ concatHtml h
 
 > includeDep :: Dependency -> Html
 > includeDep (CSS css) =
