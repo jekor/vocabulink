@@ -58,8 +58,10 @@ Eventually we'll want to cache this.
 > linkTypes = do
 >   c <- asks db
 >   types <- liftIO $ queryColumn c
->     "SELECT link_type, COUNT(*) AS count FROM link \
->     \GROUP BY link_type ORDER BY count" []
+>     "SELECT name FROM link_type LEFT OUTER JOIN \
+>     \(SELECT link_type, COUNT(*) AS count FROM link \
+>      \GROUP BY link_type) AS t ON (t.link_type = link_type.name) \
+>     \ORDER BY t.count DESC NULLS LAST" []
 >              `catchSqlE` "Failed to retrieve link types."
 >   return $ map fromSql' types
 

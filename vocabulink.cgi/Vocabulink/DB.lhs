@@ -37,7 +37,7 @@ queryColumn is like query1, but for multiple rows.
 
 > queryColumn :: IConnection conn => conn -> String -> [SqlValue] -> IO [SqlValue]
 > queryColumn c sql vs = do
->   rows <- quickQuery c sql vs
+>   rows <- quickQuery' c sql vs
 >   return $ catMaybes $ map safeHead rows
 
 > safeHead :: [a] -> Maybe a
