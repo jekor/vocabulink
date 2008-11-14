@@ -1,4 +1,4 @@
-> module Vocabulink.Html (Dependency(..), stdPage, pager, simpleChoice, onclick) where
+> module Vocabulink.Html (Dependency(..), stdPage, pager, simpleChoice, onclick, formName) where
 
 > import Vocabulink.App
 > import Vocabulink.Utils ((?))
@@ -112,7 +112,16 @@ Sometimes you just want a choice box where the displayed choices match their val
 
 > simpleChoice :: String -> [String] -> Html
 > simpleChoice n choices =
->   select ! [name n] << [ option ! [value choice] << choice | choice <- choices ]
+>   select ! [identifier n, name n] << [ option ! [value choice] << choice | choice <- choices ]
 
 > onclick :: String -> HtmlAttr
 > onclick = strAttr "onclick"
+
+Let's keep our form names safe.
+
+> formName :: String -> String
+> formName = map replaceChar
+>     where replaceChar c =
+>               case c of
+>                 ' ' -> '-'
+>                 c'  -> c'

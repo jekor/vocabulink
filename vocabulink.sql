@@ -33,35 +33,54 @@ CREATE TABLE language (
        abbr CHARACTER VARYING (2) PRIMARY KEY,
        name TEXT
 );
-COMMENT ON COLUMN lingvo.abbr IS 'For now we stick to a 2-letter language code (ISO 639-1). This doesn''t allow us to represent all possible languages like a 3-letter code (ISO 639-2) would. But it''s more familiar.';
-INSERT INTO lingvo (abbr, lingvo_name) VALUES ('en', 'English');
+COMMENT ON COLUMN language.abbr IS 'For now we stick to a 2-letter language code (ISO 639-1). This doesn''t allow us to represent all possible languages like a 3-letter code (ISO 639-2) would. But it''s more familiar.';
+INSERT INTO language (abbr, name) VALUES ('en', 'English');
 
 CREATE TABLE link_type (
        name TEXT PRIMARY KEY,
        description TEXT NOT NULL,
-       color INTEGER NOT NULL
+       relation TEXT
 );
-INSERT INTO link_type (type_name, description, color)
-     VALUES ('association', 'A simple association', 0);
-INSERT INTO link_type (type_name, description, color)
-     VALUES ('story', 'A vivid story', 16711680);
+COMMENT ON TABLE link_type IS 'There are different types of links between lexemes. From simple associations (just asserting that a link exists) to full-blown stories with pictures that use a native-language link word.';
+COMMENT ON COLUMN link_type.table IS 'For most link types, an individual link carries with it extra information. We use a separate table for each to store the extra information for each link. I considered using PostgreSQL''s inheritance features, but they seem to be problematic and I don''t know how well they perform. More than 1 link type can share the same table.';
+INSERT INTO link_type (name, description, relation)
+     VALUES ('association', 'A simple association with no attached meaning', NULL),
+            ('cognate', 'A sound-alike or borrowed word', NULL),
+            ('link word', 'A story derived from a native-language link word', 'link_type_link_word'),
+            ('foreign link word', 'A story derived from a foreign-language link word', 'link_type_link_word'),
+            ('relationship', 'A relationship between 2 native words and a corresponding pair in a foreign language', 'link_type_relationship');
 
 CREATE TABLE link (
        link_no SERIAL PRIMARY KEY,
-       origin TEXT NOT NULL,
-       destination TEXT NOT NULL,
-       -- type? story, picture, etc.
+       origin TEXT NOT NULL CHECK (length(origin) > 0),
+       destination TEXT NOT NULL CHECK (length(destination) > 0),
        link_type TEXT REFERENCES link_type (name) ON UPDATE CASCADE,
        language CHARACTER VARYING (2) REFERENCES language (abbr) ON UPDATE CASCADE,
-       representation TEXT,
        rating REAL,
        author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
        created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-       updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp
+       updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 COMMENT ON TABLE link IS 'A link is an association between 2 ideas in a single direction. (A reverse association would require another link.)';
 COMMENT ON COLUMN link.origin IS 'lexeme (lemma)';
 COMMENT ON COLUMN link.destination IS 'lexeme (lemma)';
+COMMENT ON COLUMN link.deleted IS 'We need a way to delete links, but we don''t want to destroy people''s review decks. This allows us to mark deleted links so that we don''t display them to people who aren''t already reviewing them and we can later sweep ones with no references.';
+-- We're going to search by these often.
+CREATE INDEX link_origin_index ON link (origin);
+CREATE INDEX link_destination_index ON link (destination);
+
+CREATE TABLE link_type_link_word (
+       link_no INTEGER REFERENCES link (link_no),
+       link_word TEXT NOT NULL,
+       story TEXT NOT NULL
+);
+
+CREATE TABLE link_type_relationship (
+       link_no INTEGER REFERENCES link (link_no),
+       left_side TEXT NOT NULL,
+       right_side TEXT NOT NULL
+);
 
 CREATE TABLE link_set (
        set_no SERIAL PRIMARY KEY,
@@ -92,9 +111,20 @@ CREATE TABLE link_review (
        link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE,
        target_time TIMESTAMP WITH TIME ZONE NOT NULL,
        actual_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-       recall INTEGER NOT NULL,
+       recall REAL NOT NULL,
        recall_time REAL NOT NULL,
        PRIMARY KEY (member_no, link_no, actual_time)
 );
 COMMENT ON COLUMN link_review.recall IS 'Recall is a measure of how easy or complete the memory of a link was. 1.0 is perfect recall. 0.0 means "no clue".';
 COMMENT ON COLUMN link_review.recall_time IS 'Recall time is the amount of time (in milliseconds) taken to recall (or not) the destination of a link. It could be measured as the time between when the page is displayed and when the destination lexeme is shown (using JavaScript).';
+
+CREATE TABLE link_sm2 (
+       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE CHECK (member_no <> 0),
+       link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE,
+       n SMALLINT NOT NULL DEFAULT 1,
+       EF REAL NOT NULL DEFAULT 2.5,
+       PRIMARY KEY (member_no, link_no)
+);
+COMMENT ON TABLE link_sm2 IS 'link_sm2 is used to track statistics for reviews based on SuperMemo algorithm 2 (SM-2).';
+COMMENT ON COLUMN link_sm2.ef IS 'EF stands for "Easiness Factor".';
+COMMENT ON COLUMN link_sm2.n IS 'This member is in review interval n. They may have reviewed the item more than n times, but n resets with a response lower than 3 in SM-2.';

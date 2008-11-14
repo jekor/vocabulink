@@ -3,9 +3,11 @@
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput', getInputDefault, referer)
 > import Vocabulink.DB (query1, queryColumn, quickStmt, quickInsertNo, catchSqlE, fromSql', toSql')
-> import Vocabulink.Html (stdPage, Dependency(..), pager, simpleChoice, onclick)
+> import Vocabulink.Html (stdPage, Dependency(..), pager, simpleChoice)
 > import Vocabulink.Member (withMemberNumber)
 > import Vocabulink.Review.Html (reviewHtml)
+
+> import Vocabulink.Link.Types (newLinkHtml)
 
 > import Codec.Binary.UTF8.String (encodeString)
 > import Control.Monad (liftM)
@@ -71,17 +73,15 @@ Eventually we'll want to cache this.
 >   destination <- encodeString `liftM` getInput' "destination"
 >   types <- linkTypes
 >   let t = origin ++ " -> " ++ destination
->   stdPage t [CSS "link"]
+>   stdPage t [CSS "link", JS "MochiKit", JS "link"]
 >     [ form ! [action "", method "post"] <<
 >        [ thediv ! [identifier "baseline", theclass "link"] <<
 >            linkHtml (stringToHtml origin) (stringToHtml destination),
->          paragraph ! [identifier "association"] <<
->            [ simpleChoice "link-type" types, br,
->              textarea ! [name "association", cols "80", rows "20",
->                          onclick "this.innerHTML=''"] <<
->                "Write a story linking the two words here.",
->              br,
->              submit "" "Associate" ] ] ]
+>          thediv ! [identifier "link-details"] <<
+>            ([ simpleChoice "link-type" types, br ] ++
+>             newLinkHtml (head types) origin destination ++
+>             [ br,
+>               submit "" "Associate" ]) ] ]
 
 > linkLexemes :: String -> String -> String -> Integer -> App (Maybe Integer)
 > linkLexemes origin destination association n = do
