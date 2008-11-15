@@ -99,3 +99,6 @@ outputError c m es =
 > referer :: App String
 > referer = do ref <- getVar "HTTP_REFERER"
 >              return $ fromMaybe "http://www.vocabulink.com/" ref
+
+> output404 :: [String] -> App CGIResult
+> output404 = outputError 404 "Resource not found."

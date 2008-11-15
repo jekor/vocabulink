@@ -1,0 +1,6 @@
+(add-to-list 'load-path "~/.emacs.d/muse-3.12/lisp")
+(require 'muse-mode)
+(require 'muse-html)
+(setq muse-xhtml-style-sheet "")
+(setq muse-xhtml-header "<h1><lisp>\n  (concat (muse-publishing-directive \"title\")\n          (let ((author (muse-publishing-directive \"author\")))\n            (if (not (string= author (user-full-name)))\n                (concat \" (by \" author \")\"))))</lisp></h1>\n")
+(setq muse-xhtml-footer "")

@@ -1,7 +1,8 @@
 > module Main where
 
 > import Vocabulink.App
-> import Vocabulink.CGI (handleErrors')
+> import Vocabulink.Article (articlePage)
+> import Vocabulink.CGI (handleErrors', output404)
 > import Vocabulink.Html (stdPage)
 > import Vocabulink.Link (lexemePage, newLinkPage, linkPage, linksPage, linkLexemes', searchPage, deleteLink)
 > import Vocabulink.Member (withMemberNumber, login, logout, newMemberPage, addMember', loginPage)
@@ -40,6 +41,8 @@ We handle all requests using a dispatcher.
 > dispatch "GET" ["link"] = newLinkPage
 > dispatch "GET" ["links"] = linksPage
 > dispatch "GET" ["search"] = searchPage
+
+> dispatch "GET" ["article",x] = articlePage x
 
 Each link for review can be added to a set. Most people will only use their
 default (unnamed) set.
@@ -80,9 +83,6 @@ with 404).
 
 > pathComponents :: Parser [String]
 > pathComponents =  char '/' >> sepBy (many (noneOf "/")) (char '/')
-
-> output404 :: [String] -> App CGIResult
-> output404 = outputError 404 "Resource not found."
 
 > testPage :: App CGIResult
 > testPage = do

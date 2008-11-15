@@ -1,4 +1,4 @@
-> module Vocabulink.App (App, AppEnv(..), runApp, liftIO) where
+> module Vocabulink.App (App, AppEnv(..), runApp, liftIO, CGIResult) where
 
 > import {-# SOURCE #-} Vocabulink.Member.Auth (loginNumber)
 

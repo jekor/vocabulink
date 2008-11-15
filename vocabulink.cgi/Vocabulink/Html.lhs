@@ -24,7 +24,7 @@ stdPage expects title to already be UTF8 encoded if necessary.
 >   headerB <- headerBar
 >   output $ renderHtml $ header <<
 >     (thetitle << t +++ concatHtml (map includeDep ((CSS "page"):deps))) +++
->     body << headerB +++ concatHtml h
+>     body << (headerB +++ concatHtml h)
 
 > includeDep :: Dependency -> Html
 > includeDep (CSS css) =

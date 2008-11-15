@@ -27,8 +27,7 @@ Each link is represented by a name in the database.
 > linkEditHtml (Link (Cognate) _ _) = []
 > linkEditHtml (Link (LinkWord _ story) _ _) =
 >   [label << "link word",
->    textfield "link-word",
->    label << "story",
+>    textfield "link-word:", br,
 >    textarea ! [name "story", cols "80", rows "20"] << story]
 > linkEditHtml (Link (ForeignLinkWord word story) o d) =
 >   linkEditHtml $ Link (LinkWord word story) o d
