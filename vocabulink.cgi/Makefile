@@ -14,7 +14,10 @@ install :
 	-killall $(fcgi)
 	spawn-fcgi -f "/usr/local/bin/$(fcgi) 2>> /tmp/vocabulink.error.log" -p 10033 -u lighttpd -g lighttpd
 
-clean:
+tags : $(lhss)
+	hasktags -e $^
+
+clean :
 	find . -name "*.o" -o -name "*.hi" -print0 | xargs -0 rm
 
 test :

@@ -6,7 +6,7 @@
 > import Vocabulink.CGI (getInput', referer)
 > import Vocabulink.DB (query1, quickStmt, catchSqlE, catchSqlD)
 > import Vocabulink.Html (stdPage, Dependency(..))
-> import Vocabulink.Link (getLink, linkHtml)
+> import Vocabulink.Link (getLink, linkHtml, Link(..))
 > import Vocabulink.Utils (intFromString)
 
 > import Codec.Binary.UTF8.String (encodeString)
@@ -48,7 +48,7 @@ Review the next link in the queue.
 
 > reviewLinkPage :: Integer -> App CGIResult
 > reviewLinkPage linkNo = do
->   (o,d) <- getLink linkNo
+>   (Link _ o d) <- getLink linkNo
 >   let origin = encodeString o
 >       destination = encodeString d
 >   stdPage ("Review " ++ origin ++ " -> ?")

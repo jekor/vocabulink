@@ -1,4 +1,4 @@
-> module Vocabulink.DB (catchSqlE, catchSqlD, query1, queryColumn, quickStmt, quickInsertNo, SqlType'(..)) where
+> module Vocabulink.DB (catchSqlE, catchSqlD, query1, queryColumn, quickStmt, insertNo, quickInsertNo, SqlType'(..)) where
 
 > import Vocabulink.CGI (logSqlError)
 
@@ -48,18 +48,20 @@ It's often tedious to work with transactions if you're just issuing a single
 statement.
 
 > quickStmt :: IConnection conn => conn -> String -> [SqlValue] -> IO ()
-> quickStmt c sql vs = do
->   withTransaction c $ \c' -> run c' sql vs >> return ()
+> quickStmt c' sql vs = do
+>   withTransaction c' $ \c -> run c sql vs >> return ()
 
 Run a quick insert and return the sequence number it created.
 
 > quickInsertNo :: IConnection conn => conn -> String -> [SqlValue] -> String -> IO (Maybe Integer)
-> quickInsertNo c sql vs seqName = do
->   withTransaction c $ \c' -> do
->     run c' sql vs
->     seqNo <- query1 c' "SELECT currval(?)"
->                        [toSql' seqName]
->     return $ fromSql `liftM` seqNo
+> quickInsertNo c' sql vs seqName =
+>   withTransaction c' $ \c -> insertNo c sql vs seqName
+
+> insertNo :: IConnection conn => conn -> String -> [SqlValue] -> String -> IO (Maybe Integer)
+> insertNo c sql vs seqName = do
+>   run c sql vs
+>   seqNo <- query1 c "SELECT currval(?)" [toSql' seqName]
+>   return $ fromSql `liftM` seqNo
 
 Let's define some helpers to keep from forgetting to decode/encode UTF8
 strings. Ultimately, I'd like to have a UTF8String type that could use the type

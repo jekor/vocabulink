@@ -1,18 +1,24 @@
-> module Vocabulink.Link where
+> module Vocabulink.Link (lexemePage, linkHtml, getLink, linkPage, newLinkPage,
+>                         linkLexemes, linkLexemes', searchPage, deleteLink, linksPage,
+>                         Link(..))where
 
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput', getInputDefault, referer)
-> import Vocabulink.DB (query1, queryColumn, quickStmt, quickInsertNo, catchSqlE, fromSql', toSql')
+> import Vocabulink.DB (query1, queryColumn, quickStmt, insertNo, quickInsertNo,
+>                       catchSqlE, fromSql', toSql')
 > import Vocabulink.Html (stdPage, Dependency(..), pager, simpleChoice)
 > import Vocabulink.Member (withMemberNumber)
 > import Vocabulink.Review.Html (reviewHtml)
 
-> import Vocabulink.Link.Types (newLinkHtml)
+> import Vocabulink.Link.Types (Link(..), newLinkHtml, linkFromForm,
+>                               linkTypeName, establishLinkType, getLinkType,
+>                               linkTypeHtml)
 
 > import Codec.Binary.UTF8.String (encodeString)
 > import Control.Monad (liftM)
 > import Control.Monad.Reader (asks)
-> import Database.HDBC (quickQuery', toSql, fromSql, SqlValue)
+> import Data.Maybe (fromJust)
+> import Database.HDBC (quickQuery', toSql, fromSql, SqlValue, withTransaction, rollback)
 > import Network.FastCGI (CGIResult, liftIO, redirect)
 > import Text.XHtml.Strict
 
@@ -42,14 +48,18 @@ origin should already be UTF8 encoded.
 >     image ! [src "http://s.vocabulink.com/black.png", width "20%", height "1"],
 >     thespan ! [theclass "lexeme"] << destination ]
 
-> getLink :: Integer -> App (String, String)
+> getLink :: Integer -> App Link
 > getLink linkNo = do
 >   c <- asks db
->   r <- liftIO $ quickQuery' c "SELECT origin, destination FROM link \
->                               \WHERE link_no = ?" [toSql linkNo]
+>   r <- liftIO $ quickQuery' c "SELECT origin, destination, link_type \
+>                               \FROM link WHERE link_no = ?" [toSql linkNo]
 >                   `catchSqlE` "Link not found."
 >   case r of
->     [[o,d]] -> return (fromSql' o, fromSql' d)
+>     [[o,d,t]] -> do
+>       linkType <- liftIO $ getLinkType c linkNo (fromSql' t)
+>       case linkType of
+>         Nothing -> error "Link not found."
+>         Just t' -> return $ Link t' (fromSql' o) (fromSql' d)
 >     _       -> error "Link not found."
 
 Return the types of links sorted by how common they should be.
@@ -93,13 +103,29 @@ Eventually we'll want to cache this.
 >                            "link_link_no_seq"
 >              `catchSqlE` "Failed to establish link."
 
+> establishLink :: Link -> Integer -> App (Maybe Integer)
+> establishLink link@(Link linkType origin destination) memberNo = do
+>   c' <- asks db
+>   liftIO $ withTransaction c' $ \c -> do
+>     linkNo <- insertNo c "INSERT INTO link (origin, destination, link_type, \
+>                                            \language, author) \
+>                          \VALUES (?, ?, ?, 'en', ?)"
+>                          [toSql' origin, toSql' destination, toSql $ linkTypeName link,
+>                           toSql memberNo]
+>                          "link_link_no_seq"
+>     case linkNo of
+>       Nothing -> rollback c >> return Nothing
+>       Just n  -> do n' <- establishLinkType c n linkType
+>                     if n' == 1
+>                        then return $ Just n
+>                        else return Nothing
+>    `catchSqlE` "Failed to establish link."
+
 > linkLexemes' :: App CGIResult
 > linkLexemes' =
 >   withMemberNumber $ \memberNo -> do
->     origin <- getInput' "origin"
->     destination <- getInput' "destination"
->     association <- getInput' "association"
->     linkNo <- linkLexemes origin destination association memberNo
+>     link <- linkFromForm
+>     linkNo <- establishLink link memberNo
 >     case linkNo of
 >       Just n  -> redirect $ "/link/" ++ (show n)
 >       Nothing -> error "Failed to establish link."
@@ -107,26 +133,19 @@ Eventually we'll want to cache this.
 > linkPage :: Integer -> App CGIResult
 > linkPage linkNo = do
 >   memberNo <- asks memberNumber
+>   (Link linkType origin destination) <- getLink linkNo
 >   c <- asks db
->   ts <- liftIO $ quickQuery' c "SELECT origin, destination, representation, \
->                                       \author = ? \
->                                \FROM link \
->                                \WHERE link_no = ?" [toSql memberNo, toSql linkNo]
->                    `catchSqlE` "Failed to retrieve link."
+>   owner <- liftIO $ liftM fromSql $ liftM fromJust $ query1 c
+>     "SELECT author = ? FROM link WHERE link_no = ?" [toSql memberNo, toSql linkNo]
 >   review <- reviewHtml linkNo
->   case ts of
->     [[o,d,a,ow]] -> do
->         let [origin, destination, association] = map fromSql' [o,d,a]
->             owner = fromSql' ow
->             t     = origin ++ " -> " ++ destination
->         ops <- linkOperations linkNo owner
->         stdPage t [CSS "link"]
->           [ review,
->             ops,
->             thediv ! [identifier "baseline", theclass "link"] <<
->               linkHtml (stringToHtml $ encodeString origin) (stringToHtml $ encodeString destination),
->             paragraph ! [identifier "association"] << encodeString association ]
->     _ -> error "Link does not exist or failed to retrieve."
+>   ops <- linkOperations linkNo owner
+>   let t = (encodeString origin) ++ " -> " ++ (encodeString destination)
+>   stdPage t [CSS "link"]
+>     [ review,
+>       ops,
+>       thediv ! [identifier "baseline", theclass "link"] <<
+>         ([linkHtml (stringToHtml $ encodeString origin) (stringToHtml $ encodeString destination)] ++
+>          linkTypeHtml linkType) ]
 
 > linkOperations :: Integer -> Bool -> App Html
 > linkOperations n True = do
@@ -198,7 +217,8 @@ of the links in the database.
 > searchLinks term offset limit = do
 >   c <- asks db
 >   liftIO $ quickQuery' c "SELECT link_no, origin, destination \
->                          \FROM link WHERE origin = ? OR destination = ? \
+>                          \FROM link WHERE (origin = ? OR destination = ?) \
+>                          \AND deleted = FALSE \
 >                          \OFFSET ? LIMIT ?"
 >                          [toSql' term, toSql' term, toSql offset, toSql limit]
 >              `catchSqlE` "Failed to search links."
