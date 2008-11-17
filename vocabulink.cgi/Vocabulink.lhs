@@ -1,7 +1,7 @@
 > module Main where
 
 > import Vocabulink.App
-> import Vocabulink.Article (articlePage)
+> import Vocabulink.Article (articlePage, articlesPage)
 > import Vocabulink.CGI (handleErrors', output404)
 > import Vocabulink.Html (stdPage)
 > import Vocabulink.Link (lexemePage, newLinkPage, linkPage, linksPage, linkLexemes', searchPage, deleteLink)
@@ -11,11 +11,12 @@
 
 > import Codec.Binary.UTF8.String (decodeString)
 > import Control.Concurrent (forkIO)
+> import Data.List (intercalate)
 > import Network.CGI.Monad (cgiGet)
 > import Network.CGI.Protocol (cgiInputs)
 > import Network.FastCGI
 > import Network.URI (unEscapeString, uriPath)
-> import Text.ParserCombinators.Parsec (Parser, parse, char, sepBy, many, noneOf)
+> import Text.ParserCombinators.Parsec (Parser, parse, char, sepEndBy, many, noneOf)
 > import Text.XHtml.Strict
 
 > main :: IO ()
@@ -43,6 +44,7 @@ We handle all requests using a dispatcher.
 > dispatch "GET" ["search"] = searchPage
 
 > dispatch "GET" ["article",x] = articlePage x
+> dispatch "GET" ["articles"] = articlesPage
 
 Each link for review can be added to a set. Most people will only use their
 default (unnamed) set.
@@ -69,7 +71,9 @@ default (unnamed) set.
 > dispatch "GET"  ["member","login"] = loginPage
 > dispatch "POST" ["member","login"] = login
 > dispatch "POST" ["member","logout"] = logout
-> dispatch "GET" x = output404 x
+> dispatch "GET" path' = if last path' == "" -- Redirect trailing /
+>                           then redirect $ "/" ++ (intercalate "/" $ init path')
+>                           else output404 path'
 
 It would be nice to automatically respond with "Method Not Allowed" on pages
 that exist but don't take the POST/whatever method (as opposed to responding
@@ -82,7 +86,7 @@ with 404).
 > dispatch _ _ = outputMethodNotAllowed ["GET", "POST"]
 
 > pathComponents :: Parser [String]
-> pathComponents =  char '/' >> sepBy (many (noneOf "/")) (char '/')
+> pathComponents =  char '/' >> sepEndBy (many (noneOf "/")) (char '/')
 
 > testPage :: App CGIResult
 > testPage = do
