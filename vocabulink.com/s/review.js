@@ -5,6 +5,16 @@ function setupSignals () {
     var hiddenLexeme = getNodeAttribute($('hidden-lexeme'), 'value');
     var startTime = new Date();
     connect(lexemeCover, 'onclick', partial(showLexeme, lexemeCover, hiddenLexeme, startTime));
+    connect(document, 'onkeyup', function(e) {
+        var k = e.key();
+	switch (k.string) {
+	    case 'KEY_SPACEBAR':
+		showLexeme(lexemeCover, hiddenLexeme, startTime);
+		stop();
+		break;
+	    default:
+	}
+    });
 }
 
 function showLexeme (lexemeCover, hiddenLexeme, startTime) {

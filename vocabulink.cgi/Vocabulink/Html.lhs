@@ -1,4 +1,5 @@
-> module Vocabulink.Html (Dependency(..), stdPage, pager, simpleChoice, onclick, formName) where
+> module Vocabulink.Html (Dependency(..), stdPage, pager, simpleChoice, onclick,
+>                         accesskey, formName) where
 
 > import Vocabulink.App
 > import Vocabulink.Utils ((?))
@@ -39,7 +40,7 @@ stdPage expects title to already be UTF8 encoded if necessary.
 >   username <- asks memberName
 >   review <- reviewBox
 >   return $ thediv ! [identifier "header-bar"] <<
->     [ anchor ! [theclass "logo", href "/"] << "Vocabulink",
+>     [ anchor ! [theclass "logo", href "/", accesskey "1"] << "Vocabulink",
 >       loginBox username,
 >       searchBox,
 >       review,
@@ -105,7 +106,7 @@ And now for the HTML.
 >       prev = pageQueryString n (pg - 1) q'
 >       next = pageQueryString n (pg + 1) q'
 >   return $ paragraph ! [theclass "pager"] << thespan ! [theclass "controls"] <<
->     [ (pg > 1 ? anchor ! [href (pth ++ prev), theclass "prev"] $ thespan ! [theclass "prev"]) << "Previous",
+>     [ (pg > 1 ? anchor ! [href (pth ++ prev), theclass "prev"] $ thespan ! [theclass "prev"]) << "Previous", stringToHtml " ",
 >       ((pg * n < total) ? anchor ! [href (pth ++ next), theclass "next"] $ thespan ! [theclass "next"]) << "Next" ]
 
 Sometimes you just want a choice box where the displayed choices match their values.
@@ -116,6 +117,9 @@ Sometimes you just want a choice box where the displayed choices match their val
 
 > onclick :: String -> HtmlAttr
 > onclick = strAttr "onclick"
+
+> accesskey :: String -> HtmlAttr
+> accesskey = strAttr "accesskey"
 
 Let's keep our form names safe.
 

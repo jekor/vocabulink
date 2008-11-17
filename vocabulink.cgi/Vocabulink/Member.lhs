@@ -42,9 +42,9 @@ This returns the new member number.
 >     (length passwd)   > 72 ? error "Your password must have 72 characters or less." $
 >     -- TODO: Add password constraints?
 >     liftIO $ quickInsertNo c "INSERT INTO member (username, email, password_hash) \
->                            \VALUES (?, ?, crypt(?, gen_salt('bf')))"
->                            [toSql' username, toSql' email, toSql' passwd]
->                            "member_member_no_seq"
+>                              \VALUES (?, ?, crypt(?, gen_salt('bf')))"
+>                              [toSql' username, toSql' email, toSql' passwd]
+>                              "member_member_no_seq"
 >                `catchSqlE` "Failed to add member."
 
 > addMember' :: App CGIResult
