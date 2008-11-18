@@ -41,8 +41,23 @@
 
 #baseline {
   margin-top: 30ex;
+  margin-bottom: 30ex;
 }
 
 #link-details {
   text-align: center;
+}
+
+/* review */
+a#lexeme-cover {
+  padding: 0.5em 4em;
+  /* padding-left: 4em; */
+  /* padding-right: 4em; */
+  border: 1px solid black;
+  text-decoration: none;
+  color: black;
+}
+
+a#lexeme-cover:visited {
+  color: black;
 }

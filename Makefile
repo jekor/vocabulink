@@ -1,6 +1,6 @@
 # Vocabulink site
 
-SUBDIRS := vocabulink.cgi articles
+SUBDIRS := vocabulink.cgi articles static
 
 .PHONY : $(SUBDIRS) all
 

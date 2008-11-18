@@ -34,8 +34,15 @@ We handle all requests using a dispatcher.
 >                   Right path' -> dispatch method' path'
 >     where pathPart = (parse pathComponents "") . decodeString . unEscapeString . uriPath
 
+> staticPath :: FilePath
+> staticPath = "/home/chris/project/vocabulink/static/"
+
 > dispatch :: String -> [String] -> App CGIResult
 > dispatch "GET" [""] = testPage
+
+> dispatch "GET" ["privacy"] = displayStaticFile "Privacy Policy" $ staticPath ++ "privacy.html"
+> dispatch "GET" ["help"] = displayStaticFile "Help" $ staticPath ++ "help.html"
+
 > dispatch "GET" ["blah","di"] = testPage
 > dispatch "GET" ["lexeme",""] = outputError 404 "Lexeme is required." []
 > dispatch "GET" ["lexeme",x] = lexemePage x
@@ -87,6 +94,13 @@ with 404).
 
 > pathComponents :: Parser [String]
 > pathComponents =  char '/' >> sepEndBy (many (noneOf "/")) (char '/')
+
+Use this only if you know that the static file will be a valid fragment of XHTML.
+
+> displayStaticFile :: String -> FilePath -> App CGIResult
+> displayStaticFile t path = do
+>   body' <- liftIO $ readFile path
+>   stdPage t [] [primHtml body']
 
 > testPage :: App CGIResult
 > testPage = do

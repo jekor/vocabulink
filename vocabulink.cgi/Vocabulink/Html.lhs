@@ -6,7 +6,7 @@
 
 > import {-# SOURCE #-} Vocabulink.Review (numLinksToReview)
 
-> import Codec.Binary.UTF8.String (decodeString)
+> import Codec.Binary.UTF8.String (decodeString, encodeString)
 > import Control.Monad.Reader (asks)
 > import Network.FastCGI (CGIResult, output, getVar, requestURI)
 > import Network.URI (uriPath)
@@ -23,9 +23,10 @@ stdPage expects title to already be UTF8 encoded if necessary.
 > stdPage :: String -> [Dependency] -> [Html] -> App CGIResult
 > stdPage t deps h = do
 >   headerB <- headerBar
+>   footerB <- footerBar
 >   output $ renderHtml $ header <<
 >     (thetitle << t +++ concatHtml (map includeDep ((CSS "page"):deps))) +++
->     body << (headerB +++ concatHtml h)
+>     body << (headerB +++ concatHtml h +++ footerB)
 
 > includeDep :: Dependency -> Html
 > includeDep (CSS css) =
@@ -77,6 +78,13 @@ Create a login or logout form based on whether or not the user's logged in.
 >                 n' -> anchor ! [href "/review/next", theclass "review-box"] <<
 >                         [ (strong << show n') +++ " links to review" ]
 >       return r
+
+> footerBar :: App Html
+> footerBar = return $ thediv ! [identifier "footer-bar"] <<
+>   [ unordList
+>       [ anchor ! [href "/help"] << "help",
+>         anchor ! [href "/privacy"] << "privacy policy"] ! [identifier "standard-links"],
+>     paragraph ! [theclass "copyright"] << (encodeString "© 2008 Chris Forno") ]
 
 It's nice to abstract away creating an element to page the results of a
 multi-page query. This will preserve all of the query string in the links it

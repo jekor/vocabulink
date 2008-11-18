@@ -1,0 +1,38 @@
+#title Privacy Policy
+#date 2008-11-17
+
+We value privacy, and we do what we can to protect yours.
+
+* Information We Collect
+
+When you sign up as a member, we do not require any personally identifiable information. Providing your email address is optional and is only necessary if you want to recover a lost password in the future.
+
+** IP Addresses
+
+We log each web request in a format similar to the [[http://en.wikipedia.org/wiki/Common_Log_Format][Common Log Format]], including the IP address of the request. We do not however log IP addresses in our database or in any way associate member accounts with IP addresses.
+
+** Cookies
+
+If you are a member, we use a cookie to identify you. This cookie is used for authentication only. It contains your member number and IP address. The IP address is used to help protect you from forged requests and is not stored in our database or otherwise associated with your member account.
+
+** Web Bugs
+
+We do not use web bugs.
+
+** Study Statistics
+
+We collect statistics on your link reviews (studying). This is both necessary (to schedule your next review) and advantageous (it allows us to learn and improve our algorithms).
+
+* What We Do With Information We Collect
+
+We use information from our logs to determine how people use the site. This includes IP addresses and browser user agent strings. We may use this information to determine how the site is being used. However, we do not currently associate this information with member names or member numbers.
+
+* What We Share
+
+We do not currently share data with any 3rd parties.
+
+Any information you provide may be visible to anyone on the site. Do not post any private information to the site in any form. Do not rely on content permissions to keep data you've posted private.
+
+* Changes and Updates
+
+We may update this privacy policy in the future. If we update our privacy policy, we will post a notice to the site.
