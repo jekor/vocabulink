@@ -12,7 +12,7 @@
 > import Codec.Binary.UTF8.String (encodeString)
 > import Control.Monad (liftM)
 > import Control.Monad.Reader (asks)
-> import Database.HDBC (withTransaction, run, toSql, fromSql, iToSql)
+> import Database.HDBC (IConnection, withTransaction, run, toSql, fromSql, iToSql)
 > import Data.Maybe (fromMaybe)
 > import Network.FastCGI (CGIResult, liftIO, outputError, redirect)
 > import Text.XHtml.Strict
@@ -109,35 +109,34 @@ purposes, we schedule the review forward an hour.
 
 > linkReviewed :: Integer -> Integer -> Double -> Integer -> App ()
 > linkReviewed memberNo linkNo recall recallTime = do
->   previous <- previousInterval memberNo linkNo
->   seconds <- reviewInterval memberNo linkNo previous recall
->   c <- asks db
->   liftIO $ withTransaction c $ \c' -> do
->       run c' "INSERT INTO link_review (member_no, link_no, recall, \
->                                       \recall_time, target_time) \
->              \VALUES (?, ?, ?, ?, \
->                      \(SELECT target_time FROM link_to_review \
->              \WHERE member_no = ? AND link_no = ?))"
->              [toSql memberNo, toSql linkNo, toSql recall,
->               toSql recallTime, toSql memberNo, toSql linkNo]
->       let s = fromMaybe 0 seconds
->       run c' ("UPDATE link_to_review \
->               \SET target_time = current_timestamp + interval \
->               \'" ++ (show s) ++ " seconds" ++ "' \
->               \WHERE member_no = ? AND link_no = ?")
->              [toSql memberNo, toSql linkNo]
->       return ()
->     `catchSqlE` "Failed to record review of link."
+>   c' <- asks db
+>   liftIO $ withTransaction c' $ \c -> do
+>     previous <- previousInterval c memberNo linkNo
+>     seconds <- reviewInterval c memberNo linkNo previous recall
+>     run c "INSERT INTO link_review (member_no, link_no, recall, \
+>                                    \recall_time, target_time) \
+>           \VALUES (?, ?, ?, ?, \
+>                   \(SELECT target_time FROM link_to_review \
+>           \WHERE member_no = ? AND link_no = ?))"
+>           [toSql memberNo, toSql linkNo, toSql recall,
+>            toSql recallTime, toSql memberNo, toSql linkNo]
+>     let s = fromMaybe 0 seconds
+>     run c ("UPDATE link_to_review \
+>            \SET target_time = current_timestamp + interval \
+>            \'" ++ (show s) ++ " seconds" ++ "' \
+>            \WHERE member_no = ? AND link_no = ?")
+>           [toSql memberNo, toSql linkNo]
+>     return ()
+>    `catchSqlE` "Failed to record review of link."
 
 Determine the previous interval in seconds.
 
-> previousInterval :: Integer -> Integer -> App (Integer)
-> previousInterval memberNo linkNo = do
->   c <- asks db
->   d <- liftIO $ query1 c "SELECT extract(epoch from current_timestamp - \
->                                 \(SELECT actual_time FROM link_review \
->                                  \WHERE member_no = ? AND link_no = ? \
->                                  \ORDER BY actual_time DESC LIMIT 1))"
->                          [toSql memberNo, toSql linkNo]
->                   `catchSqlE` "Failed to determine previous review interval."
+> previousInterval :: IConnection conn => conn -> Integer -> Integer -> IO (Integer)
+> previousInterval c memberNo linkNo = do
+>   d <- query1 c "SELECT extract(epoch from current_timestamp - \
+>                        \(SELECT actual_time FROM link_review \
+>                        \WHERE member_no = ? AND link_no = ? \
+>                        \ORDER BY actual_time DESC LIMIT 1))"
+>                 [toSql memberNo, toSql linkNo]
+>          `catchSqlE` "Failed to determine previous review interval."
 >   return $ maybe 0 fromSql d
