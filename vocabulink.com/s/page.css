@@ -10,6 +10,10 @@ body {
   clear: both;
 }
 
+h1 {
+  text-align: center;
+}
+
 /* Header Bar */
 
 #header-bar, #footer-bar {

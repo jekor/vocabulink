@@ -42,6 +42,8 @@ We handle all requests using a dispatcher.
 
 > dispatch "GET" ["privacy"] = displayStaticFile "Privacy Policy" $ staticPath ++ "privacy.html"
 > dispatch "GET" ["help"] = displayStaticFile "Help" $ staticPath ++ "help.html"
+> dispatch "GET" ["copyrights"] = displayStaticFile "Copyright Policy" $ staticPath ++ "copyrights.html"
+> dispatch "GET" ["disclaimer"] = displayStaticFile "Disclaimer" $ staticPath ++ "disclaimer.html"
 
 > dispatch "GET" ["blah","di"] = testPage
 > dispatch "GET" ["lexeme",""] = outputError 404 "Lexeme is required." []

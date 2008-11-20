@@ -83,7 +83,9 @@ Create a login or logout form based on whether or not the user's logged in.
 > footerBar = return $ thediv ! [identifier "footer-bar"] <<
 >   [ unordList
 >       [ anchor ! [href "/help"] << "help",
->         anchor ! [href "/privacy"] << "privacy policy"] ! [identifier "standard-links"],
+>         anchor ! [href "/privacy"] << "privacy policy",
+>         anchor ! [href "/copyrights"] << "copyright policy",
+>         anchor ! [href "/disclaimer"] << "disclaimer"] ! [identifier "standard-links"],
 >     paragraph ! [theclass "copyright"] << (encodeString "© 2008 Chris Forno") ]
 
 It's nice to abstract away creating an element to page the results of a
