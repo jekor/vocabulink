@@ -1,0 +1,64 @@
+#title Why Learn with Vocabulink?
+#author Chris Forno (jekor)
+#date 2009-01-11
+
+* Why Links Instead of Flashcards?
+
+For months I studied Japanese intensely with flashcards. I cut my cards from heavy 200lb. card stock paper using a paper guillotine. It was a lot of work and took a lot of time. I had stacks of cards for simple vocabulary, for how to write Kanji, for Kanji readings, etc. The stacks took up a large shoebox.
+
+I built a "memory box" out of scrap wood. The box had compartments of increasing size that I would move the cards into once they'd gone through my "learning pyramid" pile.
+
+   +-------------------+-------------+-------+---+--+
+   |                   |             |       |   |  |
+   |                   |             |       |   |  |
+   |                   |             |       |   |  |
+   |                   |             |       |   |  |
+   +-------------------+-------------+-------+---+--+
+
+The process of studying was very labor-intensive. It required a lot of desk space. I had to be prepared to spend at least half an hour if I was going to study[1]. In the end, all of this defeated the purpose of vocabulary cards. Vocabulary cards should be portable so that you can keep them in your pocket and review them anywhere.
+
+So you're faced with a tough decision: Do you leverage the power of spaced repitition or do you take your cards with you and 
+
+** How Links Are Better Than Flashcards
+
+We tend to think of vocabulary study as a very straightforward process. Each word in our native language maps to a word in another language. In fact, this is how most schools teach you how to study vocabulary (if they teach you study techniques at all).
+
+If you think about it for a while, this method breaks down pretty quickly. What about foreign words that don't have just 1 native language equivalent?
+
+It's great to know that 赤い -> red, but what about 青い -> blue (or green, depending on the situation)?
+
+The first version of Vocabulink was actually created with the flashcard analogy. It was only natural. That's how we're taught in school. We tend to think of foreign language study as a 2-sided, logical, straightforward mapping.
+
+               +----------------------------------------------------+
+               |     native word         |      foreign word        |
+               |      ...                |       ...                |
+
+Links are similar to flashcards, but they carry more information. A flashcard has a front and back. A link has a "front" (the left side of the link) and a "back" (the right side of the link), but it also tells you how the two are linked. Are they exact translations? Are they a related verb form? And for certain links, you may want to attach a mnemonic story. To put that on a flashcard, you'd need 4 sides or more. You'd end up with a "flashcube"!
+
+The first version of Vocabulink was actually created with "flashcards" (the digital equivalent, at least). But the flashcard metaphor was too limited.
+
+** Drawbacks of Physical Flashcards
+
+In the beginning, flashcards are great. You create a few dozen of them. You carry them around in your pocket. You review them from time to time.
+
+That's where a critical difference is. Flashcards may have worked for your language class in school. You could create flashcards for that week's test. You could put them on a ring. You could study them when you had free time. You'd pass the test. And then you'd put a post-it on them "Lesson 2" and file them away in a drawer. You knew that next week's test would be on a different set of words and you wouldn't need to review the stack you just made until the mid-term or final.
+
+But if you want to truly learn a language---rather than get passing grades in a language class---that sort of studying isn't going to do it. You need to continually review what you've already learned.
+
+** How Flashcards Are Better Than Links
+
+Flashcards do have some advantages over links. They take less time to create (unless you're making physical flashcards) because you don't need to think about the relationship between the front and back.
+
+But of course, this advantage has disadvantages. You don't have to think about the relationship between the 2 sides.
+
+** It's easiest to learn words for subjects you care about.
+*** A network or related words helps you find words to learn that you care about. No more need to follow along with a textbook. The textbook may not teach you the word for "computer program".
+*** As useful and general as "raincoat" and "umbrella" may be, you may not use them for a very long time, if ever, in another language. There's always time to learn them later when you're actively using the language.
+*** You're more likely to have conversations with other people in a foreign language on subjects of interest to you. Why not learn a vocabulary for that subject? You can get by with very limited grammar. And having conversations with other real live people is an extremely productive activity for learning.
+
+** It's easiest to learn words that are related to each other.
+*** Aside from artificial associations (mnemonics), related words are rich in associations with each other. Remembering a couple words on a subject well can help you remember another half dozen with little additional effort.
+
+Footnotes: 
+[1]  And that was only the review time. I had to set aside separate times to cut out new cards and fill them in.
+

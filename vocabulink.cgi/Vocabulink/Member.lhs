@@ -61,19 +61,23 @@ This returns the new member number.
 >       redirect "/"
 
 > newMemberPage :: App CGIResult
-> newMemberPage = stdPage "Join Vocabulink" []
->   [ h1 << "Join Vocabulink",
->     form ! [action "", method "post"] <<
->       [ label << "Username:",
->         textfield "username",
->         br,
->         label << "Password:",
->         password "password",
->         br,
->         label << "Email:",
->         textfield "email",
->         br,
->         submit "" "Join" ] ]
+> newMemberPage = do
+>   -- The user may have gotten to this page in some way in which they've
+>   -- already indicated which username they want.
+>   username <- getInputDefault "" "username"
+>   stdPage "Join Vocabulink" []
+>     [ h1 << "Join Vocabulink",
+>       form ! [action "", method "post"] <<
+>         [ label << "Username:",
+>           widget "textfield" "username" [value username],
+>           br,
+>           label << "Password:",
+>           password "password",
+>           br,
+>           label << "Email:",
+>           textfield "email",
+>           br,
+>           submit "" "Join" ] ]
 
 > getMemberNumber :: String -> App (Integer)
 > getMemberNumber username = do
@@ -110,16 +114,25 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 
 > login :: App CGIResult
 > login = do
->   username  <- getInput' "username"
->   memberNo  <- getMemberNumber username
->   passwd    <- getInput' "password"
->   ref       <- referer
->   redirect' <- getInputDefault ref "redirect"
->   ip <- remoteAddr
->   valid <- validPassword username passwd
->   not valid ? error "Login failed." $ do
->     setAuthCookie memberNo ip
->     redirect redirect'
+>   join <- getInputDefault "" "join"
+>   if join /= ""
+>      then do -- The user clicked the Join button in the login box.
+>        -- Carry over the username if they entered it.
+>        username <- getInputDefault "" "username"
+>        if username /= ""
+>           then redirect $ "/member/join?username=" ++ username
+>           else redirect "/member/join"
+>      else do
+>        username  <- getInput' "username"
+>        memberNo  <- getMemberNumber username
+>        passwd    <- getInput' "password"
+>        ref       <- referer
+>        redirect' <- getInputDefault ref "redirect"
+>        ip <- remoteAddr
+>        valid <- validPassword username passwd
+>        not valid ? error "Login failed." $ do
+>          setAuthCookie memberNo ip
+>          redirect redirect'
 
 > logout :: App CGIResult
 > logout = do

@@ -8,8 +8,11 @@
 
 > import Codec.Binary.UTF8.String (decodeString, encodeString)
 > import Control.Monad.Reader (asks)
+> import Data.Time.Clock (getCurrentTime)
+> import Data.Time.Format (formatTime)
 > import Network.FastCGI (CGIResult, output, getVar, requestURI)
 > import Network.URI (uriPath)
+> import System.Locale (defaultTimeLocale)
 > import Text.Regex (mkRegex, subRegex)
 > import Text.Regex.Posix ((=~))
 > import Text.XHtml.Strict
@@ -36,16 +39,32 @@ stdPage expects title to already be UTF8 encoded if necessary.
 >   script ! [src ("http://s.vocabulink.com/" ++ js ++ ".js"),
 >             thetype "text/javascript"] << noHtml
 
+It's common to use an unordered list to present a series of links. For example, both the standard header and footer use this.
+
+> linkList :: (HTML a) => [a] -> Html
+> linkList items = ulist ! [theclass "links"] << map (li <<) items
+
 > headerBar :: App Html
 > headerBar = do
 >   username <- asks memberName
 >   review <- reviewBox
 >   return $ thediv ! [identifier "header-bar"] <<
 >     [ anchor ! [theclass "logo", href "/", accesskey "1"] << "Vocabulink",
+>       topLinks,
 >       loginBox username,
 >       searchBox,
 >       review,
 >       thediv ! [theclass "clear"] << noHtml ]
+
+Here are some links we want in the header of every page.
+
+Get Started | Articles | Help
+
+> topLinks :: Html
+> topLinks = linkList
+>   [ anchor ! [href "/article/how-to-get-started-with-vocabulink"] << "Get Started",
+>     anchor ! [href "/articles/"] << "Articles",
+>     anchor ! [href "/help"] << "Help" ]
 
 Create a login or logout form based on whether or not the user's logged in.
 
@@ -57,7 +76,9 @@ Create a login or logout form based on whether or not the user's logged in.
 >                    textfield "username",
 >                    label << "Password:",
 >                    password "password",
->                    submit "" "Log In" ]
+>                    submit "" "Log In",
+>                    stringToHtml " ",
+>                    submit "join" "Join" ]
 >     Just n  -> form ! [theclass "login-box logout", action "/member/logout", method "post"] <<
 >                  [ stringToHtml n,
 >                    submit "" "Log Out" ]
@@ -80,13 +101,28 @@ Create a login or logout form based on whether or not the user's logged in.
 >       return r
 
 > footerBar :: App Html
-> footerBar = return $ thediv ! [identifier "footer-bar"] <<
->   [ unordList
+> footerBar = do
+>   copy <- copyrightNotice
+>   return $ thediv ! [identifier "footer-bar"] <<
+>     [ linkList
 >       [ anchor ! [href "/help"] << "help",
 >         anchor ! [href "/privacy"] << "privacy policy",
 >         anchor ! [href "/copyrights"] << "copyright policy",
->         anchor ! [href "/disclaimer"] << "disclaimer"] ! [identifier "standard-links"],
->     paragraph ! [theclass "copyright"] << (encodeString "© 2008 Chris Forno") ]
+>         anchor ! [href "/disclaimer"] << "disclaimer"],
+>       copy ]
+
+> copyrightNotice :: App Html
+> copyrightNotice = do
+>   year <- liftIO currentYear
+>   return $ paragraph ! [theclass "copyright"] <<
+>     [ stringToHtml $ encodeString "© 2008–",
+>       stringToHtml (year ++ " "),
+>       anchor ! [href "http://jekor.com/"] << "Chris Forno" ]
+
+> currentYear :: IO String
+> currentYear = do
+>   now <- getCurrentTime
+>   return $ formatTime defaultTimeLocale "%Y" now
 
 It's nice to abstract away creating an element to page the results of a
 multi-page query. This will preserve all of the query string in the links it

@@ -24,8 +24,8 @@ Mnemonics by nature must be emotive and provocative to be effective. As such, so
  - are considered profane, vulgar or offensive by some readers.
  - contain audio, visual, or written representations of people or events which may be protected by some cultures.
  - contain spoilers.
- - triggers for people with post-traumatic stress disorder.
- - images which can trigger epileptic seizures and other medical conditions.
+ - contain triggers for people with post-traumatic stress disorder.
+ - contain images which can trigger epileptic seizures and other medical conditions.
 
 Vocabulink's policy is to allow all such content when it's used as part of a mnemonic device.
 

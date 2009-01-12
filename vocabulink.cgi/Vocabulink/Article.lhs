@@ -43,13 +43,26 @@ already-prepared html fragment.
 >                     articles <- mapM getArticle paths'
 >                     return $ catMaybes articles
 
+In order for an article to show up in the listing, it needs to be readable and
+a readable HTML version must also exist.
+
 > isPublished :: FilePath -> IO Bool
 > isPublished f = do
->   perms <- getPermissions f
+>   if takeExtension f == ".muse"
+>      then do
+>        r1 <- isReadable f
+>        r2 <- isReadable $ replaceExtension f ".html"
+>        return $ r1 && r2
+>      else return False
+
+> isReadable :: FilePath -> IO Bool
+> isReadable f = do
 >   exists' <- doesFileExist f
->   return $ exists' &&
->            takeExtension f == ".muse" &&
->            readable perms
+>   if exists'
+>      then do
+>        perms <- getPermissions f
+>        return $ readable perms
+>      else return False
 
 > articleHeader :: P.Parser Article
 > articleHeader = permute (mkArticle <$$> (museDirective "title")

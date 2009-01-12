@@ -73,14 +73,29 @@ a.review-box:hover {
   text-decoration: underline;
 }
 
-ul#standard-links {
+ul.links {
   list-style-type: none;
   margin-left: 0;
   padding-left: 0;
 }
 
-ul#standard-links li {
+ul.links li {
   display: inline;
+}
+
+#header-bar ul.links {
+  margin-top: 0;
+  margin-bottom: 0;
+  margin-left: 3em;
+  float: left;
+}
+
+#header-bar ul.links li {
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+}
+
+#footer-bar ul.links li {
   margin-left: 0.5em;
   margin-right: 0.5em;
 }

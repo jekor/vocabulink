@@ -51,7 +51,7 @@ Review the next link in the queue.
 >   (Link _ o d) <- getLink linkNo
 >   let origin = encodeString o
 >       destination = encodeString d
->   stdPage ("Review " ++ origin ++ " -> ?")
+>   stdPage ("Review: " ++ origin ++ " -> ?")
 >           [CSS "link", JS "MochiKit", JS "review"]
 >     [ thediv ! [identifier "baseline", theclass "link"] <<
 >         linkHtml (stringToHtml origin) (anchor ! [identifier "lexeme-cover", href "#"] << "?"),
