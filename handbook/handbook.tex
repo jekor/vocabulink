@@ -1,0 +1,42 @@
+%% This is the Vocabulink Handbook.
+
+\documentclass[oneside]{book}
+
+\usepackage{handbook}
+\usepackage{hyperref}
+\usepackage{color}
+\usepackage[pdftex]{graphicx}
+\usepackage{makeidx}
+\usepackage{tikz}
+\usepackage{listings}
+
+\hypersetup{colorlinks=true}
+
+\usetikzlibrary{snakes,arrows,shapes}
+
+\makeindex
+
+\begin{document}
+
+\frontmatter
+\begin{titlepage}
+  \begin{center}
+    \bigskip
+    {\huge\bf Vocabulink Handbook}
+    \vfill
+    \today
+  \end{center}
+\end{titlepage}
+
+\include{chapters/preface}
+
+\tableofcontents
+
+\mainmatter
+\include{chapters/modules}
+
+\backmatter
+\addcontentsline{toc}{chapter}{Index}
+\printindex
+
+\end{document}
