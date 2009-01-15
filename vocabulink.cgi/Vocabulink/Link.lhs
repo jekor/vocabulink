@@ -1,18 +1,18 @@
 > module Vocabulink.Link (lexemePage, linkHtml, getLink, linkPage, newLinkPage,
 >                         linkLexemes, linkLexemes', searchPage, deleteLink, linksPage,
->                         Link(..))where
+>                         Link(..), getMemberPartialLinks)where
 
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput', getInputDefault, referer)
 > import Vocabulink.DB (query1, queryColumn, quickStmt, insertNo, quickInsertNo,
->                       catchSqlE, fromSql', toSql')
+>                       catchSqlE, fromSql', toSql', queryTuple)
 > import Vocabulink.Html (stdPage, Dependency(..), pager, simpleChoice)
 > import Vocabulink.Member (withMemberNumber)
 > import Vocabulink.Review.Html (reviewHtml)
 
 > import Vocabulink.Link.Types (Link(..), newLinkHtml, linkFromForm,
 >                               linkTypeName, establishLinkType, getLinkType,
->                               linkTypeHtml)
+>                               linkTypeHtml, PartialLink(..), getPartialLinkType)
 
 > import Codec.Binary.UTF8.String (encodeString)
 > import Control.Monad (liftM)
@@ -48,6 +48,20 @@ origin should already be UTF8 encoded.
 >     image ! [src "http://s.vocabulink.com/black.png", width "20%", height "1"],
 >     thespan ! [theclass "lexeme"] << destination ]
 
+> partialLinkFromValues :: [SqlValue] -> PartialLink
+> partialLinkFromValues (o:d:t:[]) =
+>   let partialLinkType = getPartialLinkType (fromSql' t)
+>   in PartialLink partialLinkType (fromSql' o) (fromSql' d)
+> partialLinkFromValues _ = error "Invalid link returned from database."
+
+> getPartialLink :: Integer -> App PartialLink
+> getPartialLink linkNo = do
+>   c <- asks db
+>   t <- liftIO $ queryTuple c "SELECT origin, destination, link_type \
+>                              \FROM link WHERE link_no = ?" [toSql linkNo]
+>                   `catchSqlE` "Link not found."
+>   return $ partialLinkFromValues t
+
 > getLink :: Integer -> App Link
 > getLink linkNo = do
 >   c <- asks db
@@ -61,6 +75,14 @@ origin should already be UTF8 encoded.
 >         Nothing -> error "Link not found."
 >         Just t' -> return $ Link t' (fromSql' o) (fromSql' d)
 >     _       -> error "Link not found."
+
+> getMemberPartialLinks :: Integer -> App [PartialLink]
+> getMemberPartialLinks memberNo = do
+>   c <- asks db
+>   r <- liftIO $ quickQuery' c "SELECT origin, destination, link_type \
+>                               \FROM link WHERE author = ?" [toSql memberNo]
+>                   `catchSqlE` "No links found."
+>   return $ map partialLinkFromValues r
 
 Return the types of links sorted by how common they should be.
 

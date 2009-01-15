@@ -15,7 +15,7 @@
 > import Network.URI (escapeURIString, isUnescapedInURI)
 > import Text.XHtml.Strict
 
-Run the App with a the currently logged in member's number or redirect to the
+Run the App with the currently logged in member's number or redirect to the
 login page if the user isn't logged in.
 
 > withMemberNumber :: (Integer -> App CGIResult) -> App CGIResult
@@ -23,6 +23,13 @@ login page if the user isn't logged in.
 >   memberNo <- asks memberNumber
 >   case memberNo of
 >     Nothing -> redirectToLoginPage
+>     Just n  -> f n
+
+> withMemberNumber' :: (Integer -> App a) -> App a
+> withMemberNumber' f = do
+>   memberNo <- asks memberNumber
+>   case memberNo of
+>     Nothing -> error "No logged in member."
 >     Just n  -> f n
 
 Add a member to the database. We're going to do validation of acceptable

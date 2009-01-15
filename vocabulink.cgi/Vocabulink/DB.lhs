@@ -1,4 +1,5 @@
-> module Vocabulink.DB (catchSqlE, catchSqlD, query1, queryColumn, quickStmt, insertNo, quickInsertNo, SqlType'(..)) where
+> module Vocabulink.DB (catchSqlE, catchSqlD, query1, queryColumn, quickStmt,
+>                       insertNo, quickInsertNo, SqlType'(..), queryTuple) where
 
 > import Vocabulink.CGI (logSqlError)
 
@@ -43,6 +44,17 @@ queryColumn is like query1, but for multiple rows.
 > safeHead :: [a] -> Maybe a
 > safeHead []    = Nothing
 > safeHead (x:_) = Just x
+
+And finally, sometimes we want a single tuple only. In this case, less than or
+more than 1 tuple are regarded as error conditions.
+
+> queryTuple :: IConnection conn => conn -> String -> [SqlValue] -> IO [SqlValue]
+> queryTuple c sql vs = do
+>   rows <- quickQuery' c sql vs
+>   case rows of
+>     []  -> error "No tuple found."
+>     [r] -> return r
+>     _   -> error "Multiple tuples found."
 
 It's often tedious to work with transactions if you're just issuing a single
 statement.

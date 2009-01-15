@@ -1,6 +1,7 @@
 > module Vocabulink.Link.Types (LinkType(..), Link(..), linkTypeName, linkEditHtml,
 >                               newLinkHtml, establishLinkType, linkFromForm,
->                               getLinkType, linkTypeHtml) where
+>                               getLinkType, linkTypeHtml, PartialLink(..),
+>                               getPartialLinkType, partialLinkHtml) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput')
@@ -21,6 +22,17 @@ displayed, edited, used in statistical analysis, etc.
 
 > data Link = Link LinkType String String
 
+Fully loading a link from the database requires 2 database queries. But we
+don't always need all of the data associated with a link. It's usually enough
+to know just its type and the 2 lexemes it's linking.
+
+We'll use a separate type to represent this. Essentially we'll be passing dummy
+parameters to the LinkType constructors. We need a separate type so that we
+don't accidentally pass a partial link to a function that expects a complete
+link.
+
+> data PartialLink = PartialLink LinkType String String
+
 Each link is represented by a name in the database.
 
 > linkTypeName :: Link -> String
@@ -29,6 +41,14 @@ Each link is represented by a name in the database.
 > linkTypeName (Link (LinkWord _ _) _ _) = "link word"
 > linkTypeName (Link (ForeignLinkWord _ _) _ _) = "foreign link word"
 > linkTypeName (Link (Relationship _ _) _ _) = "relationship"
+
+> getPartialLinkType :: String -> LinkType
+> getPartialLinkType "association"       = Association
+> getPartialLinkType "cognate"           = Cognate
+> getPartialLinkType "link word"         = LinkWord "" ""
+> getPartialLinkType "foreign link word" = ForeignLinkWord "" ""
+> getPartialLinkType "relationship"      = Relationship "" ""
+> getPartialLinkType _                   = error "Unknown link type."
 
 > getLinkType :: IConnection conn => conn -> Integer -> String -> IO (Maybe LinkType)
 > getLinkType _ _ "association" = return $ Just Association
@@ -89,6 +109,9 @@ Each link is represented by a name in the database.
 >    stringToHtml " is to ",
 >    textfield "right-side", br,
 >    stringToHtml $ " as " ++ o ++ " is to " ++ d]
+
+> partialLinkHtml :: PartialLink -> Html
+> partialLinkHtml (PartialLink _ o d) = stringToHtml $ o ++ (encodeString " → ") ++ d
 
 > linkTypeHtml :: LinkType -> [Html]
 > linkTypeHtml Association = []

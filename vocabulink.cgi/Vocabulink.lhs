@@ -7,11 +7,15 @@
 > import Vocabulink.Link (lexemePage, newLinkPage, linkPage, linksPage, linkLexemes', searchPage, deleteLink)
 > import Vocabulink.Member (withMemberNumber, login, logout, newMemberPage, addMember', loginPage)
 > import Vocabulink.Review (newReview, reviewLink, linkReviewed')
-> import Vocabulink.Utils (intFromString)
+> import Vocabulink.Utils (intFromString, (?))
+> import Vocabulink.Widget (renderWidget)
+> import Vocabulink.Widget.MyLinks (MyLinks(..))
 
 > import Codec.Binary.UTF8.String (decodeString)
 > import Control.Concurrent (forkIO)
+> import Control.Monad.Reader (asks)
 > import Data.List (intercalate)
+> import Data.Maybe (isJust)
 > import Network.CGI.Monad (cgiGet)
 > import Network.CGI.Protocol (cgiInputs)
 > import Network.FastCGI
@@ -108,8 +112,11 @@ Use this only if you know that the static file will be a valid fragment of XHTML
 > testPage = do
 >   vars <- getVars
 >   inputs <- cgiGet cgiInputs
+>   memberNo <- asks memberNumber
+>   w <- isJust memberNo ? renderWidget MyLinks $ return noHtml
 >   stdPage "Test Page" []
 >     [ h1 << "Test Page",
 >       paragraph << (pre << map (\x -> show x ++ "\n") vars) +++
 >                    (pre << show inputs),
->       paragraph << anchor ! [href "."] << "test" ]
+>       paragraph << anchor ! [href "."] << "test",
+>       w ]
