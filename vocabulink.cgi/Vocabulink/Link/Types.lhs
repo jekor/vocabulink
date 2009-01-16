@@ -1,15 +1,16 @@
 > module Vocabulink.Link.Types (LinkType(..), Link(..), linkTypeName, linkEditHtml,
 >                               newLinkHtml, establishLinkType, linkFromForm,
->                               getLinkType, linkTypeHtml, PartialLink(..),
+>                               getLinkFromPartial, linkTypeHtml, PartialLink(..),
 >                               getPartialLinkType, partialLinkHtml) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput')
-> import Vocabulink.DB (toSql', fromSql', catchSqlE)
+> import Vocabulink.DB (toSql', fromSql', catchSqlE, queryTuple)
 > import Vocabulink.Html (formName)
 > import Vocabulink.Utils ((?))
 
 > import Codec.Binary.UTF8.String (encodeString)
+> import Control.Monad.Reader (asks)
 > import Database.HDBC
 > import Text.XHtml.Strict
 
@@ -20,7 +21,10 @@ displayed, edited, used in statistical analysis, etc.
 >                 ForeignLinkWord String String | Relationship String String
 >                 deriving (Show, Eq)
 
-> data Link = Link LinkType String String
+> data Link = Link Integer LinkType String String
+
+> linkType :: Link -> LinkType
+> linkType (Link _ t _ _) = t
 
 Fully loading a link from the database requires 2 database queries. But we
 don't always need all of the data associated with a link. It's usually enough
@@ -31,16 +35,16 @@ parameters to the LinkType constructors. We need a separate type so that we
 don't accidentally pass a partial link to a function that expects a complete
 link.
 
-> data PartialLink = PartialLink LinkType String String
+> data PartialLink = PartialLink Integer LinkType String String
 
 Each link is represented by a name in the database.
 
-> linkTypeName :: Link -> String
-> linkTypeName (Link (Association) _ _) = "association"
-> linkTypeName (Link (Cognate) _ _) = "cognate"
-> linkTypeName (Link (LinkWord _ _) _ _) = "link word"
-> linkTypeName (Link (ForeignLinkWord _ _) _ _) = "foreign link word"
-> linkTypeName (Link (Relationship _ _) _ _) = "relationship"
+> linkTypeName :: LinkType -> String
+> linkTypeName Association          = "association"
+> linkTypeName Cognate              = "cognate"
+> linkTypeName (LinkWord _ _)        = "link word"
+> linkTypeName (ForeignLinkWord _ _) = "foreign link word"
+> linkTypeName (Relationship _ _)    = "relationship"
 
 > getPartialLinkType :: String -> LinkType
 > getPartialLinkType "association"       = Association
@@ -50,34 +54,41 @@ Each link is represented by a name in the database.
 > getPartialLinkType "relationship"      = Relationship "" ""
 > getPartialLinkType _                   = error "Unknown link type."
 
-> getLinkType :: IConnection conn => conn -> Integer -> String -> IO (Maybe LinkType)
-> getLinkType _ _ "association" = return $ Just Association
-> getLinkType _ _ "cognate" = return $ Just Cognate
-> getLinkType c linkNo "link word" = do
->   rs <- quickQuery' c
+> getLinkFromPartial :: PartialLink -> App Link
+> getLinkFromPartial (PartialLink n t o d) = do
+>   linkTypeDetails <- getLinkTypeDetails n t
+>   return $ Link n linkTypeDetails o d
+
+> getLinkTypeDetails :: Integer -> LinkType -> App LinkType
+> getLinkTypeDetails _ Association = return Association
+> getLinkTypeDetails _ Cognate = return Cognate
+> getLinkTypeDetails n (LinkWord _ _) = do
+>   c <- asks db
+>   rs <- liftIO $ queryTuple c
 >     "SELECT link_word, story FROM link_type_link_word \
->     \WHERE link_no = ?" [toSql linkNo]
+>     \WHERE link_no = ?" [toSql n]
 >       `catchSqlE` "Unable to retrieve link."
 >   case rs of
->     [[linkWord, story]] -> return $ Just $ LinkWord (fromSql' linkWord) (fromSql' story)
+>     [linkWord, story] -> return $ LinkWord (fromSql' linkWord) (fromSql' story)
 >     _ -> error "Unable to retrieve link."
-> getLinkType c linkNo "foreign link word" = do
->   rs <- quickQuery' c
+> getLinkTypeDetails n (ForeignLinkWord _ _) = do
+>   c <- asks db
+>   rs <- liftIO $ queryTuple c
 >     "SELECT link_word, story FROM link_type_link_word \
->     \WHERE link_no = ?" [toSql linkNo]
+>     \WHERE link_no = ?" [toSql n]
 >       `catchSqlE` "Unable to retrieve link."
 >   case rs of
->     [[linkWord, story]] -> return $ Just $ ForeignLinkWord (fromSql' linkWord) (fromSql' story)
+>     [linkWord, story] -> return $ ForeignLinkWord (fromSql' linkWord) (fromSql' story)
 >     _ -> error "Unable to retrieve link."
-> getLinkType c linkNo "relationship" = do
->   rs <- quickQuery' c
+> getLinkTypeDetails n (Relationship _ _) = do
+>   c <- asks db
+>   rs <- liftIO $ queryTuple c
 >     "SELECT left_side, right_side FROM link_type_relationship \
->     \WHERE link_no = ?" [toSql linkNo]
+>     \WHERE link_no = ?" [toSql n]
 >       `catchSqlE` "Unable to retrieve link."
 >   case rs of
->     [[leftSide, rightSide]] -> return $ Just $ Relationship (fromSql' leftSide) (fromSql' rightSide)
+>     [leftSide, rightSide] -> return $ Relationship (fromSql' leftSide) (fromSql' rightSide)
 >     _ -> error "Unable to retrieve link."
-> getLinkType _ _ _ = error "Unknown link type"
 
 > establishLinkType :: IConnection conn => conn -> Integer -> LinkType -> IO (Integer)
 > establishLinkType _ _ Association = return 1
@@ -96,22 +107,23 @@ Each link is represented by a name in the database.
 >         [toSql linkNo, toSql' leftSide, toSql' rightSide]
 
 > linkEditHtml :: Link -> [Html]
-> linkEditHtml (Link (Association) _ _) = []
-> linkEditHtml (Link (Cognate) _ _) = []
-> linkEditHtml (Link (LinkWord _ story) _ _) =
+> linkEditHtml (Link _ (Association) _ _) = []
+> linkEditHtml (Link _ (Cognate) _ _) = []
+> linkEditHtml (Link _ (LinkWord _ story) _ _) =
 >   [label << "link word:",
 >    textfield "link-word", br,
 >    textarea ! [name "story", cols "80", rows "20"] << story]
-> linkEditHtml (Link (ForeignLinkWord word story) o d) =
->   linkEditHtml $ Link (LinkWord word story) o d
-> linkEditHtml (Link (Relationship _ _) o d) =
+> linkEditHtml (Link n (ForeignLinkWord word story) o d) =
+>   linkEditHtml $ Link n (LinkWord word story) o d
+> linkEditHtml (Link _ (Relationship _ _) o d) =
 >   [textfield "left-side",
 >    stringToHtml " is to ",
 >    textfield "right-side", br,
 >    stringToHtml $ " as " ++ o ++ " is to " ++ d]
 
 > partialLinkHtml :: PartialLink -> Html
-> partialLinkHtml (PartialLink _ o d) = stringToHtml $ o ++ (encodeString " → ") ++ d
+> partialLinkHtml (PartialLink n _ o d) =
+>   anchor ! [href ("/link/" ++ (show n))] << (o ++ (encodeString " → ") ++ d)
 
 > linkTypeHtml :: LinkType -> [Html]
 > linkTypeHtml Association = []
@@ -129,8 +141,8 @@ Each link is represented by a name in the database.
 > linkFromForm = do
 >   origin <- getInput' "origin"
 >   destination <- getInput' "destination"
->   linkType <- (getInput' "link-type" >>= linkTypeFromForm)
->   return $ Link linkType origin destination
+>   linkType' <- (getInput' "link-type" >>= linkTypeFromForm)
+>   return $ Link 0 linkType' origin destination
 
 > linkTypeFromForm :: String -> App LinkType
 > linkTypeFromForm "association" = return Association
@@ -152,16 +164,16 @@ Each link is represented by a name in the database.
 > newLinkHtml :: String -> String -> String -> [Html]
 > newLinkHtml def origin destination =
 >   map editBlock
->     [Link (Association) origin destination,
->      Link (Cognate) origin destination,
->      Link (LinkWord "" "Write a story linking the two words here.")
+>     [Link 0 (Association) origin destination,
+>      Link 0 (Cognate) origin destination,
+>      Link 0 (LinkWord "" "Write a story linking the two words here.")
 >           origin destination,
->      Link (ForeignLinkWord "" "Write a story linking the two words here.")
+>      Link 0 (ForeignLinkWord "" "Write a story linking the two words here.")
 >           origin destination,
->      Link (Relationship "" "") origin destination]
+>      Link 0 (Relationship "" "") origin destination]
 >         where editBlock :: Link -> Html
 >               editBlock link = thediv !
->                 [identifier $ formName $ linkTypeName link,
+>                 [identifier $ formName $ linkTypeName $ linkType link,
 >                  theclass "link-editor",
->                  thestyle $ def == linkTypeName link ? "" $ "display: none"] << linkEditHtml link
+>                  thestyle $ def == linkTypeName (linkType link) ? "" $ "display: none"] << linkEditHtml link
 

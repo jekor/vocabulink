@@ -11,7 +11,7 @@
 > import Vocabulink.Review.Html (reviewHtml)
 
 > import Vocabulink.Link.Types (Link(..), newLinkHtml, linkFromForm,
->                               linkTypeName, establishLinkType, getLinkType,
+>                               linkTypeName, establishLinkType, getLinkFromPartial,
 >                               linkTypeHtml, PartialLink(..), getPartialLinkType)
 
 > import Codec.Binary.UTF8.String (encodeString)
@@ -49,37 +49,28 @@ origin should already be UTF8 encoded.
 >     thespan ! [theclass "lexeme"] << destination ]
 
 > partialLinkFromValues :: [SqlValue] -> PartialLink
-> partialLinkFromValues (o:d:t:[]) =
+> partialLinkFromValues (n:o:d:t:[]) =
 >   let partialLinkType = getPartialLinkType (fromSql' t)
->   in PartialLink partialLinkType (fromSql' o) (fromSql' d)
+>   in PartialLink (fromSql n) partialLinkType (fromSql' o) (fromSql' d)
 > partialLinkFromValues _ = error "Invalid link returned from database."
 
 > getPartialLink :: Integer -> App PartialLink
 > getPartialLink linkNo = do
 >   c <- asks db
->   t <- liftIO $ queryTuple c "SELECT origin, destination, link_type \
+>   t <- liftIO $ queryTuple c "SELECT link_no, origin, destination, link_type \
 >                              \FROM link WHERE link_no = ?" [toSql linkNo]
 >                   `catchSqlE` "Link not found."
 >   return $ partialLinkFromValues t
 
 > getLink :: Integer -> App Link
 > getLink linkNo = do
->   c <- asks db
->   r <- liftIO $ quickQuery' c "SELECT origin, destination, link_type \
->                               \FROM link WHERE link_no = ?" [toSql linkNo]
->                   `catchSqlE` "Link not found."
->   case r of
->     [[o,d,t]] -> do
->       linkType <- liftIO $ getLinkType c linkNo (fromSql' t)
->       case linkType of
->         Nothing -> error "Link not found."
->         Just t' -> return $ Link t' (fromSql' o) (fromSql' d)
->     _       -> error "Link not found."
+>   l' <- getPartialLink linkNo
+>   getLinkFromPartial l'
 
 > getMemberPartialLinks :: Integer -> App [PartialLink]
 > getMemberPartialLinks memberNo = do
 >   c <- asks db
->   r <- liftIO $ quickQuery' c "SELECT origin, destination, link_type \
+>   r <- liftIO $ quickQuery' c "SELECT link_no, origin, destination, link_type \
 >                               \FROM link WHERE author = ?" [toSql memberNo]
 >                   `catchSqlE` "No links found."
 >   return $ map partialLinkFromValues r
@@ -126,13 +117,13 @@ Eventually we'll want to cache this.
 >              `catchSqlE` "Failed to establish link."
 
 > establishLink :: Link -> Integer -> App (Maybe Integer)
-> establishLink link@(Link linkType origin destination) memberNo = do
+> establishLink link@(Link _ linkType origin destination) memberNo = do
 >   c' <- asks db
 >   liftIO $ withTransaction c' $ \c -> do
 >     linkNo <- insertNo c "INSERT INTO link (origin, destination, link_type, \
 >                                            \language, author) \
 >                          \VALUES (?, ?, ?, 'en', ?)"
->                          [toSql' origin, toSql' destination, toSql $ linkTypeName link,
+>                          [toSql' origin, toSql' destination, toSql $ linkTypeName linkType,
 >                           toSql memberNo]
 >                          "link_link_no_seq"
 >     case linkNo of
@@ -155,7 +146,7 @@ Eventually we'll want to cache this.
 > linkPage :: Integer -> App CGIResult
 > linkPage linkNo = do
 >   memberNo <- asks memberNumber
->   (Link linkType origin destination) <- getLink linkNo
+>   (Link _ linkType origin destination) <- getLink linkNo
 >   c <- asks db
 >   owner <- liftIO $ liftM fromSql $ liftM fromJust $ query1 c
 >     "SELECT author = ? FROM link WHERE link_no = ?" [toSql memberNo, toSql linkNo]

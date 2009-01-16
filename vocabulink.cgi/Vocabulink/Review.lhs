@@ -48,7 +48,7 @@ Review the next link in the queue.
 
 > reviewLinkPage :: Integer -> App CGIResult
 > reviewLinkPage linkNo = do
->   (Link _ o d) <- getLink linkNo
+>   (Link _ _ o d) <- getLink linkNo
 >   let origin = encodeString o
 >       destination = encodeString d
 >   stdPage ("Review: " ++ origin ++ " -> ?")
