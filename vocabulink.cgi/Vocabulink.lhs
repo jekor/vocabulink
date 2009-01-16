@@ -113,7 +113,7 @@ Use this only if you know that the static file will be a valid fragment of XHTML
 >   vars <- getVars
 >   inputs <- cgiGet cgiInputs
 >   memberNo <- asks memberNumber
->   w <- isJust memberNo ? renderWidget MyLinks $ return noHtml
+>   w <- isJust memberNo ? renderWidget (MyLinks 10) $ return noHtml
 >   stdPage "Test Page" []
 >     [ h1 << "Test Page",
 >       paragraph << (pre << map (\x -> show x ++ "\n") vars) +++

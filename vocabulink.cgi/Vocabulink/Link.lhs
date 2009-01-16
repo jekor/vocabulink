@@ -1,6 +1,6 @@
 > module Vocabulink.Link (lexemePage, linkHtml, getLink, linkPage, newLinkPage,
 >                         linkLexemes, linkLexemes', searchPage, deleteLink, linksPage,
->                         Link(..), getMemberPartialLinks)where
+>                         Link(..), partialLinkFromValues) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput', getInputDefault, referer)
@@ -67,14 +67,6 @@ origin should already be UTF8 encoded.
 >   l' <- getPartialLink linkNo
 >   getLinkFromPartial l'
 
-> getMemberPartialLinks :: Integer -> App [PartialLink]
-> getMemberPartialLinks memberNo = do
->   c <- asks db
->   r <- liftIO $ quickQuery' c "SELECT link_no, origin, destination, link_type \
->                               \FROM link WHERE author = ?" [toSql memberNo]
->                   `catchSqlE` "No links found."
->   return $ map partialLinkFromValues r
-
 Return the types of links sorted by how common they should be.
 
 Eventually we'll want to cache this.
@@ -117,7 +109,7 @@ Eventually we'll want to cache this.
 >              `catchSqlE` "Failed to establish link."
 
 > establishLink :: Link -> Integer -> App (Maybe Integer)
-> establishLink link@(Link _ linkType origin destination) memberNo = do
+> establishLink (Link _ linkType origin destination) memberNo = do
 >   c' <- asks db
 >   liftIO $ withTransaction c' $ \c -> do
 >     linkNo <- insertNo c "INSERT INTO link (origin, destination, link_type, \
