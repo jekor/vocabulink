@@ -5,7 +5,7 @@
 
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput')
-> import Vocabulink.DB (toSql', fromSql', catchSqlE, queryTuple)
+> import Vocabulink.DB (fromSql', toSql', toSql, catchSqlE, queryTuple)
 > import Vocabulink.Html (formName)
 > import Vocabulink.Utils ((?))
 

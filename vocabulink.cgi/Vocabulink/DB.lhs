@@ -1,5 +1,11 @@
-> module Vocabulink.DB (catchSqlE, catchSqlD, query1, queryColumn, quickStmt,
->                       insertNo, quickInsertNo, SqlType'(..), queryTuple) where
+\section{Database}
+
+We use @Database.HDBC@ for interfacing with PostgreSQL.
+
+> module Vocabulink.DB (catchSqlE, catchSqlD, query1, quickStmt,
+>                       insertNo, quickInsertNo, SqlType'(fromSql', toSql'),
+>                       fromSql, toSql, quickQuery', queryColumn, queryTuple,
+>                       IConnection(..)) where
 
 > import Vocabulink.CGI (logSqlError)
 

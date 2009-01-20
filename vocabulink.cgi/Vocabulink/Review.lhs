@@ -4,7 +4,7 @@
 
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput', referer)
-> import Vocabulink.DB (query1, quickStmt, catchSqlE, catchSqlD)
+> import Vocabulink.DB (query1, quickStmt, catchSqlE, catchSqlD, fromSql, toSql)
 > import Vocabulink.Html (stdPage, Dependency(..))
 > import Vocabulink.Link (getLink, linkHtml, Link(..))
 > import Vocabulink.Utils (intFromString)
@@ -12,7 +12,7 @@
 > import Codec.Binary.UTF8.String (encodeString)
 > import Control.Monad (liftM)
 > import Control.Monad.Reader (asks)
-> import Database.HDBC (IConnection, withTransaction, run, toSql, fromSql, iToSql)
+> import Database.HDBC (IConnection, withTransaction, run, iToSql)
 > import Data.Maybe (fromMaybe)
 > import Network.FastCGI (CGIResult, liftIO, outputError, redirect)
 > import Text.XHtml.Strict

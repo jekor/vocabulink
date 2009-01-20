@@ -5,20 +5,21 @@
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput', getInputDefault, referer)
 > import Vocabulink.DB (query1, queryColumn, quickStmt, insertNo, quickInsertNo,
->                       catchSqlE, fromSql', toSql', queryTuple)
+>                       catchSqlE, fromSql', toSql', fromSql, toSql, queryTuple,
+>                       quickQuery')
 > import Vocabulink.Html (stdPage, Dependency(..), pager, simpleChoice)
 > import Vocabulink.Member (withMemberNumber)
 > import Vocabulink.Review.Html (reviewHtml)
-
 > import Vocabulink.Link.Types (Link(..), newLinkHtml, linkFromForm,
->                               linkTypeName, establishLinkType, getLinkFromPartial,
->                               linkTypeHtml, PartialLink(..), getPartialLinkType)
+>                               linkTypeName, establishLinkType,
+>                               getLinkFromPartial, linkTypeHtml,
+>                               PartialLink(..), getPartialLinkType)
 
 > import Codec.Binary.UTF8.String (encodeString)
 > import Control.Monad (liftM)
 > import Control.Monad.Reader (asks)
 > import Data.Maybe (fromJust)
-> import Database.HDBC (quickQuery', toSql, fromSql, SqlValue, withTransaction, rollback)
+> import Database.HDBC (SqlValue, withTransaction, rollback)
 > import Network.FastCGI (CGIResult, liftIO, redirect)
 > import Text.XHtml.Strict
 

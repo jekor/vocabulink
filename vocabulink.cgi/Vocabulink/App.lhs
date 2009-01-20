@@ -1,3 +1,6 @@
+\section{The App Monad}
+\label{App}
+
 > module Vocabulink.App (App, AppEnv(..), runApp, liftIO, CGIResult) where
 
 > import {-# SOURCE #-} Vocabulink.Member.Auth (loginNumber)
@@ -5,7 +8,8 @@
 > import Codec.Binary.UTF8.String (decodeString)
 > import Control.Monad.Reader (ReaderT, MonadReader, runReaderT)
 > import Control.Monad.Trans (lift)
-> import Database.HDBC (IConnection, disconnect, quickQuery, toSql, fromSql, catchSql, SqlError(..))
+> import Database.HDBC (IConnection, disconnect, quickQuery, toSql, fromSql,
+>                       catchSql, SqlError(..))
 > import Database.HDBC.PostgreSQL (connectPostgreSQL, Connection)
 > import Network.CGI.Monad (MonadCGI(..))
 > import Network.FastCGI (CGI, CGIT, CGIResult, liftIO, MonadIO, logCGI)

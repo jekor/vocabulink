@@ -1,4 +1,11 @@
-> module Vocabulink.CGI where
+\section{CGI}
+\label{CGI}
+
+> module Vocabulink.CGI (handleErrors', logSqlError, output404, referer,
+>                        CGIInputContext(..),
+>  {- Network.FastCGI -} requestURI, requestMethod,
+>                        setHeader, redirect,
+>                        outputError, outputMethodNotAllowed) where
 
 > import Vocabulink.App (App)
 
@@ -75,6 +82,7 @@ to an appropriate logfile.
 > logSqlError e = do logCGI $ "SQL Error: " ++ (init (seErrorMsg e))
 >                    return ()
 
+\begin{verbatim}
 -- | Use 'outputError' to output and log a 500 Internal Server Error.
 outputInternalServerError :: (MonadIO m, MonadCGI m) =>
                              [String] -- ^ Error information.
@@ -95,6 +103,7 @@ outputError c m es =
          setHeader "Content-type" "text/html; charset=ISO-8859-1"
          page <- errorPage c m es 
          output $ renderHtml page
+\end{verbatim}
 
 > referer :: App String
 > referer = do ref <- getVar "HTTP_REFERER"

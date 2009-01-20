@@ -4,9 +4,7 @@ SuperMemo algorithm SM-2
 
 http://www.supermemo.com/english/ol/sm2.htm
 
-> import Vocabulink.DB (catchSqlE)
-
-> import Database.HDBC
+> import Vocabulink.DB (catchSqlE, fromSql, toSql, quickQuery', IConnection(..))
 
 > interval :: Double -> Integer -> Double -> Double
 > interval _ 1 _  = 1.0
@@ -32,13 +30,16 @@ comes.
 
 This should return Nothing if the item needs to be repeated immediately.
 
+This takes a database handle rather than operates in the App monad so that
+it can be used as part of a transaction.
+
 > reviewInterval :: IConnection conn => conn -> Integer -> Integer -> Integer -> Double -> IO (Maybe Integer)
 > reviewInterval c memberNo linkNo previous recall = do
 >   let p = daysFromSeconds previous
 >       q :: Integer = round $ recall * 5 -- The algorithm expects 0-5, not 0-1.
->   stats <- quickQuery c "SELECT n, EF FROM link_sm2 \
->                         \WHERE member_no = ? AND link_no = ?"
->                         [toSql memberNo, toSql linkNo]
+>   stats <- quickQuery' c "SELECT n, EF FROM link_sm2 \
+>                          \WHERE member_no = ? AND link_no = ?"
+>                          [toSql memberNo, toSql linkNo]
 >              `catchSqlE` "Failed to determine next review interval."
 >   case stats of
 >     []          -> if q < 3 -- This item is not yet learned.

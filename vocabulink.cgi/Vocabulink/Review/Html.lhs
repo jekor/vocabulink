@@ -1,12 +1,11 @@
 > module Vocabulink.Review.Html where
 
 > import Vocabulink.App
-> import Vocabulink.DB (query1)
+> import Vocabulink.DB (query1, toSql)
 > import Vocabulink.Utils ((?))
 
 > import Control.Monad.Reader (asks)
 > import Data.Maybe (isJust)
-> import Database.HDBC (toSql)
 > import Network.FastCGI (liftIO)
 > import Text.XHtml.Strict
 

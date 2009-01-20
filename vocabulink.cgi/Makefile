@@ -6,8 +6,16 @@ lhss := $(shell find . -name "*.lhs" -print)
 
 all : $(fcgi)
 
+doc : vocabulink.pdf
+
 vocabulink.fcgi : $(lhss)
 	ghc -Wall -fglasgow-exts -threaded -package fastcgi --make -o $(fcgi) $^
+
+vocabulink.pdf : Vocabulink.tex
+	pdflatex $<
+
+Vocabulink.tex : $(lhss)
+	lhs2TeX Vocabulink.lhs > $@
 
 install :
 	install -o root -g root $(fcgi) /usr/local/bin
@@ -23,13 +31,13 @@ clean :
 test :
 	ghci -fglasgow-exts Vocabulink.lhs
 
-metrics : $(lhss) $(shell find . -name "*.lhs-boot" -print)
+metrics : $(lhss)
 	@echo -e -n "\tSLOC: "
-	@echo $^ | xargs -n 1 lhs2TeX --code | wc --lines | tr -d "\n"
+	@lhs2TeX --code Vocabulink.lhs | wc --lines | tr -d "\n"
 	@echo -e -n "\tgzipped bytes: "
-	@echo $^ | xargs -n 1 lhs2TeX --code | gzip | wc --bytes | tr -d "\n"
+	@lhs2TeX --code Vocabulink.lhs | gzip | wc --bytes | tr -d "\n"
 	@echo -e -n "\tsource chars: "
-	@echo $^ | xargs -n 1 lhs2TeX --code | wc --chars | tr -d "\n"
+	@lhs2TeX --code Vocabulink.lhs | wc --chars | tr -d "\n"
 	@echo -e -n "\t  total chars: "
 	@cat $^ | wc --chars | tr -d "\n"
 	@echo

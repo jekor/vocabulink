@@ -1,4 +1,4 @@
-> module Vocabulink.Article where
+> module Vocabulink.Article (articlePage, articlesPage) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI (output404)

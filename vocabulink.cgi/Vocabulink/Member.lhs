@@ -2,7 +2,8 @@
 
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput', getInputDefault, referer)
-> import Vocabulink.DB (query1, quickInsertNo, toSql', fromSql', catchSqlE)
+> import Vocabulink.DB (query1, quickInsertNo, fromSql, toSql', fromSql',
+>                       catchSqlE)
 > import Vocabulink.Html (stdPage)
 > import Vocabulink.Utils ((?))
 
@@ -10,7 +11,6 @@
 
 > import Control.Monad.Reader (asks)
 > import Data.Maybe (fromMaybe)
-> import Database.HDBC (fromSql)
 > import Network.FastCGI
 > import Network.URI (escapeURIString, isUnescapedInURI)
 > import Text.XHtml.Strict

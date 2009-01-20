@@ -1,5 +1,9 @@
 > module Vocabulink.Html (Dependency(..), stdPage, pager, simpleChoice, onclick,
->                         accesskey, formName) where
+>                         accesskey, formName,
+>                         (<<), (+++), (!),
+>                         noHtml, primHtml,
+>                         paragraph, pre, h1, h2, h3,
+>                         anchor, href) where
 
 > import Vocabulink.App
 > import Vocabulink.Utils ((?))
