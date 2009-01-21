@@ -1,11 +1,11 @@
 > module Vocabulink.Link (lexemePage, linkHtml, getLink, linkPage, newLinkPage,
->                         linkLexemes, linkLexemes', searchPage, deleteLink, linksPage,
+>                         linkLexemes, searchPage, deleteLink, linksPage,
 >                         Link(..), partialLinkFromValues) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput', getInputDefault, referer)
-> import Vocabulink.DB (query1, queryColumn, quickStmt, insertNo, quickInsertNo,
->                       catchSqlE, fromSql', toSql', fromSql, toSql, queryTuple,
+> import Vocabulink.DB (query1, queryColumn, quickStmt, insertNo, catchSqlE,
+>                       fromSql', toSql', fromSql, toSql, queryTuple,
 >                       quickQuery')
 > import Vocabulink.Html (stdPage, Dependency(..), pager, simpleChoice)
 > import Vocabulink.Member (withMemberNumber)
@@ -99,16 +99,6 @@ Eventually we'll want to cache this.
 >             [ br,
 >               submit "" "Associate" ]) ] ]
 
-> linkLexemes :: String -> String -> String -> Integer -> App (Maybe Integer)
-> linkLexemes origin destination association n = do
->   c <- asks db
->   liftIO $ quickInsertNo c "INSERT INTO link (origin, destination, link_type, \
->                                              \language, representation, author) \
->                            \VALUES (?, ?, 'association', 'en', ?, ?)"
->                            [toSql' origin, toSql' destination, toSql' association, toSql n]
->                            "link_link_no_seq"
->              `catchSqlE` "Failed to establish link."
-
 > establishLink :: Link -> Integer -> App (Maybe Integer)
 > establishLink (Link _ linkType origin destination) memberNo = do
 >   c' <- asks db
@@ -127,8 +117,8 @@ Eventually we'll want to cache this.
 >                        else return Nothing
 >    `catchSqlE` "Failed to establish link."
 
-> linkLexemes' :: App CGIResult
-> linkLexemes' =
+> linkLexemes :: App CGIResult
+> linkLexemes =
 >   withMemberNumber $ \memberNo -> do
 >     link <- linkFromForm
 >     linkNo <- establishLink link memberNo

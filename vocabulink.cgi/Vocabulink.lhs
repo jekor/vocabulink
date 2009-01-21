@@ -46,7 +46,7 @@ pack both the database handle and the authenticated member information into our
 
 > module Main where
 
-\subsection{Our Modules}
+\section{Our Modules}
 
 These are the Vocabulink modules. They are grouped primarily based on division
 of labor. The exception is the App module. The App module defines the App monad
@@ -68,7 +68,7 @@ Each of these modules will be described in its own section.
 > import Vocabulink.Widget
 > import Vocabulink.Widget.MyLinks
 
-\subsection{Other Modules}
+\section{Other Modules}
 
 Vocabulink makes use of a half dozen or so Haskell libraries. Even though we don't use them all in this module, I'll describe them here so that they'll be more familiar as they're introduced (and so that you can jump directly to the section you're interested in after this introduction).
 
@@ -84,53 +84,164 @@ There are a few more, but they are only used by a single Vocabulink module\footn
 > import Codec.Binary.UTF8.String (decodeString)
 > import Control.Concurrent (forkIO)
 > import Control.Monad.Reader (asks)
-> import Data.List (intercalate)
+> import Data.List (find, intercalate)
 > import Data.Maybe (isJust)
 > import Network.FastCGI (runFastCGIConcurrent')
-> import Network.URI (unEscapeString, uriPath)
-> import Text.ParserCombinators.Parsec (Parser, parse, char, sepEndBy, many, noneOf)
+> import Network.URI (URI(..), unEscapeString)
 
-When the program starts, it should immediately begin listening for connections.
+\section{Entry and Dispatch}
+
+When the program starts, it immediately begin listening for connections.
 |runFastCGIConcurrent'| spawns up to 10 threads. |handleErrors'| and |runApp|
-will be explained later. The basically catch unhandled database errors and pack information into the App monad.
+will be explained later. The basically catch unhandled database errors and pack
+information into the App monad.
 
 TODO: Before public launch, the thread limit needs to be increased.
 
 > main :: IO ()
-> main =  runFastCGIConcurrent' forkIO 10 (handleErrors' (runApp dispatch'))
+> main =  runFastCGIConcurrent' forkIO 10 (handleErrors' (runApp handleRequest))
 
-Work begins in the dispatcher.
+|handleRequest| ``digests'' the requested URI before passing it to the
+ dispatcher. It also sets the response header. If we ever serve up non-HTML
+ content, the header will need to be set at a lower level.
 
-> dispatch' :: App CGIResult
-> dispatch' =  do uri <- requestURI
->                 method' <- requestMethod
->                 setHeader "Content-Type" "text/html; charset=utf-8"
->                 case (pathPart uri) of
->                   Left err    -> outputError 500 (show err) []
->                   Right []    -> outputError 400 "Request not understood." []
->                   Right path' -> dispatch method' path'
->     where pathPart = (parse pathComponents "") . decodeString . unEscapeString . uriPath
+> handleRequest :: App CGIResult
+> handleRequest = do
+>   uri     <- requestURI
+>   method  <- requestMethod
+>   setHeader "Content-Type" "text/html; charset=utf-8"
+>   let path = pathList uri
+>   dispatch' method path
 
-> staticPath :: FilePath
-> staticPath = "/home/chris/project/vocabulink/static/"
+We extract the path part of the URI, ``unescape it'' (convert % codes back to
+characters), decode it (convert \mbox{UTF-8} characters to Unicode Chars), and finally
+parse it into directory and filename components.
+
+\begin{quote}@/some/directory/and/a/filename@\end{quote}
+
+becomes
+
+\begin{quote}|["some","directory","and","a","filename"]|\end{quote}
+
+Note that the parser does not have to deal with query strings or fragments
+because |uriPath| has already stripped them.
+
+The one case this doesn't handle correctly is //something, because it's handled
+differently by |Network.CGI|.
+
+> pathList :: URI -> [String]
+> pathList = split (== '/') . decodeString . unEscapeString . uriPath
+
+I used to use a parser for this instead of split, but it got tricky.
+
+> -- pathComponents :: Parser [String]
+> -- pathComponents =  many1 (char '/') >> sepEndBy (many (noneOf "/")) (char '/')
+
+Before we actually dispatch the request, we use the opportunity to clean up the
+URI and redirect the client if necessary. This handles cases like trailing
+slashes. We want only one URI to point to a resource.
+
+> dispatch' :: String -> [String] -> App CGIResult
+> dispatch' method path =
+>   case path of
+>     ["",""] -> frontPage {- "/" -}
+>     ("":xs) -> case find (== "") xs of
+>                  Nothing -> dispatch method xs
+>                  Just _  -> redirect $ "/" ++ (intercalate "/" $ filter (/= "") xs)
+>     _       -> output404 []
+
+Here is where we dispatch each request to a function. We can match the request
+on method and path components. This means that we can dispatch a request to one
+function for a @GET@ and to another for a @POST@.
 
 > dispatch :: String -> [String] -> App CGIResult
-> dispatch "GET" [""] = testPage
 
-> dispatch "GET" ["privacy"] = displayStaticFile "Privacy Policy" $ staticPath ++ "privacy.html"
-> dispatch "GET" ["help"] = displayStaticFile "Help" $ staticPath ++ "help.html"
-> dispatch "GET" ["copyrights"] = displayStaticFile "Copyright Policy" $ staticPath ++ "copyrights.html"
-> dispatch "GET" ["disclaimer"] = displayStaticFile "Disclaimer" $ staticPath ++ "disclaimer.html"
+\subsection{Static Files}
 
-> dispatch "GET" ["blah","di"] = testPage
-> dispatch "GET" ["lexeme",""] = outputError 404 "Lexeme is required." []
-> dispatch "GET" ["lexeme",x] = lexemePage x
-> dispatch "GET" ["link"] = newLinkPage
-> dispatch "GET" ["links"] = linksPage
-> dispatch "GET" ["search"] = searchPage
+Some URIs are nothing fancier than static HTML files. We serve them from within the program so that we can wrap them in a header, footer, and whatever else we'd like.
+
+Each @.html@ file is actually an HTML fragment. These happen to be generated
+from Muse Mode files by Emacs, but we don't really care where they come from.
+
+These are the links in the standard page footer.
+
+> dispatch "GET" ["privacy"]     = displayStaticFile "Privacy Policy" $
+>                                  staticPath ++ "privacy.html"
+> dispatch "GET" ["help"]        = displayStaticFile "Help" $
+>                                  staticPath ++ "help.html"
+> dispatch "GET" ["copyrights"]  = displayStaticFile "Copyright Policy" $
+>                                  staticPath ++ "copyrights.html"
+> dispatch "GET" ["disclaimer"]  = displayStaticFile "Disclaimer" $
+>                                  staticPath ++ "disclaimer.html"
+
+\subsection{Articles}
+
+Articles are also static files, but we want to be able to add new articles
+without recompiling. Also, we extract some extra information from articles. See
+\autoref{Article}.
+
+Each article is accessed at @/article/title@.
 
 > dispatch "GET" ["article",x] = articlePage x
+
+A listing is presented at @/articles@. I'm still debating whether or not it
+should be @/article/@.
+
 > dispatch "GET" ["articles"] = articlesPage
+
+\subsection{Link Pages}
+
+Vocabulink revolves around links---the associations between words or ideas. As
+with articles, we have different functions for retrieving a single link or a
+listing of links. However, the dispatching is complicated by the fact that
+members can operate upon links (we need to handle the @POST@ method).
+
+If we could rely on the @DELETE@ method being supported, this would be a little
+less ugly. However, I've decided to only use @GET@ and @POST@. All other
+methods are appended as an extra path component (here, as |method'|). I'm not
+100\% satisfied with this design decision, but I haven't thought of a better way
+yet.
+
+For clarity, this dispatches:
+
+\begin{center}
+\begin{tabular}{lcl}
+@GET /link/10@            & $\rightarrow$ & linkPage\\
+@GET /link/something@     & $\rightarrow$ & not found\\
+@GET /link/10/something@  & $\rightarrow$ & not found\\
+@POST /link/10/delete@    & $\rightarrow$ & deleteLink\\
+\end{tabular}
+\end{center}
+
+> dispatch method ("link":x:method') = do
+>   linkNo <- liftIO $ intFromString x
+>   case linkNo of
+>     Nothing  -> output404 ["Links are identified by numbers only."]
+>     Just n   -> case (method, method') of
+>                   ("GET"   ,[])          -> linkPage n
+>                   ("POST"  ,["delete"])  -> deleteLink n
+>                   (m       ,xs)          -> output404 (m:xs)
+
+Retrieving a listing of links is easier.
+
+> dispatch "GET" ["links"] = linksPage
+
+Creating a new link is a 2-step process. First, the member must request a page
+on which to enter information about the link. Then they @POST@ the details to
+establish the link.
+
+> dispatch "GET"   ["link"] = newLinkPage
+> dispatch "POST"  ["link"] = linkLexemes
+
+\subsection{Lexeme Pages}
+
+Links are made out of pairs of lexemes (see the handbook section on lexemes in
+the Links chapter). They don't actually exist in the database because we don't
+need to know anything about them other than their textual representation.
+
+> dispatch "GET" ["lexeme",x] = lexemePage x
+
+\subsection{Link Review}
 
 Each link for review can be added to a set. Most people will only use their
 default (unnamed) set.
@@ -143,46 +254,43 @@ default (unnamed) set.
 >       ("POST",[x])       -> linkReviewed' memberNo x
 >       (m,x)              -> output404 (m:x)
 
-> dispatch method' ("link":x:o) = do
->   n <- liftIO $ intFromString x
->   case n of
->     Nothing -> outputError 400 "Links are identified by numbers only." []
->     Just n' -> case (method', o) of
->                  ("GET",[]) -> linkPage n'
->                  ("POST",["delete"]) -> deleteLink n'
->                  (m,y) -> output404 (m:y)
-
 > dispatch "GET"  ["member","join"] = newMemberPage
 > dispatch "POST" ["member","join"] = addMember'
 > dispatch "GET"  ["member","login"] = loginPage
 > dispatch "POST" ["member","login"] = login
 > dispatch "POST" ["member","logout"] = logout
-> dispatch "GET" path' = if last path' == "" -- Redirect trailing /
->                           then redirect $ "/" ++ (intercalate "/" $ init path')
->                           else output404 path'
+
+All searching for links is currently done by searching for a lexeme on either
+side.
+
+> dispatch "GET" ["search"] = searchPage
 
 It would be nice to automatically respond with "Method Not Allowed" on pages
 that exist but don't take the POST/whatever method (as opposed to responding
 with 404).
 
-> dispatch "POST" ["link"] = linkLexemes'
-
+> dispatch "GET" _ = output404 []
 > dispatch "POST" _ = outputError 404 "Resource not found or POST not allowed on it." []
 
 > dispatch _ _ = outputMethodNotAllowed ["GET", "POST"]
 
-> pathComponents :: Parser [String]
-> pathComponents =  char '/' >> sepEndBy (many (noneOf "/")) (char '/')
+This path to static files will change once it's launched to the live site.
+
+> staticPath :: FilePath
+> staticPath = "/home/chris/project/vocabulink/static/"
+
+To display a static file, we simply read it into memory and wrap it with the
+standard page template.
 
 Use this only if you know that the static file will be a valid fragment of XHTML.
 
 > displayStaticFile :: String -> FilePath -> App CGIResult
 > displayStaticFile t path = do
->   body' <- liftIO $ readFile path
->   stdPage t [] [primHtml body']
+>   body <- liftIO $ readFile path
+>   stdPage t [] [primHtml body]
 
-> testPage :: App CGIResult
-> testPage = do
+> frontPage :: App CGIResult
+> frontPage = do
 >   memberNo <- asks memberNumber
 >   w <- isJust memberNo ? renderWidget (MyLinks 10) $ return noHtml
 >   stdPage "Welcome to Vocabulink" []

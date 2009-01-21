@@ -1,3 +1,6 @@
+\section{Articles}
+\label{Article}
+
 > module Vocabulink.Article (articlePage, articlesPage) where
 
 > import Vocabulink.App

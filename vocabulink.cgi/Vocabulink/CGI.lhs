@@ -109,5 +109,7 @@ outputError c m es =
 > referer = do ref <- getVar "HTTP_REFERER"
 >              return $ fromMaybe "http://www.vocabulink.com/" ref
 
+|[String]| are output as extra information to the user.
+
 > output404 :: [String] -> App CGIResult
 > output404 = outputError 404 "Resource not found."

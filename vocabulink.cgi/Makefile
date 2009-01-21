@@ -17,7 +17,7 @@ vocabulink.pdf : Vocabulink.tex
 Vocabulink.tex : $(lhss)
 	lhs2TeX Vocabulink.lhs > $@
 
-install :
+install : vocabulink.fcgi
 	install -o root -g root $(fcgi) /usr/local/bin
 	-killall $(fcgi)
 	spawn-fcgi -f "/usr/local/bin/$(fcgi) 2>> /tmp/vocabulink.error.log" -p 10033 -u lighttpd -g lighttpd

@@ -1,4 +1,6 @@
-> module Vocabulink.Utils where
+\section{Utility Functions}
+
+> module Vocabulink.Utils (if', (?), intFromString, split) where
 
 > import Control.Exception (try)
 
@@ -10,11 +12,22 @@
 > (?) :: Bool -> a -> a -> a
 > (?) = if'
 
--- > intFromString :: String -> IO (Either Exception Integer)
--- > intFromString s = try (readIO s >>= return)
-
 > intFromString :: String -> IO (Maybe Integer)
 > intFromString s = do n <- try $ readIO s
 >                      case n of
 >                        Left _   -> return Nothing
 >                        Right n' -> return $ Just n'
+
+Split a string with a predicate. This returns empty lists before, after, and
+between elements matching the predicate. For example:
+
+split (== '/') "test"   = ["test"]
+split (== '/') "/test"  = ["","test"]
+split (== '/') "/test/" = ["","test",""]
+split (== '/') "//test" = ["","","test"]
+
+> split :: (a -> Bool) -> [a] -> [[a]]
+> split p l = case break p l of
+>               ([],(_:y))  -> [] : split p y
+>               (x,[])      -> [x]
+>               (x,(_:y))   -> x : split p y
