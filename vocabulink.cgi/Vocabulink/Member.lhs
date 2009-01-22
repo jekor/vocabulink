@@ -41,8 +41,8 @@ language) and URL-safe punctuation.
 
 This returns the new member number.
 
-> addMember :: String -> String -> Maybe String -> App (Maybe Integer)
-> addMember username passwd email = do
+> addMember' :: String -> String -> Maybe String -> App (Maybe Integer)
+> addMember' username passwd email = do
 >   c <- asks db
 >   (length username) < 3  ? error "Your username must have 3 characters or more."  $
 >     (length username) > 32 ? error "Your username must have 32 characters or less." $
@@ -54,12 +54,12 @@ This returns the new member number.
 >                              "member_member_no_seq"
 >                `catchSqlE` "Failed to add member."
 
-> addMember' :: App CGIResult
-> addMember' = do
+> addMember :: App CGIResult
+> addMember = do
 >   username <- getInput' "username"
 >   passwd   <- getInput' "password"
 >   email    <- getInput' "email"
->   memberNo <- addMember username passwd email
+>   memberNo <- addMember' username passwd email
 >   case memberNo of
 >     Nothing -> error "Failed to add member."
 >     Just n -> do

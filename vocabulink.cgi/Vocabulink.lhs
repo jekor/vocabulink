@@ -144,11 +144,11 @@ slashes. We want only one URI to point to a resource.
 > dispatch' :: String -> [String] -> App CGIResult
 > dispatch' method path =
 >   case path of
->     ["",""] -> frontPage {- "/" -}
->     ("":xs) -> case find (== "") xs of
->                  Nothing -> dispatch method xs
->                  Just _  -> redirect $ "/" ++ (intercalate "/" $ filter (/= "") xs)
->     _       -> output404 []
+>     ["",""]  -> frontPage {- "/" -}
+>     ("":xs)  -> case find (== "") xs of
+>                   Nothing  -> dispatch method xs
+>                   Just _   -> redirect $ "/" ++ (intercalate "/" $ filter (/= "") xs)
+>     _        -> output404 []
 
 Here is where we dispatch each request to a function. We can match the request
 on method and path components. This means that we can dispatch a request to one
@@ -165,14 +165,14 @@ from Muse Mode files by Emacs, but we don't really care where they come from.
 
 These are the links in the standard page footer.
 
-> dispatch "GET" ["privacy"]     = displayStaticFile "Privacy Policy" $
->                                  staticPath ++ "privacy.html"
-> dispatch "GET" ["help"]        = displayStaticFile "Help" $
->                                  staticPath ++ "help.html"
-> dispatch "GET" ["copyrights"]  = displayStaticFile "Copyright Policy" $
->                                  staticPath ++ "copyrights.html"
-> dispatch "GET" ["disclaimer"]  = displayStaticFile "Disclaimer" $
->                                  staticPath ++ "disclaimer.html"
+> dispatch "GET" ["privacy"]     =  displayStaticFile "Privacy Policy" $
+>                                   staticPath ++ "privacy.html"
+> dispatch "GET" ["help"]        =  displayStaticFile "Help" $
+>                                   staticPath ++ "help.html"
+> dispatch "GET" ["copyrights"]  =  displayStaticFile "Copyright Policy" $
+>                                   staticPath ++ "copyrights.html"
+> dispatch "GET" ["disclaimer"]  =  displayStaticFile "Disclaimer" $
+>                                   staticPath ++ "disclaimer.html"
 
 \subsection{Articles}
 
@@ -206,10 +206,10 @@ For clarity, this dispatches:
 
 \begin{center}
 \begin{tabular}{lcl}
-@GET /link/10@            & $\rightarrow$ & linkPage\\
-@GET /link/something@     & $\rightarrow$ & not found\\
-@GET /link/10/something@  & $\rightarrow$ & not found\\
-@POST /link/10/delete@    & $\rightarrow$ & deleteLink\\
+@GET  /link/10@           & $\rightarrow$ & linkPage \\
+@GET  /link/something@    & $\rightarrow$ & not found \\
+@GET  /link/10/something@ & $\rightarrow$ & not found \\
+@POST /link/10/delete@    & $\rightarrow$ & deleteLink
 \end{tabular}
 \end{center}
 
@@ -220,7 +220,7 @@ For clarity, this dispatches:
 >     Just n   -> case (method, method') of
 >                   ("GET"   ,[])          -> linkPage n
 >                   ("POST"  ,["delete"])  -> deleteLink n
->                   (m       ,xs)          -> output404 (m:xs)
+>                   (_       ,_)          -> output404 (method:method')
 
 Retrieving a listing of links is easier.
 
@@ -243,34 +243,78 @@ need to know anything about them other than their textual representation.
 
 \subsection{Link Review}
 
-Each link for review can be added to a set. Most people will only use their
-default (unnamed) set.
+Members review their links by interacting with the site in a vaguely REST-ish
+way. The intent behind this is that in the future they will be able to review
+their links through different means such as a desktop program or a phone
+application.
 
-> dispatch method' ("review":xs) =
+Because of the use of |withMemberNumber|, a logged out member will be
+redirected to a login page when attempting to review.
+
+\begin{center}
+\begin{tabular}{lcl}
+retrieve the next link for review & $\rightarrow$ & @GET  /review/next@ \\
+mark link as reviewed             & $\rightarrow$ & @POST /review/n@ \\
+add a link for review             & $\rightarrow$ & @POST /review/n/add@
+\end{tabular}
+\end{center}
+
+> dispatch method ("review":path) =
 >   withMemberNumber $ \memberNo ->
->     case (method',xs) of
->       ("GET",["next"])   -> reviewLink memberNo
->       ("POST",["set",x]) -> newReview memberNo x
->       ("POST",[x])       -> linkReviewed' memberNo x
->       (m,x)              -> output404 (m:x)
+>     case (method,path) of
+>       ("GET"   ,["next"])   -> reviewLink memberNo
+>       ("POST"  ,(x:xs))     -> do
+>          linkNo <- liftIO $ intFromString x
+>          case linkNo of
+>            Nothing  -> outputError 400
+>                        "Links are identified by numbers only." []
+>            Just n   -> case xs of
+>                          ["add"]  -> newReview memberNo n
+>                          []       -> linkReviewed memberNo n
+>                          _        -> output404 []
+>       (_       ,_)          -> output404 (method:path)
 
-> dispatch "GET"  ["member","join"] = newMemberPage
-> dispatch "POST" ["member","join"] = addMember'
-> dispatch "GET"  ["member","login"] = loginPage
-> dispatch "POST" ["member","login"] = login
-> dispatch "POST" ["member","logout"] = logout
+\subsection{Membership}
+
+Becoming a member is simply a matter of filling out a form.
+
+> dispatch "GET"   ["member","join"]  = newMemberPage
+> dispatch "POST"  ["member","join"]  = addMember
+
+Logging in is a similar process.
+
+> dispatch "GET"   ["member","login"]  = loginPage
+> dispatch "POST"  ["member","login"]  = login
+
+And logging out can be done without a form.
+
+> dispatch "POST" ["member","logout"]  = logout
+
+\subsection{Searching}
 
 All searching for links is currently done by searching for a lexeme on either
-side.
+side. The single namespace ``search'' accepts a @q@ parameter in the query
+string which searches for a link containing the lexeme (see |searchPage| for
+more complete details of how the search works).
 
 > dispatch "GET" ["search"] = searchPage
 
-It would be nice to automatically respond with "Method Not Allowed" on pages
-that exist but don't take the POST/whatever method (as opposed to responding
-with 404).
+\subsection{Everything Else}
 
-> dispatch "GET" _ = output404 []
-> dispatch "POST" _ = outputError 404 "Resource not found or POST not allowed on it." []
+It would be nice to automatically respond with "Method Not Allowed" on URIs
+that exist but don't make sense for the requested method (presumably @POST@).
+However, we need to take a simpler approach because of how the dispatch method
+was designed (pattern matching is limited). We output a qualified 404 error.
+
+> dispatch "GET"   _ =  outputError 404
+>                       "Resource not found or GET not allowed for it." []
+> dispatch "POST"  _ =  outputError 404
+>                       "Resource not found or POST not allowed on it." []
+
+We don't support any other methods at this time. Anything else (@HEAD@, @PUT@,
+@DELETE@) is rejected.
+
+TODO: Do the rest of these make sense in this file?
 
 > dispatch _ _ = outputMethodNotAllowed ["GET", "POST"]
 

@@ -1,0 +1,26 @@
+\chapter{Links}
+
+\section{Lexemes}
+
+Links are made from pairs of lexemes. The name ``lexeme'' was chosen because
+links are not associated to words or phrases. A link could be between a word
+and a grapheme (such as a hiragana letter or Kanji).
+
+Lexemes don't exist in our database\footnote{This isn't exactly true. We do
+keep track of lexeme aliases.}. They would eventually be too numerous to
+enumerate comfortably. All possible lexemes are assumed to exist. They act as
+nodes in a network of links (in graph theory, the links would be the edges).
+
+This makes Vocabulink rather interesting (although probably not unique) in that
+all of the information stored in our database is about connections. We attach
+no significance to individual lexemes. They are assumed to exist without
+meaning, or at least without a single or universally acceptable meaning. They
+are defined entirely by their links to other lexemes (and the information
+associated with that link).
+
+Although this may seem obvious or simple, it's a fundamental decision that
+shaped the design and philosophy of Vocabulink from a very early stage. The
+effects of this decision are not entirely understood yet.
+
+Even though lexemes may be graphemes, they cannot be arbitrary graphics. They
+must be representable by a Unicode string.

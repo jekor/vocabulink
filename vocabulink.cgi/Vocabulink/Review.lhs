@@ -7,33 +7,34 @@
 > import Vocabulink.DB (query1, quickStmt, catchSqlE, catchSqlD, fromSql, toSql)
 > import Vocabulink.Html (stdPage, Dependency(..))
 > import Vocabulink.Link (getLink, linkHtml, Link(..))
-> import Vocabulink.Utils (intFromString)
 
 > import Codec.Binary.UTF8.String (encodeString)
 > import Control.Monad (liftM)
 > import Control.Monad.Reader (asks)
 > import Database.HDBC (IConnection, withTransaction, run, iToSql)
 > import Data.Maybe (fromMaybe)
-> import Network.FastCGI (CGIResult, liftIO, outputError, redirect)
+> import Network.FastCGI (CGIResult, liftIO, redirect)
 > import Text.XHtml.Strict
 > import System.Time (TimeDiff)
 
-> scheduleReview :: Integer -> Integer -> String -> App ()
-> scheduleReview memberNo linkNo _ = do
+> newReview :: Integer -> Integer -> App CGIResult
+> newReview memberNo linkNo = do
+>   scheduleReview memberNo linkNo
+>   referer >>= redirect
+
+> linkReviewed :: Integer -> Integer -> App CGIResult
+> linkReviewed memberNo linkNo = do
+>   recall <- getInput' "recall"
+>   recallTime <- getInput' "recall-time"
+>   linkReviewed' memberNo linkNo recall recallTime
+>   redirect "/review/next"
+
+> scheduleReview :: Integer -> Integer -> App ()
+> scheduleReview memberNo linkNo = do
 >   c <- asks db
 >   liftIO $ quickStmt c "INSERT INTO link_to_review (member_no, link_no) \
 >                        \VALUES (?, ?)" [toSql memberNo, toSql linkNo]
 >              `catchSqlE` "You already have this link scheduled for review or there was an error."
-
-> newReview :: Integer -> String -> App CGIResult
-> newReview memberNo set = do
->   link <- getInput' "link"
->   n <- liftIO $ intFromString link
->   case n of
->     Nothing -> outputError 400 "Links are identified by numbers only." []
->     Just n' -> do
->       scheduleReview memberNo n' set
->       referer >>= redirect
 
 Review the next link in the queue.
 
@@ -93,22 +94,11 @@ Get the number of links that a user has for review.
 >                      `catchSqlE` "Failed to determine next review time."
 >   return $ fromSql `liftM` next
 
-> linkReviewed' :: Integer -> String -> App CGIResult
-> linkReviewed' memberNo link = do
->   n <- liftIO $ intFromString link
->   case n of
->     Nothing -> outputError 400 "Links are identified by numbers only." []
->     Just n' -> do
->       recall <- getInput' "recall"
->       recallTime <- getInput' "recall-time"
->       linkReviewed memberNo n' recall recallTime
->       redirect "/review/next"
-
 Note that a link was reviewed and schedule the next review. For testing
 purposes, we schedule the review forward an hour.
 
-> linkReviewed :: Integer -> Integer -> Double -> Integer -> App ()
-> linkReviewed memberNo linkNo recall recallTime = do
+> linkReviewed' :: Integer -> Integer -> Double -> Integer -> App ()
+> linkReviewed' memberNo linkNo recall recallTime = do
 >   c' <- asks db
 >   liftIO $ withTransaction c' $ \c -> do
 >     previous <- previousInterval c memberNo linkNo

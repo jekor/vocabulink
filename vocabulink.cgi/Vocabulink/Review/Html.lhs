@@ -20,10 +20,9 @@ For now, all links are added to the default review set.
 >     Just n  -> do
 >       r <- reviewing n linkNo
 >       return $ r ? paragraph ! [theclass "review-box reviewing"] << "Reviewing" $
->                    form ! [action ("/review/set" ++ "/"),
+>                    form ! [action ("/review/" ++ (show linkNo) ++ "/add"),
 >                            method "post", theclass "review-box review"] <<
->                      [ hidden "link" (show linkNo),
->                        submit "review" "Review" ]
+>                      [ submit "review" "Review" ]
 
 Determine whether or not a member is already reviewing this link. This will be
 true only if the member is currently reviewing the link, not if they've

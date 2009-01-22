@@ -21,10 +21,14 @@
 Split a string with a predicate. This returns empty lists before, after, and
 between elements matching the predicate. For example:
 
-split (== '/') "test"   = ["test"]
-split (== '/') "/test"  = ["","test"]
-split (== '/') "/test/" = ["","test",""]
-split (== '/') "//test" = ["","","test"]
+\begin{center}
+\begin{tabular}{rcl}
+|split (== '/') "test"|   & |=| & |["test"]| \\
+|split (== '/') "/test"|  & |=| & |["","test"]| \\
+|split (== '/') "/test/"| & |=| & |["","test",""]| \\
+|split (== '/') "//test"| & |=| & |["","","test"]|
+\end{tabular}
+\end{center}
 
 > split :: (a -> Bool) -> [a] -> [[a]]
 > split p l = case break p l of
