@@ -86,6 +86,7 @@ There are a few more, but they are only used by a single Vocabulink module\footn
 > import Control.Monad.Reader (asks)
 > import Data.List (find, intercalate)
 > import Data.Maybe (isJust)
+> import Data.List.Split (splitOn)
 > import Network.FastCGI (runFastCGIConcurrent')
 > import Network.URI (URI(..), unEscapeString)
 
@@ -130,12 +131,7 @@ The one case this doesn't handle correctly is //something, because it's handled
 differently by |Network.CGI|.
 
 > pathList :: URI -> [String]
-> pathList = split (== '/') . decodeString . unEscapeString . uriPath
-
-I used to use a parser for this instead of split, but it got tricky.
-
-> -- pathComponents :: Parser [String]
-> -- pathComponents =  many1 (char '/') >> sepEndBy (many (noneOf "/")) (char '/')
+> pathList = splitOn "/" . decodeString . unEscapeString . uriPath
 
 Before we actually dispatch the request, we use the opportunity to clean up the
 URI and redirect the client if necessary. This handles cases like trailing

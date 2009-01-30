@@ -17,21 +17,3 @@
 >                      case n of
 >                        Left _   -> return Nothing
 >                        Right n' -> return $ Just n'
-
-Split a string with a predicate. This returns empty lists before, after, and
-between elements matching the predicate. For example:
-
-\begin{center}
-\begin{tabular}{rcl}
-|split (== '/') "test"|   & |=| & |["test"]| \\
-|split (== '/') "/test"|  & |=| & |["","test"]| \\
-|split (== '/') "/test/"| & |=| & |["","test",""]| \\
-|split (== '/') "//test"| & |=| & |["","","test"]|
-\end{tabular}
-\end{center}
-
-> split :: (a -> Bool) -> [a] -> [[a]]
-> split p l = case break p l of
->               ([],(_:y))  -> [] : split p y
->               (x,[])      -> [x]
->               (x,(_:y))   -> x : split p y
