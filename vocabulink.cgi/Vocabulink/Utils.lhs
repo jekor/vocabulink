@@ -1,6 +1,6 @@
 \section{Utility Functions}
 
-> module Vocabulink.Utils (if', (?), intFromString, split) where
+> module Vocabulink.Utils (if', (?), intFromString) where
 
 > import Control.Exception (try)
 
