@@ -5,8 +5,7 @@
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput', getInputDefault, referer)
 > import Vocabulink.DB (query1, queryColumn, quickStmt, insertNo, catchSqlE,
->                       fromSql', toSql', fromSql, toSql, queryTuple,
->                       quickQuery')
+>                       fromSql, toSql, queryTuple, quickQuery')
 > import Vocabulink.Html (stdPage, Dependency(..), pager, simpleChoice)
 > import Vocabulink.Member (withMemberNumber)
 > import Vocabulink.Review.Html (reviewHtml)
@@ -30,9 +29,9 @@ this lexeme is defined. If not, we assume it to be canonical.
 > lexemePage l = do
 >   c <- asks db
 >   lemma <- liftIO $ query1 c "SELECT lemma FROM lexeme \
->                              \WHERE lexeme = ?" [toSql' l]
+>                              \WHERE lexeme = ?" [toSql l]
 >   case lemma of
->     Just lm -> redirect $ "/lexeme/" ++ encodeString (fromSql' lm)
+>     Just lm -> redirect $ "/lexeme/" ++ encodeString (fromSql lm)
 >     Nothing -> stdPage (encodeString l) [CSS "link"]
 >       [ form ! [action "/link", method "get"] <<
 >         [ hidden "origin" (encodeString l),
@@ -51,8 +50,8 @@ origin should already be UTF8 encoded.
 
 > partialLinkFromValues :: [SqlValue] -> PartialLink
 > partialLinkFromValues (n:o:d:t:[]) =
->   let partialLinkType = getPartialLinkType (fromSql' t)
->   in PartialLink (fromSql n) partialLinkType (fromSql' o) (fromSql' d)
+>   let partialLinkType = getPartialLinkType (fromSql t)
+>   in PartialLink (fromSql n) partialLinkType (fromSql o) (fromSql d)
 > partialLinkFromValues _ = error "Invalid link returned from database."
 
 > getPartialLink :: Integer -> App PartialLink
@@ -81,7 +80,7 @@ Eventually we'll want to cache this.
 >      \GROUP BY link_type) AS t ON (t.link_type = link_type.name) \
 >     \ORDER BY t.count DESC NULLS LAST" []
 >              `catchSqlE` "Failed to retrieve link types."
->   return $ map fromSql' types
+>   return $ map fromSql types
 
 > newLinkPage :: App CGIResult
 > newLinkPage = do
@@ -106,7 +105,7 @@ Eventually we'll want to cache this.
 >     linkNo <- insertNo c "INSERT INTO link (origin, destination, link_type, \
 >                                            \language, author) \
 >                          \VALUES (?, ?, ?, 'en', ?)"
->                          [toSql' origin, toSql' destination, toSql $ linkTypeName linkType,
+>                          [toSql origin, toSql destination, toSql $ linkTypeName linkType,
 >                           toSql memberNo]
 >                          "link_link_no_seq"
 >     case linkNo of
@@ -176,8 +175,8 @@ Generate a page of links for the specified member or all members (for Nothing).
 > displayLink :: [SqlValue] -> Html
 > displayLink [no, origin, destination] = 
 >   let no' = fromSql no :: Integer
->       origin' = fromSql' origin :: String
->       destination' = fromSql' destination :: String in
+>       origin' = fromSql origin :: String
+>       destination' = fromSql destination :: String in
 >   thediv ! [theclass "link"] << anchor ! [href $ "/link/" ++ (show no')] <<
 >     linkHtml (stringToHtml (encodeString origin')) (stringToHtml (encodeString destination'))
 > displayLink _ = thediv ! [theclass "link"] << "Link is malformed."
@@ -216,5 +215,5 @@ of the links in the database.
 >                          \FROM link WHERE (origin = ? OR destination = ?) \
 >                          \AND deleted = FALSE \
 >                          \OFFSET ? LIMIT ?"
->                          [toSql' term, toSql' term, toSql offset, toSql limit]
+>                          [toSql term, toSql term, toSql offset, toSql limit]
 >              `catchSqlE` "Failed to search links."

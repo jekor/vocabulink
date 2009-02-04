@@ -2,8 +2,7 @@
 
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput', getInputDefault, referer)
-> import Vocabulink.DB (query1, quickInsertNo, fromSql, toSql', fromSql',
->                       catchSqlE)
+> import Vocabulink.DB (query1, quickInsertNo, fromSql, toSql, catchSqlE)
 > import Vocabulink.Html (stdPage)
 > import Vocabulink.Utils ((?))
 
@@ -50,7 +49,7 @@ This returns the new member number.
 >     -- TODO: Add password constraints?
 >     liftIO $ quickInsertNo c "INSERT INTO member (username, email, password_hash) \
 >                              \VALUES (?, ?, crypt(?, gen_salt('bf')))"
->                              [toSql' username, toSql' email, toSql' passwd]
+>                              [toSql username, toSql email, toSql passwd]
 >                              "member_member_no_seq"
 >                `catchSqlE` "Failed to add member."
 
@@ -90,9 +89,9 @@ This returns the new member number.
 > getMemberNumber username = do
 >   c <- asks db
 >   n <- liftIO $ query1 c "SELECT member_no FROM member \
->                          \WHERE username = ?" [toSql' username]
+>                          \WHERE username = ?" [toSql username]
 >                   `catchSqlE` "Failed to retrieve member number from username."
->   return $ maybe (error "fail") fromSql' n
+>   return $ maybe (error "fail") fromSql n
 
 Login attempts to match the username and password supplied against the
 information in the database.
@@ -102,7 +101,7 @@ information in the database.
 >   c <- asks db
 >   n <- liftIO $ query1 c "SELECT password_hash = crypt(?, password_hash) \
 >                          \FROM member WHERE username = ?"
->                          [toSql' passwd, toSql' username]
+>                          [toSql passwd, toSql username]
 >                   `catchSqlE` "Internal authentication failure (this is not your fault)."
 >   return $ maybe (error "fail") fromSql n
 

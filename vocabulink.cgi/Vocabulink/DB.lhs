@@ -3,13 +3,11 @@
 We use @Database.HDBC@ for interfacing with PostgreSQL.
 
 > module Vocabulink.DB (catchSqlE, catchSqlD, query1, quickStmt,
->                       insertNo, quickInsertNo, SqlType'(fromSql', toSql'),
->                       fromSql, toSql, quickQuery', queryColumn, queryTuple,
->                       IConnection(..)) where
+>                       insertNo, quickInsertNo, quickQuery', queryColumn,
+>                       queryTuple, fromSql, toSql, IConnection(..)) where
 
 > import Vocabulink.CGI (logSqlError)
 
-> import Codec.Binary.UTF8.String (encodeString, decodeString)
 > import Control.Monad (liftM)
 > import Data.Maybe (catMaybes)
 > import Database.HDBC
@@ -78,36 +76,5 @@ Run a quick insert and return the sequence number it created.
 > insertNo :: IConnection conn => conn -> String -> [SqlValue] -> String -> IO (Maybe Integer)
 > insertNo c sql vs seqName = do
 >   run c sql vs
->   seqNo <- query1 c "SELECT currval(?)" [toSql' seqName]
+>   seqNo <- query1 c "SELECT currval(?)" [toSql seqName]
 >   return $ fromSql `liftM` seqNo
-
-Let's define some helpers to keep from forgetting to decode/encode UTF8
-strings. Ultimately, I'd like to have a UTF8String type that could use the type
-system to make sure that we always decode/encode properly. For now, these will
-have to do.
-
-> class SqlType' a where
->   toSql'   :: a -> SqlValue
->   fromSql' :: SqlValue -> a
-
-> instance SqlType' String where
->   toSql'   = toSql . encodeString
->   fromSql' = decodeString . fromSql
-
-> instance SqlType' (Maybe String) where
->   toSql' Nothing  = SqlNull
->   toSql' (Just s) = toSql $ encodeString s
->   fromSql' (SqlString s) = Just (decodeString s)
->   fromSql' _             = Nothing -- SqlNull and everything else
-
-> instance SqlType' Integer where
->   toSql' = toSql
->   fromSql' = fromSql
-
-> instance SqlType' Int where
->   toSql' = toSql
->   fromSql' = fromSql
-
-> instance SqlType' Bool where
->   toSql' = toSql
->   fromSql' = fromSql

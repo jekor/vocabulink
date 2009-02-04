@@ -5,7 +5,7 @@
 
 > import Vocabulink.App
 > import Vocabulink.CGI (getInput')
-> import Vocabulink.DB (fromSql', toSql', toSql, catchSqlE, queryTuple)
+> import Vocabulink.DB (fromSql, toSql, catchSqlE, queryTuple)
 > import Vocabulink.Html (formName)
 > import Vocabulink.Utils ((?))
 
@@ -69,7 +69,7 @@ Each link is represented by a name in the database.
 >     \WHERE link_no = ?" [toSql n]
 >       `catchSqlE` "Unable to retrieve link."
 >   case rs of
->     [linkWord, story] -> return $ LinkWord (fromSql' linkWord) (fromSql' story)
+>     [linkWord, story] -> return $ LinkWord (fromSql linkWord) (fromSql story)
 >     _ -> error "Unable to retrieve link."
 > getLinkTypeDetails n (ForeignLinkWord _ _) = do
 >   c <- asks db
@@ -78,7 +78,7 @@ Each link is represented by a name in the database.
 >     \WHERE link_no = ?" [toSql n]
 >       `catchSqlE` "Unable to retrieve link."
 >   case rs of
->     [linkWord, story] -> return $ ForeignLinkWord (fromSql' linkWord) (fromSql' story)
+>     [linkWord, story] -> return $ ForeignLinkWord (fromSql linkWord) (fromSql story)
 >     _ -> error "Unable to retrieve link."
 > getLinkTypeDetails n (Relationship _ _) = do
 >   c <- asks db
@@ -87,7 +87,7 @@ Each link is represented by a name in the database.
 >     \WHERE link_no = ?" [toSql n]
 >       `catchSqlE` "Unable to retrieve link."
 >   case rs of
->     [leftSide, rightSide] -> return $ Relationship (fromSql' leftSide) (fromSql' rightSide)
+>     [leftSide, rightSide] -> return $ Relationship (fromSql leftSide) (fromSql rightSide)
 >     _ -> error "Unable to retrieve link."
 
 > establishLinkType :: IConnection conn => conn -> Integer -> LinkType -> IO (Integer)
@@ -96,15 +96,15 @@ Each link is represented by a name in the database.
 > establishLinkType c linkNo (LinkWord linkWord story) =
 >   run c "INSERT INTO link_type_link_word (link_no, link_word, story) \
 >                                  \VALUES (?, ?, ?)"
->         [toSql linkNo, toSql' linkWord, toSql' story]
+>         [toSql linkNo, toSql linkWord, toSql story]
 > establishLinkType c linkNo (ForeignLinkWord linkWord story) =
 >   run c "INSERT INTO link_type_link_word (link_no, link_word, story) \
 >                                  \VALUES (?, ?, ?)"
->         [toSql linkNo, toSql' linkWord, toSql' story]
+>         [toSql linkNo, toSql linkWord, toSql story]
 > establishLinkType c linkNo (Relationship leftSide rightSide) =
 >   run c "INSERT INTO link_type_relationship (link_no, left_side, right_side) \
 >                                     \VALUES (?, ?, ?)"
->         [toSql linkNo, toSql' leftSide, toSql' rightSide]
+>         [toSql linkNo, toSql leftSide, toSql rightSide]
 
 > linkEditHtml :: Link -> [Html]
 > linkEditHtml (Link _ (Association) _ _) = []
