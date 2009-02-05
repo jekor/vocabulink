@@ -15,7 +15,6 @@
 > import Data.Maybe (fromMaybe)
 > import Network.FastCGI (CGIResult, liftIO, redirect)
 > import Text.XHtml.Strict
-> import System.Time (TimeDiff)
 
 > newReview :: Integer -> Integer -> App CGIResult
 > newReview memberNo linkNo = do
@@ -83,16 +82,6 @@ Get the number of links that a user has for review.
 >                          [toSql memberNo]
 >                   `catchSqlD` (Just (iToSql 0))
 >   return $ maybe (0 :: Integer) fromSql n
-
-> nextReviewTime :: Integer -> App (Maybe TimeDiff)
-> nextReviewTime memberNo = do
->   c <- asks db
->   next <- liftIO $ query1 c "SELECT extract(epoch FROM (target_time - current_timestamp)) \
->                             \FROM link_to_review \
->                             \WHERE member_no = ? AND target_time > current_timestamp \
->                             \ORDER BY target_time ASC LIMIT 1" [toSql memberNo]
->                      `catchSqlE` "Failed to determine next review time."
->   return $ fromSql `liftM` next
 
 Note that a link was reviewed and schedule the next review. For testing
 purposes, we schedule the review forward an hour.
