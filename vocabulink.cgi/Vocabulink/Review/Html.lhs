@@ -2,7 +2,7 @@
 
 > import Vocabulink.App
 > import Vocabulink.DB (query1, toSql)
-> import Vocabulink.Utils ((?))
+> import Vocabulink.Utils
 
 > import Control.Monad.Reader (asks)
 > import Data.Maybe (isJust)

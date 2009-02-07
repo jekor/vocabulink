@@ -4,7 +4,7 @@
 > import Vocabulink.CGI (getInput', getInputDefault, referer)
 > import Vocabulink.DB (query1, quickInsertNo, fromSql, toSql, catchSqlE)
 > import Vocabulink.Html (stdPage)
-> import Vocabulink.Utils ((?))
+> import Vocabulink.Utils
 
 > import Vocabulink.Member.Auth (setAuthCookie)
 

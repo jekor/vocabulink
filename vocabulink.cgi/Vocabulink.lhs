@@ -126,7 +126,7 @@ becomes
 Note that the parser does not have to deal with query strings or fragments
 because |uriPath| has already stripped them.
 
-The one case this doesn't handle correctly is \verb!//something!, because it's
+The one case this doesn't handle correctly is @//something@, because it's
 handled differently by |Network.CGI|.
 
 > pathList :: URI -> [String]
@@ -161,7 +161,7 @@ Each @.html@ file is actually an HTML fragment. These happen to be generated
 from Muse Mode files by Emacs, but we don't really care where they come from.
 
 These are the links in the standard page footer. See \autoref{staticPath} for
-the definition of staticPath.
+the definition of |staticPath|.
 
 > dispatch "GET" ["privacy"]     =  displayStaticFile "Privacy Policy" $
 >                                   staticPath ++ "privacy.html"

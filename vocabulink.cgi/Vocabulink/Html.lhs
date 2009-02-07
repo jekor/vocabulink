@@ -7,7 +7,7 @@
 >                         anchor, href) where
 
 > import Vocabulink.App
-> import Vocabulink.Utils ((?))
+> import Vocabulink.Utils
 
 > import {-# SOURCE #-} Vocabulink.Review (numLinksToReview)
 
