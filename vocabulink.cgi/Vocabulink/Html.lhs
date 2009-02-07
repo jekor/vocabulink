@@ -1,4 +1,5 @@
-> module Vocabulink.Html (Dependency(..), stdPage, pager, simpleChoice, onclick,
+> module Vocabulink.Html (Dependency(..), stdPage, displayStaticFile,
+>                         pager, simpleChoice, onclick,
 >                         accesskey, formName,
 >                         (<<), (+++), (!),
 >                         noHtml, primHtml,
@@ -42,6 +43,16 @@ stdPage expects title to already be UTF8 encoded if necessary.
 > includeDep (JS js) =
 >   script ! [src ("http://s.vocabulink.com/" ++ js ++ ".js"),
 >             thetype "text/javascript"] << noHtml
+
+To display a static file, we simply read it into memory and wrap it with the
+standard page template.
+
+Use this only if you know that the static file will be a valid fragment of XHTML.
+
+> displayStaticFile :: String -> FilePath -> App CGIResult
+> displayStaticFile t path = do
+>   bodyHtml <- liftIO $ readFile path
+>   stdPage t [] [primHtml bodyHtml]
 
 It's common to use an unordered list to present a series of links. For example, both the standard header and footer use this.
 

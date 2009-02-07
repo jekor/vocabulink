@@ -126,8 +126,8 @@ becomes
 Note that the parser does not have to deal with query strings or fragments
 because |uriPath| has already stripped them.
 
-The one case this doesn't handle correctly is //something, because it's handled
-differently by |Network.CGI|.
+The one case this doesn't handle correctly is \verb!//something!, because it's
+handled differently by |Network.CGI|.
 
 > pathList :: URI -> [String]
 > pathList = splitOn "/" . decodeString . unEscapeString . uriPath
@@ -153,12 +153,15 @@ function for a @GET@ and to another for a @POST@.
 
 \subsection{Static Files}
 
-Some URIs are nothing fancier than static HTML files. We serve them from within the program so that we can wrap them in a header, footer, and whatever else we'd like.
+Some URIs are nothing fancier than static HTML files. We serve them from within
+the program so that we can wrap them in a header, footer, and whatever else
+we'd like.
 
 Each @.html@ file is actually an HTML fragment. These happen to be generated
 from Muse Mode files by Emacs, but we don't really care where they come from.
 
-These are the links in the standard page footer.
+These are the links in the standard page footer. See \autoref{staticPath} for
+the definition of staticPath.
 
 > dispatch "GET" ["privacy"]     =  displayStaticFile "Privacy Policy" $
 >                                   staticPath ++ "privacy.html"
@@ -309,24 +312,12 @@ was designed (pattern matching is limited). We output a qualified 404 error.
 We don't support any other methods at this time. Anything else (@HEAD@, @PUT@,
 @DELETE@) is rejected.
 
-TODO: Do the rest of these make sense in this file?
-
 > dispatch _ _ = outputMethodNotAllowed ["GET", "POST"]
 
-This path to static files will change once it's launched to the live site.
-
-> staticPath :: FilePath
-> staticPath = "/home/chris/project/vocabulink/static/"
-
-To display a static file, we simply read it into memory and wrap it with the
-standard page template.
-
-Use this only if you know that the static file will be a valid fragment of XHTML.
-
-> displayStaticFile :: String -> FilePath -> App CGIResult
-> displayStaticFile t path = do
->   body <- liftIO $ readFile path
->   stdPage t [] [primHtml body]
+Finally, we get to an actual page of the site: the front page. Currently, it's
+just a test of the widget system that displays the "MyLinks" widget if the
+client is logged in (and nothing otherwise). It gets the common header, footer,
+and associated functionality by using the stdPage function.
 
 > frontPage :: App CGIResult
 > frontPage = do
@@ -335,6 +326,12 @@ Use this only if you know that the static file will be a valid fragment of XHTML
 >   stdPage "Welcome to Vocabulink" []
 >     [ h1 << "Welcome to Vocabulink",
 >       w ]
+
+\label{staticPath}
+This path to static files will change once it's launched to the live site.
+
+> staticPath :: FilePath
+> staticPath = "/home/chris/project/vocabulink/static/"
 
 %include Vocabulink/Utils.lhs
 %include Vocabulink/CGI.lhs
