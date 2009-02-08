@@ -3,7 +3,7 @@
 >                         Link(..), partialLinkFromValues) where
 
 > import Vocabulink.App
-> import Vocabulink.CGI (getInput', getInputDefault, referer)
+> import Vocabulink.CGI
 > import Vocabulink.DB (query1, queryColumn, quickStmt, insertNo, catchSqlE,
 >                       fromSql, toSql, queryTuple, quickQuery')
 > import Vocabulink.Html (stdPage, Dependency(..), pager, simpleChoice)
@@ -84,8 +84,8 @@ Eventually we'll want to cache this.
 
 > newLinkPage :: App CGIResult
 > newLinkPage = do
->   origin <- encodeString `liftM` getInput' "origin"
->   destination <- encodeString `liftM` getInput' "destination"
+>   origin <- encodeString `liftM` readRequiredInput "origin"
+>   destination <- encodeString `liftM` readRequiredInput "destination"
 >   types <- linkTypes
 >   let t = origin ++ " -> " ++ destination
 >   stdPage t [CSS "link", JS "MochiKit", JS "link"]
@@ -156,8 +156,8 @@ Generate a page of links for the specified member or all members (for Nothing).
 
 > linksPage :: App CGIResult
 > linksPage = do
->   pg  <- getInputDefault 1 "pg"
->   n   <- getInputDefault 25 "n"
+>   pg  <- readInputDefault 1 "pg"
+>   n   <- readInputDefault 25 "n"
 >   links <- getLinks ((pg - 1) * n) (n + 1)
 >   pagerControl <- pager n pg $ (length links) + ((pg - 1) * n)
 >   stdPage "Links" [CSS "link"]
@@ -183,7 +183,7 @@ Generate a page of links for the specified member or all members (for Nothing).
 
 > deleteLink :: Integer -> App CGIResult
 > deleteLink linkNo = do
->   ref <- referer
+>   ref <- refererOrVocabulink
 >   c <- asks db
 >   liftIO $ quickStmt c "UPDATE link SET deleted = TRUE \
 >                        \WHERE link_no = ?" [toSql linkNo]
@@ -194,9 +194,9 @@ We'll stick to just searching through 10 results per page for now.
 
 > searchPage :: App CGIResult
 > searchPage = do
->   term <- getInput' "q"
+>   term <- readRequiredInput "q"
 >   let n = 10
->   pg  <- getInputDefault 1 "pg"
+>   pg  <- readInputDefault 1 "pg"
 >   links <- searchLinks term ((pg - 1) * n) (n + 1)
 >   pagerControl <- pager n pg $ (length links) + ((pg - 1) * n)
 >   case links of

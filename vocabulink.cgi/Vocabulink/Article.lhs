@@ -4,7 +4,7 @@
 > module Vocabulink.Article (articlePage, articlesPage) where
 
 > import Vocabulink.App
-> import Vocabulink.CGI (output404)
+> import Vocabulink.CGI
 > import Vocabulink.Html (stdPage)
 
 > import Control.Monad (filterM)

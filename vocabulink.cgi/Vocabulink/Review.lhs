@@ -3,7 +3,7 @@
 > import Vocabulink.Review.SM2 (reviewInterval)
 
 > import Vocabulink.App
-> import Vocabulink.CGI (getInput', referer)
+> import Vocabulink.CGI
 > import Vocabulink.DB (query1, quickStmt, catchSqlE, catchSqlD, fromSql, toSql)
 > import Vocabulink.Html (stdPage, Dependency(..))
 > import Vocabulink.Link (getLink, linkHtml, Link(..))
@@ -19,12 +19,12 @@
 > newReview :: Integer -> Integer -> App CGIResult
 > newReview memberNo linkNo = do
 >   scheduleReview memberNo linkNo
->   referer >>= redirect
+>   refererOrVocabulink >>= redirect
 
 > linkReviewed :: Integer -> Integer -> App CGIResult
 > linkReviewed memberNo linkNo = do
->   recall <- getInput' "recall"
->   recallTime <- getInput' "recall-time"
+>   recall <- readRequiredInput "recall"
+>   recallTime <- readRequiredInput "recall-time"
 >   linkReviewed' memberNo linkNo recall recallTime
 >   redirect "/review/next"
 

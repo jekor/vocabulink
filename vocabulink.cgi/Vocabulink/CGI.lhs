@@ -10,34 +10,43 @@ not the end of the world if we generate an error or don't catch an exception.
 To keep other modules from having to know exactly which CGI method we're using
 (who knows, we may want to switch to SCGI later), we export some FastCGI
 functions. This allows other modules to just import Vocabulink.CGI and allows
-us the option of overriding its functions in the future. This is a common
-pattern in other modules.
+us the option of overriding its functions in the future (which we do already
+with |readInput|). This is a common pattern in other modules.
 
-> module Vocabulink.CGI (handleErrors', logSqlError, output404, referer,
->                        CGIInputContext(..),
->  {- Network.FastCGI -} requestURI, requestMethod,
->                        setHeader, redirect,
->                        outputError, outputMethodNotAllowed) where
+> module Vocabulink.CGI (  readInput, readRequiredInput, readInputDefault,
+>                          handleErrors', logSqlError, output404,
+>                          refererOrVocabulink,
+>  {- Network.FastCGI -}   requestURI, requestMethod, getVar,
+>                          setHeader, redirect, remoteAddr,
+>                          outputError, outputMethodNotAllowed,
+>                          Cookie(..), deleteCookie) where
 
-> import Vocabulink.App (App)
+> import Vocabulink.App
 
 > import Codec.Binary.UTF8.String (decodeString)
-> import Control.Exception (Exception(..), try)
+> import Control.Exception (Exception(..))
+> import Control.Monad (liftM)
 > import Data.Maybe (fromMaybe)
 
 We don't want to import Vocabulink.DB, as it depends on this module, because
 that would mean creating boot modules to break cyclic dependencies. We only
-need to know about (uncaught) SQL exceptions anyway.
+need to know about (\mbox{uncaught}) SQL exceptions anyway.
 
 > import Database.HDBC (sqlExceptions, SqlError(..))
-> import Network.FastCGI
+> import Network.CGI.Protocol (maybeRead)
+
+We're going to hide |readInput| so that we can override it with a version that
+automatically handles UTF-8-encoded input.
+
+> import Network.FastCGI hiding (readInput)
+> import qualified Network.FastCGI as FCGI
 > import System.IO.Error (isUserError, ioeGetErrorString)
 
 It's quite probable that we're going to trigger an unexpected exception
 somewhere in the program. This is especially likely because we're interfacing
-with a database using text strings. Rather than blow up, we'd like to catch and
-log the exception before giving the client some sort of indication that
-something went wrong.
+with a database via strings. Rather than blow up, we'd like to catch and log
+the exception before giving the client some sort of indication that something
+went wrong.
 
 |catchCGI| will handle exceptions in the CGI monad.
 
@@ -45,8 +54,7 @@ something went wrong.
 > handleErrors' = flip catchCGI outputException'
 
 Network.CGI provides |outputException| as a basic default error handler. This
-is a slightly modified version that logs SQL-level errors and notifies the
-client that a database error occurred. It also logs other errors.
+is a slightly modified version that logs errors.
 
 One case that needs to be tested is when an error message has non-ASCII
 characters. I'm not sure how either |logCGI| or |outputInternalServerError|
@@ -58,68 +66,62 @@ will handle it.
 >                  Nothing  -> liftIO $ logError e >>= \e' -> return [e']
 >                  Just se  -> liftIO $ logSqlError se >>= \e' -> return [e']
 
-Our logging is very simple. At some point it would be nice to add information
-on where the error was generated, as well as the time.
+Logging at this level is very simple. It would be nice to change this to log to
+the database. For now, we're outside of the App monad once this is called and
+we can no longer use |logApp|. Ideally, these would never be called because all
+exceptions are caught from within |runApp| or thereabouts.
 
 > logError :: Exception -> IO (String)
-> logError (ErrorCall msg)  = logCGI msg >> return msg
-> logError (IOException ie) = do
+> logError (ErrorCall msg)   = logCGI msg >> return msg
+> logError (IOException ie)  = do
 >   let ioe = if isUserError ie
 >             then ioeGetErrorString ie
 >             else show ie
 >   logCGI ioe >> return ioe
-> logError e                = logCGI (show e) >> return (show e)
+> logError e                 = logCGI (show e) >> return (show e)
 
 > logSqlError :: SqlError -> IO (String)
-> logSqlError e = do logCGI $ "SQL Error: " ++ (init (seErrorMsg e))
->                    return "Database Error"
+> logSqlError e = do  logCGI $ "SQL Error: " ++ (init (seErrorMsg e))
+>                     return "Database Error"
 
-> referer :: App String
-> referer = do ref <- getVar "HTTP_REFERER"
->              return $ fromMaybe "http://www.vocabulink.com/" ref
+404 errors are common enough that it makes sense to have a function just for
+reporting them to the client. We also want to log 404 errors, as they may
+indicate a problem or opportunity with the site.
 
-|[String]| are output as extra information to the user.
+This takes a list of Strings that are output as extra information to the
+client.
 
 > output404 :: [String] -> App CGIResult
-> output404 = outputError 404 "Resource not found."
+> output404 s = do  liftIO $ logCGI $ "404: " ++ (show s)
+>                   outputError 404 "Resource not found." s
 
-It's nice to have a single function that can retrieve an HTTP GET paramater for
-us and do whatever's necessary to return a value in the context we need it in.
-This idea came from Text.Regex's (=~).
+In some cases we'll need to redirect the client to where it came from after we
+perform some action. We use this to make sure that we don't redirect them off
+of the site.
 
-> class CGIInputContext a where
->   getInputDefault :: a -> String -> App a
->   getInput' :: String -> App a
+> refererOrVocabulink :: App String
+> refererOrVocabulink = do
+>   ref <- getVar "HTTP_REFERER"
+>   return $ fromMaybe "http://www.vocabulink.com/" ref
 
-> instance CGIInputContext String where
->   getInputDefault d r = do i <- getInput r
->                            return $ maybe d (decodeString) i
->   getInput' r = getInputDefault (error $ "Parameter '" ++ r ++ "' is required.") r
+|readInput| is just like Network.CGI's |readInput|, but it automatically
+handles UTF-8 conversion.
 
-> instance CGIInputContext (Maybe String) where
->   getInputDefault d r = do i <- getInput r
->                            return $ maybe d (Just . decodeString) i
->   getInput' = getInputDefault Nothing
+> readInput :: (Read a, MonadCGI m) => String -> m (Maybe a)
+> readInput = liftM (>>= (maybeRead . decodeString)) . getInput
 
-> getInputDefaultNumeric :: (Num a, Read a) => a -> String -> App a
-> getInputDefaultNumeric d r = do
->   s <- getInput r
->   case s of
->     Nothing -> return d
->     Just s' -> do
->       i <- liftIO $ try $ readIO s'
->       case i of
->         Left _   -> return d
->         Right i' -> return i'
+Often we'll want an input from the client but are happy to fall back to a
+default value.
 
-> instance CGIInputContext Integer where
->   getInputDefault = getInputDefaultNumeric
->   getInput' r = getInputDefault (error $ "Parameter '" ++ r ++ "' is required and must be a whole number.") r
+> readInputDefault :: (Read a, MonadCGI m) => a -> String -> m a
+> readInputDefault d p = do
+>   i <- readInput p
+>   return $ fromMaybe d i
 
-> instance CGIInputContext Int where
->   getInputDefault = getInputDefaultNumeric
->   getInput' r = getInputDefault (error $ "Parameter '" ++ r ++ "' is required and must be a whole number.") r
+As a convenience, |readRequiredInput| will throw an error on a missing input.
+It allows us to write simpler code, but eventually most calls to this should be
+removed and we should more gracefully handle the error.
 
-> instance CGIInputContext Double where
->   getInputDefault = getInputDefaultNumeric
->   getInput' r = getInputDefault (error $ "Parameter '" ++ r ++ "' is required and must be a number.") r
+> readRequiredInput :: (Read a, MonadCGI m) => String -> m a
+> readRequiredInput p =
+>   readInputDefault (error $ "Parameter '" ++ p ++ "' is required.") p

@@ -4,7 +4,7 @@
 >                               getPartialLinkType, partialLinkHtml) where
 
 > import Vocabulink.App
-> import Vocabulink.CGI (getInput')
+> import Vocabulink.CGI
 > import Vocabulink.DB (fromSql, toSql, catchSqlE, queryTuple)
 > import Vocabulink.Html (formName)
 > import Vocabulink.Utils ((?))
@@ -139,25 +139,25 @@ Each link is represented by a name in the database.
 
 > linkFromForm :: App Link
 > linkFromForm = do
->   origin <- getInput' "origin"
->   destination <- getInput' "destination"
->   linkType' <- (getInput' "link-type" >>= linkTypeFromForm)
+>   origin <- readRequiredInput "origin"
+>   destination <- readRequiredInput "destination"
+>   linkType' <- (readRequiredInput "link-type" >>= linkTypeFromForm)
 >   return $ Link 0 linkType' origin destination
 
 > linkTypeFromForm :: String -> App LinkType
 > linkTypeFromForm "association" = return Association
 > linkTypeFromForm "cognate" = return Cognate
 > linkTypeFromForm "link word" = do
->   linkWord <- getInput' "link-word"
->   story <- getInput' "story"
+>   linkWord <- readRequiredInput "link-word"
+>   story <- readRequiredInput "story"
 >   return $ LinkWord linkWord story
 > linkTypeFromForm "foreign link word" = do
->   linkWord <- getInput' "link-word"
->   story <- getInput' "story"
+>   linkWord <- readRequiredInput "link-word"
+>   story <- readRequiredInput "story"
 >   return $ ForeignLinkWord linkWord story
 > linkTypeFromForm "relationship" = do
->   leftSide <- getInput' "left-side"
->   rightSide <- getInput' "right-side"
+>   leftSide <- readRequiredInput "left-side"
+>   rightSide <- readRequiredInput "right-side"
 >   return $ Relationship leftSide rightSide
 > linkTypeFromForm _ = error "Unknown link type"
 

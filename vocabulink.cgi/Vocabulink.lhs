@@ -335,9 +335,9 @@ This path to static files will change once it's launched to the live site.
 
 %include Vocabulink/Utils.lhs
 %include Vocabulink/CGI.lhs
+%include Vocabulink/App.lhs
 %include Vocabulink/DB.lhs
 %include Vocabulink/Html.lhs
-%include Vocabulink/App.lhs
 %include Vocabulink/Member.lhs
 %include Vocabulink/Member/Auth.lhs
 %include Vocabulink/Link.lhs
