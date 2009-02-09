@@ -84,7 +84,7 @@ There are a few more, but they are only used by a single Vocabulink module\footn
 > import Control.Concurrent (forkIO)
 > import Control.Monad.Reader (asks)
 > import Data.List (find, intercalate)
-> import Data.Maybe (isJust)
+> import Data.Maybe (maybe)
 > import Data.List.Split (splitOn)
 > import Network.FastCGI (runFastCGIConcurrent')
 > import Network.URI (URI(..), unEscapeString)
@@ -212,8 +212,7 @@ For clarity, this dispatches:
 \end{center}
 
 > dispatch method ("link":x:method') = do
->   linkNo <- liftIO $ intFromString x
->   case linkNo of
+>   case maybeRead x of
 >     Nothing  -> output404 ["Links are identified by numbers only."]
 >     Just n   -> case (method, method') of
 >                   ("GET"   ,[])          -> linkPage n
@@ -262,8 +261,7 @@ add a link for review             & $\rightarrow$ & @POST /review/n/add@
 >     case (method,path) of
 >       ("GET"   ,["next"])   -> reviewLink memberNo
 >       ("POST"  ,(x:xs))     -> do
->          linkNo <- liftIO $ intFromString x
->          case linkNo of
+>          case maybeRead x of
 >            Nothing  -> outputError 400
 >                        "Links are identified by numbers only." []
 >            Just n   -> case xs of
@@ -322,7 +320,7 @@ and associated functionality by using the stdPage function.
 > frontPage :: App CGIResult
 > frontPage = do
 >   memberNo <- asks memberNumber
->   w <- isJust memberNo ? renderWidget (MyLinks 10) $ return noHtml
+>   w <- maybe (return noHtml) (\_ -> renderWidget (MyLinks 10)) memberNo
 >   stdPage "Welcome to Vocabulink" []
 >     [ h1 << "Welcome to Vocabulink",
 >       w ]

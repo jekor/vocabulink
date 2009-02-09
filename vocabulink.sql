@@ -7,8 +7,8 @@
 CREATE TABLE log_types (
        name CHARACTER VARYING(32) PRIMARY KEY
 );
-INSERT INTO log_types (name) VALUES ('error'), ('exception'), ('IO exception'),
-                                    ('404'), ('SQL error');
+INSERT INTO log_types (name) VALUES ('unknown'), ('exception'),
+                                    ('IO exception'), ('SQL error');
 
 CREATE TABLE log (
        time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,

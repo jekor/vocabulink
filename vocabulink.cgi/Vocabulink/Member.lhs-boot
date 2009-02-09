@@ -1,0 +1,5 @@
+> module Vocabulink.Member (memberNameFromNumber) where
+
+> import Database.HDBC
+
+> memberNameFromNumber :: IConnection conn => conn -> Integer -> IO (Maybe String)

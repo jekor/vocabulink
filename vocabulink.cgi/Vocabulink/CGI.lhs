@@ -15,7 +15,7 @@ with |readInput|). This is a common pattern in other modules.
 
 > module Vocabulink.CGI (  getInput, getRequiredInput, getInputDefault,
 >                          readInput, readRequiredInput, readInputDefault,
->                          handleErrors', logSqlError, output404,
+>                          handleErrors', output404,
 >                          refererOrVocabulink,
 >  {- Network.FastCGI -}   requestURI, requestMethod, getVar,
 >                          setHeader, redirect, remoteAddr,
@@ -23,25 +23,19 @@ with |readInput|). This is a common pattern in other modules.
 >                          Cookie(..), deleteCookie) where
 
 > import Vocabulink.App
+> import Vocabulink.DB
+> import Vocabulink.Utils
 
 > import Codec.Binary.UTF8.String (decodeString)
 > import Control.Exception (Exception(..))
 > import Control.Monad (liftM)
 > import Data.Maybe (fromMaybe)
 
-We don't want to import Vocabulink.DB, as it depends on this module, because
-that would mean creating boot modules to break cyclic dependencies. We only
-need to know about (\mbox{uncaught}) SQL exceptions anyway.
-
-> import Database.HDBC (sqlExceptions, SqlError(..))
-> import Network.CGI.Protocol (maybeRead)
-
 We're going to hide some Network.CGI functions so that we can override them
 with versions that automatically handle UTF-8-encoded input.
 
 > import Network.FastCGI hiding (getInput, readInput)
 > import qualified Network.FastCGI as FCGI
-> import System.IO.Error (isUserError, ioeGetErrorString)
 
 It's quite probable that we're going to trigger an unexpected exception
 somewhere in the program. This is especially likely because we're interfacing
@@ -58,32 +52,13 @@ Network.CGI provides |outputException| as a basic default error handler. This
 is a slightly modified version that logs errors.
 
 One case that needs to be tested is when an error message has non-ASCII
-characters. I'm not sure how either |logCGI| or |outputInternalServerError|
-will handle it.
+characters. I'm not sure how |outputInternalServerError| will handle it.
 
 > outputException' :: (MonadCGI m, MonadIO m) => Exception -> m CGIResult
-> outputException' e = es >>= outputInternalServerError
->     where es = case sqlExceptions e of
->                  Nothing  -> liftIO $ logError e >>= \e' -> return [e']
->                  Just se  -> liftIO $ logSqlError se >>= \e' -> return [e']
-
-Logging at this level is very simple. It would be nice to change this to log to
-the database. For now, we're outside of the App monad once this is called and
-we can no longer use |logApp|. Ideally, these would never be called because all
-exceptions are caught from within |runApp| or thereabouts.
-
-> logError :: Exception -> IO (String)
-> logError (ErrorCall msg)   = logCGI msg >> return msg
-> logError (IOException ie)  = do
->   let ioe = if isUserError ie
->             then ioeGetErrorString ie
->             else show ie
->   logCGI ioe >> return ioe
-> logError e                 = logCGI (show e) >> return (show e)
-
-> logSqlError :: SqlError -> IO (String)
-> logSqlError e = do  logCGI $ "SQL Error: " ++ (init (seErrorMsg e))
->                     return "Database Error"
+> outputException' e = do
+>   c <- liftIO $ connect
+>   s <- liftIO $ logException c e
+>   outputInternalServerError [s]
 
 404 errors are common enough that it makes sense to have a function just for
 reporting them to the client. We also want to log 404 errors, as they may
@@ -93,7 +68,7 @@ This takes a list of Strings that are output as extra information to the
 client.
 
 > output404 :: [String] -> App CGIResult
-> output404 s = do  liftIO $ logCGI $ "404: " ++ (show s)
+> output404 s = do  logApp "404" (show s)
 >                   outputError 404 "Resource not found." s
 
 In some cases we'll need to redirect the client to where it came from after we

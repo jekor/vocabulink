@@ -26,7 +26,7 @@ tags : $(lhss)
 	hasktags -e $^
 
 clean :
-	find . -name "*.o" -o -name "*.hi" -print0 | xargs -0 rm
+	find . -iregex ".*\.\(o\|hi\|o-boot\|hi-boot\)" -print0 | xargs -0 rm
 
 test :
 	ghci -fglasgow-exts Vocabulink.lhs

@@ -2,27 +2,48 @@
 
 We use @Database.HDBC@ for interfacing with PostgreSQL.
 
-> module Vocabulink.DB (catchSqlE, catchSqlD, query1, quickStmt,
->                       insertNo, quickInsertNo, quickQuery', queryColumn,
->                       queryTuple, fromSql, toSql, IConnection(..)) where
+> module Vocabulink.DB (  catchSqlE, catchSqlD, query1, quickStmt,
+>                         insertNo, quickInsertNo, queryColumn, queryTuple,
+>                         logMsg, logException, connect,
+>  {- Database.HDBC -}    quickQuery', fromSql, toSql, IConnection(..),
+>  {- Database.HDBC.PostgreSQL -}  Connection) where
 
-> import Vocabulink.CGI (logSqlError)
+> import Vocabulink.Utils
 
+> import Control.Exception (Exception(..), IOException, bracket)
 > import Control.Monad (liftM)
 > import Data.Maybe (catMaybes)
 > import Database.HDBC
+> import Database.HDBC.PostgreSQL (connectPostgreSQL, Connection)
+> import System.IO.Error (isUserError, ioeGetErrorString)
+
+Here's how we establish a connection to the database.
+
+> connect :: IO Connection
+> connect = connectPostgreSQL "host=localhost \
+>                             \dbname=vocabulink \
+>                             \user=vocabulink \
+>                             \password=phae9Xom"
 
 Most of the time, if we have a SQL error, we're not prepared for it. We want to
 log it and fail with some message to the user.
 
 > catchSqlE :: IO a -> String -> IO a
-> catchSqlE sql msg = sql `catchSql` (\e -> logSqlError e >> error msg)
+> catchSqlE sql msg = catchSqlD sql (error msg)
 
-Instead of erroring out, return a default value. Useful for errors that I don't
-want the entire page crashing on.
+Instead of erroring out, return a default value. Useful for errors that we
+don't want the entire page crashing on.
+
+This is a little bit wasteful, but we establish a new database connection. We
+don't know if we have a connection at this point, and we don't want to have to
+pass one if we do. Establishing an extra connection shouldn't be too much extra
+hassle once we've already encountered an error condition.
 
 > catchSqlD :: IO a -> a -> IO a
-> catchSqlD sql d = sql `catchSql` (\e -> logSqlError e >> return d)
+> catchSqlD sql d = sql `catchSql` (\e -> bracket (connect)
+>                                                 (disconnect)
+>                                                 (\c -> do  logSqlError c e
+>                                                            return d))
 
 Sometimes you just want to query a single value.
 
@@ -44,10 +65,6 @@ queryColumn is like query1, but for multiple rows.
 > queryColumn c sql vs = do
 >   rows <- quickQuery' c sql vs
 >   return $ catMaybes $ map safeHead rows
-
-> safeHead :: [a] -> Maybe a
-> safeHead []    = Nothing
-> safeHead (x:_) = Just x
 
 And finally, sometimes we want a single tuple only. In this case, less than or
 more than 1 tuple are regarded as error conditions.
@@ -78,3 +95,36 @@ Run a quick insert and return the sequence number it created.
 >   run c sql vs
 >   seqNo <- query1 c "SELECT currval(?)" [toSql seqName]
 >   return $ fromSql `liftM` seqNo
+
+It's useful to have all errors logged in 1 location: the database.
+
+|logMsg| takes a log type name ("SQL exception", "404", etc.) and a descriptive
+message. The type and message is then logged to the database along with a
+timestamp. If the message type is not found, it defaults to 'unknown'.
+
+> logMsg :: IConnection conn => conn -> String -> String -> IO (String)
+> logMsg c t s = do
+>   quickStmt c "INSERT INTO log (type, message) \
+>               \VALUES (COALESCE((SELECT name FROM log_types \
+>                                 \WHERE name = ?), 'unknown'), ?)"
+>               [toSql t, toSql s]
+>     `catchSqlD` ()
+>   return s
+
+> logException :: IConnection conn => conn -> Exception -> IO (String)
+> logException c e =
+>   case sqlExceptions e of
+>     Nothing  -> case e of
+>                   (ErrorCall msg)   -> logMsg c "exception" msg
+>                   (IOException ie)  -> logMsg c "IO exception" $
+>                                          readableIOException ie
+>                   e'                -> logMsg c "exception" (show e')
+>     Just se  -> do  logSqlError c se
+>                     return "Database Error"
+
+> readableIOException :: IOException -> String
+> readableIOException ioe =
+>   isUserError ioe ? ioeGetErrorString ioe $ show ioe
+
+> logSqlError :: IConnection conn => conn -> SqlError -> IO (String)
+> logSqlError c se = logMsg c "SQL error" (init (seErrorMsg se))

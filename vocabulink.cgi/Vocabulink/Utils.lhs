@@ -3,9 +3,13 @@
 Here are some functions that aren't specific to Vocabulink, but that don't
 exist in any libraries I know of.
 
-> module Vocabulink.Utils (if', (?), intFromString) where
+maybeRead is borrowed from Network.CGI.Protocol until it makes its way into
+Haskell some other way.
 
-> import Control.Exception (try)
+> module Vocabulink.Utils (    if', (?), safeHead,
+>  {- Network.CGI.Protocol -}  maybeRead) where
+
+> import Network.CGI.Protocol (maybeRead)
 
 It's often useful to have the compactness of the traditional tertiary operator
 rather than an if then else. The |(?)| operator can be used like:
@@ -20,17 +24,9 @@ rather than an if then else. The |(?)| operator can be used like:
 > if' True   x  _  = x
 > if' False  _  y  = y
 
-Since we're handling CGI requests, all parameters arrive as strings. We need to
-safely convert them to the type we need without throwing an exception or
-halting the program. Our solution is simple: attempt the conversion and return
-a Maybe value. Then the function requesting the value can decide what to do in
-case of failure.
+In case we want don't want our program to crash when taking the head of the
+empty list:
 
-Integers are a simple case where we can just use the Haskell reader (since
-integer syntax is basic).
-
-> intFromString :: String -> IO (Maybe Integer)
-> intFromString s = do n <- try $ readIO s
->                      case n of
->                        Left _   -> return Nothing
->                        Right n' -> return $ Just n'
+> safeHead :: [a] -> Maybe a
+> safeHead []    = Nothing
+> safeHead (x:_) = Just x

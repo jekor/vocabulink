@@ -2,12 +2,13 @@
 
 > import Vocabulink.App
 > import Vocabulink.CGI
-> import Vocabulink.DB (query1, quickInsertNo, fromSql, toSql, catchSqlE)
+> import Vocabulink.DB
 > import Vocabulink.Html (stdPage)
 > import Vocabulink.Utils
 
 > import Vocabulink.Member.Auth (setAuthCookie)
 
+> import Control.Monad (liftM)
 > import Control.Monad.Reader (asks)
 > import Data.Maybe (fromMaybe)
 > import Network.URI (escapeURIString, isUnescapedInURI)
@@ -29,6 +30,15 @@ login page if the user isn't logged in.
 >   case memberNo of
 >     Nothing -> error "No logged in member."
 >     Just n  -> f n
+
+This can't be in the App monad because it needs to be used for creating the App
+monad.
+
+> memberNameFromNumber :: IConnection conn => conn -> Integer -> IO (Maybe String)
+> memberNameFromNumber c memberNo = do
+>   liftM (>>= fromSql) $ query1 c "SELECT username FROM member \
+>                                  \WHERE member_no = ?" [toSql memberNo]
+>     `catchSqlE` "Failed to retrieve member name from number."
 
 Add a member to the database. We're going to do validation of acceptable
 username characters at this level because PostgreSQL's CHECK constraint doesn't
