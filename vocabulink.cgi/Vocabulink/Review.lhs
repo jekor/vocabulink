@@ -4,7 +4,7 @@
 
 > import Vocabulink.App
 > import Vocabulink.CGI
-> import Vocabulink.DB (query1, quickStmt, catchSqlE, catchSqlD, fromSql, toSql)
+> import Vocabulink.DB
 > import Vocabulink.Html (stdPage, Dependency(..))
 > import Vocabulink.Link (getLink, linkHtml, Link(..))
 
@@ -40,10 +40,11 @@ Review the next link in the queue.
 > reviewLink :: Integer -> App CGIResult
 > reviewLink memberNo = do
 >   c <- asks db
->   linkNo <- liftIO $ query1 c "SELECT link_no FROM link_to_review \
->                               \WHERE member_no = ? AND current_timestamp >= target_time \
->                               \ORDER BY target_time ASC LIMIT 1" [toSql memberNo]
->                        `catchSqlE` "Failed to retrieve next link for review."
+>   linkNo <- liftIO $ queryValue c
+>     "SELECT link_no FROM link_to_review \
+>     \WHERE member_no = ? AND current_timestamp >= target_time \
+>     \ORDER BY target_time ASC LIMIT 1" [toSql memberNo]
+>    `catchSqlE` "Failed to retrieve next link for review."
 >   maybe noLinksToReviewPage reviewLinkPage (fromSql `liftM` linkNo)
 
 > reviewLinkPage :: Integer -> App CGIResult
@@ -77,10 +78,11 @@ Get the number of links that a user has for review.
 > numLinksToReview :: Integer -> App Integer
 > numLinksToReview memberNo = do
 >   c <- asks db
->   n <- liftIO $ query1 c "SELECT COUNT(*) FROM link_to_review \
->                          \WHERE member_no = ? AND current_timestamp > target_time"
->                          [toSql memberNo]
->                   `catchSqlD` (Just (iToSql 0))
+>   n <- liftIO $ queryValue c
+>     "SELECT COUNT(*) FROM link_to_review \
+>     \WHERE member_no = ? AND current_timestamp > target_time"
+>     [toSql memberNo]
+>    `catchSqlD` (Just (iToSql 0))
 >   return $ maybe (0 :: Integer) fromSql n
 
 Note that a link was reviewed and schedule the next review. For testing
@@ -112,10 +114,10 @@ Determine the previous interval in seconds.
 
 > previousInterval :: IConnection conn => conn -> Integer -> Integer -> IO (Integer)
 > previousInterval c memberNo linkNo = do
->   d <- query1 c "SELECT extract(epoch from current_timestamp - \
->                        \(SELECT actual_time FROM link_review \
->                        \WHERE member_no = ? AND link_no = ? \
->                        \ORDER BY actual_time DESC LIMIT 1))"
->                 [toSql memberNo, toSql linkNo]
+>   d <- queryValue c "SELECT extract(epoch from current_timestamp - \
+>                                    \(SELECT actual_time FROM link_review \
+>                                     \WHERE member_no = ? AND link_no = ? \
+>                                     \ORDER BY actual_time DESC LIMIT 1))"
+>                     [toSql memberNo, toSql linkNo]
 >          `catchSqlE` "Failed to determine previous review interval."
 >   return $ maybe 0 fromSql d

@@ -36,8 +36,8 @@ monad.
 
 > memberNameFromNumber :: IConnection conn => conn -> Integer -> IO (Maybe String)
 > memberNameFromNumber c memberNo = do
->   liftM (>>= fromSql) $ query1 c "SELECT username FROM member \
->                                  \WHERE member_no = ?" [toSql memberNo]
+>   liftM (>>= fromSql) $ queryValue c "SELECT username FROM member \
+>                                      \WHERE member_no = ?" [toSql memberNo]
 >     `catchSqlE` "Failed to retrieve member name from number."
 
 Add a member to the database. We're going to do validation of acceptable
@@ -97,8 +97,8 @@ This returns the new member number.
 > getMemberNumber :: String -> App (Integer)
 > getMemberNumber username = do
 >   c <- asks db
->   n <- liftIO $ query1 c "SELECT member_no FROM member \
->                          \WHERE username = ?" [toSql username]
+>   n <- liftIO $ queryValue c "SELECT member_no FROM member \
+>                              \WHERE username = ?" [toSql username]
 >                   `catchSqlE` "Failed to retrieve member number from username."
 >   return $ maybe (error "fail") fromSql n
 
@@ -108,9 +108,9 @@ information in the database.
 > validPassword :: String -> String -> App (Bool)
 > validPassword username passwd = do
 >   c <- asks db
->   n <- liftIO $ query1 c "SELECT password_hash = crypt(?, password_hash) \
->                          \FROM member WHERE username = ?"
->                          [toSql passwd, toSql username]
+>   n <- liftIO $ queryValue c "SELECT password_hash = crypt(?, password_hash) \
+>                              \FROM member WHERE username = ?"
+>                              [toSql passwd, toSql username]
 >                   `catchSqlE` "Internal authentication failure (this is not your fault)."
 >   return $ maybe (error "fail") fromSql n
 

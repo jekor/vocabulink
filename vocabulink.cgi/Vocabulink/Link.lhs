@@ -4,8 +4,7 @@
 
 > import Vocabulink.App
 > import Vocabulink.CGI
-> import Vocabulink.DB (query1, queryColumn, quickStmt, insertNo, catchSqlE,
->                       fromSql, toSql, queryTuple, quickQuery')
+> import Vocabulink.DB
 > import Vocabulink.Html (stdPage, Dependency(..), pager, simpleChoice)
 > import Vocabulink.Member (withMemberNumber)
 > import Vocabulink.Review.Html (reviewHtml)
@@ -28,8 +27,8 @@ this lexeme is defined. If not, we assume it to be canonical.
 > lexemePage :: String -> App CGIResult
 > lexemePage l = do
 >   c <- asks db
->   lemma <- liftIO $ query1 c "SELECT lemma FROM lexeme \
->                              \WHERE lexeme = ?" [toSql l]
+>   lemma <- liftIO $ queryValue c "SELECT lemma FROM lexeme \
+>                                  \WHERE lexeme = ?" [toSql l]
 >   case lemma of
 >     Just lm -> redirect $ "/lexeme/" ++ encodeString (fromSql lm)
 >     Nothing -> stdPage (encodeString l) [CSS "link"]
@@ -74,12 +73,12 @@ Eventually we'll want to cache this.
 > linkTypes :: App [String]
 > linkTypes = do
 >   c <- asks db
->   types <- liftIO $ queryColumn c
+>   types <- liftIO $ queryAttribute c
 >     "SELECT name FROM link_type LEFT OUTER JOIN \
 >     \(SELECT link_type, COUNT(*) AS count FROM link \
 >      \GROUP BY link_type) AS t ON (t.link_type = link_type.name) \
 >     \ORDER BY t.count DESC NULLS LAST" []
->              `catchSqlE` "Failed to retrieve link types."
+>    `catchSqlE` "Failed to retrieve link types."
 >   return $ map fromSql types
 
 > newLinkPage :: App CGIResult
@@ -130,8 +129,9 @@ Eventually we'll want to cache this.
 >   memberNo <- asks memberNumber
 >   (Link _ linkType origin destination) <- getLink linkNo
 >   c <- asks db
->   owner <- liftIO $ liftM fromSql $ liftM fromJust $ query1 c
->     "SELECT author = ? FROM link WHERE link_no = ?" [toSql memberNo, toSql linkNo]
+>   owner <- liftIO $ liftM fromSql $ liftM fromJust $ queryValue c
+>     "SELECT author = ? FROM link WHERE link_no = ?"
+>     [toSql memberNo, toSql linkNo]
 >   review <- reviewHtml linkNo
 >   ops <- linkOperations linkNo owner
 >   let t = (encodeString origin) ++ " -> " ++ (encodeString destination)
@@ -145,7 +145,8 @@ Eventually we'll want to cache this.
 > linkOperations :: Integer -> Bool -> App Html
 > linkOperations n True = do
 >   c <- asks db
->   deleted <- liftIO $ query1 c "SELECT deleted FROM link WHERE link_no = ?" [toSql n]
+>   deleted <- liftIO $ queryValue c "SELECT deleted FROM link \
+>                                    \WHERE link_no = ?" [toSql n]
 >   case fromSql `liftM` deleted of
 >     Just True -> return $ stringToHtml "Deleted"
 >     _         -> return $ form ! [action ("/link/" ++ (show n) ++ "/delete"), method "post"] <<

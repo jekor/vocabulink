@@ -41,6 +41,9 @@ existing methods.
 >   cgiAddHeader n v = App $ lift $ cgiAddHeader n v
 >   cgiGet x = App $ lift $ cgiGet x
 
+|runApp| does the job of creating the Reader environment and returning the
+CGIResult from within the App monad to the CGI monad.
+
 > runApp :: Connection -> App CGIResult -> CGI CGIResult
 > runApp c (App a) = do
 >   memberNum <- loginNumber

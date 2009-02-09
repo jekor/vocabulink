@@ -9,6 +9,7 @@ Haskell some other way.
 > module Vocabulink.Utils (    if', (?), safeHead,
 >  {- Network.CGI.Protocol -}  maybeRead) where
 
+> import Control.Monad (MonadPlus, mzero)
 > import Network.CGI.Protocol (maybeRead)
 
 It's often useful to have the compactness of the traditional tertiary operator
@@ -27,6 +28,6 @@ rather than an if then else. The |(?)| operator can be used like:
 In case we want don't want our program to crash when taking the head of the
 empty list:
 
-> safeHead :: [a] -> Maybe a
-> safeHead []    = Nothing
-> safeHead (x:_) = Just x
+> safeHead :: (MonadPlus m) => [a] -> m a
+> safeHead []     = mzero
+> safeHead (x:_)  = return x

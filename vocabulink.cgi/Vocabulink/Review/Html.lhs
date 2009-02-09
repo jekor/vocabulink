@@ -1,7 +1,7 @@
 > module Vocabulink.Review.Html where
 
 > import Vocabulink.App
-> import Vocabulink.DB (query1, toSql)
+> import Vocabulink.DB
 > import Vocabulink.Utils
 
 > import Control.Monad.Reader (asks)
@@ -31,7 +31,7 @@ reviewed it in the past but removed it from their review.
 > reviewing :: Integer -> Integer -> App (Bool)
 > reviewing memberNo linkNo = do
 >   c <- asks db
->   r <- liftIO $ query1 c "SELECT link_no FROM link_to_review \
->                          \WHERE member_no = ? AND link_no = ? LIMIT 1"
->                          [toSql memberNo, toSql linkNo]
+>   r <- liftIO $ queryValue c "SELECT link_no FROM link_to_review \
+>                              \WHERE member_no = ? AND link_no = ? LIMIT 1"
+>                              [toSql memberNo, toSql linkNo]
 >   return $ isJust r
