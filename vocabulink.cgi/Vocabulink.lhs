@@ -59,6 +59,7 @@ out into a separate module.
 Each of these modules will be described in its own section.
 
 > import Vocabulink.Article
+> import Vocabulink.DB
 > import Vocabulink.CGI
 > import Vocabulink.Html
 > import Vocabulink.Link
@@ -98,8 +99,13 @@ information into the App monad.
 
 TODO: Before public launch, the thread limit needs to be increased.
 
+The first thing we do after forking is establish a database connection. The
+database connection might be used immediately in order to log errors.
+
 > main :: IO ()
-> main =  runFastCGIConcurrent' forkIO 10 (handleErrors' (runApp handleRequest))
+> main =  runFastCGIConcurrent' forkIO 10 (
+>           do  c <- liftIO connect
+>               handleErrors' c (runApp c handleRequest))
 
 |handleRequest| ``digests'' the requested URI before passing it to the
  dispatcher. It also sets the response header. If we ever serve up non-HTML

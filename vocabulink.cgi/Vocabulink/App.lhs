@@ -16,33 +16,38 @@ signatures a little bit.
 > import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks)
 > import Control.Monad.Trans (lift)
 
-> import Database.HDBC (disconnect)
 > import Network.CGI.Monad (MonadCGI(..))
 > import Network.FastCGI (CGI, CGIT, CGIResult, liftIO, MonadIO)
 
-> data AppEnv = AppEnv { db           :: Connection,
->                        memberNumber :: Maybe Integer,
->                        memberName   :: Maybe String }
+> data AppEnv = AppEnv {  db            :: Connection,
+>                         memberNumber  :: Maybe Integer,
+>                         memberName    :: Maybe String }
+
+The App monad is a combination of the CGI and Reader monads.
 
 > newtype AppT m a = App (ReaderT AppEnv (CGIT m) a)
 >   deriving (Monad, MonadIO, MonadReader AppEnv)
 
+...and IO monad.
+
 > type App a = AppT IO a
+
+To make the App monad an instance of MonadCGI, we need to define basic CGI
+functions. CGI is relatively simple and its functionality can be defined on top
+of just an environment getter and a function for adding headers. We reuse the
+existing methods.
 
 > instance MonadCGI (AppT IO) where
 >   cgiAddHeader n v = App $ lift $ cgiAddHeader n v
 >   cgiGet x = App $ lift $ cgiGet x
 
-There might be a chance that we don't close our database connection properly if
-we trigger an exception within runReaderT. I don't know if that's possible.
-
-> runApp :: App CGIResult -> CGI CGIResult
-> runApp (App a) = do
->   c <- liftIO connect
+> runApp :: Connection -> App CGIResult -> CGI CGIResult
+> runApp c (App a) = do
 >   memberNum <- loginNumber
 >   username <- liftIO $ maybe (return Nothing) (memberNameFromNumber c) memberNum
->   res <- runReaderT a $ AppEnv {db = c, memberNumber = memberNum, memberName = username}
->   liftIO $ disconnect c
+>   res <- runReaderT a $ AppEnv {  db            = c,
+>                                   memberNumber  = memberNum,
+>                                   memberName    = username}
 >   return res
 
 At some point it's going to be essential to have all errors and notices logged

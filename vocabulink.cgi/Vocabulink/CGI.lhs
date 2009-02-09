@@ -43,10 +43,14 @@ with a database via strings. Rather than blow up, we'd like to catch and log
 the exception before giving the client some sort of indication that something
 went wrong.
 
-|catchCGI| will handle exceptions in the CGI monad.
+|catchCGI| will handle exceptions in the CGI monad. If no exception is thrown,
+ we'll close the database handle and return the CGI result.
 
-> handleErrors' :: CGI CGIResult -> CGI CGIResult
-> handleErrors' = flip catchCGI outputException'
+> handleErrors' :: IConnection conn => conn -> CGI CGIResult -> CGI CGIResult
+> handleErrors' c a =  catchCGI (do  r <- a
+>                                    liftIO $ disconnect c
+>                                    return r)
+>                      (outputException' c)
 
 Network.CGI provides |outputException| as a basic default error handler. This
 is a slightly modified version that logs errors.
@@ -54,10 +58,16 @@ is a slightly modified version that logs errors.
 One case that needs to be tested is when an error message has non-ASCII
 characters. I'm not sure how |outputInternalServerError| will handle it.
 
-> outputException' :: (MonadCGI m, MonadIO m) => Exception -> m CGIResult
-> outputException' e = do
->   c <- liftIO $ connect
+By the time we output the error to the client we no longer need the database
+handle. This is the perfect place to close it, as it'll be the last thing we do
+in the CGI monad (and the thrtead). If we didn't close it, we'd probably start
+accumulating a pile of unused database handles.
+
+> outputException' ::  (MonadCGI m, MonadIO m, IConnection conn) =>
+>                      conn -> Exception -> m CGIResult
+> outputException' c e = do
 >   s <- liftIO $ logException c e
+>   liftIO $ disconnect c
 >   outputInternalServerError [s]
 
 404 errors are common enough that it makes sense to have a function just for
