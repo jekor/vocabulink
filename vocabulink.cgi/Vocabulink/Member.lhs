@@ -54,9 +54,9 @@ This returns the new member number.
 
 > addMember :: App CGIResult
 > addMember = do
->   username <- readRequiredInput "username"
->   passwd   <- readRequiredInput "password"
->   email    <- readRequiredInput "email"
+>   username <- getRequiredInput "username"
+>   passwd   <- getRequiredInput "password"
+>   email    <- getInput "email"
 >   memberNo <- addMember' username passwd email
 >   case memberNo of
 >     Nothing -> error "Failed to add member."
@@ -69,7 +69,7 @@ This returns the new member number.
 > newMemberPage = do
 >   -- The user may have gotten to this page in some way in which they've
 >   -- already indicated which username they want.
->   username <- readInputDefault "" "username"
+>   username <- getInputDefault "" "username"
 >   stdPage "Join Vocabulink" []
 >     [ h1 << "Join Vocabulink",
 >       form ! [action "", method "post"] <<
@@ -119,20 +119,20 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 
 > login :: App CGIResult
 > login = do
->   join <- readInputDefault "" "join"
+>   join <- getInputDefault "" "join"
 >   if join /= ""
 >      then do -- The user clicked the Join button in the login box.
 >        -- Carry over the username if they entered it.
->        username <- readInputDefault "" "username"
+>        username <- getInputDefault "" "username"
 >        if username /= ""
 >           then redirect $ "/member/join?username=" ++ username
 >           else redirect "/member/join"
 >      else do
->        username  <- readRequiredInput "username"
+>        username  <- getRequiredInput "username"
 >        memberNo  <- getMemberNumber username
->        passwd    <- readRequiredInput "password"
+>        passwd    <- getRequiredInput "password"
 >        ref       <- refererOrVocabulink
->        redirect' <- readInputDefault ref "redirect"
+>        redirect' <- getInputDefault ref "redirect"
 >        ip <- remoteAddr
 >        valid <- validPassword username passwd
 >        not valid ? error "Login failed." $ do
@@ -141,7 +141,7 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 
 > logout :: App CGIResult
 > logout = do
->   redirect' <- readInputDefault "/" "redirect"
+>   redirect' <- getInputDefault "/" "redirect"
 >   deleteCookie Cookie { cookieName   = "auth",
 >                         cookieDomain = Just "vocabulink.com",
 >                         cookiePath   = Just "/",
@@ -158,7 +158,7 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 > loginPage :: App CGIResult
 > loginPage = do
 >   referer'  <- refererOrVocabulink
->   redirect' <- readInputDefault referer' "redirect"
+>   redirect' <- getInputDefault referer' "redirect"
 >   stdPage "Log In" []
 >     [ h1 << "Log In",
 >       form ! [action "", method "post"] <<

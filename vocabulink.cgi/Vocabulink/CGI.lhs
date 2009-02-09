@@ -13,7 +13,8 @@ functions. This allows other modules to just import Vocabulink.CGI and allows
 us the option of overriding its functions in the future (which we do already
 with |readInput|). This is a common pattern in other modules.
 
-> module Vocabulink.CGI (  readInput, readRequiredInput, readInputDefault,
+> module Vocabulink.CGI (  getInput, getRequiredInput, getInputDefault,
+>                          readInput, readRequiredInput, readInputDefault,
 >                          handleErrors', logSqlError, output404,
 >                          refererOrVocabulink,
 >  {- Network.FastCGI -}   requestURI, requestMethod, getVar,
@@ -35,10 +36,10 @@ need to know about (\mbox{uncaught}) SQL exceptions anyway.
 > import Database.HDBC (sqlExceptions, SqlError(..))
 > import Network.CGI.Protocol (maybeRead)
 
-We're going to hide |readInput| so that we can override it with a version that
-automatically handles UTF-8-encoded input.
+We're going to hide some Network.CGI functions so that we can override them
+with versions that automatically handle UTF-8-encoded input.
 
-> import Network.FastCGI hiding (readInput)
+> import Network.FastCGI hiding (getInput, readInput)
 > import qualified Network.FastCGI as FCGI
 > import System.IO.Error (isUserError, ioeGetErrorString)
 
@@ -104,23 +105,39 @@ of the site.
 >   ref <- getVar "HTTP_REFERER"
 >   return $ fromMaybe "http://www.vocabulink.com/" ref
 
-|readInput| is just like Network.CGI's |readInput|, but it automatically
-handles UTF-8 conversion.
+We need to handle UTF-8-encoded GET and POST parameters. The following are
+enhanced versions of Network.CGI's |getInput| and |readInput| along with a few
+helpers.
 
-> readInput :: (Read a, MonadCGI m) => String -> m (Maybe a)
-> readInput = liftM (>>= (maybeRead . decodeString)) . getInput
+> getInput :: MonadCGI m => String -> m (Maybe String)
+> getInput = liftM (>>= Just . decodeString) . FCGI.getInput
 
 Often we'll want an input from the client but are happy to fall back to a
 default value.
 
-> readInputDefault :: (Read a, MonadCGI m) => a -> String -> m a
-> readInputDefault d p = do
->   i <- readInput p
+> getInputDefault :: MonadCGI m => String -> String -> m String
+> getInputDefault d p = do
+>   i <- getInput p
 >   return $ fromMaybe d i
 
 As a convenience, |readRequiredInput| will throw an error on a missing input.
 It allows us to write simpler code, but eventually most calls to this should be
 removed and we should more gracefully handle the error.
+
+> getRequiredInput :: MonadCGI m => String -> m String
+> getRequiredInput p =
+>   getInputDefault (error $ "Parameter '" ++ p ++ "' is required.") p
+
+The Read versions of the above handle automatically converting the requested
+input to a required type (as long as that type is Readable).
+
+> readInput :: (Read a, MonadCGI m) => String -> m (Maybe a)
+> readInput = liftM (>>= maybeRead) . getInput
+
+> readInputDefault :: (Read a, MonadCGI m) => a -> String -> m a
+> readInputDefault d p = do
+>   i <- readInput p
+>   return $ fromMaybe d i
 
 > readRequiredInput :: (Read a, MonadCGI m) => String -> m a
 > readRequiredInput p =

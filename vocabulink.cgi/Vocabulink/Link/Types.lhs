@@ -139,25 +139,25 @@ Each link is represented by a name in the database.
 
 > linkFromForm :: App Link
 > linkFromForm = do
->   origin <- readRequiredInput "origin"
->   destination <- readRequiredInput "destination"
->   linkType' <- (readRequiredInput "link-type" >>= linkTypeFromForm)
+>   origin <- getRequiredInput "origin"
+>   destination <- getRequiredInput "destination"
+>   linkType' <- (getRequiredInput "link-type" >>= linkTypeFromForm)
 >   return $ Link 0 linkType' origin destination
 
 > linkTypeFromForm :: String -> App LinkType
 > linkTypeFromForm "association" = return Association
 > linkTypeFromForm "cognate" = return Cognate
 > linkTypeFromForm "link word" = do
->   linkWord <- readRequiredInput "link-word"
->   story <- readRequiredInput "story"
+>   linkWord <- getRequiredInput "link-word"
+>   story <- getRequiredInput "story"
 >   return $ LinkWord linkWord story
 > linkTypeFromForm "foreign link word" = do
->   linkWord <- readRequiredInput "link-word"
->   story <- readRequiredInput "story"
+>   linkWord <- getRequiredInput "link-word"
+>   story <- getRequiredInput "story"
 >   return $ ForeignLinkWord linkWord story
 > linkTypeFromForm "relationship" = do
->   leftSide <- readRequiredInput "left-side"
->   rightSide <- readRequiredInput "right-side"
+>   leftSide <- getRequiredInput "left-side"
+>   rightSide <- getRequiredInput "right-side"
 >   return $ Relationship leftSide rightSide
 > linkTypeFromForm _ = error "Unknown link type"
 

@@ -84,8 +84,8 @@ Eventually we'll want to cache this.
 
 > newLinkPage :: App CGIResult
 > newLinkPage = do
->   origin <- encodeString `liftM` readRequiredInput "origin"
->   destination <- encodeString `liftM` readRequiredInput "destination"
+>   origin <- encodeString `liftM` getRequiredInput "origin"
+>   destination <- encodeString `liftM` getRequiredInput "destination"
 >   types <- linkTypes
 >   let t = origin ++ " -> " ++ destination
 >   stdPage t [CSS "link", JS "MochiKit", JS "link"]
@@ -157,7 +157,7 @@ Generate a page of links for the specified member or all members (for Nothing).
 > linksPage :: App CGIResult
 > linksPage = do
 >   pg  <- readInputDefault 1 "pg"
->   n   <- readInputDefault 25 "n"
+>   n   <- readInputDefault 10 "n"
 >   links <- getLinks ((pg - 1) * n) (n + 1)
 >   pagerControl <- pager n pg $ (length links) + ((pg - 1) * n)
 >   stdPage "Links" [CSS "link"]
@@ -194,7 +194,7 @@ We'll stick to just searching through 10 results per page for now.
 
 > searchPage :: App CGIResult
 > searchPage = do
->   term <- readRequiredInput "q"
+>   term <- getRequiredInput "q"
 >   let n = 10
 >   pg  <- readInputDefault 1 "pg"
 >   links <- searchLinks term ((pg - 1) * n) (n + 1)
