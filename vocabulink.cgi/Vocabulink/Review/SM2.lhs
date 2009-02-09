@@ -4,7 +4,7 @@ SuperMemo algorithm SM-2
 
 http://www.supermemo.com/english/ol/sm2.htm
 
-> import Vocabulink.DB (catchSqlE, fromSql, toSql, quickQuery', IConnection(..))
+> import Vocabulink.DB
 
 > interval :: Double -> Integer -> Double -> Double
 > interval _ 1 _  = 1.0

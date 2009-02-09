@@ -1,7 +1,7 @@
 > module Vocabulink.Widget.MyLinks (MyLinks(..)) where
 
 > import Vocabulink.App
-> import Vocabulink.DB (catchSqlE, toSql, quickQuery')
+> import Vocabulink.DB
 > import Vocabulink.Link (partialLinkFromValues)
 > import Vocabulink.Link.Types (PartialLink(..), partialLinkHtml)
 > import Vocabulink.Member (withMemberNumber')

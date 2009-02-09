@@ -17,7 +17,6 @@
 > import Control.Monad (liftM)
 > import Control.Monad.Reader (asks)
 > import Data.Maybe (fromJust)
-> import Database.HDBC (SqlValue, withTransaction, rollback)
 > import Network.FastCGI (CGIResult, liftIO, redirect)
 > import Text.XHtml.Strict
 

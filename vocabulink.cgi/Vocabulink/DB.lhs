@@ -9,9 +9,9 @@ dealing with constantly-changing state.
 
 > module Vocabulink.DB (  queryTuple, queryValue, queryAttribute,
 >                         quickStmt, insertNo, quickInsertNo,
->                         catchSqlD, catchSqlE,
->                         logMsg, logException, connect,
->  {- Database.HDBC -}    quickQuery', fromSql, toSql, IConnection(..),
+>                         catchSqlD, catchSqlE, logMsg, logException, connect,
+>  {- Database.HDBC -}    SqlValue, toSql, fromSql, iToSql,
+>                         withTransaction, quickQuery', IConnection(..),
 >  {- Database.HDBC.PostgreSQL -}  Connection) where
 
 We need to keep this module independent of most other modules as most modules

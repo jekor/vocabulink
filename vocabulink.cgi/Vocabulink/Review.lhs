@@ -11,7 +11,6 @@
 > import Codec.Binary.UTF8.String (encodeString)
 > import Control.Monad (liftM)
 > import Control.Monad.Reader (asks)
-> import Database.HDBC (IConnection, withTransaction, run, iToSql)
 > import Data.Maybe (fromMaybe)
 > import Network.FastCGI (CGIResult, liftIO, redirect)
 > import Text.XHtml.Strict

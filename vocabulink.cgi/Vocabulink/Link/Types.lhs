@@ -5,13 +5,12 @@
 
 > import Vocabulink.App
 > import Vocabulink.CGI
-> import Vocabulink.DB (fromSql, toSql, catchSqlE, queryTuple)
+> import Vocabulink.DB
 > import Vocabulink.Html (formName)
 > import Vocabulink.Utils ((?))
 
 > import Codec.Binary.UTF8.String (encodeString)
 > import Control.Monad.Reader (asks)
-> import Database.HDBC
 > import Text.XHtml.Strict
 
 Each link between lexemes has a type. This type determines how the link is
