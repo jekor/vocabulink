@@ -5,7 +5,7 @@
 
 > import Vocabulink.App
 > import Vocabulink.CGI
-> import Vocabulink.Html (stdPage)
+> import Vocabulink.Html
 
 > import Control.Monad (filterM)
 > import Data.Maybe (maybe, catMaybes)
@@ -14,7 +14,6 @@
 > import System.IO.Error (try)
 > import qualified Text.ParserCombinators.Parsec as P
 > import Text.ParserCombinators.Parsec.Perm ((<$$>), (<||>), permute)
-> import Text.XHtml.Strict hiding (title, body)
 
 > data Article = Article { title'  :: String
 >                        , author' :: String

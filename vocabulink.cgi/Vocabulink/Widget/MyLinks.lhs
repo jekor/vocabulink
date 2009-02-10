@@ -2,13 +2,13 @@
 
 > import Vocabulink.App
 > import Vocabulink.DB
+> import Vocabulink.Html
 > import Vocabulink.Link (partialLinkFromValues)
 > import Vocabulink.Link.Types (PartialLink(..), partialLinkHtml)
 > import Vocabulink.Member (withMemberNumber')
 > import Vocabulink.Widget (Widget, renderWidget)
 
 > import Control.Monad.Reader (asks)
-> import Text.XHtml.Strict
 
 > data MyLinks = MyLinks Integer
 

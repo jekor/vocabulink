@@ -1,7 +1,7 @@
 > module Vocabulink.Widget (Widget, renderWidget) where
 
-> import Vocabulink.App (App)
-> import Text.XHtml.Strict (Html)
+> import Vocabulink.App
+> import Vocabulink.Html
 
 All widgets produce HTML fragments.
 

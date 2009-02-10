@@ -2,12 +2,12 @@
 
 > import Vocabulink.App
 > import Vocabulink.DB
+> import Vocabulink.Html
 > import Vocabulink.Utils
 
 > import Control.Monad.Reader (asks)
 > import Data.Maybe (isJust)
 > import Network.FastCGI (liftIO)
-> import Text.XHtml.Strict
 
 For now, all links are added to the default review set.
 

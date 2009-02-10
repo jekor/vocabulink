@@ -26,7 +26,7 @@ h1 {
   padding-bottom: 1ex;
 }
 
-#header-bar .logo, #header-bar .login-box, #header-bar .search-box, #header-bar .review-box {
+#header-bar .logo, #header-bar .auth-box, #header-bar .search-box, #header-bar .review-box {
   display: inline;
   margin-right: 1em;
 }
@@ -42,7 +42,7 @@ h1 {
   text-decoration: none;
 }
 
-#header-bar .search-box, #header-bar .login-box, #header-bar .review-box {
+#header-bar .search-box, #header-bar .auth-box, #header-bar .review-box {
   float: right;
 }
 
@@ -57,11 +57,11 @@ h1 {
   margin-bottom: 0.25em;
 }
 
-.login-box #username, .login-box #password {
+.auth-box #username, .auth-box #password {
   width: 7em;
 }
 
-.login-box.logout input {
+.auth-box.logout input {
   margin-left: 1em;
 }
 

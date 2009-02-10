@@ -5,7 +5,7 @@
 > import Vocabulink.App
 > import Vocabulink.CGI
 > import Vocabulink.DB
-> import Vocabulink.Html (stdPage, Dependency(..), pager, simpleChoice)
+> import Vocabulink.Html
 > import Vocabulink.Member (withMemberNumber)
 > import Vocabulink.Review.Html (reviewHtml)
 > import Vocabulink.Link.Types (Link(..), newLinkHtml, linkFromForm,
@@ -18,7 +18,6 @@
 > import Control.Monad.Reader (asks)
 > import Data.Maybe (fromJust)
 > import Network.FastCGI (CGIResult, liftIO, redirect)
-> import Text.XHtml.Strict
 
 When retrieving the page for a lexeme, we first check to see if a lemma for
 this lexeme is defined. If not, we assume it to be canonical.

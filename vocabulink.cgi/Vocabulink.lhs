@@ -61,7 +61,7 @@ Each of these modules will be described in its own section.
 > import Vocabulink.Article
 > import Vocabulink.DB
 > import Vocabulink.CGI
-> import Vocabulink.Html
+> import Vocabulink.Html hiding (method)
 > import Vocabulink.Link
 > import Vocabulink.Member
 > import Vocabulink.Review

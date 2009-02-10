@@ -5,7 +5,7 @@
 > import Vocabulink.App
 > import Vocabulink.CGI
 > import Vocabulink.DB
-> import Vocabulink.Html (stdPage, Dependency(..))
+> import Vocabulink.Html
 > import Vocabulink.Link (getLink, linkHtml, Link(..))
 
 > import Codec.Binary.UTF8.String (encodeString)
@@ -13,7 +13,6 @@
 > import Control.Monad.Reader (asks)
 > import Data.Maybe (fromMaybe)
 > import Network.FastCGI (CGIResult, liftIO, redirect)
-> import Text.XHtml.Strict
 
 > newReview :: Integer -> Integer -> App CGIResult
 > newReview memberNo linkNo = do

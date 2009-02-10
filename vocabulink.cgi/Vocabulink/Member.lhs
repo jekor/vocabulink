@@ -3,7 +3,7 @@
 > import Vocabulink.App
 > import Vocabulink.CGI
 > import Vocabulink.DB
-> import Vocabulink.Html (stdPage)
+> import Vocabulink.Html
 > import Vocabulink.Utils
 
 > import Vocabulink.Member.Auth (setAuthCookie)
@@ -12,7 +12,6 @@
 > import Control.Monad.Reader (asks)
 > import Data.Maybe (fromMaybe)
 > import Network.URI (escapeURIString, isUnescapedInURI)
-> import Text.XHtml.Strict
 
 Run the App with the currently logged in member's number or redirect to the
 login page if the user isn't logged in.

@@ -1,0 +1,21 @@
+\chapter{Clients}
+
+Currently Vocabulink supports only 1 type of client: a web browser.
+
+\section{Encoding}
+
+All pages are transmitted as UTF-8. This potentially excludes some number of
+clients, but I'm not sure of the percentage yet. For now, if it's good enough
+for Wikipedia, it's good enough for us.
+
+\section{HTML}
+
+We use XHTML rather than HTML. We're currently using the strict variant, but
+note that Wikipedia uses transitional for some reason. It should be easy to
+switch (even to HTML) if necessary in the future due to the use of a combinator
+library.
+
+\section{MIME Type}
+
+For widest browser support, we transmit the content type as
+\verb!text/html; charset=utf-8!.

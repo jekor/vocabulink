@@ -6,12 +6,11 @@
 > import Vocabulink.App
 > import Vocabulink.CGI
 > import Vocabulink.DB
-> import Vocabulink.Html (formName)
+> import Vocabulink.Html
 > import Vocabulink.Utils ((?))
 
 > import Codec.Binary.UTF8.String (encodeString)
 > import Control.Monad.Reader (asks)
-> import Text.XHtml.Strict
 
 Each link between lexemes has a type. This type determines how the link is
 displayed, edited, used in statistical analysis, etc.
