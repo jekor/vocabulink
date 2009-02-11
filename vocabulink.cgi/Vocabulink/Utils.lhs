@@ -6,10 +6,15 @@ exist in any libraries I know of.
 maybeRead is borrowed from Network.CGI.Protocol until it makes its way into
 Haskell some other way.
 
-> module Vocabulink.Utils (    if', (?), safeHead, currentYear,
->  {- Network.CGI.Protocol -}  maybeRead) where
+> module Vocabulink.Utils (    if', (?), safeHead, translate, currentYear,
+>  {- Network.CGI.Protocol -}  maybeRead,
+>  {- Control.Monad -}         liftM,
+>  {- Data.Maybe -}            maybe, fromMaybe, fromJust) where
 
-> import Control.Monad (MonadPlus, mzero)
+We make extensive use of the |liftM| and the Maybe monad.
+
+> import Control.Monad (liftM)
+> import Data.Maybe (maybe, fromMaybe, fromJust)
 > import Data.Time.Calendar (toGregorian)
 > import Data.Time.Clock (getCurrentTime)
 > import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, LocalTime(..))
@@ -29,11 +34,17 @@ rather than an if then else. The |(?)| operator can be used like:
 > if' False  _  y  = y
 
 In case we want don't want our program to crash when taking the head of the
-empty list:
+empty list, we need to provide a default:
 
-> safeHead :: (MonadPlus m) => [a] -> m a
-> safeHead []     = mzero
-> safeHead (x:_)  = return x
+> safeHead :: a -> [a] -> a
+> safeHead d []     = d
+> safeHead _ (x:_)  = x
+
+This is like the Unix tr utility. It takes a list of search/replacements and
+then performs them on the list.
+
+> translate :: (Eq a) => [(a, a)] -> [a] -> [a]
+> translate sr = map (\s -> maybe s id $ lookup s sr)
 
 Return the current year (in the server's timezone) as a 4-digit number.
 
@@ -41,6 +52,6 @@ Return the current year (in the server's timezone) as a 4-digit number.
 > currentYear = do
 >   now  <- getCurrentTime
 >   tz   <- getCurrentTimeZone
->   let (LocalTime day _)  = utcToLocalTime tz now
->       (year, _, _)       = toGregorian day
+>   let  (LocalTime day _)  = utcToLocalTime tz now
+>        (year, _, _)       = toGregorian day
 >   return year

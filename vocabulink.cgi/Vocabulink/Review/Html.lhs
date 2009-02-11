@@ -5,7 +5,6 @@
 > import Vocabulink.Html
 > import Vocabulink.Utils
 
-> import Control.Monad.Reader (asks)
 > import Data.Maybe (isJust)
 > import Network.FastCGI (liftIO)
 

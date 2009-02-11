@@ -28,8 +28,6 @@ with |readInput|). This is a common pattern in other modules.
 
 > import Codec.Binary.UTF8.String (decodeString)
 > import Control.Exception (Exception(..))
-> import Control.Monad (liftM)
-> import Data.Maybe (fromMaybe)
 
 We're going to hide some Network.CGI functions so that we can override them
 with versions that automatically handle UTF-8-encoded input.

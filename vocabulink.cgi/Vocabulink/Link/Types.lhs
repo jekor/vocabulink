@@ -7,10 +7,9 @@
 > import Vocabulink.CGI
 > import Vocabulink.DB
 > import Vocabulink.Html
-> import Vocabulink.Utils ((?))
+> import Vocabulink.Utils
 
 > import Codec.Binary.UTF8.String (encodeString)
-> import Control.Monad.Reader (asks)
 
 Each link between lexemes has a type. This type determines how the link is
 displayed, edited, used in statistical analysis, etc.
@@ -171,7 +170,7 @@ Each link is represented by a name in the database.
 >      Link 0 (Relationship "" "") origin destination]
 >         where editBlock :: Link -> Html
 >               editBlock link = thediv !
->                 [identifier $ formName $ linkTypeName $ linkType link,
+>                 [identifier $ safeID $ linkTypeName $ linkType link,
 >                  theclass "link-editor",
 >                  thestyle $ def == linkTypeName (linkType link) ? "" $ "display: none"] << linkEditHtml link
 

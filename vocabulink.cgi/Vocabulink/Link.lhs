@@ -6,17 +6,15 @@
 > import Vocabulink.CGI
 > import Vocabulink.DB
 > import Vocabulink.Html
-> import Vocabulink.Member (withMemberNumber)
+> import Vocabulink.Member (withRequiredMemberNumber)
 > import Vocabulink.Review.Html (reviewHtml)
 > import Vocabulink.Link.Types (Link(..), newLinkHtml, linkFromForm,
 >                               linkTypeName, establishLinkType,
 >                               getLinkFromPartial, linkTypeHtml,
 >                               PartialLink(..), getPartialLinkType)
+> import Vocabulink.Utils
 
 > import Codec.Binary.UTF8.String (encodeString)
-> import Control.Monad (liftM)
-> import Control.Monad.Reader (asks)
-> import Data.Maybe (fromJust)
 > import Network.FastCGI (CGIResult, liftIO, redirect)
 
 When retrieving the page for a lexeme, we first check to see if a lemma for
@@ -87,13 +85,14 @@ Eventually we'll want to cache this.
 >   let t = origin ++ " -> " ++ destination
 >   stdPage t [CSS "link", JS "MochiKit", JS "link"]
 >     [ form ! [action "", method "post"] <<
->        [ thediv ! [identifier "baseline", theclass "link"] <<
->            linkHtml (stringToHtml origin) (stringToHtml destination),
->          thediv ! [identifier "link-details"] <<
->            ([ simpleChoice "link-type" types, br ] ++
->             newLinkHtml (head types) origin destination ++
->             [ br,
->               submit "" "Associate" ]) ] ]
+>        [  thediv ! [identifier "baseline", theclass "link"] <<
+>             linkHtml (stringToHtml origin) (stringToHtml destination),
+>           thediv ! [identifier "link-details"] <<
+>             (  [  select ! [identifier "link-type", name "link-type"] << options types,
+>                   br ] ++
+>                newLinkHtml (head types) origin destination ++
+>                [  br,
+>                   submit "" "Associate" ]) ] ]
 
 > establishLink :: Link -> Integer -> App (Maybe Integer)
 > establishLink (Link _ linkType origin destination) memberNo = do
@@ -115,7 +114,7 @@ Eventually we'll want to cache this.
 
 > linkLexemes :: App CGIResult
 > linkLexemes =
->   withMemberNumber $ \memberNo -> do
+>   withRequiredMemberNumber $ \memberNo -> do
 >     link <- linkFromForm
 >     linkNo <- establishLink link memberNo
 >     case linkNo of
@@ -155,10 +154,9 @@ Generate a page of links for the specified member or all members (for Nothing).
 
 > linksPage :: App CGIResult
 > linksPage = do
->   pg  <- readInputDefault 1 "pg"
->   n   <- readInputDefault 10 "n"
->   links <- getLinks ((pg - 1) * n) (n + 1)
->   pagerControl <- pager n pg $ (length links) + ((pg - 1) * n)
+>   (pg, n, offset) <- currentPage
+>   links <- getLinks offset (n + 1)
+>   pagerControl <- pager pg n $ offset + (length links)
 >   stdPage "Links" [CSS "link"]
 >     [ (take n $ map displayLink links) +++ pagerControl ]
 
@@ -189,20 +187,17 @@ Generate a page of links for the specified member or all members (for Nothing).
 >              `catchSqlE` "Failed to delete link."
 >   redirect ref
 
-We'll stick to just searching through 10 results per page for now.
-
 > searchPage :: App CGIResult
 > searchPage = do
 >   term <- getRequiredInput "q"
->   let n = 10
->   pg  <- readInputDefault 1 "pg"
->   links <- searchLinks term ((pg - 1) * n) (n + 1)
->   pagerControl <- pager n pg $ (length links) + ((pg - 1) * n)
+>   (pg, n, offset) <- currentPage
+>   links <- searchLinks term offset (n + 1)
+>   pagerControl <- pager pg n $ offset + (length links)
 >   case links of
->     [] -> redirect $ "/lexeme/" ++ (encodeString term)
->     _  -> stdPage "Search Results" [CSS "link"]
->             [ h1 << "Search Results",
->              (take n $ map displayLink links) +++ pagerControl ]
+>     []  -> redirect $ "/lexeme/" ++ (encodeString term)
+>     _   -> stdPage "Search Results" [CSS "link"]
+>              [  h1 << "Search Results",
+>                 (take n $ map displayLink links) +++ pagerControl ]
 
 This is a basic search that searches through the origin and destination names
 of the links in the database.

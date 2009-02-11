@@ -1,12 +1,37 @@
-> module Vocabulink.Member.Auth (loginNumber, setAuthCookie) where
+> module Vocabulink.Member.Auth (withMemberNumber, withRequiredMemberNumber,
+>                                loginNumber, setAuthCookie) where
 
-> import Vocabulink.App (App)
+> import Vocabulink.App
+> import Vocabulink.Utils
 
 > import Data.ByteString.Char8 (pack)
 > import Data.Digest.OpenSSL.HMAC (hmac, sha1)
 > import Data.Time.Clock.POSIX (POSIXTime, getPOSIXTime, posixDayLength)
 > import Network.FastCGI
+> import Network.URI (escapeURIString, isUnescapedInURI)
 > import qualified Text.ParserCombinators.Parsec as P
+
+|withMemberNumber| accepts a default value (for if the client isn't logged in)
+and a function to carry out with the member's number otherwise.
+
+> withMemberNumber :: a -> (Integer -> App a) -> App a
+> withMemberNumber d f = asks memberNumber >>= maybe (return d) f
+
+|withRequiredMemberNumber| is like |withMemberNumber|, but it provides a
+``logged out default'' of redirecting the client to the login page.
+
+> withRequiredMemberNumber :: (Integer -> App CGIResult) -> App CGIResult
+> withRequiredMemberNumber f =  asks memberNumber >>=
+>                               maybe (loginRedirectPage >>= redirect) f
+
+> loginRedirectPage :: App String
+> loginRedirectPage = do
+>   request <- getVar "REQUEST_URI"
+>   let request' = fromMaybe "/" request
+>   return $ "/member/login?redirect=" ++ escapeURIString isUnescapedInURI request'
+
+This can't be in the App monad because it needs to be used for creating the App
+monad.
 
 > loginNumber :: CGI (Maybe Integer)
 > loginNumber = do

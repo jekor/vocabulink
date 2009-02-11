@@ -83,7 +83,6 @@ There are a few more, but they are only used by a single Vocabulink module\footn
 
 > import Codec.Binary.UTF8.String (decodeString)
 > import Control.Concurrent (forkIO)
-> import Control.Monad.Reader (asks)
 > import Data.List (find, intercalate)
 > import Data.Maybe (maybe)
 > import Data.List.Split (splitOn)
@@ -251,7 +250,7 @@ way. The intent behind this is that in the future they will be able to review
 their links through different means such as a desktop program or a phone
 application.
 
-Because of the use of |withMemberNumber|, a logged out member will be
+Because of the use of |withRequiredMemberNumber|, a logged out member will be
 redirected to a login page when attempting to review.
 
 \begin{center}
@@ -263,7 +262,7 @@ add a link for review             & $\rightarrow$ & @POST /review/n/add@
 \end{center}
 
 > dispatch method ("review":path) =
->   withMemberNumber $ \memberNo ->
+>   withRequiredMemberNumber $ \memberNo ->
 >     case (method,path) of
 >       ("GET"   ,["next"])   -> reviewLink memberNo
 >       ("POST"  ,(x:xs))     -> do
@@ -342,10 +341,10 @@ This path to static files will change once it's launched to the live site.
 %include Vocabulink/App.lhs
 %include Vocabulink/DB.lhs
 %include Vocabulink/Html.lhs
-%include Vocabulink/Member.lhs
 %include Vocabulink/Member/Auth.lhs
-%include Vocabulink/Link.lhs
+%include Vocabulink/Member.lhs
 %include Vocabulink/Link/Types.lhs
+%include Vocabulink/Link.lhs
 %include Vocabulink/Review.lhs
 %include Vocabulink/Review/Html.lhs
 %include Vocabulink/Review/SM2.lhs

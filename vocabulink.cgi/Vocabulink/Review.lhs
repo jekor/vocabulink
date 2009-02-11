@@ -7,11 +7,9 @@
 > import Vocabulink.DB
 > import Vocabulink.Html
 > import Vocabulink.Link (getLink, linkHtml, Link(..))
+> import Vocabulink.Utils
 
 > import Codec.Binary.UTF8.String (encodeString)
-> import Control.Monad (liftM)
-> import Control.Monad.Reader (asks)
-> import Data.Maybe (fromMaybe)
 > import Network.FastCGI (CGIResult, liftIO, redirect)
 
 > newReview :: Integer -> Integer -> App CGIResult

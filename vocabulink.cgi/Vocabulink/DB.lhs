@@ -20,8 +20,7 @@ need to utilize the database in some way.
 > import Vocabulink.Utils
 
 > import Control.Exception (Exception(..), IOException, bracket)
-> import Control.Monad (liftM)
-> import Data.Maybe (listToMaybe, catMaybes)
+> import Data.Maybe (listToMaybe)
 > import Database.HDBC
 > import Database.HDBC.PostgreSQL (connectPostgreSQL, Connection)
 > import System.IO.Error (isUserError, ioeGetErrorString)
@@ -44,7 +43,7 @@ Sometimes you want just the first tuple of a query result. If the query returns
 multiple tuples, all but the first will be silently discarded.
 
 > queryTuple :: IConnection conn => conn -> String -> [SqlValue] -> IO [SqlValue]
-> queryTuple c sql vs = quickQuery' c sql vs >>= safeHead
+> queryTuple c sql vs = quickQuery' c sql vs >>= return . (safeHead [])
 
 Sometimes you just want to retrieve a single attribute from a single tuple.
 This will return either Just the value you were expecting or Nothing.
@@ -57,7 +56,7 @@ multiple tuples. This assumes that the attribute you want is the first one
 SELECTed.
 
 > queryAttribute :: IConnection conn => conn -> String -> [SqlValue] -> IO [SqlValue]
-> queryAttribute c sql vs = quickQuery' c sql vs >>= return . catMaybes . map safeHead
+> queryAttribute c sql vs = quickQuery' c sql vs >>= return . map head
 
 It's often tedious to work with transactions if you're just issuing a single
 statement.

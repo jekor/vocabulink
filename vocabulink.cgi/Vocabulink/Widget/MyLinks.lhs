@@ -5,16 +5,14 @@
 > import Vocabulink.Html
 > import Vocabulink.Link (partialLinkFromValues)
 > import Vocabulink.Link.Types (PartialLink(..), partialLinkHtml)
-> import Vocabulink.Member (withMemberNumber')
+> import Vocabulink.Member
 > import Vocabulink.Widget (Widget, renderWidget)
-
-> import Control.Monad.Reader (asks)
 
 > data MyLinks = MyLinks Integer
 
 > instance Widget MyLinks where
 >   renderWidget (MyLinks n) =
->     withMemberNumber' $ \memberNo -> do
+>     withMemberNumber (stringToHtml "error, not logged in") $ \memberNo -> do
 >       links <- getLatestMemberLinks memberNo n
 >       return $ thediv ! [theclass "widget"] <<
 >         [ h3 << "My Links",

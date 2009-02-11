@@ -1,37 +1,13 @@
-> module Vocabulink.Member where
+> module Vocabulink.Member (  newMemberPage, addMember, loginPage, login, logout,
+>                             memberNameFromNumber,
+>  {- Vocabulink.Member.Auth -}  withMemberNumber, withRequiredMemberNumber) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
 > import Vocabulink.DB
 > import Vocabulink.Html
+> import Vocabulink.Member.Auth
 > import Vocabulink.Utils
-
-> import Vocabulink.Member.Auth (setAuthCookie)
-
-> import Control.Monad (liftM)
-> import Control.Monad.Reader (asks)
-> import Data.Maybe (fromMaybe)
-> import Network.URI (escapeURIString, isUnescapedInURI)
-
-Run the App with the currently logged in member's number or redirect to the
-login page if the user isn't logged in.
-
-> withMemberNumber :: (Integer -> App CGIResult) -> App CGIResult
-> withMemberNumber f = do
->   memberNo <- asks memberNumber
->   case memberNo of
->     Nothing -> redirectToLoginPage
->     Just n  -> f n
-
-> withMemberNumber' :: (Integer -> App a) -> App a
-> withMemberNumber' f = do
->   memberNo <- asks memberNumber
->   case memberNo of
->     Nothing -> error "No logged in member."
->     Just n  -> f n
-
-This can't be in the App monad because it needs to be used for creating the App
-monad.
 
 > memberNameFromNumber :: IConnection conn => conn -> Integer -> IO (Maybe String)
 > memberNameFromNumber c memberNo = do
@@ -160,10 +136,6 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 >                         cookieSecure = False }
 >   redirect redirect'
 
-> logoutForm :: Html
-> logoutForm = form ! [action "/member/logout", method "post"] <<
->                submit "" "Log Out"
-
 > loginPage :: App CGIResult
 > loginPage = do
 >   referer'  <- refererOrVocabulink
@@ -180,12 +152,3 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 >           br,
 >           submit "" "Log In" ],
 >       paragraph << ("Not a member? " +++ anchor ! [href "/member/join"] << "Join!") ]
-
-> loginRedirectPage :: App String
-> loginRedirectPage = do
->   request <- getVar "REQUEST_URI"
->   let request' = fromMaybe "/" request
->   return $ "/member/login?redirect=" ++ escapeURIString isUnescapedInURI request'
-
-> redirectToLoginPage :: App CGIResult
-> redirectToLoginPage = loginRedirectPage >>= redirect

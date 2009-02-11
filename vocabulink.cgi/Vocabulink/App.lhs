@@ -7,7 +7,8 @@ to store some information within an ``App'' monad. This reduces our function
 signatures a little bit.
 
 > module Vocabulink.App (  App, AppEnv(..), runApp, logApp,
->  {- Network.FastCGI -}   liftIO, CGIResult) where
+>  {- Network.FastCGI -}   liftIO, CGIResult,
+>  {- Control.Monad.Reader -}  asks) where
 
 > import Vocabulink.DB
 > import {-# SOURCE #-} Vocabulink.Member (memberNameFromNumber)
