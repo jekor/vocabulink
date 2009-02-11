@@ -5,9 +5,6 @@
 > import Vocabulink.Html
 > import Vocabulink.Utils
 
-> import Data.Maybe (isJust)
-> import Network.FastCGI (liftIO)
-
 For now, all links are added to the default review set.
 
 > reviewHtml :: Integer -> App (Html)

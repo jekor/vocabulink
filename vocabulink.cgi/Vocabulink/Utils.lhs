@@ -6,16 +6,20 @@ exist in any libraries I know of.
 maybeRead is borrowed from Network.CGI.Protocol until it makes its way into
 Haskell some other way.
 
-> module Vocabulink.Utils (    if', (?), safeHead, translate, currentYear,
->  {- Network.CGI.Protocol -}  maybeRead,
->  {- Control.Monad -}         liftM,
->  {- Data.Maybe -}            maybe, fromMaybe, fromJust) where
+> module Vocabulink.Utils (        if', (?), safeHead, translate,
+>                                  currentDay, currentYear,
+>  {- Network.CGI.Protocol -}      maybeRead,
+>  {- Control.Monad -}             liftM,
+>  {- Data.Maybe -}                maybe, fromMaybe, fromJust, isJust,
+>  {- Codec.Binary.UTF8.String -}  encodeString, decodeString,
+>  {- Data.Time.Calendar -}        Day) where
 
 We make extensive use of the |liftM| and the Maybe monad.
 
+> import Codec.Binary.UTF8.String (encodeString, decodeString)
 > import Control.Monad (liftM)
-> import Data.Maybe (maybe, fromMaybe, fromJust)
-> import Data.Time.Calendar (toGregorian)
+> import Data.Maybe (maybe, fromMaybe, fromJust, isJust)
+> import Data.Time.Calendar (Day, toGregorian)
 > import Data.Time.Clock (getCurrentTime)
 > import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, LocalTime(..))
 > import Network.CGI.Protocol (maybeRead)
@@ -46,12 +50,17 @@ then performs them on the list.
 > translate :: (Eq a) => [(a, a)] -> [a] -> [a]
 > translate sr = map (\s -> maybe s id $ lookup s sr)
 
+> currentDay :: IO Day
+> currentDay = do
+>   now  <- getCurrentTime
+>   tz   <- getCurrentTimeZone
+>   let (LocalTime day _) = utcToLocalTime tz now
+>   return day
+
 Return the current year (in the server's timezone) as a 4-digit number.
 
 > currentYear :: IO Integer
 > currentYear = do
->   now  <- getCurrentTime
->   tz   <- getCurrentTimeZone
->   let  (LocalTime day _)  = utcToLocalTime tz now
->        (year, _, _)       = toGregorian day
+>   day <- currentDay
+>   let (year, _, _) = toGregorian day
 >   return year

@@ -81,10 +81,8 @@ Vocabulink makes use of a half dozen or so Haskell libraries. Even though we don
 
 There are a few more, but they are only used by a single Vocabulink module\footnote{The Vocabulink module may re-export some functions provided by the module, but the other Vocabulink modules should be able to remain ignorant of that.}.
 
-> import Codec.Binary.UTF8.String (decodeString)
 > import Control.Concurrent (forkIO)
 > import Data.List (find, intercalate)
-> import Data.Maybe (maybe)
 > import Data.List.Split (splitOn)
 > import Network.FastCGI (runFastCGIConcurrent')
 > import Network.URI (URI(..), unEscapeString)
@@ -222,7 +220,7 @@ For clarity, this dispatches:
 >     Just n   -> case (method, method') of
 >                   ("GET"   ,[])          -> linkPage n
 >                   ("POST"  ,["delete"])  -> deleteLink n
->                   (_       ,_)          -> output404 (method:method')
+>                   (_       ,_)           -> output404 (method:method')
 
 Retrieving a listing of links is easier.
 

@@ -15,7 +15,6 @@
 > import Vocabulink.Utils
 
 > import Codec.Binary.UTF8.String (encodeString)
-> import Network.FastCGI (CGIResult, liftIO, redirect)
 
 When retrieving the page for a lexeme, we first check to see if a lemma for
 this lexeme is defined. If not, we assume it to be canonical.

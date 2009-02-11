@@ -18,15 +18,14 @@ with |readInput|). This is a common pattern in other modules.
 >                          handleErrors', output404,
 >                          refererOrVocabulink,
 >  {- Network.FastCGI -}   requestURI, requestMethod, getVar,
->                          setHeader, redirect, remoteAddr,
+>                          setHeader, output, redirect, remoteAddr,
 >                          outputError, outputMethodNotAllowed,
->                          Cookie(..), deleteCookie) where
+>                          Cookie(..), getCookie, setCookie, deleteCookie) where
 
 > import Vocabulink.App
 > import Vocabulink.DB
 > import Vocabulink.Utils
 
-> import Codec.Binary.UTF8.String (decodeString)
 > import Control.Exception (Exception(..))
 
 We're going to hide some Network.CGI functions so that we can override them

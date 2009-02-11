@@ -31,8 +31,6 @@ carefully encode everything we need to. If we don't, non-ASCII (non-iso8859-1?)
 characters will be converted to entities. This automatic conversion may be a
 nice fallback, but it can mask an underlying problem.
 
-> import Codec.Binary.UTF8.String (decodeString, encodeString)
-> import Network.FastCGI (CGIResult, output, getVar, requestURI)
 > import Network.URI (uriPath)
 > import Text.Regex (mkRegex, subRegex)
 > import Text.Regex.Posix ((=~))

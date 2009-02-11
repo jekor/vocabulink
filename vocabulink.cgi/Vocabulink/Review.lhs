@@ -10,7 +10,6 @@
 > import Vocabulink.Utils
 
 > import Codec.Binary.UTF8.String (encodeString)
-> import Network.FastCGI (CGIResult, liftIO, redirect)
 
 > newReview :: Integer -> Integer -> App CGIResult
 > newReview memberNo linkNo = do
