@@ -1,5 +1,0 @@
-> module Vocabulink.Member.Auth where
-
-> import Network.FastCGI (CGI)
-
-> loginNumber :: CGI (Maybe Integer)

@@ -6,6 +6,7 @@
 > import Vocabulink.App
 > import Vocabulink.CGI
 > import Vocabulink.Html
+> import Vocabulink.Utils
 
 > import Control.Monad (filterM)
 > import Data.Maybe (maybe, catMaybes)

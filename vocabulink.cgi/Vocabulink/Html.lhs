@@ -6,7 +6,7 @@ templates or HTML in strings, we use an HTML combinator library
 doesn't guarantee it). But more importantly, it allows us to use abstraction to
 get higher-level HTML-based functions. An example of this is |linkList|.
 
-> module Vocabulink.Html (  Dependency(..), stdPage, displayStaticFile,
+> module Vocabulink.Html (  output404, Dependency(..), stdPage, displayStaticFile,
 >                           linkList, options, accesskey, safeID,
 >                           pager, currentPage,
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
@@ -21,10 +21,9 @@ get higher-level HTML-based functions. An example of this is |linkList|.
 
 > import Vocabulink.App
 > import Vocabulink.CGI
-> import Vocabulink.Member.Auth
-> import Vocabulink.Utils
-
+> import {-# SOURCE #-} Vocabulink.Member
 > import {-# SOURCE #-} Vocabulink.Review (numLinksToReview)
+> import Vocabulink.Utils
 
 Currently Text.XHtml does not automatically handle UTF-8 output. We have to
 carefully encode everything we need to. If we don't, non-ASCII (non-iso8859-1?)
@@ -35,6 +34,19 @@ nice fallback, but it can mask an underlying problem.
 > import Text.Regex (mkRegex, subRegex)
 > import Text.Regex.Posix ((=~))
 > import Text.XHtml.Strict
+
+This is here until I can find some better place to put it.
+
+404 errors are common enough that it makes sense to have a function just for
+reporting them to the client. We also want to log 404 errors, as they may
+indicate a problem or opportunity with the site.
+
+This takes a list of Strings that are output as extra information to the
+client.
+
+> output404 :: [String] -> App CGIResult
+> output404 s = do  logApp "404" (show s)
+>                   outputError 404 "Resource not found." s
 
 Most pages depend on some external CSS and/or JavaScript files.
 

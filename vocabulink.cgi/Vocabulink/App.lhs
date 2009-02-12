@@ -7,12 +7,10 @@ to store some information within an ``App'' monad. This reduces our function
 signatures a little bit.
 
 > module Vocabulink.App (  App, AppEnv(..), runApp, logApp,
->  {- Network.FastCGI -}   liftIO, CGIResult,
 >  {- Control.Monad.Reader -}  asks) where
 
 > import Vocabulink.DB
-> import {-# SOURCE #-} Vocabulink.Member (memberNameFromNumber)
-> import {-# SOURCE #-} Vocabulink.Member.Auth (loginNumber)
+> import Vocabulink.Member.Auth
 
 > import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks)
 > import Control.Monad.Trans (lift)
@@ -47,11 +45,10 @@ CGIResult from within the App monad to the CGI monad.
 
 > runApp :: Connection -> App CGIResult -> CGI CGIResult
 > runApp c (App a) = do
->   memberNum <- loginNumber
->   username <- liftIO $ maybe (return Nothing) (memberNameFromNumber c) memberNum
+>   token <- verifiedAuthToken
 >   res <- runReaderT a $ AppEnv {  db            = c,
->                                   memberNumber  = memberNum,
->                                   memberName    = username}
+>                                   memberNumber  = Just . authMemberNo =<< token,
+>                                   memberName    = Just . authUsername =<< token}
 >   return res
 
 At some point it's going to be essential to have all errors and notices logged

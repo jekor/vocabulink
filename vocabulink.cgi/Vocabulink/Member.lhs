@@ -1,6 +1,6 @@
-> module Vocabulink.Member (  newMemberPage, addMember, loginPage, login, logout,
->                             memberNameFromNumber,
->  {- Vocabulink.Member.Auth -}  withMemberNumber, withRequiredMemberNumber) where
+> module Vocabulink.Member (  withMemberNumber, withRequiredMemberNumber,
+>                             newMemberPage, addMember, loginPage,
+>                             login, logout) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -9,11 +9,35 @@
 > import Vocabulink.Member.Auth
 > import Vocabulink.Utils
 
-> memberNameFromNumber :: IConnection conn => conn -> Integer -> IO (Maybe String)
-> memberNameFromNumber c memberNo = do
->   liftM (>>= fromSql) $ queryValue c "SELECT username FROM member \
->                                      \WHERE member_no = ?" [toSql memberNo]
->     `catchSqlE` "Failed to retrieve member name from number."
+> import Network.URI (escapeURIString, isUnescapedInURI)
+
+\subsection{Helpers}
+
+Here are a couple functions that most pages on the site will use for
+determining the identity for a member.
+
+|withMemberNumber| accepts a default value (for if the client isn't logged in)
+and a function to carry out with the member's number otherwise.
+
+> withMemberNumber :: a -> (Integer -> App a) -> App a
+> withMemberNumber d f = asks memberNumber >>= maybe (return d) f
+
+|withRequiredMemberNumber| is like |withMemberNumber|, but it provides a
+``logged out default'' of redirecting the client to the login page.
+
+> withRequiredMemberNumber :: (Integer -> App CGIResult) -> App CGIResult
+> withRequiredMemberNumber f =  asks memberNumber >>=
+>                               maybe (loginRedirectPage >>= redirect) f
+
+When we direct a user to the login page, we want to make sure that they can
+find their way back to where they were. To do so, we get the current URI and
+append it to the login page in the query string. The login page will know what
+to do with it.
+
+> loginRedirectPage :: App String
+> loginRedirectPage = do
+>   request <- fromMaybe "/" `liftM` getVar "REQUEST_URI"
+>   return $ "/member/login?redirect=" ++ escapeURIString isUnescapedInURI request
 
 Add a member to the database. We're going to do validation of acceptable
 username characters at this level because PostgreSQL's CHECK constraint doesn't
@@ -39,15 +63,15 @@ This returns the new member number.
 
 > addMember :: App CGIResult
 > addMember = do
->   username <- getRequiredInput "username"
->   passwd   <- getRequiredInput "password"
->   email    <- getInput "email"
->   memberNo <- addMember' username passwd email
+>   username  <- getRequiredInput "username"
+>   passwd    <- getRequiredInput "password"
+>   email     <- getInput "email"
+>   memberNo  <- addMember' username passwd email
 >   case memberNo of
->     Nothing -> error "Failed to add member."
->     Just n -> do
+>     Nothing  -> error "Failed to add member."
+>     Just no  -> do
 >       ip <- remoteAddr
->       setAuthCookie n ip
+>       setAuthCookie no username ip
 >       redirect "/"
 
 > newMemberPage :: App CGIResult
@@ -69,13 +93,13 @@ This returns the new member number.
 >           br,
 >           submit "" "Join" ] ]
 
-> getMemberNumber :: String -> App (Integer)
+> getMemberNumber :: String -> App (Maybe Integer)
 > getMemberNumber username = do
 >   c <- asks db
 >   n <- liftIO $ queryValue c "SELECT member_no FROM member \
 >                              \WHERE username = ?" [toSql username]
 >                   `catchSqlE` "Failed to retrieve member number from username."
->   return $ maybe (error "fail") fromSql n
+>   return $ maybe Nothing fromSql n
 
 Login attempts to match the username and password supplied against the
 information in the database.
@@ -87,20 +111,7 @@ information in the database.
 >                              \FROM member WHERE username = ?"
 >                              [toSql passwd, toSql username]
 >                   `catchSqlE` "Internal authentication failure (this is not your fault)."
->   return $ maybe (error "fail") fromSql n
-
-If we want to set the expiration, we have to muck around with CalendarTimes and
-use something like
-  addToClockTime TimeDiff { tdYear = 0,
-                            tdMonth = 0,
-                            tdDay = 1,
-                            tdHour = 0,
-                            tdMin = 0,
-                            tdSec = 0,
-                            tdPicosec = 0 }
-
-For now, I'm just going to let it expire at the end of the session. If the
-session lasts longer than the expiration time, we can invalidate the cookie.
+>   return $ maybe False fromSql n
 
 > login :: App CGIResult
 > login = do
@@ -110,7 +121,7 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 >        -- Carry over the username if they entered it.
 >        username <- getInputDefault "" "username"
 >        if username /= ""
->           then redirect $ "/member/join?username=" ++ username
+>           then redirect $ "/member/join?username=" ++ encodeString username
 >           else redirect "/member/join"
 >      else do
 >        username  <- getRequiredInput "username"
@@ -121,19 +132,16 @@ session lasts longer than the expiration time, we can invalidate the cookie.
 >        ip <- remoteAddr
 >        valid <- validPassword username passwd
 >        not valid ? error "Login failed." $ do
->          setAuthCookie memberNo ip
->          redirect redirect'
+>          case memberNo of
+>            Nothing  -> redirect redirect'
+>            Just n   -> do
+>              setAuthCookie n username ip
+>              redirect redirect'
 
 > logout :: App CGIResult
 > logout = do
 >   redirect' <- getInputDefault "/" "redirect"
->   deleteCookie Cookie { cookieName   = "auth",
->                         cookieDomain = Just "vocabulink.com",
->                         cookiePath   = Just "/",
->                         -- The following are only here to get rid of GHC warnings.
->                         cookieValue  = "",
->                         cookieExpires = Nothing,
->                         cookieSecure = False }
+>   deleteAuthCookie
 >   redirect redirect'
 
 > loginPage :: App CGIResult

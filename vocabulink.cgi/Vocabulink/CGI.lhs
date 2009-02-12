@@ -15,14 +15,12 @@ with |readInput|). This is a common pattern in other modules.
 
 > module Vocabulink.CGI (  getInput, getRequiredInput, getInputDefault,
 >                          readInput, readRequiredInput, readInputDefault,
->                          handleErrors', output404,
->                          refererOrVocabulink,
->  {- Network.FastCGI -}   requestURI, requestMethod, getVar,
->                          setHeader, output, redirect, remoteAddr,
+>                          handleErrors', refererOrVocabulink,
+>  {- Network.FastCGI -}   MonadCGI, MonadIO, CGIResult, requestURI, requestMethod,
+>                          getVar, setHeader, output, redirect, remoteAddr,
 >                          outputError, outputMethodNotAllowed,
 >                          Cookie(..), getCookie, setCookie, deleteCookie) where
 
-> import Vocabulink.App
 > import Vocabulink.DB
 > import Vocabulink.Utils
 
@@ -67,22 +65,11 @@ accumulating a pile of unused database handles.
 >   liftIO $ disconnect c
 >   outputInternalServerError [s]
 
-404 errors are common enough that it makes sense to have a function just for
-reporting them to the client. We also want to log 404 errors, as they may
-indicate a problem or opportunity with the site.
-
-This takes a list of Strings that are output as extra information to the
-client.
-
-> output404 :: [String] -> App CGIResult
-> output404 s = do  logApp "404" (show s)
->                   outputError 404 "Resource not found." s
-
 In some cases we'll need to redirect the client to where it came from after we
 perform some action. We use this to make sure that we don't redirect them off
 of the site.
 
-> refererOrVocabulink :: App String
+> refererOrVocabulink :: MonadCGI m => m String
 > refererOrVocabulink = do
 >   ref <- getVar "HTTP_REFERER"
 >   return $ fromMaybe "http://www.vocabulink.com/" ref

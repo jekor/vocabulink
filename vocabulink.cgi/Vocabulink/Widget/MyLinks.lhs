@@ -7,6 +7,7 @@
 > import Vocabulink.Link.Types (PartialLink(..), partialLinkHtml)
 > import Vocabulink.Member
 > import Vocabulink.Widget (Widget, renderWidget)
+> import Vocabulink.Utils
 
 > data MyLinks = MyLinks Integer
 
