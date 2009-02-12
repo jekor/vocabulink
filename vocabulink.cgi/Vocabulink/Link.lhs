@@ -129,7 +129,7 @@ Eventually we'll want to cache this.
 >     "SELECT author = ? FROM link WHERE link_no = ?"
 >     [toSql memberNo, toSql linkNo]
 >   review <- reviewHtml linkNo
->   ops <- linkOperations linkNo owner
+>   ops <- linkOperations linkNo (isJust memberNo && owner)
 >   let t = (encodeString origin) ++ " -> " ++ (encodeString destination)
 >   stdPage t [CSS "link"]
 >     [ review,
