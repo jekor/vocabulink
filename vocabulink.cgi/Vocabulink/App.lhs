@@ -8,7 +8,7 @@ signatures a little bit.
 
 > module Vocabulink.App (      App, AppEnv(..), runApp, logApp,
 >                              withMemberNumber, withRequiredMemberNumber,
->                              queryTuple', --queryValue', queryAttribute',
+>                              queryTuple', queryValue', queryAttribute',
 >  {- Control.Monad.Reader -}  asks) where
 
 > import Vocabulink.CGI
@@ -115,12 +115,12 @@ it's much easier than manually wrapping the query with |catchSql|.
 >   c <- asks db
 >   liftIO $ (queryTuple c sql vs >>= return . Just) `catchSqlD` Nothing
 
--- > queryValue' :: String -> [SqlValue] -> App (Maybe (Maybe SqlValue))
--- > queryValue' sql vs = do
--- >   c <- asks db
--- >   liftIO $ queryValue c sql vs
+> queryValue' :: String -> [SqlValue] -> App (Maybe (Maybe SqlValue))
+> queryValue' sql vs = do
+>   c <- asks db
+>   liftIO $ (queryValue c sql vs >>= return . Just) `catchSqlD` Nothing
 
--- > queryAttribute' :: String -> [SqlValue] -> App (Maybe [SqlValue])
--- > queryAttribute' sql vs = do
--- >   c <- asks db
--- >   liftIO $ queryAttribute c sql vs
+> queryAttribute' :: String -> [SqlValue] -> App (Maybe [SqlValue])
+> queryAttribute' sql vs = do
+>   c <- asks db
+>   liftIO $ (queryAttribute c sql vs >>= return . Just) `catchSqlD` Nothing
