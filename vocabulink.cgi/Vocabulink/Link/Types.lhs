@@ -9,8 +9,6 @@
 > import Vocabulink.Html
 > import Vocabulink.Utils
 
-> import Codec.Binary.UTF8.String (encodeString)
-
 Each link between lexemes has a type. This type determines how the link is
 displayed, edited, used in statistical analysis, etc.
 

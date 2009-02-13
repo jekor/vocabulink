@@ -15,19 +15,22 @@ For now, all links are added to the default review set.
 >                           anchor ! [href "/member/login"] << "Login to Review" 
 >     Just n  -> do
 >       r <- reviewing n linkNo
->       return $ r ? paragraph ! [theclass "review-box reviewing"] << "Reviewing" $
->                    form ! [action ("/review/" ++ (show linkNo) ++ "/add"),
->                            method "post", theclass "review-box review"] <<
->                      [ submit "review" "Review" ]
+>       case r of
+>         Nothing  -> return $ paragraph ! [theclass "review-box"] <<
+>                       "Unable to determine review status."
+>         Just r'  -> return $ r' ? paragraph ! [theclass "review-box reviewing"] <<
+>                       "Reviewing" $
+>                         form ! [action ("/review/" ++ (show linkNo) ++ "/add"),
+>                                method "post", theclass "review-box review"] <<
+>                           [ submit "review" "Review" ]
 
 Determine whether or not a member is already reviewing this link. This will be
 true only if the member is currently reviewing the link, not if they've
 reviewed it in the past but removed it from their review.
 
-> reviewing :: Integer -> Integer -> App (Bool)
+> reviewing :: Integer -> Integer -> App (Maybe Bool)
 > reviewing memberNo linkNo = do
->   c <- asks db
->   r <- liftIO $ queryValue c "SELECT link_no FROM link_to_review \
->                              \WHERE member_no = ? AND link_no = ? LIMIT 1"
->                              [toSql memberNo, toSql linkNo]
->   return $ isJust r
+>   r <- queryValue' "SELECT link_no FROM link_to_review \
+>                    \WHERE member_no = ? AND link_no = ? LIMIT 1"
+>                    [toSql memberNo, toSql linkNo]
+>   return $ maybe Nothing (Just . isJust) r

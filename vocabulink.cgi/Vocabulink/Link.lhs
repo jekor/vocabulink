@@ -18,12 +18,12 @@ this lexeme is defined. If not, we assume it to be canonical.
 
 > lexemePage :: String -> App CGIResult
 > lexemePage l = do
->   c <- asks db
->   lemma <- liftIO $ queryValue c "SELECT lemma FROM lexeme \
->                                  \WHERE lexeme = ?" [toSql l]
+>   lemma <- queryValue'  "SELECT lemma FROM lexeme \
+>                         \WHERE lexeme = ?" [toSql l]
 >   case lemma of
->     Just lm -> redirect $ "/lexeme/" ++ encodeString (fromSql lm)
->     Nothing -> stdPage (encodeString l) [CSS "link"]
+>     Nothing         -> error "Database failure when looking for the lexeme."
+>     Just (Just lm)  -> redirect $ "/lexeme/" ++ encodeString (fromSql lm)
+>     Just Nothing    -> stdPage (encodeString l) [CSS "link"]
 >       [ form ! [action "/link", method "get"] <<
 >         [ hidden "origin" (encodeString l),
 >           thediv ! [identifier "baseline", theclass "link"] <<
@@ -120,15 +120,17 @@ Eventually we'll want to cache this.
 >   memberNo <- asks memberNumber
 >   l <- getLink linkNo
 >   case l of
->     Nothing -> stdPage "Unable to retrieve link." [CSS "link"]
->       [ stringToHtml "Unable to retrieve link." ]
+>     Nothing -> output404 ["Link not found."]
 >     Just (Link _ linkType origin destination) -> do
->       c <- asks db
->       owner <- liftIO $ liftM fromSql $ liftM fromJust $ queryValue c
->         "SELECT author = ? FROM link WHERE link_no = ?"
->         [toSql memberNo, toSql linkNo]
 >       review <- reviewHtml linkNo
->       ops <- linkOperations linkNo (isJust memberNo && owner)
+>       owner <- queryValue'  "SELECT author = ? FROM link WHERE link_no = ?"
+>                             [toSql memberNo, toSql linkNo]
+>       ops <- case owner of
+>                Nothing        -> return $ stringToHtml
+>                                    "Unable to determine link ownership."
+>                Just Nothing   -> return $ stringToHtml
+>                                    "Unable to determine link ownership."
+>                Just (Just o)  -> linkOperations linkNo (isJust memberNo && fromSql o)
 >       let t = (encodeString origin) ++ " -> " ++ (encodeString destination)
 >       stdPage t [CSS "link"]
 >         [ review,
@@ -139,13 +141,15 @@ Eventually we'll want to cache this.
 
 > linkOperations :: Integer -> Bool -> App Html
 > linkOperations n True = do
->   c <- asks db
->   deleted <- liftIO $ queryValue c "SELECT deleted FROM link \
->                                    \WHERE link_no = ?" [toSql n]
->   case fromSql `liftM` deleted of
->     Just True -> return $ stringToHtml "Deleted"
->     _         -> return $ form ! [action ("/link/" ++ (show n) ++ "/delete"), method "post"] <<
->                    submit "" "Delete"
+>   deleted <- queryValue'  "SELECT deleted FROM link \
+>                           \WHERE link_no = ?" [toSql n]
+>   case deleted of
+>     Just (Just d)  -> if fromSql d
+>                         then return $ stringToHtml "Deleted"
+>                         else return $ form ! [action ("/link/" ++ (show n) ++ "/delete"), method "post"] <<
+>                                submit "" "Delete"
+>     _              -> return $ stringToHtml
+>                         "Unable to determine whether or not link has been deleted."
 > linkOperations _ False = return noHtml
 
 Generate a page of links for the specified member or all members (for Nothing).

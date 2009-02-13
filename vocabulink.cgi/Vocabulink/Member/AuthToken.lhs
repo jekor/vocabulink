@@ -133,8 +133,8 @@ token.
 >   cookie <- getCookie "auth"
 >   ip <- remoteAddr
 >   case parseAuthToken =<< cookie of
->     Nothing -> return Nothing
->     Just a  -> do
+>     Nothing  -> return Nothing
+>     Just a   -> do
 >       now <- liftIO currentDay
 >       digest <- liftIO $ digestToken a
 >       if digest == authDigest a && diffDays (authExpiry a) now > 0 &&

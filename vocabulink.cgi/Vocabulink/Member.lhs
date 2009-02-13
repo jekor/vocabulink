@@ -15,8 +15,8 @@
 
 > loginPage :: App CGIResult
 > loginPage = do
->   referer'  <- refererOrVocabulink
->   redirect' <- getInputDefault referer' "redirect"
+>   referer'   <- refererOrVocabulink
+>   redirect'  <- getInputDefault referer' "redirect"
 >   stdPage "Log In" []
 >     [ h1 << "Log In",
 >       form ! [action "", method "post"] <<
@@ -43,24 +43,26 @@ the redirect following successful authentication correctly.
 >   redirect'  <- getInputDefault ref "redirect"
 >   ip         <- remoteAddr
 >   valid <- validPassword username passwd
->   not valid ? error "Login failed." $ do
->     case memberNo of
->       Nothing  -> redirect redirect'
->       Just n   -> do
->         setAuthCookie n username ip
->         redirect redirect'
+>   if not valid -- TODO: We need to add an error indicator.
+>     then redirect "/member/login"
+>     else do
+>       case memberNo of
+>         Nothing  -> redirect redirect'
+>         Just n   -> do
+>           setAuthCookie n username ip
+>           redirect redirect'
 
 Login attempts to match the username and password supplied against the
 information in the database.
 
 > validPassword :: String -> String -> App (Bool)
 > validPassword username passwd = do
->   c <- asks db
->   n <- liftIO $ queryValue c "SELECT password_hash = crypt(?, password_hash) \
->                              \FROM member WHERE username = ?"
->                              [toSql passwd, toSql username]
->                   `catchSqlE` "Internal authentication failure (this is not your fault)."
->   return $ maybe False fromSql n
+>   valid <- queryValue'  "SELECT password_hash = crypt(?, password_hash) \
+>                         \FROM member WHERE username = ?"
+>                         [toSql passwd, toSql username]
+>   case valid of
+>     Nothing  -> error "Internal authentication error (this is not your fault)"
+>     Just v   -> return $ maybe False fromSql v
 
 At the time of authentication, we do not have any member information because
 we've set no authentication cookie yet. This is where we get it from before we
@@ -68,11 +70,11 @@ put it into the auth token.
 
 > getMemberNumber :: String -> App (Maybe Integer)
 > getMemberNumber username = do
->   c <- asks db
->   n <- liftIO $ queryValue c "SELECT member_no FROM member \
->                              \WHERE username = ?" [toSql username]
->                   `catchSqlE` "Failed to retrieve member number from username."
->   return $ maybe Nothing fromSql n
+>   n <- queryValue' "SELECT member_no FROM member \
+>                    \WHERE username = ?" [toSql username]
+>   case n of
+>     Nothing  -> error "Failed to retrieve member number from username."
+>     Just n'  -> return $ maybe Nothing fromSql n'
 
 To logout the member, we simply clear their auth cookie and redirect them
 somewhere sensible. If you want to send a client somewhere other than the front
