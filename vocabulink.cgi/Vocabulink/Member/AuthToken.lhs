@@ -1,10 +1,10 @@
-\section{Authentication}
+\section{Authentication Tokens}
 
 Much of what you can do on Vocabulink requires us to know and trust who you say
-you are.
+you are (or at least can be enhanced by that knowledge).
 
-> module Vocabulink.Member.Auth (  AuthToken(..), verifiedAuthToken,
->                                  setAuthCookie, deleteAuthCookie) where
+> module Vocabulink.Member.AuthToken (  AuthToken(..), verifiedAuthToken,
+>                                       setAuthCookie, deleteAuthCookie) where
 
 > import Vocabulink.CGI
 > import Vocabulink.Utils
@@ -19,7 +19,7 @@ you are.
 > import Text.ParserCombinators.Parsec (  Parser, parse, manyTill, many1,
 >                                         anyChar, char, string)
 
-\subsection{Creating the Auth Cookie}
+\subsection{Creating the Auth Token}
 
 Each time a user logs in, we send an authentication cookie to their browser.
 The cookie is a digest of some state information. We then use the cookie for
@@ -121,7 +121,7 @@ token and send it to the client.
 >                          cookieSecure = False }
 
 
-\subsection{Reading the Auth Cookie}
+\subsection{Reading the Auth Token}
 
 This retrieves the auth token from the HTTP request, verifies it, and if valid,
 returns it. To verify an auth token, we verify the token digest, check that the

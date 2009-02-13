@@ -16,7 +16,7 @@ with |readInput|). This is a common pattern in other modules.
 > module Vocabulink.CGI (  getInput, getRequiredInput, getInputDefault,
 >                          readInput, readRequiredInput, readInputDefault,
 >                          handleErrors', refererOrVocabulink,
->  {- Network.FastCGI -}   MonadCGI, MonadIO, CGIResult, requestURI, requestMethod,
+>  {- Network.FastCGI -}   MonadCGI, CGIResult, requestURI, requestMethod,
 >                          getVar, setHeader, output, redirect, remoteAddr,
 >                          outputError, outputMethodNotAllowed,
 >                          Cookie(..), getCookie, setCookie, deleteCookie) where

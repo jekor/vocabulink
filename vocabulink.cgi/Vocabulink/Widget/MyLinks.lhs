@@ -5,7 +5,6 @@
 > import Vocabulink.Html
 > import Vocabulink.Link (partialLinkFromValues)
 > import Vocabulink.Link.Types (PartialLink(..), partialLinkHtml)
-> import Vocabulink.Member
 > import Vocabulink.Widget (Widget, renderWidget)
 > import Vocabulink.Utils
 
@@ -27,4 +26,4 @@
 >                               \ORDER BY link_no DESC LIMIT ?"
 >                               [toSql memberNo, toSql n]
 >                   `catchSqlE` "No links found."
->   return $ map partialLinkFromValues r
+>   return $ catMaybes $ map partialLinkFromValues r

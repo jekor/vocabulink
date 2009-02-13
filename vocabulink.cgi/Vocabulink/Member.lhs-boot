@@ -1,6 +1,0 @@
-> module Vocabulink.Member (withMemberNumber) where
-
-> import Vocabulink.App
-
-> withMemberNumber :: a -> (Integer -> App a) -> App a
-

@@ -51,41 +51,34 @@ Each link is represented by a name in the database.
 > getPartialLinkType "relationship"      = Relationship "" ""
 > getPartialLinkType _                   = error "Unknown link type."
 
-> getLinkFromPartial :: PartialLink -> App Link
+> getLinkFromPartial :: PartialLink -> App (Maybe Link)
 > getLinkFromPartial (PartialLink n t o d) = do
 >   linkTypeDetails <- getLinkTypeDetails n t
->   return $ Link n linkTypeDetails o d
+>   case linkTypeDetails of
+>     Just details  -> return $ Just $ Link n details o d
+>     Nothing       -> return Nothing
 
-> getLinkTypeDetails :: Integer -> LinkType -> App LinkType
-> getLinkTypeDetails _ Association = return Association
-> getLinkTypeDetails _ Cognate = return Cognate
+> getLinkTypeDetails :: Integer -> LinkType -> App (Maybe LinkType)
+> getLinkTypeDetails _ Association = return $ Just Association
+> getLinkTypeDetails _ Cognate = return $ Just Cognate
 > getLinkTypeDetails n (LinkWord _ _) = do
->   c <- asks db
->   rs <- liftIO $ queryTuple c
->     "SELECT link_word, story FROM link_type_link_word \
->     \WHERE link_no = ?" [toSql n]
->       `catchSqlE` "Unable to retrieve link."
+>   rs <- queryTuple' "SELECT link_word, story FROM link_type_link_word \
+>                     \WHERE link_no = ?" [toSql n]
 >   case rs of
->     [linkWord, story] -> return $ LinkWord (fromSql linkWord) (fromSql story)
->     _ -> error "Unable to retrieve link."
+>     Just [linkWord, story]  -> return $ Just $ LinkWord (fromSql linkWord) (fromSql story)
+>     _                       -> return Nothing
 > getLinkTypeDetails n (ForeignLinkWord _ _) = do
->   c <- asks db
->   rs <- liftIO $ queryTuple c
->     "SELECT link_word, story FROM link_type_link_word \
->     \WHERE link_no = ?" [toSql n]
->       `catchSqlE` "Unable to retrieve link."
+>   rs <- queryTuple' "SELECT link_word, story FROM link_type_link_word \
+>                     \WHERE link_no = ?" [toSql n]
 >   case rs of
->     [linkWord, story] -> return $ ForeignLinkWord (fromSql linkWord) (fromSql story)
->     _ -> error "Unable to retrieve link."
+>     Just [linkWord, story]  -> return $ Just $ ForeignLinkWord (fromSql linkWord) (fromSql story)
+>     _                       -> return Nothing
 > getLinkTypeDetails n (Relationship _ _) = do
->   c <- asks db
->   rs <- liftIO $ queryTuple c
->     "SELECT left_side, right_side FROM link_type_relationship \
->     \WHERE link_no = ?" [toSql n]
->       `catchSqlE` "Unable to retrieve link."
+>   rs <- queryTuple' "SELECT left_side, right_side FROM link_type_relationship \
+>                     \WHERE link_no = ?" [toSql n]
 >   case rs of
->     [leftSide, rightSide] -> return $ Relationship (fromSql leftSide) (fromSql rightSide)
->     _ -> error "Unable to retrieve link."
+>     Just [leftSide, rightSide]  -> return $ Just $ Relationship (fromSql leftSide) (fromSql rightSide)
+>     _                           -> return Nothing
 
 > establishLinkType :: IConnection conn => conn -> Integer -> LinkType -> IO (Integer)
 > establishLinkType _ _ Association = return 1

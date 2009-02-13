@@ -2,9 +2,10 @@
 
 Much of Vocabulink consists of simple, program-generated HTML. Rather than use
 templates or HTML in strings, we use an HTML combinator library
-(Text.XHtml.Strict). This makes it easier to write valid markup (although it
-doesn't guarantee it). But more importantly, it allows us to use abstraction to
-get higher-level HTML-based functions. An example of this is |linkList|.
+(Text.XHtml.Strict). This makes it almost certain that our HTML will be well
+formed (although we have guarantee that it will be valid). But more
+importantly, it allows us to use abstraction to get higher-level HTML-based
+functions. An example of this is |linkList|.
 
 > module Vocabulink.Html (  output404, Dependency(..), stdPage, displayStaticFile,
 >                           linkList, options, accesskey, safeID,
@@ -21,7 +22,6 @@ get higher-level HTML-based functions. An example of this is |linkList|.
 
 > import Vocabulink.App
 > import Vocabulink.CGI
-> import {-# SOURCE #-} Vocabulink.Member
 > import {-# SOURCE #-} Vocabulink.Review (numLinksToReview)
 > import Vocabulink.Utils
 
@@ -130,20 +130,20 @@ generation time (now).
 >       anchor ! [href "http://jekor.com/"] << "Chris Forno" ]
 
 This provides a simple login box for members. Actually, it's a box for a
-username, a box for a password, a login button, and a join button. We want to
-make joining simple, so you can enter a username and password and then click
-join and it will redirect you to the new member form with the username
-pre-filled. Pre-filling the password field would require either a POST-based
-redirect (which, if possible, will probably distract the user) or storing
-state. I've also not seen the behavior before which might also confuse the
-user.
+username, a box for a password, a login button, and a join button.
+
+We have to put the join button before the login form to get them to display in
+the correct order because they're both floated to the right.
 
 > loginBox :: Html
-> loginBox = form ! [  theclass "auth-box login", action "/member/login",
+> loginBox = form ! [  theclass "auth-box", action "/member/join",
+>                      method "get"] <<
+>              [  submit "" "Join" ] +++
+>            form ! [  theclass "auth-box login", action "/member/login",
 >                      method "post"] <<
 >              [  label << "Username:",  textfield "username",
 >                 label << "Password:",  password "password",
->                 submit "" "Log In", stringToHtml " ", submit "join" "Join" ]
+>                 submit "" "Log In" ]
 
 For logged-in members, we provide a simple logout button (with an indicator of
 your username to show that you're logged in).

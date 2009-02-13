@@ -1,43 +1,90 @@
-> module Vocabulink.Member (  withMemberNumber, withRequiredMemberNumber,
->                             newMemberPage, addMember, loginPage,
+> module Vocabulink.Member (  newMemberPage, addMember, loginPage,
 >                             login, logout) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
 > import Vocabulink.DB
 > import Vocabulink.Html
-> import Vocabulink.Member.Auth
+> import Vocabulink.Member.AuthToken
 > import Vocabulink.Utils
-
-> import Network.URI (escapeURIString, isUnescapedInURI)
 
 \subsection{Helpers}
 
-Here are a couple functions that most pages on the site will use for
-determining the identity for a member.
 
-|withMemberNumber| accepts a default value (for if the client isn't logged in)
-and a function to carry out with the member's number otherwise.
+\section{Authentication}
 
-> withMemberNumber :: a -> (Integer -> App a) -> App a
-> withMemberNumber d f = asks memberNumber >>= maybe (return d) f
+> loginPage :: App CGIResult
+> loginPage = do
+>   referer'  <- refererOrVocabulink
+>   redirect' <- getInputDefault referer' "redirect"
+>   stdPage "Log In" []
+>     [ h1 << "Log In",
+>       form ! [action "", method "post"] <<
+>         [ hidden "redirect" redirect',
+>           label << "Username:",
+>           textfield "username",
+>           br,
+>           label << "Password:",
+>           password "password",
+>           br,
+>           submit "" "Log In" ],
+>       paragraph << ("Not a member? " +++ anchor ! [href "/member/join"] << "Join!") ]
 
-|withRequiredMemberNumber| is like |withMemberNumber|, but it provides a
-``logged out default'' of redirecting the client to the login page.
+To authenticate a member, we just need their username and password. We also
+check to see if anyone has passed a @redirect@ parameter so that we can adjust
+the redirect following successful authentication correctly.
 
-> withRequiredMemberNumber :: (Integer -> App CGIResult) -> App CGIResult
-> withRequiredMemberNumber f =  asks memberNumber >>=
->                               maybe (loginRedirectPage >>= redirect) f
+> login :: App CGIResult
+> login = do
+>   username   <- getRequiredInput "username"
+>   memberNo   <- getMemberNumber username
+>   passwd     <- getRequiredInput "password"
+>   ref        <- refererOrVocabulink
+>   redirect'  <- getInputDefault ref "redirect"
+>   ip         <- remoteAddr
+>   valid <- validPassword username passwd
+>   not valid ? error "Login failed." $ do
+>     case memberNo of
+>       Nothing  -> redirect redirect'
+>       Just n   -> do
+>         setAuthCookie n username ip
+>         redirect redirect'
 
-When we direct a user to the login page, we want to make sure that they can
-find their way back to where they were. To do so, we get the current URI and
-append it to the login page in the query string. The login page will know what
-to do with it.
+Login attempts to match the username and password supplied against the
+information in the database.
 
-> loginRedirectPage :: App String
-> loginRedirectPage = do
->   request <- fromMaybe "/" `liftM` getVar "REQUEST_URI"
->   return $ "/member/login?redirect=" ++ escapeURIString isUnescapedInURI request
+> validPassword :: String -> String -> App (Bool)
+> validPassword username passwd = do
+>   c <- asks db
+>   n <- liftIO $ queryValue c "SELECT password_hash = crypt(?, password_hash) \
+>                              \FROM member WHERE username = ?"
+>                              [toSql passwd, toSql username]
+>                   `catchSqlE` "Internal authentication failure (this is not your fault)."
+>   return $ maybe False fromSql n
+
+At the time of authentication, we do not have any member information because
+we've set no authentication cookie yet. This is where we get it from before we
+put it into the auth token.
+
+> getMemberNumber :: String -> App (Maybe Integer)
+> getMemberNumber username = do
+>   c <- asks db
+>   n <- liftIO $ queryValue c "SELECT member_no FROM member \
+>                              \WHERE username = ?" [toSql username]
+>                   `catchSqlE` "Failed to retrieve member number from username."
+>   return $ maybe Nothing fromSql n
+
+To logout the member, we simply clear their auth cookie and redirect them
+somewhere sensible. If you want to send a client somewhere other than the front
+page after logout, add a @redirect@ query string or POST parameter.
+
+> logout :: App CGIResult
+> logout = do
+>   redirect' <- getInputDefault "/" "redirect"
+>   deleteAuthCookie
+>   redirect redirect'
+
+\subsection{New Members}
 
 Add a member to the database. We're going to do validation of acceptable
 username characters at this level because PostgreSQL's CHECK constraint doesn't
@@ -92,71 +139,3 @@ This returns the new member number.
 >           textfield "email",
 >           br,
 >           submit "" "Join" ] ]
-
-> getMemberNumber :: String -> App (Maybe Integer)
-> getMemberNumber username = do
->   c <- asks db
->   n <- liftIO $ queryValue c "SELECT member_no FROM member \
->                              \WHERE username = ?" [toSql username]
->                   `catchSqlE` "Failed to retrieve member number from username."
->   return $ maybe Nothing fromSql n
-
-Login attempts to match the username and password supplied against the
-information in the database.
-
-> validPassword :: String -> String -> App (Bool)
-> validPassword username passwd = do
->   c <- asks db
->   n <- liftIO $ queryValue c "SELECT password_hash = crypt(?, password_hash) \
->                              \FROM member WHERE username = ?"
->                              [toSql passwd, toSql username]
->                   `catchSqlE` "Internal authentication failure (this is not your fault)."
->   return $ maybe False fromSql n
-
-> login :: App CGIResult
-> login = do
->   join <- getInputDefault "" "join"
->   if join /= ""
->      then do -- The user clicked the Join button in the login box.
->        -- Carry over the username if they entered it.
->        username <- getInputDefault "" "username"
->        if username /= ""
->           then redirect $ "/member/join?username=" ++ encodeString username
->           else redirect "/member/join"
->      else do
->        username  <- getRequiredInput "username"
->        memberNo  <- getMemberNumber username
->        passwd    <- getRequiredInput "password"
->        ref       <- refererOrVocabulink
->        redirect' <- getInputDefault ref "redirect"
->        ip <- remoteAddr
->        valid <- validPassword username passwd
->        not valid ? error "Login failed." $ do
->          case memberNo of
->            Nothing  -> redirect redirect'
->            Just n   -> do
->              setAuthCookie n username ip
->              redirect redirect'
-
-> logout :: App CGIResult
-> logout = do
->   redirect' <- getInputDefault "/" "redirect"
->   deleteAuthCookie
->   redirect redirect'
-
-> loginPage :: App CGIResult
-> loginPage = do
->   referer'  <- refererOrVocabulink
->   redirect' <- getInputDefault referer' "redirect"
->   stdPage "Log In" []
->     [ h1 << "Log In",
->       form ! [action "", method "post"] <<
->         [ hidden "redirect" redirect',
->           label << "Username:",
->           textfield "username",
->           br,
->           label << "Password:",
->           password "password",
->           br,
->           submit "" "Log In" ],
->       paragraph << ("Not a member? " +++ anchor ! [href "/member/join"] << "Join!") ]

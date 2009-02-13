@@ -10,8 +10,8 @@ Haskell some other way.
 >                                  currentDay, currentYear,
 >  {- Network.CGI.Protocol -}      maybeRead,
 >  {- Control.Monad -}             liftM,
->  {- Control.Monad.Trans -}       liftIO,
->  {- Data.Maybe -}                maybe, fromMaybe, fromJust, isJust,
+>  {- Control.Monad.Trans -}       liftIO, MonadIO,
+>  {- Data.Maybe -}                maybe, fromMaybe, fromJust, isJust, catMaybes,
 >  {- Codec.Binary.UTF8.String -}  encodeString, decodeString,
 >  {- Data.Time.Calendar -}        Day) where
 
@@ -19,8 +19,8 @@ We make extensive use of the |liftM| and the Maybe monad.
 
 > import Codec.Binary.UTF8.String (encodeString, decodeString)
 > import Control.Monad (liftM)
-> import Control.Monad.Trans (liftIO)
-> import Data.Maybe (maybe, fromMaybe, fromJust, isJust)
+> import Control.Monad.Trans (liftIO, MonadIO)
+> import Data.Maybe (maybe, fromMaybe, fromJust, isJust, catMaybes)
 > import Data.Time.Calendar (Day, toGregorian)
 > import Data.Time.Clock (getCurrentTime)
 > import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, LocalTime(..))

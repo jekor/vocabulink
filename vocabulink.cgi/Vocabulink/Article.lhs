@@ -9,7 +9,6 @@
 > import Vocabulink.Utils
 
 > import Control.Monad (filterM)
-> import Data.Maybe (maybe, catMaybes)
 > import System.Directory (getDirectoryContents, getPermissions, doesFileExist, readable)
 > import System.FilePath (takeExtension, replaceExtension, takeBaseName)
 > import System.IO.Error (try)

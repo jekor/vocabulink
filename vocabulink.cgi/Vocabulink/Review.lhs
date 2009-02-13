@@ -44,18 +44,22 @@ Review the next link in the queue.
 
 > reviewLinkPage :: Integer -> App CGIResult
 > reviewLinkPage linkNo = do
->   (Link _ _ o d) <- getLink linkNo
->   let origin = encodeString o
->       destination = encodeString d
->   stdPage ("Review: " ++ origin ++ " -> ?")
->           [CSS "link", JS "MochiKit", JS "review"]
->     [ thediv ! [identifier "baseline", theclass "link"] <<
->         linkHtml (stringToHtml origin) (anchor ! [identifier "lexeme-cover", href "#"] << "?"),
->       form ! [action ("/review/" ++ (show linkNo)), method "post"] <<
->         [ hidden "recall-time" "",
->           hidden "hidden-lexeme" destination,
->           fieldset ! [identifier "recall-buttons", thestyle "display: none"] <<
->             map recallButton [0..5] ] ]
+>   l <- getLink linkNo
+>   case l of
+>     Nothing -> stdPage "Unable to retrieve link." [CSS "link"]
+>       [ stringToHtml "Unable to retrieve link." ]
+>     Just (Link _ _ o d) -> do
+>       let origin = encodeString o
+>           destination = encodeString d
+>       stdPage ("Review: " ++ origin ++ " -> ?")
+>               [CSS "link", JS "MochiKit", JS "review"]
+>         [ thediv ! [identifier "baseline", theclass "link"] <<
+>             linkHtml (stringToHtml origin) (anchor ! [identifier "lexeme-cover", href "#"] << "?"),
+>           form ! [action ("/review/" ++ (show linkNo)), method "post"] <<
+>             [ hidden "recall-time" "",
+>               hidden "hidden-lexeme" destination,
+>               fieldset ! [identifier "recall-buttons", thestyle "display: none"] <<
+>                 map recallButton [0..5] ] ]
 
 > recallButton :: Integer -> Html
 > recallButton i = let q :: Double = (fromIntegral i) / 5 in

@@ -6,15 +6,12 @@
 > import Vocabulink.CGI
 > import Vocabulink.DB
 > import Vocabulink.Html
-> import Vocabulink.Member (withRequiredMemberNumber)
 > import Vocabulink.Review.Html (reviewHtml)
 > import Vocabulink.Link.Types (Link(..), newLinkHtml, linkFromForm,
 >                               linkTypeName, establishLinkType,
 >                               getLinkFromPartial, linkTypeHtml,
 >                               PartialLink(..), getPartialLinkType)
 > import Vocabulink.Utils
-
-> import Codec.Binary.UTF8.String (encodeString)
 
 When retrieving the page for a lexeme, we first check to see if a lemma for
 this lexeme is defined. If not, we assume it to be canonical.
@@ -42,24 +39,22 @@ origin should already be UTF8 encoded.
 >     image ! [src "http://s.vocabulink.com/black.png", width "20%", height "1"],
 >     thespan ! [theclass "lexeme"] << destination ]
 
-> partialLinkFromValues :: [SqlValue] -> PartialLink
+> partialLinkFromValues :: [SqlValue] -> Maybe PartialLink
 > partialLinkFromValues (n:o:d:t:[]) =
 >   let partialLinkType = getPartialLinkType (fromSql t)
->   in PartialLink (fromSql n) partialLinkType (fromSql o) (fromSql d)
-> partialLinkFromValues _ = error "Invalid link returned from database."
+>   in Just $ PartialLink (fromSql n) partialLinkType (fromSql o) (fromSql d)
+> partialLinkFromValues _ = Nothing
 
-> getPartialLink :: Integer -> App PartialLink
+> getPartialLink :: Integer -> App (Maybe PartialLink)
 > getPartialLink linkNo = do
->   c <- asks db
->   t <- liftIO $ queryTuple c "SELECT link_no, origin, destination, link_type \
->                              \FROM link WHERE link_no = ?" [toSql linkNo]
->                   `catchSqlE` "Link not found."
->   return $ partialLinkFromValues t
+>   t <- queryTuple' "SELECT link_no, origin, destination, link_type \
+>                    \FROM link WHERE link_no = ?" [toSql linkNo]
+>   return $ maybe Nothing partialLinkFromValues t
 
-> getLink :: Integer -> App Link
+> getLink :: Integer -> App (Maybe Link)
 > getLink linkNo = do
 >   l' <- getPartialLink linkNo
->   getLinkFromPartial l'
+>   maybe (return Nothing) getLinkFromPartial l'
 
 Return the types of links sorted by how common they should be.
 
@@ -123,20 +118,24 @@ Eventually we'll want to cache this.
 > linkPage :: Integer -> App CGIResult
 > linkPage linkNo = do
 >   memberNo <- asks memberNumber
->   (Link _ linkType origin destination) <- getLink linkNo
->   c <- asks db
->   owner <- liftIO $ liftM fromSql $ liftM fromJust $ queryValue c
->     "SELECT author = ? FROM link WHERE link_no = ?"
->     [toSql memberNo, toSql linkNo]
->   review <- reviewHtml linkNo
->   ops <- linkOperations linkNo (isJust memberNo && owner)
->   let t = (encodeString origin) ++ " -> " ++ (encodeString destination)
->   stdPage t [CSS "link"]
->     [ review,
->       ops,
->       thediv ! [identifier "baseline", theclass "link"] <<
->         ([linkHtml (stringToHtml $ encodeString origin) (stringToHtml $ encodeString destination)] ++
->          linkTypeHtml linkType) ]
+>   l <- getLink linkNo
+>   case l of
+>     Nothing -> stdPage "Unable to retrieve link." [CSS "link"]
+>       [ stringToHtml "Unable to retrieve link." ]
+>     Just (Link _ linkType origin destination) -> do
+>       c <- asks db
+>       owner <- liftIO $ liftM fromSql $ liftM fromJust $ queryValue c
+>         "SELECT author = ? FROM link WHERE link_no = ?"
+>         [toSql memberNo, toSql linkNo]
+>       review <- reviewHtml linkNo
+>       ops <- linkOperations linkNo (isJust memberNo && owner)
+>       let t = (encodeString origin) ++ " -> " ++ (encodeString destination)
+>       stdPage t [CSS "link"]
+>         [ review,
+>           ops,
+>           thediv ! [identifier "baseline", theclass "link"] <<
+>             ([linkHtml (stringToHtml $ encodeString origin) (stringToHtml $ encodeString destination)] ++
+>              linkTypeHtml linkType) ]
 
 > linkOperations :: Integer -> Bool -> App Html
 > linkOperations n True = do

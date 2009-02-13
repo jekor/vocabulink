@@ -6,17 +6,22 @@ database connection. I now understand monads a little bit more, and it's easier
 to store some information within an ``App'' monad. This reduces our function
 signatures a little bit.
 
-> module Vocabulink.App (  App, AppEnv(..), runApp, logApp,
+> module Vocabulink.App (      App, AppEnv(..), runApp, logApp,
+>                              withMemberNumber, withRequiredMemberNumber,
+>                              queryTuple', --queryValue', queryAttribute',
 >  {- Control.Monad.Reader -}  asks) where
 
+> import Vocabulink.CGI
 > import Vocabulink.DB
-> import Vocabulink.Member.Auth
+> import Vocabulink.Member.AuthToken
+> import Vocabulink.Utils
 
 > import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks)
 > import Control.Monad.Trans (lift)
 
 > import Network.CGI.Monad (MonadCGI(..))
-> import Network.FastCGI (CGI, CGIT, CGIResult, liftIO, MonadIO)
+> import Network.FastCGI (CGI, CGIT)
+> import Network.URI (escapeURIString, isUnescapedInURI)
 
 > data AppEnv = AppEnv {  db            :: Connection,
 >                         memberNumber  :: Maybe Integer,
@@ -59,3 +64,63 @@ this difficult.
 > logApp t s = do
 >   c <- asks db
 >   liftIO $ logMsg c t s
+
+\subsection{Convenience Functions}
+
+Here are some functions that abstract away even having to ask for the
+environment in the App monad.
+
+\subsubsection{Identity}
+
+|withMemberNumber| accepts a default value (for if the client isn't logged in)
+and a function to carry out with the member's number otherwise.
+
+> withMemberNumber :: a -> (Integer -> App a) -> App a
+> withMemberNumber d f = asks memberNumber >>= maybe (return d) f
+
+|withRequiredMemberNumber| is like |withMemberNumber|, but it provides a
+``logged out default'' of redirecting the client to the login page.
+
+> withRequiredMemberNumber :: (Integer -> App CGIResult) -> App CGIResult
+> withRequiredMemberNumber f =  asks memberNumber >>=
+>                               maybe (loginRedirectPage >>= redirect) f
+
+When we direct a user to the login page, we want to make sure that they can
+find their way back to where they were. To do so, we get the current URI and
+append it to the login page in the query string. The login page will know what
+to do with it.
+
+> loginRedirectPage :: App String
+> loginRedirectPage = do
+>   request <- fromMaybe "/" `liftM` getVar "REQUEST_URI"
+>   return $ "/member/login?redirect=" ++ escapeURIString isUnescapedInURI request
+
+\subsubsection{Database}
+
+When we're dealing with the database, there's always a chance we're going to
+have some sort of error (there's a seemingly infinite number of possible
+sources). We don't want the entire page to blow up if there are. Also, we don't
+really care what the cause of the error is at the time of execution. SQL errors
+are not something you can generally recover from. We just need to log the
+error, return some sort of error indicator to the calling function (in this
+case, Nothing), and get on with it.
+
+In many cases, the calling function will still need to do data validation
+anyway (make sure that a list of the expected size is returned, etc), so the
+extra Maybe wrapper shouldn't be much extra trouble. In fact, in some cases
+it's much easier than manually wrapping the query with |catchSql|.
+
+> queryTuple' :: String -> [SqlValue] -> App (Maybe [SqlValue])
+> queryTuple' sql vs = do
+>   c <- asks db
+>   liftIO $ (queryTuple c sql vs >>= return . Just) `catchSqlD` Nothing
+
+-- > queryValue' :: String -> [SqlValue] -> App (Maybe (Maybe SqlValue))
+-- > queryValue' sql vs = do
+-- >   c <- asks db
+-- >   liftIO $ queryValue c sql vs
+
+-- > queryAttribute' :: String -> [SqlValue] -> App (Maybe [SqlValue])
+-- > queryAttribute' sql vs = do
+-- >   c <- asks db
+-- >   liftIO $ queryAttribute c sql vs
