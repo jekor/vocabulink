@@ -74,7 +74,7 @@ put it into the auth token.
 >                    \WHERE username = ?" [toSql username]
 >   case n of
 >     Nothing  -> error "Failed to retrieve member number from username."
->     Just n'  -> return $ maybe Nothing fromSql n'
+>     Just n'  -> return $ fmap fromSql n'
 
 To logout the member, we simply clear their auth cookie and redirect them
 somewhere sensible. If you want to send a client somewhere other than the front

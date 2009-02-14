@@ -174,10 +174,11 @@ while they are browsing another part of the site, we want them to be notified.
 > reviewBox = withMemberNumber noHtml $ \memberNo -> do
 >   n <- numLinksToReview memberNo
 >   return $ case n of
->             0  -> anchor !  [href "/links", theclass "review-box"] <<
->                               "No links to review"
->             n' -> anchor !  [href "/review/next", theclass "review-box"] <<
->                               [(strong << show n') +++ " links to review" ]
+>     Just 0   -> anchor ! [href "/links", theclass "review-box"] <<
+>                   "No links to review"
+>     Just n'  -> anchor ! [href "/review/next", theclass "review-box"] <<
+>                   [(strong << show n') +++ " links to review"]
+>     Nothing  -> stringToHtml "Error finding links for review."
 
 Not everything on Vocabulink is dynamic. We don't want to include long text
 (something that markup is good at) in our source code. To display a static

@@ -2,4 +2,4 @@
 
 > import Vocabulink.App (App)
 
-> numLinksToReview :: Integer -> App Integer
+> numLinksToReview :: Integer -> App (Maybe Integer)

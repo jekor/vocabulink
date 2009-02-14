@@ -33,4 +33,4 @@ reviewed it in the past but removed it from their review.
 >   r <- queryValue' "SELECT link_no FROM link_to_review \
 >                    \WHERE member_no = ? AND link_no = ? LIMIT 1"
 >                    [toSql memberNo, toSql linkNo]
->   return $ maybe Nothing (Just . isJust) r
+>   return $ fmap isJust r

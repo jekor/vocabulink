@@ -60,33 +60,34 @@ Return the types of links sorted by how common they should be.
 
 Eventually we'll want to cache this.
 
-> linkTypes :: App [String]
+> linkTypes :: App (Maybe [String])
 > linkTypes = do
->   c <- asks db
->   types <- liftIO $ queryAttribute c
+>   types <- queryAttribute'
 >     "SELECT name FROM link_type LEFT OUTER JOIN \
 >     \(SELECT link_type, COUNT(*) AS count FROM link \
 >      \GROUP BY link_type) AS t ON (t.link_type = link_type.name) \
 >     \ORDER BY t.count DESC NULLS LAST" []
->    `catchSqlE` "Failed to retrieve link types."
->   return $ map fromSql types
+>   return $ fmap (map fromSql) types
 
 > newLinkPage :: App CGIResult
 > newLinkPage = do
->   origin <- encodeString `liftM` getRequiredInput "origin"
->   destination <- encodeString `liftM` getRequiredInput "destination"
+>   origin <- getRequiredInput "origin"
+>   destination <- getRequiredInput "destination"
 >   types <- linkTypes
->   let t = origin ++ " -> " ++ destination
->   stdPage t [CSS "link", JS "MochiKit", JS "link"]
->     [ form ! [action "", method "post"] <<
->        [  thediv ! [identifier "baseline", theclass "link"] <<
->             linkHtml (stringToHtml origin) (stringToHtml destination),
->           thediv ! [identifier "link-details"] <<
->             (  [  select ! [identifier "link-type", name "link-type"] << options types,
->                   br ] ++
->                newLinkHtml (head types) origin destination ++
->                [  br,
->                   submit "" "Associate" ]) ] ]
+>   case types of
+>     Just types'@(_:_)  -> do
+>       let t = origin ++ " -> " ++ destination
+>       stdPage t [CSS "link", JS "MochiKit", JS "link"]
+>         [ form ! [action "", method "post"] <<
+>            [  thediv ! [identifier "baseline", theclass "link"] <<
+>                 linkHtml (stringToHtml origin) (stringToHtml destination),
+>               thediv ! [identifier "link-details"] <<
+>                 (  [  select ! [identifier "link-type", name "link-type"] << options types',
+>                       br ] ++
+>                    newLinkHtml (head types') origin destination ++
+>                    [  br,
+>                       submit "" "Associate" ]) ] ]
+>     _                  -> error "Failed to retrieve link types."
 
 > establishLink :: Link -> Integer -> App (Maybe Integer)
 > establishLink (Link _ linkType origin destination) memberNo = do
@@ -149,7 +150,7 @@ Eventually we'll want to cache this.
 >                         else return $ form ! [action ("/link/" ++ (show n) ++ "/delete"), method "post"] <<
 >                                submit "" "Delete"
 >     _              -> return $ stringToHtml
->                         "Unable to determine whether or not link has been deleted."
+>                         "Can't determine whether or not link has been deleted."
 > linkOperations _ False = return noHtml
 
 Generate a page of links for the specified member or all members (for Nothing).

@@ -32,13 +32,14 @@ Review the next link in the queue.
 
 > reviewLink :: Integer -> App CGIResult
 > reviewLink memberNo = do
->   c <- asks db
->   linkNo <- liftIO $ queryValue c
+>   linkNo <- queryValue'
 >     "SELECT link_no FROM link_to_review \
 >     \WHERE member_no = ? AND current_timestamp >= target_time \
 >     \ORDER BY target_time ASC LIMIT 1" [toSql memberNo]
->    `catchSqlE` "Failed to retrieve next link for review."
->   maybe noLinksToReviewPage reviewLinkPage (fromSql `liftM` linkNo)
+>   case linkNo of
+>     Just (Just n)  -> reviewLinkPage $ fromSql n
+>     Just Nothing   -> noLinksToReviewPage
+>     _              -> error "Failed to retrieve next link for review."
 
 > reviewLinkPage :: Integer -> App CGIResult
 > reviewLinkPage linkNo = do
@@ -72,15 +73,12 @@ Review the next link in the queue.
 
 Get the number of links that a user has for review.
 
-> numLinksToReview :: Integer -> App Integer
+> numLinksToReview :: Integer -> App (Maybe Integer)
 > numLinksToReview memberNo = do
->   c <- asks db
->   n <- liftIO $ queryValue c
->     "SELECT COUNT(*) FROM link_to_review \
->     \WHERE member_no = ? AND current_timestamp > target_time"
->     [toSql memberNo]
->    `catchSqlD` (Just (iToSql 0))
->   return $ maybe (0 :: Integer) fromSql n
+>   n <- queryValue'  "SELECT COUNT(*) FROM link_to_review \
+>                     \WHERE member_no = ? AND current_timestamp > target_time"
+>                     [toSql memberNo]
+>   return $ fmap (maybe 0 fromSql) n
 
 Note that a link was reviewed and schedule the next review. For testing
 purposes, we schedule the review forward an hour.

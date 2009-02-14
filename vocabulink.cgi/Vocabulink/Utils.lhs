@@ -3,9 +3,6 @@
 Here are some functions that aren't specific to Vocabulink, but that don't
 exist in any libraries I know of.
 
-maybeRead is borrowed from Network.CGI.Protocol until it makes its way into
-Haskell some other way.
-
 > module Vocabulink.Utils (        if', (?), safeHead, translate,
 >                                  currentDay, currentYear,
 >  {- Network.CGI.Protocol -}      maybeRead,
@@ -18,13 +15,13 @@ Haskell some other way.
 We make extensive use of the |liftM| and the Maybe monad.
 
 > import Codec.Binary.UTF8.String (encodeString, decodeString)
+> import Control.Applicative.Error (maybeRead)
 > import Control.Monad (liftM)
 > import Control.Monad.Trans (liftIO, MonadIO)
 > import Data.Maybe (maybe, fromMaybe, fromJust, isJust, catMaybes)
 > import Data.Time.Calendar (Day, toGregorian)
 > import Data.Time.Clock (getCurrentTime)
 > import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, LocalTime(..))
-> import Network.CGI.Protocol (maybeRead)
 
 It's often useful to have the compactness of the traditional tertiary operator
 rather than an if then else. The |(?)| operator can be used like:
