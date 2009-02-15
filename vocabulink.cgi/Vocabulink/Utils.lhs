@@ -3,18 +3,21 @@
 Here are some functions that aren't specific to Vocabulink, but that don't
 exist in any libraries I know of.
 
-> module Vocabulink.Utils (        if', (?), safeHead, translate,
->                                  currentDay, currentYear,
->  {- Network.CGI.Protocol -}      maybeRead,
->  {- Control.Monad -}             liftM,
->  {- Control.Monad.Trans -}       liftIO, MonadIO,
->  {- Data.Maybe -}                maybe, fromMaybe, fromJust, isJust, catMaybes,
->  {- Codec.Binary.UTF8.String -}  encodeString, decodeString,
->  {- Data.Time.Calendar -}        Day) where
+> module Vocabulink.Utils (         if', (?), safeHead, translate,
+>                                   currentDay, currentYear,
+>  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
+>  {- Control.Applicative -}        (<$>), (<*>),
+>  {- Control.Applicative.Error -}  maybeRead,
+>  {- Control.Monad -}              liftM,
+>  {- Control.Monad.Trans -}        liftIO, MonadIO,
+>  {- Data.Maybe -}                 maybe, fromMaybe, fromJust, isJust, isNothing,
+>                                   catMaybes,
+>  {- Data.Time.Calendar -}         Day) where
 
 We make extensive use of the |liftM| and the Maybe monad.
 
 > import Codec.Binary.UTF8.String (encodeString, decodeString)
+> import Control.Applicative ((<$>), (<*>))
 > import Control.Applicative.Error (maybeRead)
 > import Control.Monad (liftM)
 > import Control.Monad.Trans (liftIO, MonadIO)

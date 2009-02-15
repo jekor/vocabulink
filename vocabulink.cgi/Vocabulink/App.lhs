@@ -6,9 +6,10 @@ database connection. I now understand monads a little bit more, and it's easier
 to store some information within an ``App'' monad. This reduces our function
 signatures a little bit.
 
-> module Vocabulink.App (      App, AppEnv(..), runApp, logApp,
+> module Vocabulink.App (      App, AppEnv(..), AppT, runApp, logApp,
 >                              withMemberNumber, withRequiredMemberNumber,
 >                              queryTuple', queryValue', queryAttribute',
+>                              quickInsertNo',
 >  {- Control.Monad.Reader -}  asks) where
 
 > import Vocabulink.CGI
@@ -16,6 +17,8 @@ signatures a little bit.
 > import Vocabulink.Member.AuthToken
 > import Vocabulink.Utils
 
+> import Control.Applicative
+> import Control.Monad (ap)
 > import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks)
 > import Control.Monad.Trans (lift)
 
@@ -35,6 +38,13 @@ The App monad is a combination of the CGI and Reader monads.
 ...and IO monad.
 
 > type App a = AppT IO a
+
+> instance Applicative (AppT IO) where
+>   pure = return
+>   (<*>) = ap
+
+> instance Functor (AppT IO) where
+>   fmap = liftM
 
 To make the App monad an instance of MonadCGI, we need to define basic CGI
 functions. CGI is relatively simple and its functionality can be defined on top
@@ -124,3 +134,8 @@ it's much easier than manually wrapping the query with |catchSql|.
 > queryAttribute' sql vs = do
 >   c <- asks db
 >   liftIO $ (queryAttribute c sql vs >>= return . Just) `catchSqlD` Nothing
+
+> quickInsertNo' :: String -> [SqlValue] -> String -> App (Maybe Integer)
+> quickInsertNo' sql vs seqname = do
+>   c <- asks db
+>   liftIO $ quickInsertNo c sql vs seqname `catchSqlD` Nothing

@@ -277,8 +277,8 @@ add a link for review             & $\rightarrow$ & @POST /review/n/add@
 
 Becoming a member is simply a matter of filling out a form.
 
-> dispatch "GET"   ["member","join"]  = newMemberPage
-> dispatch "POST"  ["member","join"]  = addMember
+> dispatch "GET"   ["member","join"]  = registerMember
+> dispatch "POST"  ["member","join"]  = registerMember
 
 Logging in is a similar process.
 

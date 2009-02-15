@@ -1,4 +1,4 @@
-> module Vocabulink.Member (  newMemberPage, addMember, loginPage,
+> module Vocabulink.Member (  registerMember, addMember, loginPage,
 >                             login, logout) where
 
 > import Vocabulink.App
@@ -8,8 +8,12 @@
 > import Vocabulink.Member.AuthToken
 > import Vocabulink.Utils
 
-\subsection{Helpers}
-
+> import Control.Applicative (Applicative)
+> import Control.Applicative.Error
+> import Control.Arrow (second)
+> import Text.Formlets (  runFormState, plug, nothingIfNull,
+>                         check, ensure, ensures, checkM, ensureM)
+> import qualified Text.XHtml.Strict.Formlets as F
 
 \section{Authentication}
 
@@ -74,7 +78,7 @@ put it into the auth token.
 >                    \WHERE username = ?" [toSql username]
 >   case n of
 >     Nothing  -> error "Failed to retrieve member number from username."
->     Just n'  -> return $ fmap fromSql n'
+>     Just n'  -> return $ fromSql <$> n'
 
 To logout the member, we simply clear their auth cookie and redirect them
 somewhere sensible. If you want to send a client somewhere other than the front
@@ -88,56 +92,72 @@ page after logout, add a @redirect@ query string or POST parameter.
 
 \subsection{New Members}
 
-Add a member to the database. We're going to do validation of acceptable
-username characters at this level because PostgreSQL's CHECK constraint doesn't
-handle Unicode regular expressions properly.
+> data Registration = Registration {  regUsername  :: String,
+>                                     regEmail     :: Maybe String,
+>                                     regPassword  :: String }
 
-A username should be allowed to have any alphanumeric characters (in any
-language) and URL-safe punctuation.
+> label' :: Monad m => String -> F.XHtmlForm m a -> F.XHtmlForm m a
+> label' l = plug (\xhtml -> paragraph << (label << (l ++ ": ") +++ xhtml))
 
-This returns the new member number.
+> register :: F.XHtmlForm (AppT IO) Registration
+> register = Registration <$> uniqueUser <*> nothingIfNull emailAddress <*> passConfirmed
 
-> addMember' :: String -> String -> Maybe String -> App (Maybe Integer)
-> addMember' username passwd email = do
->   c <- asks db
->   (length username) < 3  ? error "Your username must have 3 characters or more."  $
->     (length username) > 32 ? error "Your username must have 32 characters or less." $
->     (length passwd)   > 72 ? error "Your password must have 72 characters or less." $
->     -- TODO: Add password constraints?
->     liftIO $ quickInsertNo c "INSERT INTO member (username, email, password_hash) \
->                              \VALUES (?, ?, crypt(?, gen_salt('bf')))"
->                              [toSql username, toSql email, toSql passwd]
->                              "member_member_no_seq"
->                `catchSqlE` "Failed to add member."
+> user :: F.XHtmlForm (AppT IO) String
+> user = ("Username" `label'` F.input Nothing) `check` ensures
+>   [  ((>= 3)   . length, "Your username must be 3 characters or longer."),
+>      ((<= 32)  . length, "Your username must be 32 characters or shorter.") ]
 
-> addMember :: App CGIResult
-> addMember = do
->   username  <- getRequiredInput "username"
->   passwd    <- getRequiredInput "password"
->   email     <- getInput "email"
->   memberNo  <- addMember' username passwd email
->   case memberNo of
->     Nothing  -> error "Failed to add member."
->     Just no  -> do
->       ip <- remoteAddr
->       setAuthCookie no username ip
->       redirect "/"
+> uniqueUser :: F.XHtmlForm (AppT IO) String
+> uniqueUser = user `checkM` ensureM valid err where
+>   valid name' = (== Just Nothing) <$>
+>                   queryValue' "SELECT username FROM member \
+>                               \WHERE username = ?" [toSql name']
+>   err = "That username is unavailable."
 
-> newMemberPage :: App CGIResult
-> newMemberPage = do
->   -- The user may have gotten to this page in some way in which they've
->   -- already indicated which username they want.
->   username <- getInputDefault "" "username"
->   stdPage "Join Vocabulink" []
->     [ h1 << "Join Vocabulink",
->       form ! [action "", method "post"] <<
->         [ label << "Username:",
->           widget "textfield" "username" [value username],
->           br,
->           label << "Password:",
->           password "password",
->           br,
->           label << "Email:",
->           textfield "email",
->           br,
->           submit "" "Join" ] ]
+> emailAddress :: F.XHtmlForm (AppT IO) String
+> emailAddress = "Email address" `label'` F.input Nothing
+
+TODO: Where does the 72-character password limit come from?
+
+> pass :: String -> F.XHtmlForm (AppT IO) String
+> pass l = (l `label'` F.password Nothing) `check` ensures
+>   [  ((>= 6)   . length, "Your password must be 6 characters or longer."),
+>      ((<= 72)  . length, "Your password must be 72 characters or shorter.") ]
+
+> passConfirmed :: F.XHtmlForm (AppT IO) String
+> passConfirmed = fst <$> (passwords `check` ensure equal err) where
+>   passwords = (,) <$> pass "Password" <*> pass "Password (confirm)"
+>   equal (a,b) = a == b
+>   err = "Passwords do not match."
+
+> registerMember :: App CGIResult
+> registerMember = do
+>   env <- map (second Left) <$> getInputs
+>   let (res, markup, _) = runFormState env "" register
+>   status <- res
+>   xhtml <- markup
+>   meth <- requestMethod
+>   case status of
+>     Failure f    -> stdPage "Join Vocabulink" [] $
+>                       [  h1 << "Join Vocabulink",
+>                          case meth of
+>                            "GET" ->  noHtml
+>                            _     ->  unordList f,
+>                          form ! [method "POST"] <<
+>                            [  xhtml,
+>                               submit "" "Join"] ]
+>     Success reg  -> do
+>       memberNo <- addMember (regUsername reg) (regPassword reg) (regEmail reg)
+>       case memberNo of
+>         Nothing  -> error "Registration failure (this is not your fault)."
+>         Just n   -> do
+>           ip <- remoteAddr
+>           setAuthCookie n (regUsername reg) ip
+>           redirect "/"
+
+> addMember :: String -> String -> Maybe String -> App (Maybe Integer)
+> addMember username passwd email =
+>   quickInsertNo' "INSERT INTO member (username, email, password_hash) \
+>                  \VALUES (?, ?, crypt(?, gen_salt('bf')))"
+>                  [toSql username, toSql email, toSql passwd]
+>                  "member_member_no_seq"
