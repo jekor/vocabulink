@@ -10,8 +10,7 @@ exist in any libraries I know of.
 >  {- Control.Applicative.Error -}  maybeRead,
 >  {- Control.Monad -}              liftM,
 >  {- Control.Monad.Trans -}        liftIO, MonadIO,
->  {- Data.Maybe -}                 maybe, fromMaybe, fromJust, isJust, isNothing,
->                                   catMaybes,
+>  {- Data.Maybe -}                 maybe, fromMaybe, fromJust, isJust, catMaybes,
 >  {- Data.Time.Calendar -}         Day) where
 
 We make extensive use of the |liftM| and the Maybe monad.

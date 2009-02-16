@@ -7,8 +7,10 @@ formed (although we have guarantee that it will be valid). But more
 importantly, it allows us to use abstraction to get higher-level HTML-based
 functions. An example of this is |linkList|.
 
-> module Vocabulink.Html (  output404, Dependency(..), stdPage, displayStaticFile,
+> module Vocabulink.Html (  output404, Dependency(..), stdPage, simplePage,
+>                           displayStaticFile,
 >                           linkList, options, accesskey, safeID,
+>                           runForm, formLabel,
 >                           pager, currentPage,
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
 >                           (<<), (+++), (!),
@@ -18,7 +20,10 @@ functions. An example of this is |linkList|.
 >                           hidden, label, textfield, password, button, submit,
 >                           textarea, select, widget,
 >                           thestyle, src, width, height, value, name,
->                           cols, rows) where
+>                           cols, rows,
+>  {- Text.Formlets -}      AppForm, runFormState, nothingIfNull,
+>                           check, ensure, ensures, checkM, ensureM,
+>  {- Text.XHtml.Strict.Formlets -} XHtmlForm) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -30,10 +35,15 @@ carefully encode everything we need to. If we don't, non-ASCII (non-iso8859-1?)
 characters will be converted to entities. This automatic conversion may be a
 nice fallback, but it can mask an underlying problem.
 
+> import Control.Applicative.Error
+> import Control.Arrow (second)
 > import Network.URI (uriPath)
 > import Text.Regex (mkRegex, subRegex)
 > import Text.Regex.Posix ((=~))
+> import Text.Formlets (  runFormState, plug, nothingIfNull,
+>                         check, ensure, ensures, checkM, ensureM)
 > import Text.XHtml.Strict
+> import Text.XHtml.Strict.Formlets (XHtmlForm)
 
 This is here until I can find some better place to put it.
 
@@ -66,6 +76,11 @@ footer. It also includes @page.css@.
 >     (thetitle << t +++ concatHtml (map includeDep ((CSS "page"):deps))) +++
 >     body << (headerB +++ concatHtml h +++ footerB)
 
+Often we want a simple page where the title and header are the same.
+
+> simplePage :: String -> [Dependency] -> [Html] -> App CGIResult
+> simplePage t deps h = stdPage t deps $ [ h1 << t ] ++ h
+
 Each dependency is expressed as the path from the root of the static subdomain
 (@s.deviantart.com@) to the file. Do not include the file suffix (@.css@ or
 @.js@), it will be appended automatically. These are meant for inclusion in the
@@ -89,12 +104,12 @@ review and a logout button.
 >   username <- asks memberName
 >   review <- reviewBox
 >   return $ thediv ! [identifier "header-bar"] <<
->     [ anchor ! [theclass "logo", href "/", accesskey "1"] << "Vocabulink",
->       topLinks,
->       maybe loginBox logoutBox username,
->       searchBox,
->       review,
->       thediv ! [theclass "clear"] << noHtml ]
+>     [  anchor ! [theclass "logo", href "/", accesskey "1"] << "Vocabulink",
+>        topLinks,
+>        maybe loginBox logoutBox username,
+>        searchBox,
+>        review,
+>        thediv ! [theclass "clear"] << noHtml ]
 
 Here are the links we want in the header of every page.
 
@@ -110,12 +125,12 @@ The footer bar is more simple. It just includes some links to static content.
 > footerBar = do
 >   copy <- copyrightNotice
 >   return $ thediv ! [identifier "footer-bar"] <<
->     [ linkList
->       [  anchor ! [href "/help"] << "help",
->          anchor ! [href "/privacy"] << "privacy policy",
->          anchor ! [href "/copyrights"] << "copyright policy",
->          anchor ! [href "/disclaimer"] << "disclaimer"],
->       copy ]
+>     [  linkList
+>        [  anchor ! [href "/help"] << "help",
+>           anchor ! [href "/privacy"] << "privacy policy",
+>           anchor ! [href "/copyrights"] << "copyright policy",
+>           anchor ! [href "/disclaimer"] << "disclaimer"],
+>        copy ]
 
 We want a copyright notice at the bottom of every page. Since this is a
 copyright notice for dynamic content, we want it to be up-to-date with the
@@ -125,9 +140,9 @@ generation time (now).
 > copyrightNotice = do
 >   year <- liftIO currentYear
 >   return $ paragraph ! [theclass "copyright"] <<
->     [ stringToHtml $ encodeString "© 2008–",
->       stringToHtml ((show year) ++ " "),
->       anchor ! [href "http://jekor.com/"] << "Chris Forno" ]
+>     [  stringToHtml $ encodeString "© 2008–",
+>        stringToHtml ((show year) ++ " "),
+>        anchor ! [href "http://jekor.com/"] << "Chris Forno" ]
 
 This provides a simple login box for members. Actually, it's a box for a
 username, a box for a password, a login button, and a join button.
@@ -135,14 +150,18 @@ username, a box for a password, a login button, and a join button.
 We have to put the join button before the login form to get them to display in
 the correct order because they're both floated to the right.
 
+Until we switch this over to using formlets, we need to manually set the inputs
+to @input0@ and @input1@ since that's what the formlets-based login page
+expects.
+
 > loginBox :: Html
 > loginBox = form ! [  theclass "auth-box", action "/member/join",
 >                      method "get"] <<
 >              [  submit "" "Join" ] +++
 >            form ! [  theclass "auth-box login", action "/member/login",
 >                      method "post"] <<
->              [  label << "Username:",  textfield "username",
->                 label << "Password:",  password "password",
+>              [  label << "Username:",  textfield "input0",
+>                 label << "Password:",  password "input1",
 >                 submit "" "Log In" ]
 
 For logged-in members, we provide a simple logout button (with an indicator of
@@ -216,6 +235,40 @@ link type. This helps keep us out of trouble.
 
 > safeID :: String -> String
 > safeID = translate [(' ', '-')]
+
+\subsection{Formlet Helpers}
+
+> type AppForm a = XHtmlForm (AppT IO) a
+
+We ofter want to "wrap" a label around a form component. This doesn't currently
+set a @for@ attribute.
+
+> formLabel :: Monad m => String -> XHtmlForm m a -> XHtmlForm m a
+> formLabel text = plug (\xhtml -> paragraph << (label << (text ++ ": ") +++ xhtml))
+
+Take a form and a submit button label, run it, and return either the form to
+display (with errors, if any) or the result of the form.
+
+``Running'' the form involves taking the form inputs from the ``environment''
+(the CGI input variables) and ``passing'' them to the form. The form then
+attempts to validate against the environment. If it fails, it returns a form
+(as Html) to display to the client, but if it succeeds it returns a value of
+the type of the form.
+
+> runForm :: XHtmlForm (AppT IO) a -> String -> App (Either Html a)
+> runForm frm message = do
+>   env <- map (second Left) <$> getInputs
+>   let (res, markup, _) = runFormState env "" frm
+>   status  <- res
+>   xhtml   <- markup
+>   meth    <- requestMethod
+>   case status of
+>     Failure failures  -> return $ Left $ errors +++ form ! [method "POST"] <<
+>                                     [  xhtml, submit "" message ]
+>       where errors = case meth of
+>                        "GET"  -> noHtml
+>                        _      -> unordList failures
+>     Success result    -> return $ Right result
 
 \subsection{Paging}
 

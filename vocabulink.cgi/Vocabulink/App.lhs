@@ -62,8 +62,8 @@ CGIResult from within the App monad to the CGI monad.
 > runApp c (App a) = do
 >   token <- verifiedAuthToken
 >   res <- runReaderT a $ AppEnv {  db            = c,
->                                   memberNumber  = Just . authMemberNo =<< token,
->                                   memberName    = Just . authUsername =<< token}
+>                                   memberNumber  = authMemberNo `liftM` token,
+>                                   memberName    = authUsername `liftM` token}
 >   return res
 
 At some point it's going to be essential to have all errors and notices logged

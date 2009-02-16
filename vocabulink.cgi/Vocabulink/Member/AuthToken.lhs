@@ -51,9 +51,10 @@ Here is the format of the actual cookie we send to the client.
 > instance Show AuthToken where
 >   show a =  "exp="    ++ showGregorian (authExpiry a) ++
 >             "&no="    ++ show (authMemberNo a) ++
->             "&name="  ++ escapeURIString (\c -> c /= ';' && c /= '&') (authUsername a) ++
+>             "&name="  ++ escapeURIString allowed (authUsername a) ++
 >             "&ip="    ++ authIPAddress a ++
 >             "&mac="   ++ authDigest a
+>     where allowed c = c /= ';' && c /= '&'
 
 This creates an AuthToken with the default expiration time, automatically
 calculating the digest.
@@ -61,8 +62,8 @@ calculating the digest.
 > authToken :: Integer -> String -> String -> IO (AuthToken)
 > authToken memberNo username ip = do
 >   now <- currentDay
->   let expires    = addDays cookieShelfLife now
->   digest <- digestToken $ AuthToken {  authExpiry     = expires,
+>   let expires = addDays cookieShelfLife now
+>   digest <- tokenDigest $ AuthToken {  authExpiry     = expires,
 >                                        authMemberNo   = memberNo,
 >                                        authUsername   = encodeString username,
 >                                        authIPAddress  = ip,
@@ -81,12 +82,12 @@ this, authentication is less secure.
 
 TODO: We must replace this key before publishing this document.
 
-> digestToken :: AuthToken -> IO (String)
-> digestToken a = hmac sha1 (pack "blahblahblah")
->                   (pack $  showGregorian (authExpiry a) ++
->                            show (authMemberNo a) ++
->                            authUsername a ++
->                            authIPAddress a)
+> tokenDigest :: AuthToken -> IO (String)
+> tokenDigest a = hmac sha1 (pack "blahblahblah") (pack token)
+>   where token =  showGregorian (authExpiry a) ++
+>                  show (authMemberNo a) ++
+>                  authUsername a ++
+>                  authIPAddress a
 
 Setting the cookie is rather simple by this point. We just create the auth
 token and send it to the client.
@@ -136,7 +137,7 @@ token.
 >     Nothing  -> return Nothing
 >     Just a   -> do
 >       now <- liftIO currentDay
->       digest <- liftIO $ digestToken a
+>       digest <- liftIO $ tokenDigest a
 >       if digest == authDigest a && diffDays (authExpiry a) now > 0 &&
 >          ip == (authIPAddress a)
 >          then return $ Just a
@@ -163,5 +164,5 @@ handle.
 
 > parseAuthToken :: String -> Maybe AuthToken
 > parseAuthToken s = case parse authTokenParser "" s of
->                      Left _   -> Nothing
->                      Right x  -> x
+>                      Left   _  -> Nothing
+>                      Right  x  -> x

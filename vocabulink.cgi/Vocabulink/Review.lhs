@@ -45,8 +45,7 @@ Review the next link in the queue.
 > reviewLinkPage linkNo = do
 >   l <- getLink linkNo
 >   case l of
->     Nothing -> stdPage "Unable to retrieve link." [CSS "link"]
->       [ stringToHtml "Unable to retrieve link." ]
+>     Nothing -> simplePage "Unable to retrieve link." [CSS "link"] []
 >     Just (Link _ _ o d) -> do
 >       let origin = encodeString o
 >           destination = encodeString d
@@ -66,9 +65,8 @@ Review the next link in the queue.
 
 > noLinksToReviewPage :: App CGIResult
 > noLinksToReviewPage = do
->   stdPage t [CSS "link"]
->     [ h1 << t,
->       paragraph << "Take a break! You don't have any links to review right now." ]
+>   simplePage t [CSS "link"]
+>     [ paragraph << "Take a break! You don't have any links to review right now." ]
 >         where t = "No Links to Review"
 
 Get the number of links that a user has for review.

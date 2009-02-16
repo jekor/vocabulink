@@ -160,7 +160,7 @@ Generate a page of links for the specified member or all members (for Nothing).
 >   (pg, n, offset) <- currentPage
 >   links <- getLinks offset (n + 1)
 >   pagerControl <- pager pg n $ offset + (length links)
->   stdPage "Links" [CSS "link"]
+>   simplePage "Links" [CSS "link"]
 >     [ (take n $ map displayLink links) +++ pagerControl ]
 
 > getLinks :: Int -> Int -> App [[SqlValue]]

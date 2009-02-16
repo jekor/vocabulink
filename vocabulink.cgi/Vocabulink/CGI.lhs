@@ -29,7 +29,7 @@ with |readInput|). This is a common pattern in other modules.
 We're going to hide some Network.CGI functions so that we can override them
 with versions that automatically handle UTF-8-encoded input.
 
-> import Network.FastCGI hiding (getInput, readInput)
+> import Network.FastCGI hiding (getInput, readInput, getInputs)
 > import qualified Network.FastCGI as FCGI
 
 It's quite probable that we're going to trigger an unexpected exception
@@ -70,9 +70,8 @@ perform some action. We use this to make sure that we don't redirect them off
 of the site.
 
 > refererOrVocabulink :: MonadCGI m => m String
-> refererOrVocabulink = do
->   ref <- getVar "HTTP_REFERER"
->   return $ fromMaybe "http://www.vocabulink.com/" ref
+> refererOrVocabulink =
+>   fromMaybe "http://www.vocabulink.com/" `liftM` getVar "HTTP_REFERER"
 
 We need to handle UTF-8-encoded GET and POST parameters. The following are
 enhanced versions of Network.CGI's |getInput| and |readInput| along with a few
@@ -81,13 +80,17 @@ helpers.
 > getInput :: MonadCGI m => String -> m (Maybe String)
 > getInput = liftM (>>= Just . decodeString) . FCGI.getInput
 
+We need to do the same for getInputs. (It's used by |runForm| at the least.)
+
+> getInputs :: MonadCGI m => m [(String, String)]
+> getInputs = map decode `liftM` FCGI.getInputs
+>     where decode (x, y) = (decodeString x, decodeString y)
+
 Often we'll want an input from the client but are happy to fall back to a
 default value.
 
 > getInputDefault :: MonadCGI m => String -> String -> m String
-> getInputDefault d p = do
->   i <- getInput p
->   return $ fromMaybe d i
+> getInputDefault d p = getInput p >>= return . fromMaybe d
 
 As a convenience, |readRequiredInput| will throw an error on a missing input.
 It allows us to write simpler code, but eventually most calls to this should be
@@ -104,9 +107,7 @@ input to a required type (as long as that type is Readable).
 > readInput = liftM (>>= maybeRead) . getInput
 
 > readInputDefault :: (Read a, MonadCGI m) => a -> String -> m a
-> readInputDefault d p = do
->   i <- readInput p
->   return $ fromMaybe d i
+> readInputDefault d p = readInput p >>= return . fromMaybe d
 
 > readRequiredInput :: (Read a, MonadCGI m) => String -> m a
 > readRequiredInput p =

@@ -97,7 +97,9 @@ information into the App monad.
 TODO: Before public launch, the thread limit needs to be increased.
 
 The first thing we do after forking is establish a database connection. The
-database connection might be used immediately in order to log errors.
+database connection might be used immediately in order to log errors. It'll
+eventually be passed to the App monad where it'll be packed into a reader
+environment.
 
 > main :: IO ()
 > main =  runFastCGIConcurrent' forkIO 10 (
@@ -282,7 +284,7 @@ Becoming a member is simply a matter of filling out a form.
 
 Logging in is a similar process.
 
-> dispatch "GET"   ["member","login"]  = loginPage
+> dispatch "GET"   ["member","login"]  = login
 > dispatch "POST"  ["member","login"]  = login
 
 And logging out can be done without a form.
@@ -292,9 +294,9 @@ And logging out can be done without a form.
 \subsection{Searching}
 
 All searching for links is currently done by searching for a lexeme on either
-side. The single namespace ``search'' accepts a @q@ parameter in the query
-string which searches for a link containing the lexeme (see |searchPage| for
-more complete details of how the search works).
+side of the link. The single namespace ``search'' accepts a @q@ parameter in
+the query string which searches for a link containing the lexeme (see
+|searchPage| for more complete details of how the search works).
 
 > dispatch "GET" ["search"] = searchPage
 
@@ -324,9 +326,7 @@ and associated functionality by using the stdPage function.
 > frontPage = do
 >   memberNo <- asks memberNumber
 >   w <- maybe (return noHtml) (\_ -> renderWidget (MyLinks 10)) memberNo
->   stdPage "Welcome to Vocabulink" []
->     [ h1 << "Welcome to Vocabulink",
->       w ]
+>   simplePage "Welcome to Vocabulink" [] [w]
 
 \label{staticPath}
 This path to static files will change once it's launched to the live site.

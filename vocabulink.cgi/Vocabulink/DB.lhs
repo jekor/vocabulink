@@ -43,20 +43,20 @@ Sometimes you want just the first tuple of a query result. If the query returns
 multiple tuples, all but the first will be silently discarded.
 
 > queryTuple :: IConnection conn => conn -> String -> [SqlValue] -> IO [SqlValue]
-> queryTuple c sql vs = quickQuery' c sql vs >>= return . (safeHead [])
+> queryTuple c sql vs = safeHead [] `liftM` quickQuery' c sql vs
 
 Sometimes you just want to retrieve a single attribute from a single tuple.
 This will return either Just the value you were expecting or Nothing.
 
 > queryValue :: IConnection conn => conn -> String -> [SqlValue] -> IO (Maybe SqlValue)
-> queryValue c sql vs = queryTuple c sql vs >>= return . listToMaybe
+> queryValue c sql vs = listToMaybe `liftM` queryTuple c sql vs
 
 And finally, sometimes you just want to retrieve a single attribute for
 multiple tuples. This assumes that the attribute you want is the first one
 SELECTed.
 
 > queryAttribute :: IConnection conn => conn -> String -> [SqlValue] -> IO [SqlValue]
-> queryAttribute c sql vs = quickQuery' c sql vs >>= return . map head
+> queryAttribute c sql vs = map head `liftM` quickQuery' c sql vs
 
 It's often tedious to work with transactions if you're just issuing a single
 statement.
@@ -125,10 +125,10 @@ timestamp. If the message type is not found, it defaults to 'unknown'.
 
 > logMsg :: IConnection conn => conn -> String -> String -> IO (String)
 > logMsg c t s = do
->   quickStmt c "INSERT INTO log (type, message) \
->               \VALUES (COALESCE((SELECT name FROM log_types \
->                                 \WHERE name = ?), 'unknown'), ?)"
->               [toSql t, toSql s]
+>   quickStmt c  "INSERT INTO log (type, message) \
+>                \VALUES (COALESCE((SELECT name FROM log_types \
+>                                  \WHERE name = ?), 'unknown'), ?)"
+>                [toSql t, toSql s]
 >     `catchSqlD` ()
 >   return s
 
