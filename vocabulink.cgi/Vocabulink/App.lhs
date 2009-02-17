@@ -9,7 +9,8 @@ signatures a little bit.
 > module Vocabulink.App (      App, AppEnv(..), AppT, runApp, logApp,
 >                              withMemberNumber, withRequiredMemberNumber,
 >                              queryTuple', queryValue', queryAttribute',
->                              quickInsertNo',
+>                              quickInsertNo', quickStmt', quickQuery'',
+>                              queryTuples,
 >  {- Control.Monad.Reader -}  asks) where
 
 > import Vocabulink.CGI
@@ -35,7 +36,7 @@ The App monad is a combination of the CGI and Reader monads.
 > newtype AppT m a = App (ReaderT AppEnv (CGIT m) a)
 >   deriving (Monad, MonadIO, MonadReader AppEnv)
 
-...and IO monad.
+...whose CGI monad uses the IO monad.
 
 > type App a = AppT IO a
 
@@ -139,3 +140,23 @@ it's much easier than manually wrapping the query with |catchSql|.
 > quickInsertNo' sql vs seqname = do
 >   c <- asks db
 >   liftIO $ quickInsertNo c sql vs seqname `catchSqlD` Nothing
+
+It may seem strange to return Maybe (), but we want to know if the database
+change succeeded.
+
+> quickStmt' :: String -> [SqlValue] -> App (Maybe ())
+> quickStmt' sql vs = do
+>   c <- asks db
+>   liftIO $ (quickStmt c sql vs >>= return . Just) `catchSqlD` Nothing
+
+> quickQuery'' :: String -> [SqlValue] -> App (Maybe [[SqlValue]])
+> quickQuery'' sql vs = do
+>   c <- asks db
+>   liftIO $ (quickQuery' c sql vs >>= return . Just) `catchSqlD` Nothing
+
+This uses the lazy version of quickQuery.
+
+> queryTuples :: String -> [SqlValue] -> App (Maybe [[SqlValue]])
+> queryTuples sql vs = do
+>   c <- asks db
+>   liftIO $ (quickQuery c sql vs >>= return . Just) `catchSqlD` Nothing

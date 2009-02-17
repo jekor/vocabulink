@@ -6,7 +6,7 @@
 > import Vocabulink.CGI
 > import Vocabulink.DB
 > import Vocabulink.Html
-> import Vocabulink.Link (getLink, linkHtml, Link(..))
+> import Vocabulink.Link
 > import Vocabulink.Utils
 
 > newReview :: Integer -> Integer -> App CGIResult
@@ -45,17 +45,17 @@ Review the next link in the queue.
 > reviewLinkPage linkNo = do
 >   l <- getLink linkNo
 >   case l of
->     Nothing -> simplePage "Unable to retrieve link." [CSS "link"] []
->     Just (Link _ _ o d) -> do
->       let origin = encodeString o
->           destination = encodeString d
->       stdPage ("Review: " ++ origin ++ " -> ?")
+>     Nothing  -> simplePage "Unable to retrieve link." [CSS "link"] []
+>     Just l'  -> do
+>       let source  = encodeString $ linkOrigin l'
+>           dest    = encodeString $ linkDestination l'
+>       stdPage ("Review: " ++ source ++ " -> ?")
 >               [CSS "link", JS "MochiKit", JS "review"]
 >         [ thediv ! [identifier "baseline", theclass "link"] <<
->             linkHtml (stringToHtml origin) (anchor ! [identifier "lexeme-cover", href "#"] << "?"),
+>             linkHtml (stringToHtml source) (anchor ! [identifier "lexeme-cover", href "#"] << "?"),
 >           form ! [action ("/review/" ++ (show linkNo)), method "post"] <<
 >             [ hidden "recall-time" "",
->               hidden "hidden-lexeme" destination,
+>               hidden "hidden-lexeme" dest,
 >               fieldset ! [identifier "recall-buttons", thestyle "display: none"] <<
 >                 map recallButton [0..5] ] ]
 

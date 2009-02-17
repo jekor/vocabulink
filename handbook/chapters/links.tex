@@ -24,3 +24,41 @@ effects of this decision are not entirely understood yet.
 
 Even though lexemes may be graphemes, they cannot be arbitrary graphics. They
 must be representable by a Unicode string.
+
+\section{Association Types}
+
+We can associate lexemes many different ways. The most obvious is for 2 lexemes
+that have a direct translation between 2 languages. We'd call this link type a
+``translation''. This is what most people think of when they imagine studying
+vocabulary from from a foreign language. These are the semantic relationships
+between lexemes.
+
+We don't (yet) bother with association types. Other projects such as WordNet
+focus on this. Perhaps we'll be able to leverage them someday. But for language
+study, I suspect that the benefit is small, especially compared to the work
+required to maintain proper associations.
+
+\section{Link Types}
+
+Regardless of the association type of a link, there exists at least 1 way to
+remember the link (at least for the links in our database). We refer to this as
+the ``link type''. Examples of link types include:
+
+\begin{description}
+\item[Association] The simplest of links. This is a general association. It is
+  what you're commonly dealing with when studying with flashcards.
+\item[Cognate] This is a word that's very similar to its foreign equivalent.
+  Cognates usually occur through borrowing. They're generally easy to learn and
+  require little if any mnemonic device. Vocabulink currently does not support
+  annotating a cognate with additional information, but that may change in the
+  future.
+\item[Link Word] This well known method of linking words was the basis for the
+  creation of Vocabulink (the ``link'' in ``Vocabulink''). The idea is to find
+  a native language word or phrase that sounds similar to the foreign lexeme
+  and use it for creating a story associating it with the native lexeme.
+\item[Relationship] This is an experimental method of linking 2 foreign lexemes
+  based on the relationship between 2 native lexemes. Anyone familiar with word
+  association used on SAT tests will recognize this method.
+\end{description}
+
+For now

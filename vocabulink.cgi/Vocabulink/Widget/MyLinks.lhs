@@ -3,8 +3,7 @@
 > import Vocabulink.App
 > import Vocabulink.DB
 > import Vocabulink.Html
-> import Vocabulink.Link (partialLinkFromValues)
-> import Vocabulink.Link.Types (PartialLink(..), partialLinkHtml)
+> import Vocabulink.Link
 > import Vocabulink.Widget (Widget, renderWidget)
 > import Vocabulink.Utils
 
@@ -16,14 +15,17 @@
 >       links <- getLatestMemberLinks memberNo n
 >       return $ thediv ! [theclass "widget"] <<
 >         [ h3 << "My Links",
->           unordList $ map partialLinkHtml links ]
+>           case links of
+>             Just l   -> unordList $ map partialLinkHtml l
+>             Nothing  -> stringToHtml "Error retrieving links." ]
 
-> getLatestMemberLinks :: Integer -> Integer -> App [PartialLink]
+> getLatestMemberLinks :: Integer -> Integer -> App (Maybe [PartialLink])
 > getLatestMemberLinks memberNo n = do
->   c <- asks db
->   r <- liftIO $ quickQuery' c "SELECT link_no, origin, destination, link_type \
->                               \FROM link WHERE author = ? \
->                               \ORDER BY link_no DESC LIMIT ?"
->                               [toSql memberNo, toSql n]
->                   `catchSqlE` "No links found."
->   return $ catMaybes $ map partialLinkFromValues r
+>   r <- quickQuery''  "SELECT link_no, link_type, origin, destination \
+>                      \FROM link WHERE author = ? \
+>                      \ORDER BY link_no DESC LIMIT ?"
+>                      [toSql memberNo, toSql n]
+>   case r of
+>     Just []  -> return $ Just []
+>     Just r'  -> return $ Just $ catMaybes $ map partialLinkFromValues r'
+>     _        -> return Nothing

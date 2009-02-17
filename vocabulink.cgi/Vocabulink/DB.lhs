@@ -11,7 +11,8 @@ dealing with constantly-changing state.
 >                         quickStmt, insertNo, quickInsertNo,
 >                         catchSqlD, catchSqlE, logMsg, logException, connect,
 >  {- Database.HDBC -}    SqlValue, toSql, fromSql, iToSql,
->                         withTransaction, quickQuery', IConnection(..),
+>                         withTransaction, quickQuery, quickQuery',
+>                         IConnection(..),
 >  {- Database.HDBC.PostgreSQL -}  Connection) where
 
 We need to keep this module independent of most other modules as most modules
@@ -73,7 +74,7 @@ only be used for inserting into tables with a sequence-based primary key
 > insertNo c sql vs seqName = do
 >   run c sql vs
 >   seqNo <- queryValue c "SELECT currval(?)" [toSql seqName]
->   return $ fromSql `liftM` seqNo
+>   return $ fmap fromSql seqNo
 
 This is the same as |insertNo|, but with its own transaction.
 
@@ -126,7 +127,7 @@ timestamp. If the message type is not found, it defaults to 'unknown'.
 > logMsg :: IConnection conn => conn -> String -> String -> IO (String)
 > logMsg c t s = do
 >   quickStmt c  "INSERT INTO log (type, message) \
->                \VALUES (COALESCE((SELECT name FROM log_types \
+>                \VALUES (COALESCE((SELECT name FROM log_type \
 >                                  \WHERE name = ?), 'unknown'), ?)"
 >                [toSql t, toSql s]
 >     `catchSqlD` ()

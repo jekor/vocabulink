@@ -144,7 +144,7 @@ slashes. We want only one URI to point to a resource.
 > dispatch' :: String -> [String] -> App CGIResult
 > dispatch' method path =
 >   case path of
->     ["",""]  -> frontPage {- "/" -}
+>     ["",""]  -> frontPage -- "/"
 >     ("":xs)  -> case find (== "") xs of
 >                   Nothing  -> dispatch method xs
 >                   Just _   -> redirect $ "/" ++ (intercalate "/" $ filter (/= "") xs)
@@ -341,7 +341,6 @@ This path to static files will change once it's launched to the live site.
 %include Vocabulink/Html.lhs
 %include Vocabulink/Member/AuthToken.lhs
 %include Vocabulink/Member.lhs
-%include Vocabulink/Link/Types.lhs
 %include Vocabulink/Link.lhs
 %include Vocabulink/Review.lhs
 %include Vocabulink/Review/Html.lhs

@@ -281,6 +281,12 @@ offset (as a convenience).
 A reasonable default is 10 items per page. We also don't want to chew up
 resources retrieving too many items, so we cap the max at 100.
 
+Limiting the paging elements to Int bounds is necessary for the functions that
+use the pager (they often need to |take| some number of tuples from a list, for
+instance) and does not limit the design of our HTTP interface much, if at all.
+I cannot think of an instance where we'd need to go past the 65,000th page
+unless we were paging through every link in the system.
+
 > currentPage :: App (Int, Int, Int)
 > currentPage = do
 >   pg  <- readInputDefault 1 "pg"

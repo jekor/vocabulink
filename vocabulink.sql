@@ -4,15 +4,16 @@
 -- for unicode characters. Instead, I'll leave it up to the Haskell layer to do
 -- verification.
 
-CREATE TABLE log_types (
+CREATE TABLE log_type (
        name CHARACTER VARYING(32) PRIMARY KEY
 );
-INSERT INTO log_types (name) VALUES ('unknown'), ('exception'),
-                                    ('IO exception'), ('SQL error');
+INSERT INTO log_type (name) VALUES ('unknown'), ('exception'),
+                                   ('IO exception'), ('SQL error'),
+                                   ('404');
 
 CREATE TABLE log (
        time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-       type CHARACTER VARYING(32) REFERENCES log_types (name) ON UPDATE CASCADE,
+       type CHARACTER VARYING(32) REFERENCES log_type (name) ON UPDATE CASCADE,
        message TEXT
 );
 CREATE INDEX log_time_index ON log (time);
@@ -61,7 +62,6 @@ INSERT INTO link_type (name, description, relation)
      VALUES ('association', 'A simple association with no attached meaning', NULL),
             ('cognate', 'A sound-alike or borrowed word', NULL),
             ('link word', 'A story derived from a native-language link word', 'link_type_link_word'),
-            ('foreign link word', 'A story derived from a foreign-language link word', 'link_type_link_word'),
             ('relationship', 'A relationship between 2 native words and a corresponding pair in a foreign language', 'link_type_relationship');
 
 CREATE TABLE link (
