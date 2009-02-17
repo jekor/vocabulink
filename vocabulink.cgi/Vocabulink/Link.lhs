@@ -3,7 +3,9 @@
 Links are the center of interest in our program. Most activities revolve around
 them.
 
-> module Vocabulink.Link (  Link(..), PartialLink(..), getLink, getPartialLink,
+> module Vocabulink.Link (  Link(..), PartialLink(..), LinkType(..),
+>                           getPartialLink, getPartialLinks,
+>                           getLinkFromPartial, getLink, establishLink,
 >                           lexemePage, linkHtml, linkPage, newLinkPage,
 >                           linkLexemes, searchPage, deleteLink, linksPage,
 >                           partialLinkHtml, partialLinkFromValues) where
@@ -14,6 +16,8 @@ them.
 > import Vocabulink.Html
 > import Vocabulink.Review.Html
 > import Vocabulink.Utils
+
+\subsection{Link Data Types}
 
 Abstractly, a link is defined by the origin and destination lexemes it links as
 well as its type. Practically, we also need to carry around information such as
@@ -36,12 +40,11 @@ more in-depth description of the types.
 
 > data LinkType =  Association | Cognate | LinkWord String String |
 >                  Relationship String String
->                  deriving (Show, Eq)
 
-Fully loading a link from the database requires 2 database queries. But we
-don't always need the type-specific data associated with a link. Sometimes it's
-not even possible to have it, such as during interactive link construction with
-a member.
+Fully loading a link from the database requires a join. However, the join
+depends on the type of thi link. But we don't always need the type-specific
+data associated with a link. Sometimes it's not even possible to have it, such
+as during interactive link construction with a member.
 
 We'll use a separate type to represent this. Essentially it's a link with an
 undefined linkType. We use a separate type to avoid passing a partial link to a
@@ -53,8 +56,67 @@ linkType information.
 
 \subsection{Storing and Retrieving Links}
 
-We'll look at retrieving links first, as it's a little more straightforward
-than storing links to the database.
+We refer to storing a link as ``establishing'' the link.
+
+Each link type is expected to be potentially different enough to require its
+own database schema for representation. We could attempt to use PostgreSQL's
+inheritance features, but I've decided to handle the difference between types
+at the Haskell layer for now. I'm actually hesitant to use separate tables for
+separate types as it feels like I'm breaking the relational model. However, any
+extra efficiency for study outranks implementation elegance (correctness?).
+
+Establishing a link requires a member number since all links must be owned by a
+member.
+
+Since we need to store the link in 2 different tables, we use a transaction.
+Our App-level database functions do not yet support transactions, so we'll have
+to handle them manually for now. You'll also notice that some link types have
+no additional information and hence no table in the database.
+
+This returns the newly established link number.
+
+> establishLink :: Link -> Integer -> App (Maybe Integer)
+> establishLink l memberNo = do
+>   c' <- asks db
+>   liftIO $ withTransaction c' $ \c -> do
+>     linkNo <- insertNo c
+>       "INSERT INTO link (origin, destination, link_type, language, author) \
+>                 \VALUES (?, ?, ?, 'en', ?)"
+>       [  toSql (linkOrigin l), toSql (linkDestination l),
+>          toSql (linkTypeName l), toSql memberNo ]
+>       "link_link_no_seq" `catchSqlD` Nothing
+>     case linkNo of
+>       Nothing -> rollback c >> return Nothing
+>       Just n  -> do r <- establishLinkType c (l {linkNumber = n})
+>                     return $ r >>= \_ -> Just n
+
+The table we insert additional details into depends on the type of the link and
+it's easiest to use a separate function for it.
+
+This takes a connection because it will actually accept a transaction. A more
+elegant solution for the future would be to locally modify the reader to use
+the transaction handle.
+
+> establishLinkType :: IConnection conn => conn -> Link -> IO (Maybe ())
+> establishLinkType c l = case linkType l of
+>   Association                -> return $ Just ()
+>   Cognate                    -> return $ Just ()
+>   (LinkWord word story)      -> (do
+>     quickStmt c
+>       "INSERT INTO link_type_link_word (link_no, link_word, story) \
+>                                \VALUES (?, ?, ?)"
+>       [toSql (linkNumber l), toSql word, toSql story]
+>     return $ Just ()) `catchSqlD` Nothing
+>   (Relationship left right)  -> (do
+>     quickStmt c
+>       "INSERT INTO link_type_relationship (link_no, left_side, right_side) \
+>                                   \VALUES (?, ?, ?)"
+>       [toSql (linkNumber l), toSql left, toSql right]
+>     return $ Just ()) `catchSqlD` Nothing
+
+Now that we've seen how we store links, let's look at retrieving them (which is
+slightly more complicated in order to allow for efficient retrieval of multiple
+links).
 
 Retrieving a partial link is simple.
 
@@ -78,9 +140,9 @@ linkType undefined.
 > partialLinkFromValues _  = Nothing
 
 Here we retrieve multiple links at once. This was the original motivation for
-diving links into full links and partial links. Often we need to retrieve links
-for display but we don't need or want extra trips to the database. Here we need
-1 query instead of potentially @limit@ queries.
+dividing links into full links and partial links. Often we need to retrieve
+links for display but we don't need or want extra trips to the database. Here
+we need 1 query instead of potentially @limit@ queries.
 
 This assumes the ordering of links is determined by link number. It's used by
 the page which displays a listing of links. We don't want to display deleted
@@ -101,35 +163,36 @@ We just need to retrieve its type-level details from the database.
 >   linkT <- getLinkType (PartialLink partial)
 >   return $ (\t -> Just $ partial {linkType = t}) =<< linkT
 
-Each type is expected to be potentially different enough to require its own
-database schema for representation. We could attempt to use PostgreSQL's
-inheritance features, but I've decided to handle the difference between types
-at the Haskell layer for now.
-
 > getLinkType :: PartialLink -> App (Maybe LinkType)
 > getLinkType (PartialLink p) = case p of
->   (Link { linkTypeName  = "association" })  -> return $ Just Association
->   (Link { linkTypeName  = "cognate"})       -> return $ Just Cognate
->   (Link { linkTypeName  = "link word",
->           linkNumber    = n })              -> do
+>   (Link {  linkTypeName  = "association" })  -> return $ Just Association
+>   (Link {  linkTypeName  = "cognate"})       -> return $ Just Cognate
+>   (Link {  linkTypeName  = "link word",
+>            linkNumber    = n })              -> do
 >     rs <- queryTuple'  "SELECT link_word, story FROM link_type_link_word \
 >                        \WHERE link_no = ?" [toSql n]
 >     case rs of
->       Just [linkWord, story]  -> return $ Just $ LinkWord (fromSql linkWord) (fromSql story)
+>       Just [linkWord, story]  -> return $ Just $
+>         LinkWord (fromSql linkWord) (fromSql story)
 >       _                       -> return Nothing
->   (Link { linkTypeName  = "relationship",
->           linkNumber    = n })              -> do
+>   (Link {  linkTypeName  = "relationship",
+>            linkNumber    = n })              -> do
 >     rs <- queryTuple'  "SELECT left_side, right_side FROM link_type_relationship \
 >                        \WHERE link_no = ?" [toSql n]
 >     case rs of
->       Just [left, right]  -> return $ Just $ Relationship (fromSql left) (fromSql right)
+>       Just [left, right]  -> return $ Just $
+>         Relationship (fromSql left) (fromSql right)
 >       _                   -> return Nothing
 >   _                                         -> error "Bad partial link."
+
+We now have everything we need to retrieve a full link in 1 step.
 
 > getLink :: Integer -> App (Maybe Link)
 > getLink linkNo = do
 >   l <- getPartialLink linkNo
 >   maybe (return Nothing) getLinkFromPartial l
+
+\subsection{Link Pages}
 
 When retrieving the page for a lexeme, we first check to see if a lemma for
 this lexeme is defined. If not, we assume it to be canonical.
@@ -182,24 +245,6 @@ Origin and destination should already be UTF-8 encoded.
 >                    [  br,
 >                       submit "" "Associate" ]) ] ]
 >     _                  -> error "Failed to retrieve link types."
-
-> establishLink :: Link -> Integer -> App (Maybe Integer)
-> establishLink l memberNo = do
->   c' <- asks db
->   liftIO $ withTransaction c' $ \c -> do
->     linkNo <- insertNo c "INSERT INTO link (origin, destination, link_type, \
->                                            \language, author) \
->                          \VALUES (?, ?, ?, 'en', ?)"
->                          [  toSql (linkOrigin l),
->                             toSql (linkDestination l),
->                             toSql (linkTypeName l),
->                             toSql memberNo ]
->                          "link_link_no_seq"
->                 `catchSqlE` "Failed to establish link."
->     case linkNo of
->       Nothing -> rollback c >> return Nothing
->       Just n  -> do r <- establishLinkType c (l {linkNumber = n})
->                     return $ (\_ -> Just n) =<< r
 
 > linkLexemes :: App CGIResult
 > linkLexemes =
@@ -313,28 +358,6 @@ want to cache this.
 >       \GROUP BY link_type) AS t ON (t.link_type = link_type.name) \
 >     \ORDER BY t.count DESC NULLS LAST" []
 >   return $ map fromSql `liftM` types
-
-This takes a connection because it will be used inside of a transaction.
-
-A more elegant solution for the future would be to locally modify the reader to
-use the transaction handle.
-
-> establishLinkType :: IConnection conn => conn -> Link -> IO (Maybe ())
-> establishLinkType c l = case linkType l of
->   Association                -> return $ Just ()
->   Cognate                    -> return $ Just ()
->   (LinkWord word story)      -> do
->     r <- quickStmt c  "INSERT INTO link_type_link_word (link_no, link_word, story) \
->                                          \VALUES (?, ?, ?)"
->                       [toSql (linkNumber l), toSql word, toSql story]
->            `catchSqlE` "Failed to establish link."
->     return $ Just r
->   (Relationship left right)  -> do
->     r <- quickStmt c  "INSERT INTO link_type_relationship (link_no, left_side, right_side) \
->                                                   \VALUES (?, ?, ?)"
->                       [toSql (linkNumber l), toSql left, toSql right]
->            `catchSqlE` "Failed to establish link."
->     return $ Just r
 
 > linkEditHtml :: Link -> [Html]
 > linkEditHtml l = case linkType l of
