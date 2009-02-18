@@ -23,17 +23,18 @@
 >                        , body'   :: Html }
 >                deriving Show
 
-> articlePath :: String
-> articlePath = "/home/chris/project/vocabulink/articles/"
+> articleDir :: String
+> articleDir = "/home/chris/project/vocabulink/articles/"
 
 Publish an article from the filesystem. The article should be an
 already-prepared html fragment.
 
 > articlePage :: String -> App CGIResult
 > articlePage title = do
->   article <- liftIO $ getArticle (articlePath ++ title ++ ".muse")
+>   article <- liftIO $ getArticle articlePath
 >   maybe (output404 ["article", title])
 >     (\a -> stdPage (title' a) [] [(body' a)]) article
+>     where articlePath = articleDir ++ title ++ ".muse"
 
 > getArticles :: FilePath -> IO [Article]
 > getArticles path = do
@@ -94,7 +95,7 @@ a readable HTML version must also exist.
 
 > articlesPage :: App CGIResult
 > articlesPage = do
->   articles <- liftIO $ getArticles articlePath
+>   articles <- liftIO $ getArticles articleDir
 >   stdPage "Articles" [] $ [unordList $ map showArticle articles]
 
 > showArticle :: Article -> Html

@@ -7,11 +7,10 @@ formed (although we have guarantee that it will be valid). But more
 importantly, it allows us to use abstraction to get higher-level HTML-based
 functions. An example of this is |linkList|.
 
-> module Vocabulink.Html (  output404, Dependency(..), stdPage, simplePage,
+> module Vocabulink.Html (  Dependency(..), stdPage, simplePage,
 >                           displayStaticFile,
 >                           linkList, options, accesskey, safeID,
->                           runForm, formLabel,
->                           pager, currentPage,
+>                           runForm, formLabel, pager, currentPage,
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
 >                           (<<), (+++), (!),
 >                           identifier, theclass, thediv, thespan,
@@ -44,19 +43,6 @@ nice fallback, but it can mask an underlying problem.
 >                         check, ensure, ensures, checkM, ensureM)
 > import Text.XHtml.Strict
 > import Text.XHtml.Strict.Formlets (XHtmlForm)
-
-This is here until I can find some better place to put it.
-
-404 errors are common enough that it makes sense to have a function just for
-reporting them to the client. We also want to log 404 errors, as they may
-indicate a problem or opportunity with the site.
-
-This takes a list of Strings that are output as extra information to the
-client.
-
-> output404 :: [String] -> App CGIResult
-> output404 s = do  logApp "404" (show s)
->                   outputError 404 "Resource not found." s
 
 Most pages depend on some external CSS and/or JavaScript files.
 
@@ -178,8 +164,8 @@ page. This also is currently the only way to create new links (aside from
 entering in the URL manually), but that might change in the future.
 
 > searchBox :: Html
-> searchBox = form ! [theclass "search-box", action "/search", method "get"] <<
->   [ textfield "q", submit "" "Search" ]
+> searchBox = form ! [theclass "search-box", action "/links", method "get"] <<
+>   [ textfield "contains" ! [accesskey "s"], submit "" "Search" ]
 
 We display the number of links that are waiting for review for logged in
 members in the standard page header. Reviewing is currently the primary

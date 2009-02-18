@@ -7,25 +7,16 @@
 > import Vocabulink.Widget (Widget, renderWidget)
 > import Vocabulink.Utils
 
-> data MyLinks = MyLinks Integer
+> data MyLinks = MyLinks Int
 
 > instance Widget MyLinks where
 >   renderWidget (MyLinks n) =
 >     withMemberNumber (stringToHtml "error, not logged in") $ \memberNo -> do
->       links <- getLatestMemberLinks memberNo n
->       return $ thediv ! [theclass "widget"] <<
->         [ h3 << "My Links",
->           case links of
->             Just l   -> unordList $ map partialLinkHtml l
->             Nothing  -> stringToHtml "Error retrieving links." ]
-
-> getLatestMemberLinks :: Integer -> Integer -> App (Maybe [PartialLink])
-> getLatestMemberLinks memberNo n = do
->   r <- quickQuery''  "SELECT link_no, link_type, origin, destination \
->                      \FROM link WHERE author = ? \
->                      \ORDER BY link_no DESC LIMIT ?"
->                      [toSql memberNo, toSql n]
->   case r of
->     Just []  -> return $ Just []
->     Just r'  -> return $ Just $ catMaybes $ map partialLinkFromValues r'
->     _        -> return Nothing
+>       partials <- getPartialLinks ["author = ?"] [toSql memberNo] 0 n
+>       return $ case partials of
+>         Nothing  -> paragraph << "Error retrieving your links."
+>         Just ps  -> thediv ! [theclass "widget"] <<
+>           [  h3 << "My Links",
+>              unordList $ map displayPossiblePartial ps ]
+>     where displayPossiblePartial =
+>             maybe (paragraph << "Error retrieving link.") partialLinkHtml

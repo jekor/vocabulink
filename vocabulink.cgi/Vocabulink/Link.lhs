@@ -6,8 +6,8 @@ them.
 > module Vocabulink.Link (  Link(..), PartialLink(..), LinkType(..),
 >                           getPartialLink, getPartialLinks,
 >                           getLinkFromPartial, getLink, establishLink,
->                           lexemePage, linkHtml, linkPage, newLinkPage,
->                           linkLexemes, searchPage, deleteLink, linksPage,
+>                           linkHtml, linkPage, newLinkPage,
+>                           linkLexemes, deleteLink, linksPage,
 >                           partialLinkHtml, partialLinkFromValues) where
 
 > import Vocabulink.App
@@ -148,12 +148,19 @@ This assumes the ordering of links is determined by link number. It's used by
 the page which displays a listing of links. We don't want to display deleted
 links (which are left in the database for people still reviewing them).
 
-> getPartialLinks :: App (Maybe [Maybe PartialLink])
-> getPartialLinks = do
->   ts <- queryTuples  "SELECT link_no, link_type, origin, destination \
->                      \FROM link WHERE deleted = FALSE \
->                      \ORDER BY link_no" []
+This takes a list of predicates (as SQL strings) to filter the results by. It's
+dangerous, to do string munging like this, but perhaps equally dangerous to
+have multiple similar functions go out of sync.
+
+> getPartialLinks ::  [String] -> [SqlValue] -> Int -> Int ->
+>                     App (Maybe [Maybe PartialLink])
+> getPartialLinks preds replacements offset limit = do
+>   ts <- queryTuples'  ("SELECT link_no, link_type, origin, destination \
+>                        \FROM link WHERE NOT deleted " ++ conditions ++
+>                        "OFFSET ? LIMIT ?")
+>                       (replacements ++ [toSql offset, toSql limit])
 >   return $ map partialLinkFromValues `liftM` ts
+>     where conditions = concatMap ("AND " ++) preds
 
 Once we have a partial link, it's a simple matter to turn it into a full link.
 We just need to retrieve its type-level details from the database.
@@ -193,24 +200,6 @@ We now have everything we need to retrieve a full link in 1 step.
 >   maybe (return Nothing) getLinkFromPartial l
 
 \subsection{Link Pages}
-
-When retrieving the page for a lexeme, we first check to see if a lemma for
-this lexeme is defined. If not, we assume it to be canonical.
-
-> lexemePage :: String -> App CGIResult
-> lexemePage l = do
->   lemma <- queryValue'  "SELECT lemma FROM lexeme \
->                         \WHERE lexeme = ?" [toSql l]
->   case lemma of
->     Nothing         -> error "Database failure when looking for the lexeme."
->     Just (Just lm)  -> redirect $ "/lexeme/" ++ encodeString (fromSql lm)
->     Just Nothing    -> stdPage (encodeString l) [CSS "link"]
->       [  form ! [action "/link", method "get"] <<
->          [  hidden "origin" (encodeString l),
->             thediv ! [identifier "baseline", theclass "link"] <<
->               linkHtml (stringToHtml l)
->                        (textfield "destination" +++
->                         submit "" "link") ] ]
 
 Here's the simplest HTML representation of a link we use.
 
@@ -260,7 +249,7 @@ Origin and destination should already be UTF-8 encoded.
 >   memberNo <- asks memberNumber
 >   l <- getLink linkNo
 >   case l of
->     Nothing  -> output404 ["Link not found."]
+>     Nothing  -> output404 ["link", show linkNo]
 >     Just l'  -> do
 >       review <- reviewHtml linkNo
 >       owner <- queryValue'  "SELECT author = ? FROM link WHERE link_no = ?"
@@ -291,20 +280,23 @@ Origin and destination should already be UTF-8 encoded.
 >                         "Can't determine whether or not link has been deleted."
 > linkOperations _ False = return noHtml
 
-> linksPage :: App CGIResult
-> linksPage = do
->   partials <- getPartialLinks
+Retrieve a list of links
+
+> linksPage :: Maybe String -> App CGIResult
+> linksPage contains = do
+>   (pg, n, offset) <- currentPage
+>   partials <- getPartialLinks preds [] offset (n + 1)
 >   case partials of
->     Nothing  -> error "Unable to retrieve links."
->     Just ls  -> do
->       (pg, n, offset) <- currentPage
->       let ls' = take (n + 1) $ drop offset ls
->       pagerControl <- pager pg n $ offset + (length ls')
+>     Nothing  -> error "Error while retrieving links."
+>     Just ps  -> do
+>       pagerControl <- pager pg n $ offset + (length ps)
 >       simplePage "Links" [CSS "link"]
->         [ map displayPossiblePartial (take n ls') +++ pagerControl ]
->           where displayPossiblePartial =
->                   maybe (paragraph << "Error retrieving link.")
->                         displayPartialHtml
+>         [ map displayPossiblePartial (take n ps) +++ pagerControl ]
+>    where preds = map searchString $ catMaybes [contains]
+>          searchString term = "(origin LIKE '" ++ term ++ "' OR \
+>                               \destination LIKE '" ++ term ++ "')"
+>          displayPossiblePartial =
+>            maybe (paragraph << "Error retrieving link.") displayPartialHtml
 
 > displayPartialHtml :: PartialLink -> Html
 > displayPartialHtml l = thediv ! [theclass "link"] << (partialLinkHtml l)
@@ -317,35 +309,6 @@ Origin and destination should already be UTF-8 encoded.
 >                        \WHERE link_no = ?" [toSql linkNo]
 >              `catchSqlE` "Failed to delete link."
 >   redirect ref
-
-> searchPage :: App CGIResult
-> searchPage = do
->   term <- getRequiredInput "q"
->   links <- searchLinks term
->   case links of
->     Nothing  -> error "Error while searching links."
->     Just []  -> redirect $ "/lexeme/" ++ (encodeString term)
->     Just ls  -> do
->       (pg, n, offset) <- currentPage
->       let ls' = take (n + 1) $ drop offset ls
->       pagerControl <- pager pg n $ offset + (length ls')
->       stdPage "Search Results" [CSS "link"]
->         [  h1 << "Search Results",
->            map displayPossiblePartial (take n ls') +++ pagerControl ]
->           where displayPossiblePartial =
->                   maybe (paragraph << "Error retrieving link.")
->                         displayPartialHtml
-
-This is a basic search that searches through the origin and destination names
-of the links in the database.
-
-> searchLinks :: String -> App (Maybe [Maybe PartialLink])
-> searchLinks term = do
->   ts <- queryTuples  "SELECT link_no, link_type, origin, destination \
->                      \FROM link \
->                      \WHERE (origin = ? OR destination = ?) \
->                        \AND deleted = FALSE" [toSql term, toSql term]
->   return $ map partialLinkFromValues `liftM` ts
 
 Return the types of links sorted by how common they should be. Eventually we'll
 want to cache this.

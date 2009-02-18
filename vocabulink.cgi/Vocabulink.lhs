@@ -148,7 +148,7 @@ slashes. We want only one URI to point to a resource.
 >     ("":xs)  -> case find (== "") xs of
 >                   Nothing  -> dispatch method xs
 >                   Just _   -> redirect $ "/" ++ (intercalate "/" $ filter (/= "") xs)
->     _        -> output404 []
+>     _        -> output404 path
 
 Here is where we dispatch each request to a function. We can match the request
 on method and path components. This means that we can dispatch a request to one
@@ -216,17 +216,22 @@ For clarity, this dispatches:
 \end{tabular}
 \end{center}
 
-> dispatch method ("link":x:method') = do
+> dispatch method path@("link":x:method') = do
 >   case maybeRead x of
->     Nothing  -> output404 ["Links are identified by numbers only."]
+>     Nothing  -> output404 path
 >     Just n   -> case (method, method') of
 >                   ("GET"   ,[])          -> linkPage n
 >                   ("POST"  ,["delete"])  -> deleteLink n
->                   (_       ,_)           -> output404 (method:method')
+>                   (_       ,_)           -> output404 path
+
+\subsection{Searching}
 
 Retrieving a listing of links is easier.
 
-> dispatch "GET" ["links"] = linksPage
+Searching means forms and forms mean query strings. So if there's a @like@ in
+the query string for the links page, it will do a search.
+
+> dispatch "GET" ["links"] = linksPage =<< getInput "contains"
 
 Creating a new link is a 2-step process. First, the member must request a page
 on which to enter information about the link. Then they @POST@ the details to
@@ -234,14 +239,6 @@ establish the link.
 
 > dispatch "GET"   ["link"] = newLinkPage
 > dispatch "POST"  ["link"] = linkLexemes
-
-\subsection{Lexeme Pages}
-
-Links are made out of pairs of lexemes (see the handbook section on lexemes in
-the Links chapter). They don't actually exist in the database because we don't
-need to know anything about them other than their textual representation.
-
-> dispatch "GET" ["lexeme",x] = lexemePage x
 
 \subsection{Link Review}
 
@@ -261,9 +258,9 @@ add a link for review             & $\rightarrow$ & @POST /review/n/add@
 \end{tabular}
 \end{center}
 
-> dispatch method ("review":path) =
+> dispatch method path@("review":rpath) =
 >   withRequiredMemberNumber $ \memberNo ->
->     case (method,path) of
+>     case (method,rpath) of
 >       ("GET"   ,["next"])   -> reviewLink memberNo
 >       ("POST"  ,(x:xs))     -> do
 >          case maybeRead x of
@@ -272,8 +269,8 @@ add a link for review             & $\rightarrow$ & @POST /review/n/add@
 >            Just n   -> case xs of
 >                          ["add"]  -> newReview memberNo n
 >                          []       -> linkReviewed memberNo n
->                          _        -> output404 []
->       (_       ,_)          -> output404 (method:path)
+>                          _        -> output404 path
+>       (_       ,_)          -> output404 path
 
 \subsection{Membership}
 
@@ -291,15 +288,6 @@ And logging out can be done without a form.
 
 > dispatch "POST" ["member","logout"]  = logout
 
-\subsection{Searching}
-
-All searching for links is currently done by searching for a lexeme on either
-side of the link. The single namespace ``search'' accepts a @q@ parameter in
-the query string which searches for a link containing the lexeme (see
-|searchPage| for more complete details of how the search works).
-
-> dispatch "GET" ["search"] = searchPage
-
 \subsection{Everything Else}
 
 It would be nice to automatically respond with "Method Not Allowed" on URIs
@@ -307,15 +295,7 @@ that exist but don't make sense for the requested method (presumably @POST@).
 However, we need to take a simpler approach because of how the dispatch method
 was designed (pattern matching is limited). We output a qualified 404 error.
 
-> dispatch "GET"   _ =  outputError 404
->                       "Resource not found or GET not allowed for it." []
-> dispatch "POST"  _ =  outputError 404
->                       "Resource not found or POST not allowed on it." []
-
-We don't support any other methods at this time. Anything else (@HEAD@, @PUT@,
-@DELETE@) is rejected.
-
-> dispatch _ _ = outputMethodNotAllowed ["GET", "POST"]
+> dispatch _ path = output404 path
 
 Finally, we get to an actual page of the site: the front page. Currently, it's
 just a test of the widget system that displays the "MyLinks" widget if the

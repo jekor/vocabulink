@@ -8,9 +8,9 @@ signatures a little bit.
 
 > module Vocabulink.App (      App, AppEnv(..), AppT, runApp, logApp,
 >                              withMemberNumber, withRequiredMemberNumber,
+>                              output404,
 >                              queryTuple', queryValue', queryAttribute',
->                              quickInsertNo', quickStmt', quickQuery'',
->                              queryTuples,
+>                              queryTuples', quickInsertNo', quickStmt',
 >  {- Control.Monad.Reader -}  asks) where
 
 > import Vocabulink.CGI
@@ -23,8 +23,9 @@ signatures a little bit.
 > import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks)
 > import Control.Monad.Trans (lift)
 
+> import Data.List (intercalate)
 > import Network.CGI.Monad (MonadCGI(..))
-> import Network.FastCGI (CGI, CGIT)
+> import Network.FastCGI (CGI, CGIT, outputNotFound)
 > import Network.URI (escapeURIString, isUnescapedInURI)
 
 > data AppEnv = AppEnv {  db            :: Connection,
@@ -106,6 +107,14 @@ to do with it.
 >   request <- fromMaybe "/" `liftM` getVar "REQUEST_URI"
 >   return $ "/member/login?redirect=" ++ escapeURIString isUnescapedInURI request
 
+We want to log 404 errors in the database, as they may indicate a problem or
+opportunity with the site. This takes a list of Strings that are stored in the
+log. It outputs to the user the request URI.
+
+> output404 :: [String] -> App CGIResult
+> output404 s = do  logApp "404" (show s)
+>                   outputNotFound $ intercalate "/" s
+
 \subsubsection{Database}
 
 When we're dealing with the database, there's always a chance we're going to
@@ -125,6 +134,11 @@ it's much easier than manually wrapping the query with |catchSql|.
 > queryTuple' sql vs = do
 >   c <- asks db
 >   liftIO $ (queryTuple c sql vs >>= return . Just) `catchSqlD` Nothing
+
+> queryTuples' :: String -> [SqlValue] -> App (Maybe [[SqlValue]])
+> queryTuples' sql vs = do
+>   c <- asks db
+>   liftIO $ (quickQuery' c sql vs >>= return . Just) `catchSqlD` Nothing
 
 > queryValue' :: String -> [SqlValue] -> App (Maybe (Maybe SqlValue))
 > queryValue' sql vs = do
@@ -148,15 +162,3 @@ change succeeded.
 > quickStmt' sql vs = do
 >   c <- asks db
 >   liftIO $ (quickStmt c sql vs >>= return . Just) `catchSqlD` Nothing
-
-> quickQuery'' :: String -> [SqlValue] -> App (Maybe [[SqlValue]])
-> quickQuery'' sql vs = do
->   c <- asks db
->   liftIO $ (quickQuery' c sql vs >>= return . Just) `catchSqlD` Nothing
-
-This uses the lazy version of quickQuery.
-
-> queryTuples :: String -> [SqlValue] -> App (Maybe [[SqlValue]])
-> queryTuples sql vs = do
->   c <- asks db
->   liftIO $ (quickQuery c sql vs >>= return . Just) `catchSqlD` Nothing

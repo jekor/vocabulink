@@ -37,12 +37,7 @@ VALUES (0, 'anonymous', '');
 
 -- For our purposes, a lexeme is any text or symbol which can be linked. Each lexeme has a lemma, which is the canonical representation of different forms of the lexeme.
 -- Lexemes include "日本語", "語", "五", "5", "five", "language", "にほんご" and "に".
--- Lexemes automatically exist. They are not represented by a relation. The lexeme relation is only for linking various lexeme forms to their lemma.
-
-CREATE TABLE lexeme (
-       lexeme TEXT PRIMARY KEY,
-       lemma TEXT NOT NULL
-);
+-- Lexemes automatically exist. They are not represented by a relation.
 
 CREATE TABLE language (
        abbr CHARACTER VARYING (2) PRIMARY KEY,
