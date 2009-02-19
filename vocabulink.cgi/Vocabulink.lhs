@@ -228,17 +228,21 @@ For clarity, this dispatches:
 
 Retrieving a listing of links is easier.
 
-Searching means forms and forms mean query strings. So if there's a @like@ in
-the query string for the links page, it will do a search.
+Searching means forms and forms mean query strings. So if there's a @contains@
+in the query string for the links page, it will do a search.
 
-> dispatch "GET" ["links"] = linksPage =<< getInput "contains"
+TODO: This needs to be explained better.
+
+> dispatch "GET" ["links"] = do
+>   contains <- getInput "contains"
+>   maybe linksPage linksContainingPage contains
 
 Creating a new link is a 2-step process. First, the member must request a page
 on which to enter information about the link. Then they @POST@ the details to
 establish the link.
 
-> dispatch "GET"   ["link"] = newLinkPage
-> dispatch "POST"  ["link"] = linkLexemes
+> dispatch "GET"   ["link"] = newLink
+> dispatch "POST"  ["link"] = newLink
 
 \subsection{Link Review}
 

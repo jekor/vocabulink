@@ -8,6 +8,7 @@ them.
 >                           getLinkFromPartial, getLink, establishLink,
 >                           linkHtml, linkPage, newLinkPage,
 >                           linkLexemes, deleteLink, linksPage,
+>                           linksContainingPage, newLink,
 >                           partialLinkHtml, partialLinkFromValues) where
 
 > import Vocabulink.App
@@ -16,6 +17,8 @@ them.
 > import Vocabulink.Html
 > import Vocabulink.Review.Html
 > import Vocabulink.Utils
+
+> import qualified Text.XHtml.Strict.Formlets as F
 
 \subsection{Link Data Types}
 
@@ -29,6 +32,7 @@ type (for partially constructed links, which you'll see later).
 >                     linkOrigin       :: String,
 >                     linkDestination  :: String,
 >                     linkType         :: LinkType }
+>           deriving (Show)
 
 We can associate 2 lexemes in many different ways. Because different linking
 methods require different information, they each need different representations
@@ -40,6 +44,7 @@ more in-depth description of the types.
 
 > data LinkType =  Association | Cognate | LinkWord String String |
 >                  Relationship String String
+>                  deriving (Show)
 
 Fully loading a link from the database requires a join. However, the join
 depends on the type of thi link. But we don't always need the type-specific
@@ -208,7 +213,7 @@ Origin and destination should already be UTF-8 encoded.
 > linkHtml :: Html -> Html -> Html
 > linkHtml orig dest = concatHtml
 >   [ thespan ! [theclass "lexeme"] << orig,
->     image ! [src "http://s.vocabulink.com/black.png", width "20%", height "1"],
+>     image ! [src "http://s.vocabulink.com/edge.png", width "20%", height "1"],
 >     thespan ! [theclass "lexeme"] << dest ]
 
 > linkHtml' :: String -> String -> Html
@@ -224,7 +229,7 @@ Origin and destination should already be UTF-8 encoded.
 >     Just types'@(_:_)  -> do
 >       let t = orig ++ " -> " ++ dest
 >       stdPage t [CSS "link", JS "MochiKit", JS "link"]
->         [ form ! [action "", method "post"] <<
+>         [ form ! [action "", method "POST"] <<
 >            [  thediv ! [identifier "baseline", theclass "link"] <<
 >                 linkHtml' orig dest,
 >               thediv ! [identifier "link-details"] <<
@@ -258,8 +263,8 @@ Origin and destination should already be UTF-8 encoded.
 >                Just (Just o)  -> linkOperations linkNo (isJust memberNo && fromSql o)
 >                _              -> return $ stringToHtml
 >                                    "Unable to determine link ownership."
->       let orig  = encodeString $ linkOrigin l'
->           dest  = encodeString $ linkDestination l'
+>       let orig  = linkOrigin l'
+>           dest  = linkDestination l'
 >       stdPage (orig ++ " -> " ++ dest) [CSS "link"]
 >         [ review,
 >           ops,
@@ -274,29 +279,81 @@ Origin and destination should already be UTF-8 encoded.
 >   case deleted of
 >     Just (Just d)  -> if fromSql d
 >                         then return $ stringToHtml "Deleted"
->                         else return $ form ! [action ("/link/" ++ (show n) ++ "/delete"), method "post"] <<
+>                         else return $ form ! [action ("/link/" ++ (show n) ++ "/delete"), method "POST"] <<
 >                                submit "" "Delete"
 >     _              -> return $ stringToHtml
 >                         "Can't determine whether or not link has been deleted."
 > linkOperations _ False = return noHtml
 
-Retrieve a list of links
+If we found no links matching the description, display the search term on its
+own in the center of the screen with ``create link'' buttons on either side.
 
-> linksPage :: Maybe String -> App CGIResult
-> linksPage contains = do
+> linksPage :: App CGIResult
+> linksPage  = do
 >   (pg, n, offset) <- currentPage
->   partials <- getPartialLinks preds [] offset (n + 1)
+>   partials <- getPartialLinks [] [] offset (n + 1)
 >   case partials of
 >     Nothing  -> error "Error while retrieving links."
 >     Just ps  -> do
 >       pagerControl <- pager pg n $ offset + (length ps)
 >       simplePage "Links" [CSS "link"]
 >         [ map displayPossiblePartial (take n ps) +++ pagerControl ]
->    where preds = map searchString $ catMaybes [contains]
->          searchString term = "(origin LIKE '" ++ term ++ "' OR \
->                               \destination LIKE '" ++ term ++ "')"
->          displayPossiblePartial =
+>    where displayPossiblePartial =
 >            maybe (paragraph << "Error retrieving link.") displayPartialHtml
+
+> linksContainingPage :: String -> App CGIResult
+> linksContainingPage focus = do
+>   partials <- getPartialLinks preds [] 0 100
+>   case partials of
+>     Nothing  -> error "Error while retrieving links."
+>     Just ls  -> stdPage ("Links containing " ++ focus) [CSS "link"]
+>       [linkFocusBox focus ls]
+>    where preds = ["(origin LIKE '" ++ focus ++ "' OR \
+>                    \destination LIKE '" ++ focus ++ "')"]
+
+> linkFocusBox :: String -> [Maybe PartialLink] -> Html
+> linkFocusBox focus []  = table ! [theclass "focus-box"] <<
+>   [  tbody << tr <<
+>      [  td ! [theclass "origins"] << form ! [action "/link", method "GET"] <<
+>           button ! [name "input2", value (encodeString focus)] << "New Link",
+>         td ! [theclass "edges"] <<
+>           image ! [src "http://s.vocabulink.com/edge.png",
+>                    width "200", height "1"],
+>         td ! [theclass "focus"] << (encodeString focus),
+>         td ! [theclass "edges"] <<
+>           image ! [src "http://s.vocabulink.com/edge.png",
+>                    width "200", height "1"],
+>         td ! [theclass "destinations"] << form ! [action "/link", method "GET"] <<
+>           button ! [name "input1", value (encodeString focus)] << "New Link" ] ]
+> linkFocusBox _ _   = error "unsupported"
+
+> newLink :: App CGIResult
+> newLink = do
+>   ts   <- linkTypes
+>   case ts of
+>     Nothing   -> error "Unable to retrieve link types."
+>     Just ts'  -> do
+>       res  <- runForm (establish ts') "Link"
+>       case res of
+>         Left xhtml  -> simplePage "Create a Link" [] [xhtml]
+>         Right link  -> simplePage "Create a Link" []
+>           [paragraph << (show (linkTypeName link))]
+
+> establish :: [String] -> AppForm Link
+> establish ts = Link  <$> (pure undefined) <*> (linkTypeInput ts)
+>                      <*> linkNodeInput "Origin" <*> linkNodeInput "Destination"
+>                      <*> (pure undefined)
+
+TODO: Check that the input is more than just whitespace.
+
+> linkNodeInput :: String -> AppForm String
+> linkNodeInput l = F.input Nothing `check` ensures
+>   [  ((/= "")           , l ++ " is required."),
+>      ((<= 64) . length  , l ++ " must be 64 characters or shorter.") ]
+
+> linkTypeInput :: [String] -> AppForm String
+> linkTypeInput ts = (F.select (zip ts ts) Nothing) `check` ensure
+>   (flip elem ts) "Invalid link type."
 
 > displayPartialHtml :: PartialLink -> Html
 > displayPartialHtml l = thediv ! [theclass "link"] << (partialLinkHtml l)

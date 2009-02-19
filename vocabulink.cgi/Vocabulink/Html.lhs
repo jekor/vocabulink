@@ -20,6 +20,7 @@ functions. An example of this is |linkList|.
 >                           textarea, select, widget,
 >                           thestyle, src, width, height, value, name,
 >                           cols, rows,
+>                           table, thead, tbody, tfoot, th, tr, td,
 >  {- Text.Formlets -}      AppForm, runFormState, nothingIfNull,
 >                           check, ensure, ensures, checkM, ensureM,
 >  {- Text.XHtml.Strict.Formlets -} XHtmlForm) where
@@ -59,7 +60,8 @@ footer. It also includes @page.css@.
 >   headerB  <- headerBar
 >   footerB  <- footerBar
 >   output $ renderHtml $ header <<
->     (thetitle << t +++ concatHtml (map includeDep ((CSS "page"):deps))) +++
+>     (thetitle << (encodeString t) +++
+>      concatHtml (map includeDep ([CSS "reset", CSS "page"] ++ deps))) +++
 >     body << (headerB +++ concatHtml h +++ footerB)
 
 Often we want a simple page where the title and header are the same.
@@ -142,10 +144,10 @@ expects.
 
 > loginBox :: Html
 > loginBox = form ! [  theclass "auth-box", action "/member/join",
->                      method "get"] <<
+>                      method "GET"] <<
 >              [  submit "" "Join" ] +++
 >            form ! [  theclass "auth-box login", action "/member/login",
->                      method "post"] <<
+>                      method "POST"] <<
 >              [  label << "Username:",  textfield "input0",
 >                 label << "Password:",  password "input1",
 >                 submit "" "Log In" ]
@@ -155,7 +157,7 @@ your username to show that you're logged in).
 
 > logoutBox :: String -> Html
 > logoutBox username = form ! [  theclass "auth-box logout", action "/member/logout",
->                                method "post"] <<
+>                                method "POST"] <<
 >                        [  stringToHtml username, submit "" "Log Out" ]
 
 Students with a goal in mind will want to search for words they're studying
@@ -164,7 +166,7 @@ page. This also is currently the only way to create new links (aside from
 entering in the URL manually), but that might change in the future.
 
 > searchBox :: Html
-> searchBox = form ! [theclass "search-box", action "/links", method "get"] <<
+> searchBox = form ! [theclass "search-box", action "/links", method "GET"] <<
 >   [ textfield "contains" ! [accesskey "s"], submit "" "Search" ]
 
 We display the number of links that are waiting for review for logged in
@@ -249,11 +251,13 @@ the type of the form.
 >   xhtml   <- markup
 >   meth    <- requestMethod
 >   case status of
->     Failure failures  -> return $ Left $ errors +++ form ! [method "POST"] <<
+>     Failure failures  -> do
+>       uri <- requestURI
+>       return $ Left $ errors +++ form ! [action (uriPath uri), method "POST"] <<
 >                                     [  xhtml, submit "" message ]
->       where errors = case meth of
->                        "GET"  -> noHtml
->                        _      -> unordList failures
+>      where errors = case meth of
+>                       "GET"  -> noHtml
+>                       _      -> unordList failures
 >     Success result    -> return $ Right result
 
 \subsection{Paging}

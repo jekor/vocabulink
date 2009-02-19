@@ -53,7 +53,7 @@ Review the next link in the queue.
 >               [CSS "link", JS "MochiKit", JS "review"]
 >         [ thediv ! [identifier "baseline", theclass "link"] <<
 >             linkHtml (stringToHtml source) (anchor ! [identifier "lexeme-cover", href "#"] << "?"),
->           form ! [action ("/review/" ++ (show linkNo)), method "post"] <<
+>           form ! [action ("/review/" ++ (show linkNo)), method "POST"] <<
 >             [ hidden "recall-time" "",
 >               hidden "hidden-lexeme" dest,
 >               fieldset ! [identifier "recall-buttons", thestyle "display: none"] <<

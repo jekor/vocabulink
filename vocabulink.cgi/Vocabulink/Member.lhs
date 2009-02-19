@@ -87,8 +87,8 @@ characters long.
 
 > username :: AppForm String
 > username = ("Username" `formLabel` F.input Nothing) `check` ensures
->   [  ((>= 3)   . length, "Your username must be 3 characters or longer."),
->      ((<= 32)  . length, "Your username must be 32 characters or shorter.") ]
+>   [  ((>= 3)   . length  , "Your username must be 3 characters or longer."),
+>      ((<= 32)  . length  , "Your username must be 32 characters or shorter.") ]
 
 During registration, we want to make sure that the username the client is
 trying to register with isn't already in use.
@@ -107,8 +107,8 @@ TODO: Add strong password test?
 
 > passwd :: String -> AppForm String
 > passwd l = (l `formLabel` F.password Nothing) `check` ensures
->   [  ((>= 6)   . length, "Your password must be 6 characters or longer."),
->      ((<= 72)  . length, "Your password must be 72 characters or shorter.") ]
+>   [  ((>=  6)   . length  , "Your password must be 6 characters or longer."),
+>      ((<=  72)  . length  , "Your password must be 72 characters or shorter.") ]
 
 During registration, we want the client to confirm their password, if for no
 other reason than that it's common practice.

@@ -61,3 +61,30 @@ a#lexeme-cover {
 a#lexeme-cover:visited {
   color: black;
 }
+
+table.focus-box {
+  width: 100%;
+  height: 300px;
+  margin-top: 2ex;
+}
+
+table.focus-box td {
+  padding: 0.5em;
+  vertical-align: middle;
+}
+
+table.focus-box td.edges {
+  width: 200px;
+}
+
+table.focus-box td.focus {
+  text-align: center;
+}
+
+table.focus-box td.origins {
+  text-align: right;
+}
+
+table.focus-box td.destinations {
+  text-align: left;
+}

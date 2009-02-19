@@ -21,7 +21,7 @@ For now, all links are added to the default review set.
 >         Just r'  -> return $ r' ? paragraph ! [theclass "review-box reviewing"] <<
 >                       "Reviewing" $
 >                         form ! [action ("/review/" ++ (show linkNo) ++ "/add"),
->                                method "post", theclass "review-box review"] <<
+>                                method "POST", theclass "review-box review"] <<
 >                           [ submit "review" "Review" ]
 
 Determine whether or not a member is already reviewing this link. This will be

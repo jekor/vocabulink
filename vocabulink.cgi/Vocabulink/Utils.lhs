@@ -6,7 +6,7 @@ exist in any libraries I know of.
 > module Vocabulink.Utils (         if', (?), safeHead, translate,
 >                                   currentDay, currentYear,
 >  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
->  {- Control.Applicative -}        (<$>), (<*>),
+>  {- Control.Applicative -}        pure, (<$>), (<*>),
 >  {- Control.Applicative.Error -}  maybeRead,
 >  {- Control.Monad -}              liftM,
 >  {- Control.Monad.Trans -}        liftIO, MonadIO,
@@ -16,7 +16,7 @@ exist in any libraries I know of.
 We make extensive use of the |liftM| and the Maybe monad.
 
 > import Codec.Binary.UTF8.String (encodeString, decodeString)
-> import Control.Applicative ((<$>), (<*>))
+> import Control.Applicative (pure, (<$>), (<*>))
 > import Control.Applicative.Error (maybeRead)
 > import Control.Monad (liftM)
 > import Control.Monad.Trans (liftIO, MonadIO)

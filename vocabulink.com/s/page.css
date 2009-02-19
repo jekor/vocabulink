@@ -47,14 +47,14 @@ h1 {
 }
 
 #footer-bar {
-  margin-top: 2em;
+  margin-top: 2ex;
   text-align: center;
   padding-top: 0.5ex;
   padding-bottom: 0.5ex;
 }
 #footer-bar * {
-  margin-top: 0.25em;
-  margin-bottom: 0.25em;
+  margin-top: 0.25ex;
+  margin-bottom: 0.25ex;
 }
 
 .auth-box #username, .auth-box #password {
@@ -74,7 +74,6 @@ a.review-box:hover {
 }
 
 ul.links {
-  list-style-type: none;
   margin-left: 0;
   padding-left: 0;
 }
@@ -108,7 +107,7 @@ p.copyright {
 
 .pager {
   text-align: center;
-  margin-top: 2em;
+  margin-top: 2ex;
 }
 
 /* Group controls in a box so that they can be logically associated. */
