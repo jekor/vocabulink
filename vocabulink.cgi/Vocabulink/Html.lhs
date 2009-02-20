@@ -9,7 +9,7 @@ functions. An example of this is |linkList|.
 
 > module Vocabulink.Html (  Dependency(..), stdPage, simplePage,
 >                           displayStaticFile,
->                           linkList, options, accesskey, safeID,
+>                           linkList, options, accesskey,
 >                           runForm, formLabel, pager, currentPage,
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
 >                           (<<), (+++), (!),
@@ -23,6 +23,7 @@ functions. An example of this is |linkList|.
 >                           table, thead, tbody, tfoot, th, tr, td,
 >  {- Text.Formlets -}      AppForm, runFormState, nothingIfNull,
 >                           check, ensure, ensures, checkM, ensureM,
+>                           plug,
 >  {- Text.XHtml.Strict.Formlets -} XHtmlForm) where
 
 > import Vocabulink.App
@@ -216,13 +217,6 @@ Curiously, the accesskey attribute is missing from Text.XHtml.
 
 > accesskey :: String -> HtmlAttr
 > accesskey = strAttr "accesskey"
-
-Sometimes we may be dynamically generating identifiers/names. An example of
-this is: when creating a new link, we add a (hidden) form for each different
-link type. This helps keep us out of trouble.
-
-> safeID :: String -> String
-> safeID = translate [(' ', '-')]
 
 \subsection{Formlet Helpers}
 

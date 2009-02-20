@@ -6,9 +6,8 @@ them.
 > module Vocabulink.Link (  Link(..), PartialLink(..), LinkType(..),
 >                           getPartialLink, getPartialLinks,
 >                           getLinkFromPartial, getLink, establishLink,
->                           linkHtml, linkPage, newLinkPage,
->                           linkLexemes, deleteLink, linksPage,
->                           linksContainingPage, newLink,
+>                           linkHtml, linkPage, linkLexemes, deleteLink,
+>                           linksPage, linksContainingPage, newLink,
 >                           partialLinkHtml, partialLinkFromValues) where
 
 > import Vocabulink.App
@@ -32,7 +31,6 @@ type (for partially constructed links, which you'll see later).
 >                     linkOrigin       :: String,
 >                     linkDestination  :: String,
 >                     linkType         :: LinkType }
->           deriving (Show)
 
 We can associate 2 lexemes in many different ways. Because different linking
 methods require different information, they each need different representations
@@ -45,6 +43,15 @@ more in-depth description of the types.
 > data LinkType =  Association | Cognate | LinkWord String String |
 >                  Relationship String String
 >                  deriving (Show)
+
+Sometimes we need to work with a more readable name, such as interacting with a
+client or the database.
+
+> linkTypeNameFromType :: LinkType -> String
+> linkTypeNameFromType Association         = "association"
+> linkTypeNameFromType Cognate             = "cognate"
+> linkTypeNameFromType (LinkWord _ _)      = "link word"
+> linkTypeNameFromType (Relationship _ _)  = "relationship"
 
 Fully loading a link from the database requires a join. However, the join
 depends on the type of thi link. But we don't always need the type-specific
@@ -220,34 +227,13 @@ Origin and destination should already be UTF-8 encoded.
 > linkHtml' orig dest = linkHtml (stringToHtml $ encodeString orig)
 >                                (stringToHtml $ encodeString dest)
 
-> newLinkPage :: App CGIResult
-> newLinkPage = do
->   orig  <- getRequiredInput "origin"
->   dest  <- getRequiredInput "destination"
->   types <- linkTypes
->   case types of
->     Just types'@(_:_)  -> do
->       let t = orig ++ " -> " ++ dest
->       stdPage t [CSS "link", JS "MochiKit", JS "link"]
->         [ form ! [action "", method "POST"] <<
->            [  thediv ! [identifier "baseline", theclass "link"] <<
->                 linkHtml' orig dest,
->               thediv ! [identifier "link-details"] <<
->                 (  [  select ! [identifier "link-type", name "link-type"] << options types',
->                       br ] ++
->                    newLinkHtml (head types') orig dest ++
->                    [  br,
->                       submit "" "Associate" ]) ] ]
->     _                  -> error "Failed to retrieve link types."
-
-> linkLexemes :: App CGIResult
-> linkLexemes =
+> linkLexemes :: Link -> App CGIResult
+> linkLexemes link =
 >   withRequiredMemberNumber $ \memberNo -> do
->     link <- linkFromForm
 >     linkNo <- establishLink link memberNo
 >     case linkNo of
->       Just n  -> redirect $ "/link/" ++ (show n)
->       Nothing -> error "Failed to establish link."
+>       Just n   -> redirect $ "/link/" ++ (show n)
+>       Nothing  -> error "Failed to establish link."
 
 > linkPage :: Integer -> App CGIResult
 > linkPage linkNo = do
@@ -315,7 +301,7 @@ own in the center of the screen with ``create link'' buttons on either side.
 > linkFocusBox focus []  = table ! [theclass "focus-box"] <<
 >   [  tbody << tr <<
 >      [  td ! [theclass "origins"] << form ! [action "/link", method "GET"] <<
->           button ! [name "input2", value (encodeString focus)] << "New Link",
+>           button ! [name "input1", value (encodeString focus)] << "New Link",
 >         td ! [theclass "edges"] <<
 >           image ! [src "http://s.vocabulink.com/edge.png",
 >                    width "200", height "1"],
@@ -324,7 +310,7 @@ own in the center of the screen with ``create link'' buttons on either side.
 >           image ! [src "http://s.vocabulink.com/edge.png",
 >                    width "200", height "1"],
 >         td ! [theclass "destinations"] << form ! [action "/link", method "GET"] <<
->           button ! [name "input1", value (encodeString focus)] << "New Link" ] ]
+>           button ! [name "input0", value (encodeString focus)] << "New Link" ] ]
 > linkFocusBox _ _   = error "unsupported"
 
 > newLink :: App CGIResult
@@ -336,24 +322,79 @@ own in the center of the screen with ``create link'' buttons on either side.
 >       res  <- runForm (establish ts') "Link"
 >       case res of
 >         Left xhtml  -> simplePage "Create a Link" [] [xhtml]
->         Right link  -> simplePage "Create a Link" []
->           [paragraph << (show (linkTypeName link))]
+>         Right link  -> linkLexemes link
 
 > establish :: [String] -> AppForm Link
-> establish ts = Link  <$> (pure undefined) <*> (linkTypeInput ts)
->                      <*> linkNodeInput "Origin" <*> linkNodeInput "Destination"
->                      <*> (pure undefined)
+> establish ts = mkLink  <$> linkNodeInput "Origin" <*> linkNodeInput "Destination"
+>                        <*> linkTypeInput ts
+
+> mkLink :: String -> String -> LinkType -> Link
+> mkLink orig dest t = Link {  linkNumber       = undefined,
+>                              linkTypeName     = linkTypeNameFromType t,
+>                              linkOrigin       = orig,
+>                              linkDestination  = dest,
+>                              linkType         = t }
+
+> formLabel' :: Monad m => String -> XHtmlForm m a -> XHtmlForm m a
+> formLabel' text = plug (\xhtml -> label << (text ++ ": ") +++ xhtml)
 
 TODO: Check that the input is more than just whitespace.
 
 > linkNodeInput :: String -> AppForm String
-> linkNodeInput l = F.input Nothing `check` ensures
+> linkNodeInput l = l `formLabel'` F.input Nothing `check` ensures
 >   [  ((/= "")           , l ++ " is required."),
 >      ((<= 64) . length  , l ++ " must be 64 characters or shorter.") ]
 
-> linkTypeInput :: [String] -> AppForm String
-> linkTypeInput ts = (F.select (zip ts ts) Nothing) `check` ensure
->   (flip elem ts) "Invalid link type."
+We have a bit of a challenge with link types. We want the form to adjust
+dynamically using JavaScript when a member chooses one of the link types from a
+select list. But we also want form validation using formlets. Formlets would be
+rather straightforward if we were using a 2-step process (choose the link type,
+submit, fill in the link details, submit). But it's important enough that
+members can quickly enter new links that we're making it a 1-step process.
+
+The idea is to generate all the form fields for every possible link type in
+advance, with a default hidden state. Then JavaScript will reveal the
+appropriate fields when a link type is chosen. Upon submit, all link type
+fields for all but the selected link type will be empty (or unnecessary). When
+running the form, we will instantiate all of them, but then |linkTypeS| will
+select just the appropriate one based on the @<select>@.
+
+The main challenge here is that we can't put the validation in the link types
+themselves. We have to move it into |linkTypeInput|. The problem comes from
+either my lack of understanding of Applicative Functors, or the fact that by
+the time the formlet combination strategy (Failure) the unused link types have
+already generated failure because they have no way of knowing if they've been
+selected (``idioms are ignorant'').
+
+I'm deferring a proper implementation until it's absolutely necessary.
+Hopefully by then I will know more than I do now.
+
+> linkTypeInput :: [String] -> AppForm LinkType
+> linkTypeInput ts = (linkTypeS  <$> "Link Type" `formLabel` (F.select (zip ts ts) Nothing)
+>                                <*> pure Association
+>                                <*> pure Cognate
+>                                <*> linkTypeLinkWord
+>                                <*> linkTypeRelationship) `check`
+>                    ensure complete "Please fill in all the link type fields."
+>   where complete Association         = True
+>         complete Cognate             = True
+>         complete (LinkWord w s)      = (w /= "") && (s /= "")
+>         complete (Relationship l r)  = (l /= "") && (r /= "")
+
+> linkTypeS :: String -> LinkType -> LinkType -> LinkType -> LinkType -> LinkType
+> linkTypeS "association"   l _ _ _ = l
+> linkTypeS "cognate"       _ l _ _ = l
+> linkTypeS "link word"     _ _ l _ = l
+> linkTypeS "relationship"  _ _ _ l = l
+> linkTypeS _ _ _ _ _ = error "Unknown link type."
+
+> linkTypeLinkWord :: AppForm LinkType
+> linkTypeLinkWord = LinkWord  <$> "Link Word" `formLabel` F.input Nothing
+>                              <*> F.textarea (Just "Write a story linking the 2 words here.")
+
+> linkTypeRelationship :: AppForm LinkType
+> linkTypeRelationship = Relationship <$>
+>   plug (+++ stringToHtml " is to ") (F.input Nothing) <*> F.input Nothing
 
 > displayPartialHtml :: PartialLink -> Html
 > displayPartialHtml l = thediv ! [theclass "link"] << (partialLinkHtml l)
@@ -379,22 +420,6 @@ want to cache this.
 >     \ORDER BY t.count DESC NULLS LAST" []
 >   return $ map fromSql `liftM` types
 
-> linkEditHtml :: Link -> [Html]
-> linkEditHtml l = case linkType l of
->   Association                -> []
->   Cognate                    -> []
->   (LinkWord word story)      ->
->     [  label << "link word:",
->        textfield "link-word" ! [value word], br,
->        textarea ! [name "story", cols "80", rows "20"] << story ]
->   (Relationship left right)  ->
->     [  textfield "left-side" ! [value left],
->        stringToHtml " is to ",
->        textfield "right-side" ! [value right], br,
->        stringToHtml $ " as " ++ orig ++ " is to " ++ dest ]
->     where orig  = encodeString $ linkOrigin l
->           dest  = encodeString $ linkDestination l
-
 > partialLinkHtml :: PartialLink -> Html
 > partialLinkHtml (PartialLink l) =
 >   anchor ! [href ("/link/" ++ (show $ linkNumber l))] << (linkOrigin l ++ (encodeString " -- ") ++ linkDestination l)
@@ -407,50 +432,3 @@ want to cache this.
 >      paragraph << story]
 > linkTypeHtml (Relationship leftSide rightSide) =
 >   [ paragraph << ((encodeString leftSide) ++ " -> " ++ (encodeString rightSide)) ]
-
-> linkFromForm :: App Link
-> linkFromForm = do
->   orig      <- getRequiredInput "origin"
->   dest      <- getRequiredInput "destination"
->   typeName  <- getRequiredInput "link-type"
->   linkT     <- linkTypeFromForm typeName
->   return $ Link {  linkNumber       = undefined,
->                    linkTypeName     = typeName,
->                    linkOrigin       = orig,
->                    linkDestination  = dest,
->                    linkType         = linkT }
-
-> linkTypeFromForm :: String -> App LinkType
-> linkTypeFromForm "association"  = return Association
-> linkTypeFromForm "cognate"      = return Cognate
-> linkTypeFromForm "link word"    = do
->   linkWord  <- getRequiredInput "link-word"
->   story     <- getRequiredInput "story"
->   return $ LinkWord linkWord story
-> linkTypeFromForm "relationship" = do
->   leftSide   <- getRequiredInput "left-side"
->   rightSide  <- getRequiredInput "right-side"
->   return $ Relationship leftSide rightSide
-> linkTypeFromForm _ = error "Unknown link type"
-
-> newLinkHtml :: String -> String -> String -> [Html]
-> newLinkHtml def orig dest =
->   let sparseLink = Link {  linkNumber       = undefined,
->                            linkTypeName     = undefined,
->                            linkOrigin       = orig,
->                            linkDestination  = dest,
->                            linkType         = undefined } in
->     map editBlock
->       [  sparseLink {  linkTypeName  = "association",
->                        linkType      = Association },
->          sparseLink {  linkTypeName  = "cognate",
->                        linkType      = Cognate },
->          sparseLink {  linkTypeName  = "link word",
->                        linkType      = LinkWord "" "Write a story linking the 2 words here." },
->          sparseLink {  linkTypeName  = "relationship",
->                        linkType      = Relationship "" "" } ]
->            where editBlock :: Link -> Html
->                  editBlock link = thediv !
->                    [  identifier $ safeID $ (linkTypeName link),
->                       theclass "link-editor",
->                       thestyle $ def == linkTypeName link ? "" $ "display: none"] << linkEditHtml link

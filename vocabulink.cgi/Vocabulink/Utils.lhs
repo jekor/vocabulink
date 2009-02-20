@@ -3,8 +3,7 @@
 Here are some functions that aren't specific to Vocabulink, but that don't
 exist in any libraries I know of.
 
-> module Vocabulink.Utils (         if', (?), safeHead, translate,
->                                   currentDay, currentYear,
+> module Vocabulink.Utils (         if', (?), safeHead, currentDay, currentYear,
 >  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
 >  {- Control.Applicative -}        pure, (<$>), (<*>),
 >  {- Control.Applicative.Error -}  maybeRead,
@@ -45,11 +44,7 @@ empty list, we need to provide a default:
 > safeHead d []     = d
 > safeHead _ (x:_)  = x
 
-This is like the Unix tr utility. It takes a list of search/replacements and
-then performs them on the list.
-
-> translate :: (Eq a) => [(a, a)] -> [a] -> [a]
-> translate sr = map (\s -> maybe s id $ lookup s sr)
+Return the  current day (in the server's timezone).
 
 > currentDay :: IO Day
 > currentDay = do
