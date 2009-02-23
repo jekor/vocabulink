@@ -5,8 +5,8 @@ them.
 
 > module Vocabulink.Link (  Link(..), PartialLink(..), LinkType(..),
 >                           getPartialLink, getPartialLinks,
->                           getLinkFromPartial, getLink, establishLink,
->                           linkHtml, linkPage, linkLexemes, deleteLink,
+>                           getLinkFromPartial, getLink,
+>                           linkHtml, linkPage, deleteLink,
 >                           linksPage, linksContainingPage, newLink,
 >                           partialLinkHtml, partialLinkFromValues) where
 
@@ -211,29 +211,73 @@ We now have everything we need to retrieve a full link in 1 step.
 >   l <- getPartialLink linkNo
 >   maybe (return Nothing) getLinkFromPartial l
 
-\subsection{Link Pages}
+Return the types of links sorted by how common they should be. Eventually we'll
+want to cache this.
+
+> linkTypes :: App (Maybe [String])
+> linkTypes = do
+>   types <- queryAttribute'
+>     "SELECT name FROM link_type LEFT OUTER JOIN \
+>      \(SELECT link_type, COUNT(*) AS count FROM link \
+>       \WHERE NOT deleted \
+>       \GROUP BY link_type) AS t ON (t.link_type = link_type.name) \
+>     \ORDER BY t.count DESC NULLS LAST" []
+>   return $ map fromSql `liftM` types
+
+\subsection{Deleting Links}
+
+Links can be deleted by their owner. They're not actually removed from the
+database, as doing so would require removing the link from other members'
+review stacks. Instead, we just flag it as deleted so that it doesn't appear
+in most contexts.
+
+> deleteLink :: Integer -> App CGIResult
+> deleteLink linkNo = do
+>   res  <- quickStmt'  "UPDATE link SET deleted = TRUE \
+>                       \WHERE link_no = ?" [toSql linkNo]
+>   case res of
+>     Nothing  -> error "Failed to delete link."
+>     Just _   -> redirect =<< refererOrVocabulink
+
+\subsection{Displaying Links}
 
 Here's the simplest HTML representation of a link we use.
 
-Origin and destination should already be UTF-8 encoded.
-
 > linkHtml :: Html -> Html -> Html
 > linkHtml orig dest = concatHtml
->   [ thespan ! [theclass "lexeme"] << orig,
->     image ! [src "http://s.vocabulink.com/edge.png", width "20%", height "1"],
->     thespan ! [theclass "lexeme"] << dest ]
+>   [  thespan ! [theclass "lexeme"] << orig,
+>      image ! [src "http://s.vocabulink.com/edge.png", width "200", height "1"],
+>      thespan ! [theclass "lexeme"] << dest ]
 
-> linkHtml' :: String -> String -> Html
-> linkHtml' orig dest = linkHtml (stringToHtml $ encodeString orig)
->                                (stringToHtml $ encodeString dest)
+Displaying a partial link is similar. We need to do so in different contexts,
+so we have 2 different functions.
 
-> linkLexemes :: Link -> App CGIResult
-> linkLexemes link =
->   withRequiredMemberNumber $ \memberNo -> do
->     linkNo <- establishLink link memberNo
->     case linkNo of
->       Just n   -> redirect $ "/link/" ++ (show n)
->       Nothing  -> error "Failed to establish link."
+TODO: Consolidate or rename these.
+
+> displayPartialHtml :: PartialLink -> Html
+> displayPartialHtml l = thediv ! [theclass "link"] << (partialLinkHtml l)
+
+> partialLinkHtml :: PartialLink -> Html
+> partialLinkHtml (PartialLink l) =
+>   anchor ! [href ("/link/" ++ (show $ linkNumber l))] <<
+>     (linkOrigin l ++ (encodeString " -- ") ++ linkDestination l)
+
+More comprehensive display of a link involves displaying information on its
+type, which varies based on type.
+
+> linkTypeHtml :: LinkType -> [Html]
+> linkTypeHtml Association = []
+> linkTypeHtml Cognate = []
+> linkTypeHtml (LinkWord linkWord story) =
+>   [  paragraph << ("link word: " ++ (encodeString linkWord)), br,
+>      paragraph << story]
+> linkTypeHtml (Relationship leftSide rightSide) =
+>   [ paragraph << ((encodeString leftSide) ++ " -> " ++ (encodeString rightSide)) ]
+
+To show a specific link, we retrieve the link from the database and then
+display it. Most of the extra code in the following is for handling the display
+of link operations (``review'', ``delete'', etc.), dealing with retrieval
+exceptions, etc.
 
 > linkPage :: Integer -> App CGIResult
 > linkPage linkNo = do
@@ -246,33 +290,41 @@ Origin and destination should already be UTF-8 encoded.
 >       owner <- queryValue'  "SELECT author = ? FROM link WHERE link_no = ?"
 >                             [toSql memberNo, toSql linkNo]
 >       ops <- case owner of
->                Just (Just o)  -> linkOperations linkNo (isJust memberNo && fromSql o)
->                _              -> return $ stringToHtml
->                                    "Unable to determine link ownership."
+>         Just (Just o)  -> linkOperations linkNo (isJust memberNo && fromSql o)
+>         _              -> return $ stringToHtml
+>                             "Unable to determine link ownership."
 >       let orig  = linkOrigin l'
 >           dest  = linkDestination l'
 >       stdPage (orig ++ " -> " ++ dest) [CSS "link"]
->         [ review,
->           ops,
->           thediv ! [identifier "baseline", theclass "link"] <<
->             (  [linkHtml' orig dest] ++
->                linkTypeHtml (linkType l')) ]
+>         [  review, ops,
+>            thediv ! [identifier "baseline", theclass "link"] <<
+>              (  [linkHtml  (stringToHtml $ encodeString orig)
+>                            (stringToHtml $ encodeString dest)] ++
+>                 linkTypeHtml (linkType l')) ]
+
+Each link can be ``operated on''. It can be reviewed (added to the member's
+review set) and deleted (marked as deleted). In the future, I expect operations
+such as ``tag'', ``rate'', etc. And perhaps we should add a way for someone to
+mark a link without adding it to a review set.
 
 > linkOperations :: Integer -> Bool -> App Html
-> linkOperations n True = do
+> linkOperations n True   = do
 >   deleted <- queryValue'  "SELECT deleted FROM link \
 >                           \WHERE link_no = ?" [toSql n]
->   case deleted of
+>   return $ case deleted of
 >     Just (Just d)  -> if fromSql d
->                         then return $ stringToHtml "Deleted"
->                         else return $ form ! [action ("/link/" ++ (show n) ++ "/delete"), method "POST"] <<
->                                submit "" "Delete"
->     _              -> return $ stringToHtml
+>       then stringToHtml "Deleted"
+>       else form ! [action ("/link/" ++ (show n) ++ "/delete"), method "POST"] <<
+>              submit "" "Delete"
+>     _              -> stringToHtml
 >                         "Can't determine whether or not link has been deleted."
-> linkOperations _ False = return noHtml
+> linkOperations _ False  = return noHtml
 
-If we found no links matching the description, display the search term on its
-own in the center of the screen with ``create link'' buttons on either side.
+\subsection{Finding Links}
+
+While Vocabulink is still small, it makes sense to have a page just for
+displaying all the (non-deleted) links in the system. This will probably go
+away shortly after public release.
 
 > linksPage :: App CGIResult
 > linksPage  = do
@@ -287,6 +339,16 @@ own in the center of the screen with ``create link'' buttons on either side.
 >    where displayPossiblePartial =
 >            maybe (paragraph << "Error retrieving link.") displayPartialHtml
 
+But more practical for the long run is providing search. ``Containing'' search
+is a search for links that ``contain'' the given ``focus'' lexeme on one side
+or the other of the link. The term ``containing'' is a little misleading and
+should be changed.
+
+Link search is also the only method for creating new links. The reason is that
+we don't want members creating new links without seeing what links for a term
+already exist. This may be a little confusing to new members, so this decision
+should be reviewed again after public release.
+
 > linksContainingPage :: String -> App CGIResult
 > linksContainingPage focus = do
 >   partials <- getPartialLinks preds [] 0 100
@@ -296,6 +358,19 @@ own in the center of the screen with ``create link'' buttons on either side.
 >       [linkFocusBox focus ls]
 >    where preds = ["(origin LIKE '" ++ focus ++ "' OR \
 >                    \destination LIKE '" ++ focus ++ "')"]
+
+When the links containing a search term have been found, we need a way to
+display them. This is where HTML is inadequate. Ideally we could create some
+sort of link graph view (think circular) with links of varying widths and
+colors and really make use of visual signals. For now though, for
+accessibility's sake (I would like basic features to be usable on browsers
+without SVG or Flash) we'll use a number of pre-made link edge drawings.
+Currently we support the 0th case (no links found, just display ``new link''
+buttons).
+
+Before we can display the 1st and later cases, we need to sort the links into
+``links containing the focus as the origin'' and ``links containing the focus
+as the destination''.
 
 > linkFocusBox :: String -> [Maybe PartialLink] -> Html
 > linkFocusBox focus []  = table ! [theclass "focus-box"] <<
@@ -311,22 +386,40 @@ own in the center of the screen with ``create link'' buttons on either side.
 >                    width "200", height "1"],
 >         td ! [theclass "destinations"] << form ! [action "/link", method "GET"] <<
 >           button ! [name "input0", value (encodeString focus)] << "New Link" ] ]
-> linkFocusBox _ _   = error "unsupported"
+> linkFocusBox _ _       = error "unsupported"
+
+\subsection{Creating New Links}
+
+We want the creation of new links to be as simple as possible. For now, it's
+done using a single page with a form. The form dynamically updates (via
+JavaScript) based on the type of the link being created.
 
 > newLink :: App CGIResult
 > newLink = do
->   ts   <- linkTypes
+>   ts <- linkTypes
 >   case ts of
 >     Nothing   -> error "Unable to retrieve link types."
 >     Just ts'  -> do
->       res  <- runForm (establish ts') "Link"
+>       res <- runForm (establish ts') "Link"
 >       case res of
 >         Left xhtml  -> simplePage "Create a Link" [] [xhtml]
->         Right link  -> linkLexemes link
+>         Right link  -> withRequiredMemberNumber $ \memberNo -> do
+>           linkNo <- establishLink link memberNo
+>           case linkNo of
+>             Just n   -> redirect $ "/link/" ++ (show n)
+>             Nothing  -> error "Failed to establish link."
+
+Here's a form for creating a link. It gathers all of the required details
+(origin, destination, and link type details).
 
 > establish :: [String] -> AppForm Link
-> establish ts = mkLink  <$> linkNodeInput "Origin" <*> linkNodeInput "Destination"
+> establish ts = mkLink  <$> linkNodeInput "Origin"
+>                        <*> linkNodeInput "Destination"
 >                        <*> linkTypeInput ts
+
+When creating a link from a form, the link number must be undefined until the
+link is established in the database. Also, because of the way formlets work (or
+how I'm using them), we need to retrieve the link type name from the link type.
 
 > mkLink :: String -> String -> LinkType -> Link
 > mkLink orig dest t = Link {  linkNumber       = undefined,
@@ -334,9 +427,6 @@ own in the center of the screen with ``create link'' buttons on either side.
 >                              linkOrigin       = orig,
 >                              linkDestination  = dest,
 >                              linkType         = t }
-
-> formLabel' :: Monad m => String -> XHtmlForm m a -> XHtmlForm m a
-> formLabel' text = plug (\xhtml -> label << (text ++ ": ") +++ xhtml)
 
 TODO: Check that the input is more than just whitespace.
 
@@ -370,13 +460,14 @@ I'm deferring a proper implementation until it's absolutely necessary.
 Hopefully by then I will know more than I do now.
 
 > linkTypeInput :: [String] -> AppForm LinkType
-> linkTypeInput ts = (linkTypeS  <$> "Link Type" `formLabel` (F.select (zip ts ts) Nothing)
+> linkTypeInput ts = (linkTypeS  <$> "Link Type" `formLabel` linkSelect Nothing
 >                                <*> pure Association
 >                                <*> pure Cognate
 >                                <*> linkTypeLinkWord
 >                                <*> linkTypeRelationship) `check`
 >                    ensure complete "Please fill in all the link type fields."
->   where complete Association         = True
+>   where linkSelect = F.select $ zip ts ts
+>         complete Association         = True
 >         complete Cognate             = True
 >         complete (LinkWord w s)      = (w /= "") && (s /= "")
 >         complete (Relationship l r)  = (l /= "") && (r /= "")
@@ -395,40 +486,3 @@ Hopefully by then I will know more than I do now.
 > linkTypeRelationship :: AppForm LinkType
 > linkTypeRelationship = Relationship <$>
 >   plug (+++ stringToHtml " is to ") (F.input Nothing) <*> F.input Nothing
-
-> displayPartialHtml :: PartialLink -> Html
-> displayPartialHtml l = thediv ! [theclass "link"] << (partialLinkHtml l)
-
-> deleteLink :: Integer -> App CGIResult
-> deleteLink linkNo = do
->   ref <- refererOrVocabulink
->   c <- asks db
->   liftIO $ quickStmt c "UPDATE link SET deleted = TRUE \
->                        \WHERE link_no = ?" [toSql linkNo]
->              `catchSqlE` "Failed to delete link."
->   redirect ref
-
-Return the types of links sorted by how common they should be. Eventually we'll
-want to cache this.
-
-> linkTypes :: App (Maybe [String])
-> linkTypes = do
->   types <- queryAttribute'
->     "SELECT name FROM link_type LEFT OUTER JOIN \
->      \(SELECT link_type, COUNT(*) AS count FROM link \
->       \GROUP BY link_type) AS t ON (t.link_type = link_type.name) \
->     \ORDER BY t.count DESC NULLS LAST" []
->   return $ map fromSql `liftM` types
-
-> partialLinkHtml :: PartialLink -> Html
-> partialLinkHtml (PartialLink l) =
->   anchor ! [href ("/link/" ++ (show $ linkNumber l))] << (linkOrigin l ++ (encodeString " -- ") ++ linkDestination l)
-
-> linkTypeHtml :: LinkType -> [Html]
-> linkTypeHtml Association = []
-> linkTypeHtml Cognate = []
-> linkTypeHtml (LinkWord linkWord story) =
->   [  paragraph << ("link word: " ++ (encodeString linkWord)), br,
->      paragraph << story]
-> linkTypeHtml (Relationship leftSide rightSide) =
->   [ paragraph << ((encodeString leftSide) ++ " -> " ++ (encodeString rightSide)) ]

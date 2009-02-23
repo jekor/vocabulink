@@ -7,10 +7,9 @@ formed (although we have guarantee that it will be valid). But more
 importantly, it allows us to use abstraction to get higher-level HTML-based
 functions. An example of this is |linkList|.
 
-> module Vocabulink.Html (  Dependency(..), stdPage, simplePage,
->                           displayStaticFile,
+> module Vocabulink.Html (  Dependency(..), stdPage, simplePage, displayStaticFile,
 >                           linkList, options, accesskey,
->                           runForm, formLabel, pager, currentPage,
+>                           runForm, formLabel, formLabel', pager, currentPage,
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
 >                           (<<), (+++), (!),
 >                           identifier, theclass, thediv, thespan,
@@ -227,6 +226,12 @@ set a @for@ attribute.
 
 > formLabel :: Monad m => String -> XHtmlForm m a -> XHtmlForm m a
 > formLabel text = plug (\xhtml -> paragraph << (label << (text ++ ": ") +++ xhtml))
+
+Here's an alterate version of the above which doesn't wrap the form with a
+paragraph.
+
+> formLabel' :: Monad m => String -> XHtmlForm m a -> XHtmlForm m a
+> formLabel' text = plug (\xhtml -> label << (text ++ ": ") +++ xhtml)
 
 Take a form and a submit button label, run it, and return either the form to
 display (with errors, if any) or the result of the form.

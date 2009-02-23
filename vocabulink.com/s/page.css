@@ -10,8 +10,21 @@ body {
   clear: both;
 }
 
-h1 {
+h1, h2, h3 {
   text-align: center;
+  font-weight: bold;
+}
+
+h1 {
+  font-size: 172.8%; /* x1.2x1.2x1.2, from the TeXBook */
+}
+
+h2 {
+  font-size: 144%;   /* x1.2x1.2 */
+}
+
+h3 {
+  font-size: 120%;   /* x1.2 */
 }
 
 /* Header Bar */
