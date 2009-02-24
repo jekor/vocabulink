@@ -23,7 +23,7 @@ To authenticate a member, we need their username and password.
 >           case valid of
 >             Nothing  -> error "Internal Authentication Error \
 >                               \(This is not your fault.)"
->             Just v   -> return $ maybe False fromSql v
+>             Just v   -> return $ fromSql v
 >         err = "Username and password do not match (or don't exist)."
 
 If a member authenticates correctly, we redirect them to either the frontpage
@@ -59,7 +59,7 @@ put this step into password verification so that we don't need 2 queries.
 >                    \WHERE username = ?" [toSql user]
 >   case n of
 >     Nothing  -> error "Failed to retrieve member number from username."
->     Just n'  -> return $ fromSql <$> n'
+>     Just n'  -> return $ fromSql n'
 
 To logout the member, we simply clear their auth cookie and redirect them
 somewhere sensible. If you want to send a client somewhere other than the front
@@ -95,9 +95,9 @@ trying to register with isn't already in use.
 
 > uniqueUser :: AppForm String
 > uniqueUser = username `checkM` ensureM valid err where
->   valid user = (== Just Nothing) <$>
->                   queryValue' "SELECT username FROM member \
->                               \WHERE username = ?" [toSql user]
+>   valid user = do v <- queryTuples'  "SELECT username FROM member \
+>                                      \WHERE username = ?" [toSql user]
+>                   return $ maybe False (== []) v
 >   err = "That username is unavailable."
 
 Our password input is as permissive as our username input.

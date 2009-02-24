@@ -89,18 +89,19 @@ This returns the newly established link number.
 
 > establishLink :: Link -> Integer -> App (Maybe Integer)
 > establishLink l memberNo = do
->   c' <- asks db
->   liftIO $ withTransaction c' $ \c -> do
->     linkNo <- insertNo c
+>   r <- withTransaction' $ do
+>     c <- asks db
+>     linkNo <- liftIO $ insertNo c
 >       "INSERT INTO link (origin, destination, link_type, language, author) \
 >                 \VALUES (?, ?, ?, 'en', ?)"
 >       [  toSql (linkOrigin l), toSql (linkDestination l),
 >          toSql (linkTypeName l), toSql memberNo ]
->       "link_link_no_seq" `catchSqlD` Nothing
+>       "link_link_no_seq"
 >     case linkNo of
->       Nothing -> rollback c >> return Nothing
->       Just n  -> do r <- establishLinkType c (l {linkNumber = n})
->                     return $ r >>= \_ -> Just n
+>       Nothing  -> liftIO $ rollback c >> return Nothing
+>       Just n   -> do  establishLinkType (l {linkNumber = n})
+>                       return linkNo
+>   return $ fromMaybe Nothing r
 
 The table we insert additional details into depends on the type of the link and
 it's easiest to use a separate function for it.
@@ -109,22 +110,20 @@ This takes a connection because it will actually accept a transaction. A more
 elegant solution for the future would be to locally modify the reader to use
 the transaction handle.
 
-> establishLinkType :: IConnection conn => conn -> Link -> IO (Maybe ())
-> establishLinkType c l = case linkType l of
->   Association                -> return $ Just ()
->   Cognate                    -> return $ Just ()
->   (LinkWord word story)      -> (do
->     quickStmt c
->       "INSERT INTO link_type_link_word (link_no, link_word, story) \
->                                \VALUES (?, ?, ?)"
->       [toSql (linkNumber l), toSql word, toSql story]
->     return $ Just ()) `catchSqlD` Nothing
->   (Relationship left right)  -> (do
->     quickStmt c
->       "INSERT INTO link_type_relationship (link_no, left_side, right_side) \
->                                   \VALUES (?, ?, ?)"
->       [toSql (linkNumber l), toSql left, toSql right]
->     return $ Just ()) `catchSqlD` Nothing
+> establishLinkType :: Link -> App ()
+> establishLinkType l = case linkType l of
+>   Association                -> return ()
+>   Cognate                    -> return ()
+>   (LinkWord word story)      -> do
+>     run'  "INSERT INTO link_type_link_word (link_no, link_word, story) \
+>                                    \VALUES (?, ?, ?)"
+>           [toSql (linkNumber l), toSql word, toSql story]
+>     return ()
+>   (Relationship left right)  -> do
+>     run'  "INSERT INTO link_type_relationship (link_no, left_side, right_side) \
+>                                       \VALUES (?, ?, ?)"
+>           [toSql (linkNumber l), toSql left, toSql right]
+>     return ()
 
 Now that we've seen how we store links, let's look at retrieving them (which is
 slightly more complicated in order to allow for efficient retrieval of multiple
@@ -290,9 +289,9 @@ exceptions, etc.
 >       owner <- queryValue'  "SELECT author = ? FROM link WHERE link_no = ?"
 >                             [toSql memberNo, toSql linkNo]
 >       ops <- case owner of
->         Just (Just o)  -> linkOperations linkNo (isJust memberNo && fromSql o)
->         _              -> return $ stringToHtml
->                             "Unable to determine link ownership."
+>         Just o  -> linkOperations linkNo (isJust memberNo && fromSql o)
+>         _       -> return $ stringToHtml
+>                      "Unable to determine link ownership."
 >       let orig  = linkOrigin l'
 >           dest  = linkDestination l'
 >       stdPage (orig ++ " -> " ++ dest) [CSS "link"]
@@ -312,12 +311,12 @@ mark a link without adding it to a review set.
 >   deleted <- queryValue'  "SELECT deleted FROM link \
 >                           \WHERE link_no = ?" [toSql n]
 >   return $ case deleted of
->     Just (Just d)  -> if fromSql d
+>     Just d  -> if fromSql d
 >       then stringToHtml "Deleted"
 >       else form ! [action ("/link/" ++ (show n) ++ "/delete"), method "POST"] <<
 >              submit "" "Delete"
->     _              -> stringToHtml
->                         "Can't determine whether or not link has been deleted."
+>     _       -> stringToHtml
+>                  "Can't determine whether or not link has been deleted."
 > linkOperations _ False  = return noHtml
 
 \subsection{Finding Links}

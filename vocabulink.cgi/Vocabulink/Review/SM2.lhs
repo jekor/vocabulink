@@ -1,9 +1,10 @@
-> module Vocabulink.Review.SM2 where
+> module Vocabulink.Review.SM2 (reviewInterval) where
 
 SuperMemo algorithm SM-2
 
 http://www.supermemo.com/english/ol/sm2.htm
 
+> import Vocabulink.App
 > import Vocabulink.DB
 
 > interval :: Double -> Integer -> Double -> Double
@@ -33,30 +34,31 @@ This should return Nothing if the item needs to be repeated immediately.
 This takes a database handle rather than operates in the App monad so that
 it can be used as part of a transaction.
 
-> reviewInterval :: IConnection conn => conn -> Integer -> Integer -> Integer -> Double -> IO (Maybe Integer)
-> reviewInterval c memberNo linkNo previous recall = do
+Warning: This has side-effects in the database.
+
+> reviewInterval :: Integer -> Integer -> Integer -> Double -> App (Maybe Integer)
+> reviewInterval memberNo linkNo previous recall = do
 >   let p = daysFromSeconds previous
 >       q :: Integer = round $ recall * 5 -- The algorithm expects 0-5, not 0-1.
->   stats <- quickQuery' c "SELECT n, EF FROM link_sm2 \
+>   stats <- queryTuples'  "SELECT n, EF FROM link_sm2 \
 >                          \WHERE member_no = ? AND link_no = ?"
 >                          [toSql memberNo, toSql linkNo]
->              `catchSqlE` "Failed to determine next review interval."
 >   case stats of
->     []          -> if q < 3 -- This item is not yet learned.
+>     Just []      -> if q < 3 -- This item is not yet learned.
 >                       then return Nothing
 >                       else do let n  = 1
 >                                   ef = easinessFactor' 2.5 q
->                               createSM2 c memberNo linkNo n ef
+>                               createSM2 memberNo linkNo n ef
 >                               return $ Just $ secondsFromDays (interval p n ef)
->     [[n', ef']] -> let ef = fromSql ef'
->                        n :: Integer = fromSql n' in
->                    if q < 3 -- We need to restart the learning process.
->                       then do updateSM2 c memberNo linkNo 1 ef
->                               return Nothing
->                       else do let newEF = easinessFactor' ef q
->                                   n''   = n + 1
->                               updateSM2 c memberNo linkNo n'' newEF
->                               return $ Just $ secondsFromDays (interval p n'' newEF)
+>     Just [[n', ef']] -> let ef = fromSql ef'
+>                             n :: Integer = fromSql n' in
+>                         if q < 3 -- We need to restart the learning process.
+>                           then do updateSM2 memberNo linkNo 1 ef
+>                                   return Nothing
+>                           else do let newEF = easinessFactor' ef q
+>                                       n''   = n + 1
+>                                   updateSM2 memberNo linkNo n'' newEF
+>                                   return $ Just $ secondsFromDays (interval p n'' newEF)
 >     _           -> error "Failed to retrieve review data."
 
 > daysFromSeconds :: Integer -> Double
@@ -65,18 +67,16 @@ it can be used as part of a transaction.
 > secondsFromDays :: Double -> Integer
 > secondsFromDays d = round $ d * 24 * 60 * 60
 
-> createSM2 :: IConnection conn => conn -> Integer -> Integer -> Integer -> Double -> IO ()
-> createSM2 c memberNo linkNo n ef = do
->   run c "INSERT INTO link_sm2 (member_no, link_no, n, EF) \
+> createSM2 :: Integer -> Integer -> Integer -> Double -> App ()
+> createSM2 memberNo linkNo n ef = do
+>   run'  "INSERT INTO link_sm2 (member_no, link_no, n, EF) \
 >         \VALUES (?, ?, ?, ?)"
 >         [toSql memberNo, toSql linkNo, toSql n, toSql ef]
->     `catchSqlE` "Failed to create an SM-2 record."
 >   return ()
 
-> updateSM2 :: IConnection conn => conn -> Integer -> Integer -> Integer -> Double -> IO ()
-> updateSM2 c memberNo linkNo n ef = do
->   run c "UPDATE link_sm2 SET n = ?, EF = ? \
+> updateSM2 :: Integer -> Integer -> Integer -> Double -> App ()
+> updateSM2 memberNo linkNo n ef = do
+>   run'  "UPDATE link_sm2 SET n = ?, EF = ? \
 >         \WHERE member_no = ? AND link_no = ?"
 >         [toSql n, toSql ef, toSql memberNo, toSql linkNo]
->     `catchSqlE` "Failed to update SM-2 record."
 >   return ()

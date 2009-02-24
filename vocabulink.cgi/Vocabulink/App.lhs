@@ -11,6 +11,7 @@ signatures a little bit.
 >                              output404,
 >                              queryTuple', queryValue', queryAttribute',
 >                              queryTuples', quickInsertNo', quickStmt',
+>                              withTransaction', run',
 >  {- Control.Monad.Reader -}  asks) where
 
 > import Vocabulink.CGI
@@ -19,12 +20,13 @@ signatures a little bit.
 > import Vocabulink.Utils
 
 > import Control.Applicative
+> import Control.Exception (Exception, try)
 > import Control.Monad (ap)
-> import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks)
+> import Control.Monad.Reader (ReaderT(..), MonadReader, asks)
 > import Control.Monad.Trans (lift)
 
 > import Data.List (intercalate)
-> import Network.CGI.Monad (MonadCGI(..))
+> import Network.CGI.Monad (MonadCGI(..), tryCGI)
 > import Network.FastCGI (CGI, CGIT, outputNotFound)
 > import Network.URI (escapeURIString, isUnescapedInURI)
 
@@ -34,7 +36,7 @@ signatures a little bit.
 
 The App monad is a combination of the CGI and Reader monads.
 
-> newtype AppT m a = App (ReaderT AppEnv (CGIT m) a)
+> newtype AppT m a = AppT (ReaderT AppEnv (CGIT m) a)
 >   deriving (Monad, MonadIO, MonadReader AppEnv)
 
 ...whose CGI monad uses the IO monad.
@@ -54,14 +56,14 @@ of just an environment getter and a function for adding headers. We reuse the
 existing methods.
 
 > instance MonadCGI (AppT IO) where
->   cgiAddHeader n v = App $ lift $ cgiAddHeader n v
->   cgiGet x = App $ lift $ cgiGet x
+>   cgiAddHeader n v = AppT $ lift $ cgiAddHeader n v
+>   cgiGet x = AppT $ lift $ cgiGet x
 
 |runApp| does the job of creating the Reader environment and returning the
 CGIResult from within the App monad to the CGI monad.
 
 > runApp :: Connection -> App CGIResult -> CGI CGIResult
-> runApp c (App a) = do
+> runApp c (AppT a) = do
 >   token <- verifiedAuthToken
 >   res <- runReaderT a $ AppEnv {  db            = c,
 >                                   memberNumber  = authMemberNo `liftM` token,
@@ -140,10 +142,10 @@ it's much easier than manually wrapping the query with |catchSql|.
 >   c <- asks db
 >   liftIO $ (quickQuery' c sql vs >>= return . Just) `catchSqlD` Nothing
 
-> queryValue' :: String -> [SqlValue] -> App (Maybe (Maybe SqlValue))
+> queryValue' :: String -> [SqlValue] -> App (Maybe SqlValue)
 > queryValue' sql vs = do
 >   c <- asks db
->   liftIO $ (queryValue c sql vs >>= return . Just) `catchSqlD` Nothing
+>   liftIO $ (queryValue c sql vs) `catchSqlD` Nothing
 
 > queryAttribute' :: String -> [SqlValue] -> App (Maybe [SqlValue])
 > queryAttribute' sql vs = do
@@ -162,3 +164,23 @@ change succeeded.
 > quickStmt' sql vs = do
 >   c <- asks db
 >   liftIO $ (quickStmt c sql vs >>= return . Just) `catchSqlD` Nothing
+
+TODO: Log the error.
+
+> withTransaction' :: App a -> App (Maybe a)
+> withTransaction' actions = do
+>   c <- asks db
+>   r <- tryApp actions
+>   case r of
+>     Right x  -> do liftIO $ commit c
+>                    return $ Just x
+>     Left _   -> do liftIO $ try (rollback c) -- Discard any exception here
+>                    return Nothing
+
+> run' :: String -> [SqlValue] -> App (Integer)
+> run' sql vs = do
+>   c <- asks db
+>   liftIO $ run c sql vs
+
+> tryApp :: App a -> App (Either Exception a)
+> tryApp (AppT c) = AppT (ReaderT (\r -> tryCGI (runReaderT c r)))
