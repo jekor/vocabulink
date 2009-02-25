@@ -70,9 +70,9 @@ Often we want a simple page where the title and header are the same.
 > simplePage t deps h = stdPage t deps $ [ h1 << t ] ++ h
 
 Each dependency is expressed as the path from the root of the static subdomain
-(@s.deviantart.com@) to the file. Do not include the file suffix (@.css@ or
-@.js@), it will be appended automatically. These are meant for inclusion in the
-@<head>@ of the page.
+(for now, @s.vocabulink.com@) to the file. Do not include the file suffix
+(@.css@ or @.js@), it will be appended automatically. These are meant for
+inclusion in the @<head>@ of the page.
 
 > includeDep :: Dependency -> Html
 > includeDep (CSS css) =
@@ -103,7 +103,8 @@ Here are the links we want in the header of every page.
 
 > topLinks :: Html
 > topLinks = linkList
->   [  anchor ! [href "/article/how-to-get-started-with-vocabulink"] << "Get Started",
+>   [  anchor ! [href "/article/how-to-get-started-with-vocabulink"] <<
+>        "Get Started",
 >      anchor ! [href "/articles/"] << "Articles",
 >      anchor ! [href "/help"] << "Help" ]
 

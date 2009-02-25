@@ -92,7 +92,8 @@ This returns the newly established link number.
 >   r <- withTransaction' $ do
 >     c <- asks db
 >     linkNo <- liftIO $ insertNo c
->       "INSERT INTO link (origin, destination, link_type, language, author) \
+>       "INSERT INTO link (origin, destination, link_type, \
+>                         \language, author) \
 >                 \VALUES (?, ?, ?, 'en', ?)"
 >       [  toSql (linkOrigin l), toSql (linkDestination l),
 >          toSql (linkTypeName l), toSql memberNo ]
@@ -120,8 +121,9 @@ the transaction handle.
 >           [toSql (linkNumber l), toSql word, toSql story]
 >     return ()
 >   (Relationship left right)  -> do
->     run'  "INSERT INTO link_type_relationship (link_no, left_side, right_side) \
->                                       \VALUES (?, ?, ?)"
+>     run'  "INSERT INTO link_type_relationship \
+>                  \(link_no, left_side, right_side) \
+>           \VALUES (?, ?, ?)"
 >           [toSql (linkNumber l), toSql left, toSql right]
 >     return ()
 
@@ -195,7 +197,8 @@ We just need to retrieve its type-level details from the database.
 >       _                       -> return Nothing
 >   (Link {  linkTypeName  = "relationship",
 >            linkNumber    = n })              -> do
->     rs <- queryTuple'  "SELECT left_side, right_side FROM link_type_relationship \
+>     rs <- queryTuple'  "SELECT left_side, right_side \
+>                        \FROM link_type_relationship \
 >                        \WHERE link_no = ?" [toSql n]
 >     case rs of
 >       Just [left, right]  -> return $ Just $
@@ -480,7 +483,7 @@ Hopefully by then I will know more than I do now.
 
 > linkTypeLinkWord :: AppForm LinkType
 > linkTypeLinkWord = LinkWord  <$> "Link Word" `formLabel` F.input Nothing
->                              <*> F.textarea (Just "Write a story linking the 2 words here.")
+>   <*> F.textarea (Just "Write a story linking the 2 words here.")
 
 > linkTypeRelationship :: AppForm LinkType
 > linkTypeRelationship = Relationship <$>

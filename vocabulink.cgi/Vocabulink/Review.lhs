@@ -130,7 +130,8 @@ which begins the process all over again.
 >       stdPage ("Review: " ++ source ++ " -> ?")
 >               [CSS "link", JS "MochiKit", JS "review"]
 >         [  thediv ! [identifier "baseline", theclass "link"] <<
->              linkHtml (stringToHtml source) (anchor ! [identifier "lexeme-cover", href "#"] << "?"),
+>              linkHtml (stringToHtml source)
+>                (anchor ! [identifier "lexeme-cover", href "#"] << "?"),
 >            form ! [action ("/review/" ++ (show linkNo)), method "POST"] <<
 >              [  hidden "recall-time" "",
 >                 hidden "hidden-lexeme" dest,
@@ -162,7 +163,8 @@ Here's a critical chance to:
 > noLinksToReviewPage :: App CGIResult
 > noLinksToReviewPage = do
 >   simplePage "No Links to Review" [CSS "link"]
->     [ paragraph << "Take a break! You don't have any links to review right now." ]
+>     [ paragraph << "Take a break! \
+>                    \You don't have any links to review right now." ]
 
 In order to determine the next review interval, the review scheduling algorithm
 may need to know how long the last review period was (in fact, any algorithm

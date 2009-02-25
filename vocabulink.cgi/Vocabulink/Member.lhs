@@ -80,7 +80,9 @@ optionally an email address.
 >                                     regPass   :: String }
 
 > register :: AppForm Registration
-> register = Registration <$> uniqueUser <*> nothingIfNull emailAddress <*> passConfirmed
+> register = Registration  <$> uniqueUser
+>                          <*> nothingIfNull emailAddress
+>                          <*> passConfirmed
 
 We're very permissive with usernames. They just need to be between 3 and 32
 characters long.
