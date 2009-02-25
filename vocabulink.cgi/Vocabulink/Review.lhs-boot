@@ -1,5 +1,0 @@
-> module Vocabulink.Review where
-
-> import Vocabulink.App (App)
-
-> numLinksToReview :: Integer -> App (Maybe Integer)

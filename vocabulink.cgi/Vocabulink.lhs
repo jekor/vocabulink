@@ -14,7 +14,7 @@
 
 \title{Vocabulink}
 \author{Chris Forno (jekor)}
-\date{January 16, 2009}
+\date{February 24, 2009}
 
 \begin{document}
 \maketitle
@@ -265,7 +265,7 @@ add a link for review             & $\rightarrow$ & @POST /review/n/add@
 > dispatch method path@("review":rpath) =
 >   withRequiredMemberNumber $ \memberNo ->
 >     case (method,rpath) of
->       ("GET"   ,["next"])   -> reviewLink memberNo
+>       ("GET"   ,["next"])   -> nextReview memberNo
 >       ("POST"  ,(x:xs))     -> do
 >          case maybeRead x of
 >            Nothing  -> outputError 400

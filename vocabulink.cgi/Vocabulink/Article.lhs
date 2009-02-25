@@ -1,6 +1,12 @@
 \section{Articles}
 \label{Article}
 
+All of Vocabulink's @www@ subdomain is served by this program. As such, if we
+want to publish static data there, we need some outlet for it.
+
+It turns out that using our program gives us some additional consistency
+(standard header and footer) and abstraction.
+
 > module Vocabulink.Article (articlePage, articlesPage) where
 
 > import Vocabulink.App
@@ -9,45 +15,101 @@
 > import Vocabulink.Utils
 
 > import Control.Monad (filterM)
-> import System.Directory (getDirectoryContents, getPermissions, doesFileExist, readable)
+> import System.Directory (  getDirectoryContents, getPermissions, doesFileExist,
+>                            readable)
 > import System.FilePath (takeExtension, replaceExtension, takeBaseName)
 > import System.IO.Error (try)
 > import qualified Text.ParserCombinators.Parsec as P
 > import Text.ParserCombinators.Parsec.Perm ((<$$>), (<||>), permute)
 
-> data Article = Article { title'  :: String
->                        , author' :: String
->                        , date'   :: String
->                        , path'   :: FilePath
->                        , url'    :: String
->                        , body'   :: Html }
->                deriving Show
+All articles have some common metadata.
+
+> data Article = Article {  articleTitle   :: String,
+>                           articleAuthor  :: String,
+>                           articleDate    :: String,
+>                           articlePath    :: FilePath,
+>                           articleUrl     :: String,
+>                           articleBody    :: Html }
+
+\subsection{Retrieving Articles}
+
+Creating articles is done outside of this program. They are currently generated
+from Muse-mode (\url{http://mwolson.org/projects/EmacsMuse.html}) files using
+Emacs. However, we can reconstruct the metadata for an article by parsing the
+file.
+
+For now, all articles live in my project directory.
 
 > articleDir :: String
 > articleDir = "/home/chris/project/vocabulink/articles/"
 
-Publish an article from the filesystem. The article should be an
-already-prepared html fragment.
+To retrieve an article from the filesystem we just need the path to the @.muse@
+file. We don't generate the article HTML (that's done by Emacs), so we read
+that separately from a corresponding @.html@ file. Both files must exist for
+this to succeed.
 
-> articlePage :: String -> App CGIResult
-> articlePage title = do
->   article <- liftIO $ getArticle articlePath
->   maybe (output404 ["article", title])
->     (\a -> stdPage (title' a) [] [(body' a)]) article
->     where articlePath = articleDir ++ title ++ ".muse"
+> getArticle :: FilePath -> App (Maybe Article)
+> getArticle path = do
+>   muse  <- liftIO $ readFile path
+>   body  <- liftIO $ readFile $ replaceExtension path ".html"
+>   case P.parse articleHeader "" muse of
+>     Left e     -> logApp "parse error" (show e) >> return Nothing
+>     Right hdr  -> return $ Just $ hdr {  articlePath = path,
+>                                          articleUrl  = takeBaseName path,
+>                                          articleBody = primHtml body }
 
-> getArticles :: FilePath -> IO [Article]
-> getArticles path = do
->   ls <- try $ getDirectoryContents path
+Each article is expected to have a particular structure. The structure is based
+off of a required subset the Muse-mode directives.
+
+An accepted article's first lines will consist of something like:
+
+\begin{verbatim}
+ #title Why Learn with Vocabulink?
+ #author Chris Forno (jekor)
+ #date 2009-01-11
+\end{verbatim}
+
+> articleHeader :: P.Parser Article
+> articleHeader = permute (mkArticle  <$$>  (museDirective "title")
+>                                     <||>  (museDirective "author")
+>                                     <||>  (museDirective "date"))
+>     where mkArticle title author date =
+>             Article {  articleTitle  = title,
+>                        articleAuthor = author,
+>                        articleDate   = date,
+>                        articlePath   = undefined,
+>                        articleUrl    = undefined,
+>                        articleBody   = undefined }
+
+A muse directive looks sort of like a C preprocessor directive.
+
+> museDirective :: String -> P.Parser String
+> museDirective dir = P.try (P.string ("#" ++ dir)) >> P.spaces >>
+>                     P.manyTill P.anyChar P.newline
+
+Retrieving more than one article is slightly more complicated. Instead of
+taking the path to a file, we take the path to a directory. We list the
+contents of the directory (non-recursively) and figure out which files are
+published articles. Finally, we call |getArticle| for each of them. This is
+inefficient and should be changed to reading some listing at some point.
+
+> getPublishedArticles :: FilePath -> App (Maybe [Article])
+> getPublishedArticles path = do
+>   ls <- liftIO $ try $ getDirectoryContents path
 >   case ls of
->     Left _    -> return []
->     Right ls' -> do let fullPaths = map (path ++) ls'
->                     paths' <- filterM isPublished fullPaths
->                     articles <- mapM getArticle paths'
->                     return $ catMaybes articles
+>     Left e     -> logApp "IO exception" (show e) >> return Nothing
+>     Right ls'  -> do  let fullPaths = map (path ++) ls'
+>                       paths <- liftIO $ filterM isPublished fullPaths
+>                       articles <- mapM getArticle paths
+>                       return $ Just $ catMaybes articles
 
-In order for an article to show up in the listing, it needs to be readable and
-a readable HTML version must also exist.
+We consider an article (file) published if it:
+
+\begin{enumerate}
+\item ends with @.muse@
+\item is readable
+\item the corresponding @.html@ file is readable
+\end{enumerate}
 
 > isPublished :: FilePath -> IO Bool
 > isPublished f = do
@@ -67,36 +129,32 @@ a readable HTML version must also exist.
 >        return $ readable perms
 >      else return False
 
-> articleHeader :: P.Parser Article
-> articleHeader = permute (mkArticle <$$> (museDirective "title")
->                                    <||> (museDirective "author")
->                                    <||> (museDirective "date"))
->     where mkArticle title author date =
->             Article { title'  = title
->                     , author' = author
->                     , date'   = date
->                     , path'   = ""
->                     , url'    = ""
->                     , body'   = noHtml }
+\subsection{Article Pages}
 
-> museDirective :: String -> P.Parser String
-> museDirective dir = P.try (P.string ("#" ++ dir)) >> P.spaces >>
->                     P.manyTill P.anyChar P.newline
+Display a published article to the client.
 
-> getArticle :: FilePath -> IO (Maybe Article)
-> getArticle path = do
->   muse <- readFile path
->   body <- readFile $ replaceExtension path ".html"
->   case P.parse articleHeader "" muse of
->     Left _    -> return Nothing
->     Right hdr -> return $ Just $ hdr { path' = path
->                                      , url'  = takeBaseName path
->                                      , body' = primHtml body }
+> articlePage :: String -> App CGIResult
+> articlePage title = do
+>   published <- liftIO $ isPublished path
+>   case published of
+>     False -> output404 ["article", title]
+>     True -> do
+>       article <- getArticle path
+>       case article of
+>         Nothing  -> output404 ["article", title]
+>         Just a   -> stdPage (articleTitle a) [] [(articleBody a)]
+>   where path = articleDir ++ title ++ ".muse"
+
+Display a listing of published articles to the client.
 
 > articlesPage :: App CGIResult
 > articlesPage = do
->   articles <- liftIO $ getArticles articleDir
->   stdPage "Articles" [] $ [unordList $ map showArticle articles]
+>   articles <- getPublishedArticles articleDir
+>   case articles of
+>     Nothing  -> error "Error retrieving articles."
+>     Just as  -> stdPage "Articles" [] $ [unordList $ map articleLinkHtml as]
 
-> showArticle :: Article -> Html
-> showArticle a = anchor ! [href ("/article/" ++ url' a)] << title' a
+Create a clickable link HTML fragment for an article.
+
+> articleLinkHtml :: Article -> Html
+> articleLinkHtml a = anchor ! [href ("/article/" ++ articleUrl a)] << articleTitle a

@@ -27,7 +27,7 @@ functions. An example of this is |linkList|.
 
 > import Vocabulink.App
 > import Vocabulink.CGI
-> import {-# SOURCE #-} Vocabulink.Review (numLinksToReview)
+> import Vocabulink.Review.Html
 > import Vocabulink.Utils
 
 Currently Text.XHtml does not automatically handle UTF-8 output. We have to
@@ -168,24 +168,6 @@ entering in the URL manually), but that might change in the future.
 > searchBox :: Html
 > searchBox = form ! [theclass "search-box", action "/links", method "GET"] <<
 >   [ textfield "contains" ! [accesskey "s"], submit "" "Search" ]
-
-We display the number of links that are waiting for review for logged in
-members in the standard page header. Reviewing is currently the primary
-function of Vocabulink, and we want it prominently displayed.
-
-The idea is that a member will go to the site, and we want them to be instantly
-reminded that they have links to review. Or, if a link for review becomes due
-while they are browsing another part of the site, we want them to be notified.
-
-> reviewBox :: App Html
-> reviewBox = withMemberNumber noHtml $ \memberNo -> do
->   n <- numLinksToReview memberNo
->   return $ case n of
->     Just 0   -> anchor ! [href "/links", theclass "review-box"] <<
->                   "No links to review"
->     Just n'  -> anchor ! [href "/review/next", theclass "review-box"] <<
->                   [(strong << show n') +++ " links to review"]
->     Nothing  -> stringToHtml "Error finding links for review."
 
 Not everything on Vocabulink is dynamic. We don't want to include long text
 (something that markup is good at) in our source code. To display a static

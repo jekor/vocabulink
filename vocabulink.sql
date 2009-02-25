@@ -9,7 +9,7 @@ CREATE TABLE log_type (
 );
 INSERT INTO log_type (name) VALUES ('unknown'), ('exception'),
                                    ('IO exception'), ('SQL error'),
-                                   ('404');
+                                   ('404'), ('parse error');
 
 CREATE TABLE log (
        time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,

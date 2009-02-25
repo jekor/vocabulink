@@ -285,7 +285,7 @@ exceptions, etc.
 >   case l of
 >     Nothing  -> output404 ["link", show linkNo]
 >     Just l'  -> do
->       review <- reviewHtml linkNo
+>       review <- reviewIndicator linkNo
 >       owner <- queryValue'  "SELECT author = ? FROM link WHERE link_no = ?"
 >                             [toSql memberNo, toSql linkNo]
 >       ops <- case owner of
