@@ -254,8 +254,6 @@ Here's the simplest HTML representation of a link we use.
 Displaying a partial link is similar. We need to do so in different contexts,
 so we have 2 different functions.
 
-TODO: Consolidate or rename these.
-
 > displayPartialHtml :: PartialLink -> Html
 > displayPartialHtml l = thediv ! [theclass "link"] << (partialLinkHtml l)
 
@@ -297,7 +295,7 @@ exceptions, etc.
 >                      "Unable to determine link ownership."
 >       let orig  = linkOrigin l'
 >           dest  = linkDestination l'
->       stdPage (orig ++ " -> " ++ dest) [CSS "link"]
+>       stdPage (orig ++ " -> " ++ dest) [CSS "link"] []
 >         [  review, ops,
 >            thediv ! [identifier "baseline", theclass "link"] <<
 >              (  [linkHtml  (stringToHtml $ encodeString orig)
@@ -356,7 +354,7 @@ should be reviewed again after public release.
 >   partials <- getPartialLinks preds [] 0 100
 >   case partials of
 >     Nothing  -> error "Error while retrieving links."
->     Just ls  -> stdPage ("Links containing " ++ focus) [CSS "link"]
+>     Just ls  -> stdPage ("Links containing " ++ focus) [CSS "link"] []
 >       [linkFocusBox focus ls]
 >    where preds = ["(origin LIKE '" ++ focus ++ "' OR \
 >                    \destination LIKE '" ++ focus ++ "')"]
@@ -404,7 +402,11 @@ JavaScript) based on the type of the link being created.
 >     Just ts'  -> do
 >       res <- runForm (establish ts') "Link"
 >       case res of
->         Left xhtml  -> simplePage "Create a Link" [] [xhtml]
+>         Left xhtml  -> stdPage "Create a Link"
+>                          [CSS "link", JS "MochiKit", JS "link"]
+>                          [style << "form {text-align: center}"]
+>                          [  h1 << "Create a Link",
+>                             xhtml ]
 >         Right link  -> withRequiredMemberNumber $ \memberNo -> do
 >           linkNo <- establishLink link memberNo
 >           case linkNo of
@@ -429,8 +431,6 @@ how I'm using them), we need to retrieve the link type name from the link type.
 >                              linkOrigin       = orig,
 >                              linkDestination  = dest,
 >                              linkType         = t }
-
-TODO: Check that the input is more than just whitespace.
 
 > linkNodeInput :: String -> AppForm String
 > linkNodeInput l = l `formLabel'` F.input Nothing `check` ensures
@@ -465,14 +465,17 @@ Hopefully by then I will know more than I do now.
 > linkTypeInput ts = (linkTypeS  <$> "Link Type" `formLabel` linkSelect Nothing
 >                                <*> pure Association
 >                                <*> pure Cognate
->                                <*> linkTypeLinkWord
->                                <*> linkTypeRelationship) `check`
->                    ensure complete "Please fill in all the link type fields."
+>                                <*> fieldset' "link-word" linkTypeLinkWord
+>                                <*> fieldset' "relationship" linkTypeRelationship)
+>                    `check` ensure complete
+>                      "Please fill in all the link type fields."
 >   where linkSelect = F.select $ zip ts ts
 >         complete Association         = True
 >         complete Cognate             = True
 >         complete (LinkWord w s)      = (w /= "") && (s /= "")
 >         complete (Relationship l r)  = (l /= "") && (r /= "")
+>         fieldset' ident              = plug
+>           (fieldset ! [identifier ident, thestyle "display: none"] <<)
 
 > linkTypeS :: String -> LinkType -> LinkType -> LinkType -> LinkType -> LinkType
 > linkTypeS "association"   l _ _ _ = l

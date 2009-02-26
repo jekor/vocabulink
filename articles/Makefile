@@ -7,3 +7,6 @@ all : $(articles)
 
 $(articles) : $(sources)
 	emacs -q -batch -l muse-init.el -f muse-batch-publish-files xhtml $^
+
+clean :
+	rm $(articles)

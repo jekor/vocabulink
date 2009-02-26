@@ -80,8 +80,6 @@ Eventually, we need to rotate the key used to generate the HMAC, while still
 storing old keys long enough to use them for any valid login session. Without
 this, authentication is less secure.
 
-TODO: We must replace this key before publishing this document.
-
 > tokenDigest :: AuthToken -> IO (String)
 > tokenDigest a = hmac sha1 (pack "blahblahblah") (pack token)
 >   where token =  showGregorian (authExpiry a) ++

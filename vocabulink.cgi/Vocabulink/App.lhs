@@ -165,7 +165,9 @@ change succeeded.
 >   c <- asks db
 >   liftIO $ (quickStmt c sql vs >>= return . Just) `catchSqlD` Nothing
 
-TODO: Log the error.
+Working with transactions outside of the App monad can be done, but we might as
+well make a version that fits with the rest of the style of the program (logs
+the exception and returns Nothing).
 
 > withTransaction' :: App a -> App (Maybe a)
 > withTransaction' actions = do
@@ -174,13 +176,18 @@ TODO: Log the error.
 >   case r of
 >     Right x  -> do liftIO $ commit c
 >                    return $ Just x
->     Left _   -> do liftIO $ try (rollback c) -- Discard any exception here
+>     Left e   -> do logApp "exception" $ show e
+>                    liftIO $ try (rollback c) -- Discard any exception here
 >                    return Nothing
 
 > run' :: String -> [SqlValue] -> App (Integer)
 > run' sql vs = do
 >   c <- asks db
 >   liftIO $ run c sql vs
+
+|tryApp| is like |tryCGI|. It allows us to catch exceptions within the App
+monad. To do so, we unwrap the Reader monad and use TryCGI (which unwraps
+another Reader and Writer).
 
 > tryApp :: App a -> App (Either Exception a)
 > tryApp (AppT c) = AppT (ReaderT (\r -> tryCGI (runReaderT c r)))

@@ -88,3 +88,8 @@ table.focus-box td.origins {
 table.focus-box td.destinations {
   text-align: left;
 }
+
+fieldset#link-word textarea {
+  width: 50%;
+  height: 20ex;
+}

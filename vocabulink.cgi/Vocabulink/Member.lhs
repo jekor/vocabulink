@@ -104,9 +104,6 @@ trying to register with isn't already in use.
 
 Our password input is as permissive as our username input.
 
-TODO: Where does the 72-character password limit come from?
-TODO: Add strong password test?
-
 > passwd :: String -> AppForm String
 > passwd l = (l `formLabel` F.password Nothing) `check` ensures
 >   [  ((>=  6)   . length  , "Your password must be 6 characters or longer."),

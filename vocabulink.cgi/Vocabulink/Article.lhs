@@ -142,7 +142,8 @@ Display a published article to the client.
 >       article <- getArticle path
 >       case article of
 >         Nothing  -> output404 ["article", title]
->         Just a   -> stdPage (articleTitle a) [] [(articleBody a)]
+>         Just a   -> stdPage (articleTitle a) [CSS "article"] []
+>           [thediv ! [theclass "article"] << (articleBody a)]
 >   where path = articleDir ++ title ++ ".muse"
 
 Display a listing of published articles to the client.
@@ -152,7 +153,7 @@ Display a listing of published articles to the client.
 >   articles <- getPublishedArticles articleDir
 >   case articles of
 >     Nothing  -> error "Error retrieving articles."
->     Just as  -> stdPage "Articles" [] $ [unordList $ map articleLinkHtml as]
+>     Just as  -> stdPage "Articles" [] [] [unordList $ map articleLinkHtml as]
 
 Create a clickable link HTML fragment for an article.
 

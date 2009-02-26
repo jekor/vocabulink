@@ -128,7 +128,7 @@ which begins the process all over again.
 >       let source  = encodeString $ linkOrigin l'
 >           dest    = encodeString $ linkDestination l'
 >       stdPage ("Review: " ++ source ++ " -> ?")
->               [CSS "link", JS "MochiKit", JS "review"]
+>               [CSS "link", JS "MochiKit", JS "review"] []
 >         [  thediv ! [identifier "baseline", theclass "link"] <<
 >              linkHtml (stringToHtml source)
 >                (anchor ! [identifier "lexeme-cover", href "#"] << "?"),

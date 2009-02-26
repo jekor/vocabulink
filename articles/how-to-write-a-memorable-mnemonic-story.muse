@@ -14,7 +14,7 @@ It may seem that we've actually introduced even more ways to confuse your memory
 
 If the mnemonic ever fails you, try adding more detail to the "right" side of the link.
 
-** What to Do if You're Stuck
+* What to Do if You're Stuck
 
 It might take a while before you can easily create memorable mnemonics. Don't worry. They will become easier with time.
 
@@ -22,6 +22,6 @@ It's helpful to start writing as soon as you have a link word, even if you think
 
 You'll find that as you begin, with what you thought was a weak mnemonic, the very act of writing begins to activate other regions of your mind giving you more ideas for embellishment. It seems to be an unfailing trait of the mind, that it is very hard to drag ideas from it when staring at a blank page, but that the ideas begin to flow freely once the first word is laid down.
 
-** What to Avoid
+* What to Avoid
 
 Avoid introducing similar meanings in the story if possible. This may be unavoidable in some cases where in English we don't distinguish between 2 meanings. In that case, don't worry about it. Experience will eventually differentiate the meaning. It's better to have some idea of what a word means initially, so that you can learn the nuance of its meaning through reading and listening.

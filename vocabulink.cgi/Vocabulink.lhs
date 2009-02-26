@@ -24,7 +24,7 @@
 This is the main Vocabulink program. It is spawned as a FastCGI process and
 handles all web requests for vocabulink.com.
 
-Vocabulink.cgi is essentially a multi-user application which operates via the
+Vocabulink.cgi is essentially a multi-user application that operates via the
 web. It's structured like a standalone application inasmuch as it handles
 multiple requests in a single multi-threaded process. Yet, it's structured like
 a CGI program in that it communicates to the outside world through a web
@@ -93,8 +93,6 @@ When the program starts, it immediately begin listening for connections.
 |runFastCGIConcurrent'| spawns up to 10 threads. |handleErrors'| and |runApp|
 will be explained later. The basically catch unhandled database errors and pack
 information into the App monad.
-
-TODO: Before public launch, the thread limit needs to be increased.
 
 The first thing we do after forking is establish a database connection. The
 database connection might be used immediately in order to log errors. It'll
@@ -230,8 +228,6 @@ Retrieving a listing of links is easier.
 
 Searching means forms and forms mean query strings. So if there's a @contains@
 in the query string for the links page, it will do a search.
-
-TODO: This needs to be explained better.
 
 > dispatch "GET" ["links"] = do
 >   contains <- getInput "contains"

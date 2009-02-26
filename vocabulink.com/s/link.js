@@ -1,12 +1,13 @@
 addLoadEvent(setupSignals);
 
 function setupSignals () {
-    var linkTypeSelector = $('link-type');
+    var linkTypeSelector = $$('select[name=input2]')[0];
     connect(linkTypeSelector, 'onchange', partial(showLinkEditor, linkTypeSelector));
+    signal(linkTypeSelector, 'onchange');
 }
 
 function showLinkEditor (linkTypeSelector) {
-    var linkType = linkTypeSelector.value.replace(/ /g, '-');
-    map(hideElement, $$('.link-editor'));
+    var linkType = linkTypeSelector.options[linkTypeSelector.selectedIndex].text.replace(/ /g, '-');
+    map(hideElement, $$('fieldset'));
     showElement($(linkType));
 }

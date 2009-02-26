@@ -9,10 +9,11 @@ functions. An example of this is |linkList|.
 
 > module Vocabulink.Html (  Dependency(..), stdPage, simplePage, displayStaticFile,
 >                           linkList, options, accesskey,
->                           runForm, formLabel, formLabel', pager, currentPage,
+>                           runForm, formLabel, formLabel',
+>                           pager, currentPage,
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
 >                           (<<), (+++), (!),
->                           identifier, theclass, thediv, thespan,
+>                           identifier, theclass, thediv, thespan, style,
 >                           paragraph, pre, h1, h2, h3, br, anchor, href,
 >                           image, unordList, form, action, method, fieldset,
 >                           hidden, label, textfield, password, button, submit,
@@ -55,19 +56,20 @@ footer. It also includes @page.css@.
 
 |stdPage| expects title to already be encoded as UTF-8.
 
-> stdPage :: String -> [Dependency] -> [Html] -> App CGIResult
-> stdPage t deps h = do
+> stdPage :: String -> [Dependency] -> [Html] -> [Html] -> App CGIResult
+> stdPage t deps head' body' = do
 >   headerB  <- headerBar
 >   footerB  <- footerBar
 >   output $ renderHtml $ header <<
->     (thetitle << (encodeString t) +++
->      concatHtml (map includeDep ([CSS "reset", CSS "page"] ++ deps))) +++
->     body << (headerB +++ concatHtml h +++ footerB)
+>     (  thetitle << (encodeString t) +++
+>        concatHtml (map includeDep ([CSS "page"] ++ deps)) +++
+>        concatHtml head') +++
+>     body << (headerB +++ concatHtml body' +++ footerB)
 
 Often we want a simple page where the title and header are the same.
 
 > simplePage :: String -> [Dependency] -> [Html] -> App CGIResult
-> simplePage t deps h = stdPage t deps $ [ h1 << t ] ++ h
+> simplePage t deps h = stdPage t deps [] $ [ h1 << t ] ++ h
 
 Each dependency is expressed as the path from the root of the static subdomain
 (for now, @s.vocabulink.com@) to the file. Do not include the file suffix
@@ -177,10 +179,13 @@ add it to our standard page.
 
 The static file must be be a valid fragment of XHTML.
 
+For now, our static files actually resemble articles, so we'll contain them as
+such.
+
 > displayStaticFile :: String -> FilePath -> App CGIResult
 > displayStaticFile t path = do
 >   bodyHtml <- liftIO $ readFile path
->   stdPage t [] [primHtml bodyHtml]
+>   stdPage t [CSS "article"] [] [thediv ! [theclass "article"] << primHtml bodyHtml]
 
 \subsection{Higher-Level Combinators}
 

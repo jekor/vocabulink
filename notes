@@ -18,7 +18,36 @@
 ** install pgcrypt (used for hashing passwords)
 *** \i /usr/share/postgresql-8.3/contrib/pgcrypto.sql
 ** \c vocabulink vocabulink
+* Articles
+** How to get started learning another language.
+** Why only link to the Hiragana/Katakana spelling of a word? Why not the Kanji or romaji, or some combination?
+First of all, learn to understand Japanese words and sentences before you worry about the Kanji. I made that mistake myself. I put in a massive effort to learn how to write and pronounce the Kanji using James Hesig's books, long before I needed to. I thought it would be cool and "proper". In the end, much of it was wasted effort.
+
+It's important that you are able to practice reading Japanese, but there are plenty basic level Japanese readers out there that use either only hiragana or furigana (hiragana above/below? the Kanji). Even once you outgrow those, you can use programs on your computer that will convert the Kanji into readable hiragana for you.
+
+Proceeding this way will enable you to learn Kanji in context from your reading. Yes, at some point you will need to undertake disciplined study of the Kanji if you want to read and write at a high level, but why discourage yourself now and take away time from learning vocabulary?
+
+As for romaji, many will agree that romaji is a crutch which will lead to bad pronunciation habits. With only 46? hiragana, it won't take long to learn them and get used to them as well as the roman alphabet.
+
+Also, we want to apply the minimum information principle. As strange as it sounds, having both the hiragana and the romaji (let alone the Kanji) in your review actually makes things more difficult. Even though it's helpful information, your brain is trying to encode more at a time. If you know you only have to worry about hiragana (or katakana with imported words), some work is lifted from your brain.
+
+If you do want to start studying the Kanji representation of words, go ahead and create a link from the hiragana version to the Kanji version. This allows you to practice directly in Japanese, maintains the minimum information principle, and allows you to employ another mnemonic for its study (one not based on sound but on Kanji meaning or appearance).
+** Why we review links (associations) and not words. (There are few direct correlations between foreign words except for concrete nouns).
+  [[file:~/project/vocabulink/vocabulink.cgi/vocabulink.sql::]]
+** How to Create Memorable Mnemonics
+** How to Evaluate/Rate Mnemonics
+** Why only words and symbols? Why not grammar and sentences?
+Because grammar and sentences are much harder to memorize, but much easier to learn with enough vocabulary.
+Latin-based grammar study does not work. If you need to memorize verb forms, use associative links (jump -> jumped is to 躍り出る -> ?). If you need to memorize irregular verbs, use associative links with mnemonics.
+Once you learn enough vocabulary, you'll be able to infer grammar rules from your reading and listening practice. The point of vocabulink is not to make you a fluent, it's to get you to the point where becoming fluent is fun and natural with enough interaction in the language.
 * Ideas
+** Build customized word frequency lists (and add hyperlinks to links) for different reading materials.   
+   [[file:~/project/vocabulink/mnemonics/あるく::But%20these%20weren%20t%20just%20any%20walks%20These%20were%20power%20walks%20You%20can%20just%20see%20the%20water%20splashing%20around%20as%20Noah%20furiously%20tried%20to%20walk%20as%20fast%20as%20possible%20on%20the%20ocean%20wearing%20his%20spandex%20and%20listening%20to%20his%20iPod][file:~/project/vocabulink/mnemonics/あるく::But these weren t just any walks These were power walks You can just see the water splashing around as Noah furiously tried to walk as fast as possible on the ocean wearing his spandex and listening to his iPod]]
+** Write a test suite (that acts as a user with a browser).
+   [[file:~/project/vocabulink/vocabulink.cgi/Vocabulink/Review.lhs::noLinksToReviewPage%20IConnection%20conn%20conn%20Integer%20CGI%20CGIResult][file:~/project/vocabulink/vocabulink.cgi/Vocabulink/Review.lhs::noLinksToReviewPage IConnection conn conn Integer CGI CGIResult]]
+** Setup a testing framework for XSS attacks.
+   
+   [[file:~/document/personal::*Setup%20escaping%20for%20all%20HTML%20echoed%20back%20to%20the%20user%20even%20the%20username][file:~/document/personal::*Setup escaping for all HTML echoed back to the user even the username]]
 ** Reviews
 *** via email or SMS at the exact time necessary for review (with excludable ranges)
 ** Link Sets
@@ -89,3 +118,5 @@ Furigana Injector 0.8
 ** Rikaichan 1.04 (firefox plugin for definitions and readings))
 * Open Questions
 ** How do I harness the natural desire of people to do work to impress and help others? That's the force behind deviantART. What is the equivalent for language learning? It's got to go beyond making links and mnemonic stories...or does it? How can language learners express themselves and build a reputation?
+** What do you do when you have a word that doesn't have a precise meaning in your native language or has multiple meanings?
+   [[file:~/project/vocabulink/mnemonics/base_aggregates.zip:base_aggregates.txt::363976]]

@@ -1,30 +1,106 @@
 /* This file is for site-wide styling. This will be used for all standard pages. */
 
-/* Initialize the page and provide helpers. */
+/* Based on Eric Meyer's CSS Reset - http://meyerweb.com/eric/thoughts/2007/05/01/reset-reloaded/ */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, font, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	outline: 0;
+	font-weight: inherit;
+	font-style: inherit;
+	font-size: 100%;
+	font-family: inherit;
+	vertical-align: baseline;
+}
+
+/* remember to define focus styles! */
+:focus {
+	outline: 0;
+}
 
 body {
-  margin: 0;
+	line-height: 1;
+	color: black;
+	background: white;
+}
+
+ol, ul {
+	list-style: none;
+}
+
+/* tables still need 'cellspacing="0"' in the markup */
+table {
+	border-collapse: separate;
+	border-spacing: 0;
+}
+
+caption, th, td {
+	text-align: left;
+	font-weight: normal;
+}
+
+blockquote:before, blockquote:after, q:before, q:after {
+	content: "";
+}
+
+blockquote, q {
+	quotes: "" "";
+}
+
+/* Initialize the page and provide helpers. */
+
+h1, h2, h3 {
+  font-weight: bold;
+}
+
+/* Font sizes taken from http://webtypography.net/Harmony_and_Counterpoint/Size/3.1.1/ */
+
+h1 {
+  font-size: 2.25em;
+  text-align: center;
+  line-height: 1.156;
+  margin-top: 0.578em;
+  margin-bottom: 0.578em;
+}
+
+h2 {
+  font-size: 1.5em;
+  line-height: 0.867;
+  margin-top: 0.867em;
+  margin-bottom: 0.867em;
+}
+
+h3 {
+  font-size: 1.125em;
+}
+
+h4 {
+  text-align: center;
+  font-size: 0.875em;
+  line-height: 1.486;
+  margin-top: 1.486em;
+  margin-bottom: 1.486em;
+}
+
+p {
+  line-height: 1.3;
+  margin-top: 1.3em;
+  margin-bottom: 1.3em;
+}
+
+b, strong {
+  font-weight: bold;
 }
 
 .clear {
   clear: both;
-}
-
-h1, h2, h3 {
-  text-align: center;
-  font-weight: bold;
-}
-
-h1 {
-  font-size: 172.8%; /* x1.2x1.2x1.2, from the TeXBook */
-}
-
-h2 {
-  font-size: 144%;   /* x1.2x1.2 */
-}
-
-h3 {
-  font-size: 120%;   /* x1.2 */
 }
 
 /* Header Bar */

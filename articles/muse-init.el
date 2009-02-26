@@ -2,5 +2,5 @@
 (require 'muse-mode)
 (require 'muse-html)
 (setq muse-xhtml-style-sheet "")
-(setq muse-xhtml-header "\n<h1><lisp>(muse-publishing-directive \"title\")</lisp></h1>\n<h2><lisp>(muse-publishing-directive \"author\")</lisp></h2>\n")
+(setq muse-xhtml-header "\n<h1><lisp>(muse-publishing-directive \"title\")</lisp></h1>\n<h4><lisp>(muse-publishing-directive \"author\")</lisp></h4>\n")
 (setq muse-xhtml-footer "")
