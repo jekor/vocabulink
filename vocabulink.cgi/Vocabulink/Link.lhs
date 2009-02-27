@@ -17,6 +17,7 @@ them.
 > import Vocabulink.Review.Html
 > import Vocabulink.Utils
 
+> import Data.List (partition)
 > import qualified Text.XHtml.Strict.Formlets as F
 
 \subsection{Link Data Types}
@@ -64,7 +65,7 @@ function that expects a fully-instantiated link. The only danger here is
 writing a function that accepts a partial link and then trying to access the
 linkType information.
 
-> newtype PartialLink = PartialLink Link
+> newtype PartialLink = PartialLink { pLink :: Link }
 
 \subsection{Storing and Retrieving Links}
 
@@ -355,7 +356,7 @@ should be reviewed again after public release.
 >   case partials of
 >     Nothing  -> error "Error while retrieving links."
 >     Just ls  -> stdPage ("Links containing " ++ focus) [CSS "link"] []
->       [linkFocusBox focus ls]
+>                   [linkFocusBox focus $ catMaybes ls]
 >    where preds = ["(origin LIKE '" ++ focus ++ "' OR \
 >                    \destination LIKE '" ++ focus ++ "')"]
 
@@ -372,21 +373,36 @@ Before we can display the 1st and later cases, we need to sort the links into
 ``links containing the focus as the origin'' and ``links containing the focus
 as the destination''.
 
-> linkFocusBox :: String -> [Maybe PartialLink] -> Html
-> linkFocusBox focus []  = table ! [theclass "focus-box"] <<
+> linkFocusBox :: String -> [PartialLink] -> Html
+> linkFocusBox focus links = table ! [theclass "focus-box"] <<
 >   [  tbody << tr <<
->      [  td ! [theclass "origins"] << form ! [action "/link", method "GET"] <<
->           button ! [name "input1", value (encodeString focus)] << "New Link",
->         td ! [theclass "edges"] <<
->           image ! [src "http://s.vocabulink.com/edge.png",
->                    width "200", height "1"],
+>      [  td ! [theclass "origins"] <<
+>           linkNodeTable (linkOrigin . pLink) origs (linkButton "input1"),
+>         td ! [theclass "edges"] << edgesImage origs "l",
 >         td ! [theclass "focus"] << (encodeString focus),
->         td ! [theclass "edges"] <<
->           image ! [src "http://s.vocabulink.com/edge.png",
->                    width "200", height "1"],
->         td ! [theclass "destinations"] << form ! [action "/link", method "GET"] <<
->           button ! [name "input0", value (encodeString focus)] << "New Link" ] ]
-> linkFocusBox _ _       = error "unsupported"
+>         td ! [theclass "edges"] << edgesImage dests "r",
+>         td ! [theclass "destinations"] <<
+>           linkNodeTable (linkDestination . pLink) dests (linkButton "input0") ] ]
+>   where partitioned  = partition ((== focus) . linkOrigin . pLink) links
+>         origs        = snd partitioned
+>         dests        = fst partitioned
+>         edgesImage ls side = image !
+>           [  src ("http://s.vocabulink.com/edges/edges-" ++
+>                   side ++ (show $ length ls + 1) ++ ".png"),
+>              width "200" ]
+>         linkButton n = form ! [action "/link", method "GET"] <<
+>                         button ! [name n, value (encodeString focus)] <<
+>                           "New Link"
+
+For now, the easiest way to lay up the links next to the origin and destination
+edges is to use tables.
+
+> linkNodeTable :: (PartialLink -> String) -> [PartialLink] -> Html -> Html
+> linkNodeTable side links newForm = table << map linkRow linkRows
+>   where linkNodes  = map (stringToHtml . encodeString . side) links
+>         linkGroups = splitAt (ceiling $ fromIntegral (length linkNodes) / 2) linkNodes
+>         linkRows   = fst linkGroups ++ [newForm] ++ snd linkGroups
+>         linkRow    = (tr <<) . (td <<)
 
 \subsection{Creating New Links}
 

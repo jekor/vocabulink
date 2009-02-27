@@ -146,7 +146,7 @@ b, strong {
   margin-bottom: 0.25ex;
 }
 
-.auth-box #username, .auth-box #password {
+.auth-box #input0, .auth-box #input1 {
   width: 7em;
 }
 

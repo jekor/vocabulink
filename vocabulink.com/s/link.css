@@ -79,10 +79,16 @@ table.focus-box td.edges {
 
 table.focus-box td.focus {
   text-align: center;
+  width: 1em;
 }
 
-table.focus-box td.origins {
+table.focus-box td.origins table td {
   text-align: right;
+}
+
+table.focus-box td.origins table, table.focus-box td.destinations table {
+  width: 100%;
+  height: 100%;
 }
 
 table.focus-box td.destinations {
