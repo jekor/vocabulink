@@ -61,7 +61,7 @@ Each of these modules will be described in its own section.
 > import Vocabulink.Article
 > import Vocabulink.DB
 > import Vocabulink.CGI
-> import Vocabulink.Html hiding (method)
+> import Vocabulink.Html hiding (method, options)
 > import Vocabulink.Link
 > import Vocabulink.Member
 > import Vocabulink.Review
@@ -71,18 +71,45 @@ Each of these modules will be described in its own section.
 
 \section{Other Modules}
 
-Vocabulink makes use of a half dozen or so Haskell libraries. Even though we don't use them all in this module, I'll describe them here so that they'll be more familiar as they're introduced (and so that you can jump directly to the section you're interested in after this introduction).
+Vocabulink makes use of a half dozen or so Haskell libraries. Even though we
+don't use them all in this module, I'll describe them here so that they'll be
+more familiar as they're introduced (and so that you can jump directly to the
+section you're interested in after this introduction).
 
 \begin{description}
-\item[Codec.Binary.UTF8.String] Vocabulink would be pretty useless without being able to handle the writing systems of other languages. We only make use of 2 functions provided by this library: |encodeString| and |decodeString|. |decodeString| takes a UTF-8 string---either from the webserver or from the database---and converts it into a Unicode string that can be used by Haskell natively. We use |encodeString| to go in the other direction. Whenever we write out a string to the database, the webserver, or a log file; it needs to be encoded to UTF-8. This is something that the type system does not (yet) handle for us, so we need to be careful to correctly encode and decode strings.
-\item[Network.URI] Various parts of the code may need to construct or deconstruct URLs. Using this library should be safer than using various string-mangling techniques throughout the code.
-\item[Text.ParserCombinators.Parsec] We need to parse text quite a bit. The dispatcher, the member authentication routines, and the article publishing system all make use of Parsec; and probably more will in the future.
+
+\item[Codec.Binary.UTF8.String] Vocabulink would be pretty useless without
+being able to handle the writing systems of other languages. We only make use
+of 2 functions provided by this library: |encodeString| and |decodeString|.
+|decodeString| takes a UTF-8 string---either from the webserver or from the
+database---and converts it into a Unicode string that can be used by Haskell
+natively. We use |encodeString| to go in the other direction. Whenever we write
+out a string to the database, the webserver, or a log file; it needs to be
+encoded to UTF-8. This is something that the type system does not (yet) handle
+for us, so we need to be careful to correctly encode and decode strings.
+
+\item[Data.ConfigFile] We need to have some parameters configurable at runtime.
+This allows us to do things differently in test and production environments. It
+also allows us to publish the source to the program without exposing sensitive
+information.
+
+\item[Network.URI] Various parts of the code may need to construct or
+deconstruct URLs. Using this library should be safer than using various
+string-mangling techniques throughout the code.
+
+\item[Text.ParserCombinators.Parsec] We need to parse text quite a bit. The
+dispatcher, the member authentication routines, and the article publishing
+system all make use of Parsec; and probably more will in the future.
+
 \end{description}
 
 There are a few more, but they are only used by a single Vocabulink module\footnote{The Vocabulink module may re-export some functions provided by the module, but the other Vocabulink modules should be able to remain ignorant of that.}.
 
 > import Control.Concurrent (forkIO)
-> import Data.List (find, intercalate)
+> import Control.Monad (join)
+> import Control.Monad.Error (runErrorT)
+> import Data.ConfigFile (readfile, emptyCP, ConfigParser, CPError, options)
+> import Data.List (find, intercalate, intersect)
 > import Data.List.Split (splitOn)
 > import Network.FastCGI (runFastCGIConcurrent')
 > import Network.URI (URI(..), unEscapeString)
@@ -94,15 +121,46 @@ When the program starts, it immediately begin listening for connections.
 will be explained later. The basically catch unhandled database errors and pack
 information into the App monad.
 
+Before forking, we read a configuration file. We pass this to runApp so that
+all threads have access to global configuration information.
+
 The first thing we do after forking is establish a database connection. The
 database connection might be used immediately in order to log errors. It'll
 eventually be passed to the App monad where it'll be packed into a reader
 environment.
 
 > main :: IO ()
-> main =  runFastCGIConcurrent' forkIO 10 (
->           do  c <- liftIO connect
->               handleErrors' c (runApp c handleRequest))
+> main = do  cp' <- getConfig
+>            case cp' of
+>              Left e    -> print e
+>              Right cp  -> runFastCGIConcurrent' forkIO 10 (do
+>                c <- liftIO connect
+>                handleErrors' c (runApp c cp handleRequest))
+
+The |configFile| is the one bit of configuration that's the same in all
+environments.
+
+> configFile :: String
+> configFile = "/etc/vocabulink.conf"
+
+These config vars are required for Vocabulink to do anything useful. We check
+for them at load time and they can be safely read later with |forceEither $
+get|.
+
+> requiredConfigVars :: [String]
+> requiredConfigVars = ["authtokensalt", "articledir"]
+
+This retrieves the config file and makes sure that it contains all of the
+required configuration parameters. This is so that we find out about errors
+when starting the program rather than in individual threads later.
+
+> getConfig :: IO (Either CPError ConfigParser)
+> getConfig = runErrorT $ do
+>   cp <- join $ liftIO $ readfile emptyCP configFile
+>   opts <- options cp "DEFAULT"
+>   if intersect requiredConfigVars opts == requiredConfigVars
+>      then return cp
+>      else error "Missing configuration options."
 
 |handleRequest| ``digests'' the requested URI before passing it to the
  dispatcher. It also sets the response header. If we ever serve up non-HTML
@@ -304,7 +362,7 @@ and associated functionality by using the stdPage function.
 
 > frontPage :: App CGIResult
 > frontPage = do
->   memberNo <- asks memberNumber
+>   memberNo <- asks appMemberNo
 >   w <- maybe (return noHtml) (\_ -> renderWidget (MyLinks 10)) memberNo
 >   simplePage "Welcome to Vocabulink" [] [w]
 

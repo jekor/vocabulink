@@ -6,7 +6,7 @@ database connection. I now understand monads a little bit more, and it's easier
 to store some information within an ``App'' monad. This reduces our function
 signatures a little bit.
 
-> module Vocabulink.App (      App, AppEnv(..), AppT, runApp, logApp,
+> module Vocabulink.App (      App, AppEnv(..), AppT, runApp, logApp, getOption,
 >                              withMemberNumber, withRequiredMemberNumber,
 >                              output404,
 >                              queryTuple', queryValue', queryAttribute',
@@ -16,23 +16,27 @@ signatures a little bit.
 
 > import Vocabulink.CGI
 > import Vocabulink.DB
-> import Vocabulink.Member.AuthToken
+> import {-# SOURCE #-} Vocabulink.Member.AuthToken
 > import Vocabulink.Utils
 
 > import Control.Applicative
 > import Control.Exception (Exception, try)
 > import Control.Monad (ap)
+> import Control.Monad.Error (runErrorT)
 > import Control.Monad.Reader (ReaderT(..), MonadReader, asks)
 > import Control.Monad.Trans (lift)
 
+> import Data.ConfigFile (ConfigParser, get)
+> import Data.Either.Utils (forceEither)
 > import Data.List (intercalate)
 > import Network.CGI.Monad (MonadCGI(..), tryCGI)
 > import Network.FastCGI (CGI, CGIT, outputNotFound)
 > import Network.URI (escapeURIString, isUnescapedInURI)
 
-> data AppEnv = AppEnv {  db            :: Connection,
->                         memberNumber  :: Maybe Integer,
->                         memberName    :: Maybe String }
+> data AppEnv = AppEnv {  appDB          :: Connection,
+>                         appCP          :: ConfigParser,
+>                         appMemberNo    :: Maybe Integer,
+>                         appMemberName  :: Maybe String }
 
 The App monad is a combination of the CGI and Reader monads.
 
@@ -62,12 +66,14 @@ existing methods.
 |runApp| does the job of creating the Reader environment and returning the
 CGIResult from within the App monad to the CGI monad.
 
-> runApp :: Connection -> App CGIResult -> CGI CGIResult
-> runApp c (AppT a) = do
->   token <- verifiedAuthToken
->   res <- runReaderT a $ AppEnv {  db            = c,
->                                   memberNumber  = authMemberNo `liftM` token,
->                                   memberName    = authUsername `liftM` token}
+> runApp :: Connection -> ConfigParser -> App CGIResult -> CGI CGIResult
+> runApp c cp (AppT a) = do
+>   let salt = forceEither $ get cp "DEFAULT" "authtokensalt"
+>   token <- verifiedAuthToken salt
+>   res <- runReaderT a $ AppEnv {  appDB          = c,
+>                                   appCP          = cp,
+>                                   appMemberNo    = authMemberNo `liftM` token,
+>                                   appMemberName  = authUsername `liftM` token }
 >   return res
 
 At some point it's going to be essential to have all errors and notices logged
@@ -76,7 +82,7 @@ this difficult.
 
 > logApp :: String -> String -> App (String)
 > logApp t s = do
->   c <- asks db
+>   c <- asks appDB
 >   liftIO $ logMsg c t s
 
 \subsection{Convenience Functions}
@@ -90,13 +96,13 @@ environment in the App monad.
 and a function to carry out with the member's number otherwise.
 
 > withMemberNumber :: a -> (Integer -> App a) -> App a
-> withMemberNumber d f = asks memberNumber >>= maybe (return d) f
+> withMemberNumber d f = asks appMemberNo >>= maybe (return d) f
 
 |withRequiredMemberNumber| is like |withMemberNumber|, but it provides a
 ``logged out default'' of redirecting the client to the login page.
 
 > withRequiredMemberNumber :: (Integer -> App CGIResult) -> App CGIResult
-> withRequiredMemberNumber f =  asks memberNumber >>=
+> withRequiredMemberNumber f =  asks appMemberNo >>=
 >                               maybe (loginRedirectPage >>= redirect) f
 
 When we direct a user to the login page, we want to make sure that they can
@@ -134,27 +140,27 @@ it's much easier than manually wrapping the query with |catchSql|.
 
 > queryTuple' :: String -> [SqlValue] -> App (Maybe [SqlValue])
 > queryTuple' sql vs = do
->   c <- asks db
+>   c <- asks appDB
 >   liftIO $ (queryTuple c sql vs >>= return . Just) `catchSqlD` Nothing
 
 > queryTuples' :: String -> [SqlValue] -> App (Maybe [[SqlValue]])
 > queryTuples' sql vs = do
->   c <- asks db
+>   c <- asks appDB
 >   liftIO $ (quickQuery' c sql vs >>= return . Just) `catchSqlD` Nothing
 
 > queryValue' :: String -> [SqlValue] -> App (Maybe SqlValue)
 > queryValue' sql vs = do
->   c <- asks db
+>   c <- asks appDB
 >   liftIO $ (queryValue c sql vs) `catchSqlD` Nothing
 
 > queryAttribute' :: String -> [SqlValue] -> App (Maybe [SqlValue])
 > queryAttribute' sql vs = do
->   c <- asks db
+>   c <- asks appDB
 >   liftIO $ (queryAttribute c sql vs >>= return . Just) `catchSqlD` Nothing
 
 > quickInsertNo' :: String -> [SqlValue] -> String -> App (Maybe Integer)
 > quickInsertNo' sql vs seqname = do
->   c <- asks db
+>   c <- asks appDB
 >   liftIO $ quickInsertNo c sql vs seqname `catchSqlD` Nothing
 
 It may seem strange to return Maybe (), but we want to know if the database
@@ -162,7 +168,7 @@ change succeeded.
 
 > quickStmt' :: String -> [SqlValue] -> App (Maybe ())
 > quickStmt' sql vs = do
->   c <- asks db
+>   c <- asks appDB
 >   liftIO $ (quickStmt c sql vs >>= return . Just) `catchSqlD` Nothing
 
 Working with transactions outside of the App monad can be done, but we might as
@@ -171,7 +177,7 @@ the exception and returns Nothing).
 
 > withTransaction' :: App a -> App (Maybe a)
 > withTransaction' actions = do
->   c <- asks db
+>   c <- asks appDB
 >   r <- tryApp actions
 >   case r of
 >     Right x  -> do liftIO $ commit c
@@ -182,8 +188,10 @@ the exception and returns Nothing).
 
 > run' :: String -> [SqlValue] -> App (Integer)
 > run' sql vs = do
->   c <- asks db
+>   c <- asks appDB
 >   liftIO $ run c sql vs
+
+\subsubsection{Exceptions}
 
 |tryApp| is like |tryCGI|. It allows us to catch exceptions within the App
 monad. To do so, we unwrap the Reader monad and use TryCGI (which unwraps
@@ -191,3 +199,17 @@ another Reader and Writer).
 
 > tryApp :: App a -> App (Either Exception a)
 > tryApp (AppT c) = AppT (ReaderT (\r -> tryCGI (runReaderT c r)))
+
+\subsubsection{Configuration}
+
+Return a configuration option or log an error.
+
+This always pulls from the DEFAULT section. It also only supports strings.
+
+> getOption :: String -> App (Maybe String)
+> getOption option = do
+>   cp <- asks appCP
+>   opt <- runErrorT $ get cp "DEFAULT" option
+>   case opt of
+>     Left e   -> logApp "config" (show e) >> return Nothing
+>     Right o  -> return $ Just o

@@ -45,7 +45,7 @@ both based on the link number and the currently logged in member.
 
 > reviewIndicator :: Integer -> App (Html)
 > reviewIndicator linkNo = do
->   memberNo <- asks memberNumber
+>   memberNo <- asks appMemberNo
 >   case memberNo of
 >     Nothing -> return $ paragraph ! [theclass "review-box login"] <<
 >                           anchor ! [href "/member/login"] << "Login to Review" 

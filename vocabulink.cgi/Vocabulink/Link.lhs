@@ -91,7 +91,7 @@ This returns the newly established link number.
 > establishLink :: Link -> Integer -> App (Maybe Integer)
 > establishLink l memberNo = do
 >   r <- withTransaction' $ do
->     c <- asks db
+>     c <- asks appDB
 >     linkNo <- liftIO $ insertNo c
 >       "INSERT INTO link (origin, destination, link_type, \
 >                         \language, author) \
@@ -282,7 +282,7 @@ exceptions, etc.
 
 > linkPage :: Integer -> App CGIResult
 > linkPage linkNo = do
->   memberNo <- asks memberNumber
+>   memberNo <- asks appMemberNo
 >   l <- getLink linkNo
 >   case l of
 >     Nothing  -> output404 ["link", show linkNo]

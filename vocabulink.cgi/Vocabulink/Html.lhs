@@ -91,7 +91,7 @@ review and a logout button.
 
 > headerBar :: App Html
 > headerBar = do
->   username <- asks memberName
+>   username <- asks appMemberName
 >   review <- reviewBox
 >   return $ thediv ! [identifier "header-bar"] <<
 >     [  anchor ! [theclass "logo", href "/", accesskey "1"] << "Vocabulink",

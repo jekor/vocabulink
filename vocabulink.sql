@@ -9,7 +9,7 @@ CREATE TABLE log_type (
 );
 INSERT INTO log_type (name) VALUES ('unknown'), ('exception'),
                                    ('IO exception'), ('SQL error'),
-                                   ('404'), ('parse error');
+                                   ('404'), ('parse error'), ('config');
 
 CREATE TABLE log (
        time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
@@ -24,13 +24,15 @@ CREATE TABLE member (
        username CHARACTER VARYING(32) NOT NULL UNIQUE,
        join_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        email TEXT,
-       password_hash TEXT NOT NULL
+       email_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
+       website TEXT,
+       password_hash TEXT,
 );
 COMMENT ON COLUMN member IS 'At some point in time we may want to store a member''s timezone and locale so that we can report dates and times accurately to them. For example, "Your next review is scheduled on November 3rd at 10:48." For now we just use relative times ("Your next review is scheduled for 18 hours from now.").';
 COMMENT ON COLUMN member.member_no IS 'I debated about using the username as a primary key. In the end, I decided against it. Performance and space concerns won me over. It''s also nice to have a numeric reference to a member in case we need to refer to a member in some context where Unicode characters aren''t valid.';
 COMMENT ON COLUMN member.username IS 'I want to allow usernames to include any URL-safe characters, including alphanumeric Unicode characters. The regexp for username is ^[\p{L}\p{Nd}$-_.+!*''(),]{3,}$. Because usernames will be used in URLs, and displayed in various places, I want to keep them to a reasonable size. This was also a motivation for making the difficult decision to disallow spaces. All of the preceding is outdated, we allow any characters in the username.';
 COMMENT ON COLUMN member.email IS 'In order to allow any reasonable email address from members, the regexp for email addresses is ^[\p{L}\p{N}\p{P}\p{S}]+@[\p{L}\p{N}\p{P}\p{S}]+$. Again, this should accept Unicode characters';
-COMMENT ON COLUMN member.password_hash IS 'The member''s password is stored as a hash, calculated by the pgcrypto contrib functions. See /usr/share/postgresql/contrib/pgcrypto.sql. The actual function used is crypt(?, gen_salt(''bf'')) (bf is for blowfish)';
+COMMENT ON COLUMN member.password_hash IS 'The member''s password is stored as a hash, calculated by the pgcrypto contrib functions. See /usr/share/postgresql/contrib/pgcrypto.sql. The actual function used is crypt(?, gen_salt(''bf'')) (bf is for blowfish). A password is not required so that non-members can interact to some extend with the site (such as posting comments). The idea is that someone can provide an email address and confirm it each time if they just want to comment on blog postings.';
 
 INSERT INTO member (member_no, username, password_hash)
 VALUES (0, 'anonymous', '');
@@ -107,7 +109,7 @@ CREATE TABLE link_set_member (
 );
 
 CREATE TABLE link_to_review (
-       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE CHECK (member_no <> 0),
+       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
        link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE,
        target_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        PRIMARY KEY (member_no, link_no)
@@ -116,7 +118,7 @@ COMMENT ON COLUMN link_to_review.member_no IS 'Anonymous members cannot schedule
 COMMENT ON COLUMN link_to_review.target_time IS 'Target is the date and time at which this link should come up for review. The link will be reviewed sometime after that. All new links for review are currently scheduled for immediate review.';
 
 CREATE TABLE link_review (
-       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE CHECK (member_no <> 0),
+       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
        link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE,
        target_time TIMESTAMP WITH TIME ZONE NOT NULL,
        actual_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
@@ -128,7 +130,7 @@ COMMENT ON COLUMN link_review.recall IS 'Recall is a measure of how easy or comp
 COMMENT ON COLUMN link_review.recall_time IS 'Recall time is the amount of time (in milliseconds) taken to recall (or not) the destination of a link. It could be measured as the time between when the page is displayed and when the destination lexeme is shown (using JavaScript).';
 
 CREATE TABLE link_sm2 (
-       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE CHECK (member_no <> 0),
+       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
        link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE,
        n SMALLINT NOT NULL DEFAULT 1,
        EF REAL NOT NULL DEFAULT 2.5,
@@ -137,3 +139,24 @@ CREATE TABLE link_sm2 (
 COMMENT ON TABLE link_sm2 IS 'link_sm2 is used to track statistics for reviews based on SuperMemo algorithm 2 (SM-2).';
 COMMENT ON COLUMN link_sm2.ef IS 'EF stands for "Easiness Factor".';
 COMMENT ON COLUMN link_sm2.n IS 'This member is in review interval n. They may have reviewed the item more than n times, but n resets with a response lower than 3 in SM-2.';
+
+CREATE TABLE blog_post (
+       post_no SERIAL PRIMARY KEY,
+       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
+       publish_time TIMESTAMP WITH TIME ZONE NOT NULL,
+       title TEXT,
+);
+COMMENT ON COLUMN blog_post.publish_time IS 'A blog post is published at this time. If it''s before this time, the post is only visible to the owner.';
+
+CREATE TABLE blog_tag (
+       post_no INTEGER REFERENCES blog_post (post_no) ON UPDATE CASCADE,
+       tag TEXT,
+)
+
+CREATE TABLE blog_comment (
+       post_no INTEGER REFERENCES blog_post (post_no) ON UPDATE CASCADE,
+       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
+       time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       comment TEXT,
+       PRIMARY KEY (post_no, member_no, time)
+);

@@ -6,6 +6,7 @@ you are (or at least can be enhanced by that knowledge).
 > module Vocabulink.Member.AuthToken (  AuthToken(..), verifiedAuthToken,
 >                                       setAuthCookie, deleteAuthCookie) where
 
+> import Vocabulink.App
 > import Vocabulink.CGI
 > import Vocabulink.Utils
 
@@ -59,15 +60,15 @@ Here is the format of the actual cookie we send to the client.
 This creates an AuthToken with the default expiration time, automatically
 calculating the digest.
 
-> authToken :: Integer -> String -> String -> IO (AuthToken)
-> authToken memberNo username ip = do
+> authToken :: Integer -> String -> String -> String -> IO (AuthToken)
+> authToken memberNo username ip salt = do
 >   now <- currentDay
 >   let expires = addDays cookieShelfLife now
->   digest <- tokenDigest $ AuthToken {  authExpiry     = expires,
->                                        authMemberNo   = memberNo,
->                                        authUsername   = encodeString username,
->                                        authIPAddress  = ip,
->                                        authDigest     = "" }
+>   digest <- tokenDigest (AuthToken {  authExpiry     = expires,
+>                                       authMemberNo   = memberNo,
+>                                       authUsername   = encodeString username,
+>                                       authIPAddress  = ip,
+>                                       authDigest     = "" }) salt
 >   return AuthToken {  authExpiry     = expires,
 >                       authMemberNo   = memberNo,
 >                       authUsername   = encodeString username,
@@ -80,8 +81,8 @@ Eventually, we need to rotate the key used to generate the HMAC, while still
 storing old keys long enough to use them for any valid login session. Without
 this, authentication is less secure.
 
-> tokenDigest :: AuthToken -> IO (String)
-> tokenDigest a = hmac sha1 (pack "blahblahblah") (pack token)
+> tokenDigest :: AuthToken -> String -> IO (String)
+> tokenDigest a salt = hmac sha1 (pack salt) (pack token)
 >   where token =  showGregorian (authExpiry a) ++
 >                  show (authMemberNo a) ++
 >                  authUsername a ++
@@ -90,9 +91,10 @@ this, authentication is less secure.
 Setting the cookie is rather simple by this point. We just create the auth
 token and send it to the client.
 
-> setAuthCookie :: (MonadCGI m, MonadIO m) => Integer -> String -> String -> m ()
+> setAuthCookie :: Integer -> String -> String -> App ()
 > setAuthCookie memberNo username ip = do
->   authTok <- liftIO $ authToken memberNo username ip
+>   salt <- fromJust <$> getOption "authtokensalt"
+>   authTok <- liftIO $ authToken memberNo username ip salt
 >   now <- liftIO getClockTime
 >   expires <- liftIO $ toCalendarTime
 >                (addToClockTime (TimeDiff {  tdYear     = 0,
@@ -101,7 +103,7 @@ token and send it to the client.
 >                                             tdHour     = 0,
 >                                             tdMin      = 0,
 >                                             tdSec      = 0,
->                                             tdPicosec  = 0}) now)
+>                                             tdPicosec  = 0 }) now)
 >   setCookie Cookie {  cookieName     = "auth",
 >                       cookieValue    = (show authTok),
 >                       cookieExpires  = Just expires,
@@ -127,15 +129,15 @@ returns it. To verify an auth token, we verify the token digest, check that the
 cookie hasn't expired, and verify the sending IP address against the one in the
 token.
 
-> verifiedAuthToken :: (MonadCGI m, MonadIO m) => m (Maybe AuthToken)
-> verifiedAuthToken = do
+> verifiedAuthToken :: (MonadCGI m, MonadIO m) => String -> m (Maybe AuthToken)
+> verifiedAuthToken salt = do
 >   cookie <- getCookie "auth"
 >   ip <- remoteAddr
 >   case parseAuthToken =<< cookie of
 >     Nothing  -> return Nothing
 >     Just a   -> do
 >       now <- liftIO currentDay
->       digest <- liftIO $ tokenDigest a
+>       digest <- liftIO $ tokenDigest a salt
 >       if digest == authDigest a && diffDays (authExpiry a) now > 0 &&
 >          ip == (authIPAddress a)
 >          then return $ Just a

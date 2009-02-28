@@ -38,10 +38,8 @@ from Muse-mode (\url{http://mwolson.org/projects/EmacsMuse.html}) files using
 Emacs. However, we can reconstruct the metadata for an article by parsing the
 file.
 
-For now, all articles live in my project directory.
-
-> articleDir :: String
-> articleDir = "/home/chris/project/vocabulink/articles/"
+> articleDir :: App String
+> articleDir = fromJust <$> getOption "articledir"
 
 To retrieve an article from the filesystem we just need the path to the @.muse@
 file. We don't generate the article HTML (that's done by Emacs), so we read
@@ -135,6 +133,7 @@ Display a published article to the client.
 
 > articlePage :: String -> App CGIResult
 > articlePage title = do
+>   path <- path' <$> articleDir
 >   published <- liftIO $ isPublished path
 >   case published of
 >     False -> output404 ["article", title]
@@ -144,13 +143,13 @@ Display a published article to the client.
 >         Nothing  -> output404 ["article", title]
 >         Just a   -> stdPage (articleTitle a) [CSS "article"] []
 >           [thediv ! [theclass "article"] << (articleBody a)]
->   where path = articleDir ++ title ++ ".muse"
+>   where path' dir = dir ++ title ++ ".muse"
 
 Display a listing of published articles to the client.
 
 > articlesPage :: App CGIResult
 > articlesPage = do
->   articles <- getPublishedArticles articleDir
+>   articles <- getPublishedArticles =<< articleDir
 >   case articles of
 >     Nothing  -> error "Error retrieving articles."
 >     Just as  -> stdPage "Articles" [] [] [unordList $ map articleLinkHtml as]

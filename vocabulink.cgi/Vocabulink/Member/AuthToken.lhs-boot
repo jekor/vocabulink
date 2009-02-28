@@ -1,0 +1,15 @@
+> module Vocabulink.Member.AuthToken where
+
+> import Vocabulink.CGI
+> import Vocabulink.Utils
+
+> data AuthToken = AuthToken {
+>   authExpiry     :: Day,
+>   authMemberNo   :: Integer,
+>   authUsername   :: String,
+>   authIPAddress  :: String,
+>   authDigest     :: String
+> }
+
+> verifiedAuthToken :: (MonadCGI m, MonadIO m) => String -> m (Maybe AuthToken)
+
