@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
 ><head
-  ><title>Forums</title>
+  ><title>Forum - Welcome to Vocabulink</title>
     <link href="http://s.vocabulink.com/css/page.css" rel="stylesheet" type="text/css"/>
     <link href="http://s.vocabulink.com/css/forum.css" rel="stylesheet" type="text/css"/>
     <script src="http://s.vocabulink.com/js/MochiKit.js" type="text/javascript"></script>
@@ -41,8 +41,10 @@
       ></div
     >
 <div id="body">
-    <h1>Forums</h1>
-    <form action="." method="POST"><input type="text"/><input type="submit" value="Search"/></form>
+  <ul class="breadcrumbs">
+    <li><a href="../forum.html">Forums</a> »</li>
+    <li>Welcome to Vocabulink</li>
+  </ul>
     <div class="forum-group">
       <h2>Vocabulink</h2>
       <ul class="first">
@@ -55,18 +57,47 @@
       </ul>
       <p class="clear"></p>
     </div>
-    <div class="forum-group">
-      <h2>Language Learning</h2>
-      <ul class="first">
-	<li>Announcements</li>
-	<li>Welcome to Vocabulink</li>
-      </ul>
-      <ul>
-	<li>Questions and Assistance</li>
-	<li>Site Feedback</li>
-      </ul>
-      <p class="clear"></p>
-    </div>
+  <a href="#">New Topic</a>
+  <div id="topics">
+  <table>
+    <colgroup span="1" width="60%"/>
+    <thead>
+      <th class="topic">Topic</th>
+      <th class="replies">Replies</th>
+      <th class="author">Author</th>
+      <th class="last">Last Comment</th>
+    </thead>
+    <tbody>
+      <tr class="odd">
+	<td class="topic"><a href="#">Announcement: Welcome to Vocabulink! (Getting Started)</a></td>
+	<td class="replies">11</td>
+	<td class="author">jekor</td>
+	<td class="last">Mon Mar 03, 2009<br/>jekor</td>
+      </tr>
+      <tr class="even">
+	<td class="topic"><a href="#">Y Hello Thar</a></td>
+	<td class="replies">1</td>
+	<td class="author">jekor</td>
+	<td class="last">Tue Mar 04, 2009<br/>someone</td>
+      </tr>
+      <tr class="odd">
+	<td class="topic"><a href="#">I like turtles</a></td>
+	<td class="replies">9,001</td>
+	<td class="author">someone</td>
+	<td class="last">Mon Mar 03, 2009<br/>jekor</td>
+      </tr>
+      <tr class="even">
+	<td class="topic"><a href="#">Why? Why? Why? What about a really long topic? Why? Why? Why? Because! Because! Because! Why? Why? Why? What about a really long topic? Why? Why? Why? Because! Because! Because!</a></td>
+	<td class="replies">84</td>
+	<td class="author">someone else</td>
+	<td class="last">Mon Mar 03, 2009<br/>oh really?</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr></tr>
+    </tfoot>
+  </table>
+  </div>
 </div>
     <div id="footer-bar"
     ><ul class="links"

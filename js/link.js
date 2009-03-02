@@ -1,4 +1,4 @@
-addLoadEvent(setupSignals);
+connect(window, 'onload', setupSignals);
 
 function setupSignals () {
     var linkTypeSelector = $$('select[name=input2]')[0];

@@ -64,7 +64,9 @@ footer. It also includes @page.css@.
 >     (  thetitle << (encodeString t) +++
 >        concatHtml (map includeDep ([CSS "page"] ++ deps)) +++
 >        concatHtml head') +++
->     body << (headerB +++ concatHtml body' +++ footerB)
+>     body << [  headerB,
+>                thediv ! [identifier "body"] << concatHtml body',
+>                footerB ]
 
 Often we want a simple page where the title and header are the same.
 
