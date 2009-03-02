@@ -1,5 +1,5 @@
 #title Copyright Policy
-#date 2008-11-19
+#date 2008-11-19 00:00:00 -0800
 
 By submitting content to Vocabulink, you agree to license it under the Creative Commons [[http://creativecommons.org/licenses/by-sa/3.0/][Attribution Share Alike]] license.
 

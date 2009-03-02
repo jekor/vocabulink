@@ -212,41 +212,28 @@ function for a @GET@ and to another for a @POST@.
 
 > dispatch :: String -> [String] -> App CGIResult
 
-\subsection{Static Files}
+\subsection{Articles}
 
-Some URIs are nothing fancier than static HTML files. We serve them from within
-the program so that we can wrap them in a header, footer, and whatever else
-we'd like.
+Some permanent URIs use the article system. You could call these elevated
+articles. We use articles because the system for managing them exists already
+(revision control, etc)
 
 Each @.html@ file is actually an HTML fragment. These happen to be generated
 from Muse Mode files by Emacs, but we don't really care where they come from.
 
-These are the links in the standard page footer. See \autoref{staticPath} for
-the definition of |staticPath|.
+> dispatch "GET" ["privacy"]     =  articlePage "privacy"
+> dispatch "GET" ["help"]        =  articlePage "help"
+> dispatch "GET" ["copyrights"]  =  articlePage "copyrights"
+> dispatch "GET" ["disclaimer"]  =  articlePage "disclaimer"
 
-> dispatch "GET" ["privacy"]     =  displayStaticFile "Privacy Policy" $
->                                   staticPath ++ "privacy.html"
-> dispatch "GET" ["help"]        =  displayStaticFile "Help" $
->                                   staticPath ++ "help.html"
-> dispatch "GET" ["copyrights"]  =  displayStaticFile "Copyright Policy" $
->                                   staticPath ++ "copyrights.html"
-> dispatch "GET" ["disclaimer"]  =  displayStaticFile "Disclaimer" $
->                                   staticPath ++ "disclaimer.html"
+Other articles can be created without recompilation. We just have to rescan the
+filesystem for them. They also live in the @/article@ namespace (specifically
+at @/article/title@).
 
-\subsection{Articles}
-
-Articles are also static files, but we want to be able to add new articles
-without recompiling. Also, we extract some extra information from articles. See
-\autoref{Article}.
-
-Each article is accessed at @/article/title@.
+> dispatch "POST"  ["articles"] = refreshArticles
+> dispatch "GET"   ["articles"] = articlesPage
 
 > dispatch "GET" ["article",x] = articlePage x
-
-A listing is presented at @/articles@. I'm still debating whether or not it
-should be @/article/@.
-
-> dispatch "GET" ["articles"] = articlesPage
 
 \subsection{Link Pages}
 
@@ -365,12 +352,6 @@ and associated functionality by using the stdPage function.
 >   memberNo <- asks appMemberNo
 >   w <- maybe (return noHtml) (\_ -> renderWidget (MyLinks 10)) memberNo
 >   simplePage "Welcome to Vocabulink" [] [w]
-
-\label{staticPath}
-This path to static files will change once it's launched to the live site.
-
-> staticPath :: FilePath
-> staticPath = "/home/chris/project/vocabulink/static/"
 
 %include Vocabulink/Utils.lhs
 %include Vocabulink/CGI.lhs

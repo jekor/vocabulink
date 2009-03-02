@@ -10,7 +10,8 @@ exist in any libraries I know of.
 >  {- Control.Monad -}              liftM,
 >  {- Control.Monad.Trans -}        liftIO, MonadIO,
 >  {- Data.Maybe -}                 maybe, fromMaybe, fromJust, isJust, catMaybes,
->  {- Data.Time.Calendar -}         Day) where
+>  {- Data.Time.Calendar -}         Day,
+>  {- Data.Time.Clock -}            UTCTime) where
 
 We make extensive use of the |liftM| and the Maybe monad.
 
@@ -21,7 +22,7 @@ We make extensive use of the |liftM| and the Maybe monad.
 > import Control.Monad.Trans (liftIO, MonadIO)
 > import Data.Maybe (maybe, fromMaybe, fromJust, isJust, catMaybes)
 > import Data.Time.Calendar (Day, toGregorian)
-> import Data.Time.Clock (getCurrentTime)
+> import Data.Time.Clock (getCurrentTime, UTCTime)
 > import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, LocalTime(..))
 
 It's often useful to have the compactness of the traditional tertiary operator

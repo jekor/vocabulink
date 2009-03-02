@@ -7,5 +7,5 @@ SUBDIRS := vocabulink.cgi articles static
 all : $(SUBDIRS)
 	@echo built
 
-$(SUBDIRS):
+$(SUBDIRS) :
 	@-$(MAKE) -C $@

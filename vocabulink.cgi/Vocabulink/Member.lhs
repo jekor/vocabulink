@@ -1,4 +1,4 @@
-> module Vocabulink.Member (login, logout, registerMember) where
+> module Vocabulink.Member (login, logout, registerMember, getMemberNumber) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI

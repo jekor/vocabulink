@@ -249,7 +249,7 @@ Here's the simplest HTML representation of a link we use.
 > linkHtml :: Html -> Html -> Html
 > linkHtml orig dest = concatHtml
 >   [  thespan ! [theclass "lexeme"] << orig,
->      image ! [src "http://s.vocabulink.com/edge.png", width "200", height "1"],
+>      image ! [src "http://s.vocabulink.com/edges/edges-l1.png", width "200", height "1"],
 >      thespan ! [theclass "lexeme"] << dest ]
 
 Displaying a partial link is similar. We need to do so in different contexts,

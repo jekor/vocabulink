@@ -20,6 +20,8 @@ enough to get going in a language
 ** \c vocabulink postgres
 ** install pgcrypt (used for hashing passwords)
 *** \i /usr/share/postgresql-8.3/contrib/pgcrypto.sql
+** install tablefunc (used for storing trees)
+*** \i /usr/share/postgresql-8.3/contrib/tablefunc.sql
 ** \c vocabulink vocabulink
 * Articles
 ** How to get started learning another language.

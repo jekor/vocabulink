@@ -1,0 +1,177 @@
+// This file is for site-wide styling. This will be used for all standard pages.
+
+// Based on Eric Meyer's CSS Reset - http://meyerweb.com/eric/thoughts/2007/05/01/reset-reloaded/
+
+html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, font, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td:
+  margin: 0
+  padding: 0
+  border: 0
+  outline: 0
+  font->
+    weight: inherit
+    style: inherit
+    size: 100%
+    family: inherit
+  vertical-align: baseline
+
+// remember to define focus styles!
+:focus:
+  outline: 0
+
+body:
+  line-height: 1
+  color: black
+  background: white
+
+ol, ul:
+  list-style: none
+
+// tables still need 'cellspacing="0"' in the markup
+table:
+  border->
+    collapse: separate
+    spacing: 0
+
+caption, th, td:
+  text-align: left
+  font-weight: normal
+
+blockquote:before, blockquote:after, q:before, q:after:
+	content: \"\"
+
+blockquote, q:
+	quotes: \"\" \"\"
+
+// Initialize the page and provide helpers.
+
+h1, h2, h3:
+  font-weight: bold
+
+// Font sizes initially taken from http://webtypography.net/Harmony_and_Counterpoint/Size/3.1.1/
+
+h1:
+  font-size: 2.25em
+  text-align: center
+  line-height: 1.156
+  margin->
+    top: 0.578em
+    bottom: 0.578em
+
+h2:
+  font-size: 1.5em
+  line-height: 0.867
+  margin->
+    top: 0.867em
+    bottom: 0.867em
+
+h3:
+  font-size: 1.125em
+
+h4:
+  text-align: center
+  font-size: 0.875em
+  line-height: 1.486
+  margin->
+    top: 1.486em
+    bottom: 1.486em
+
+p:
+  line-height: 1.3
+  margin->
+    top: 1.3em
+    bottom: 1.3em
+
+b, strong:
+  font-weight: bold
+
+.clear:
+  clear: both
+
+#header-bar, #footer-bar:
+  background-color: #CCC
+  margin: 0
+
+#header-bar:
+  padding->
+    top: 0.75em
+    bottom: 0.75em
+  .logo:
+    font->
+      size: larger
+      family: sans-serif
+    margin-left: 1em
+    float: left
+    color: black
+  .logo, .auth-box, .search-box, .review-box:
+    display: inline
+    margin-right: 1em
+  .search-box, .auth-box, .review-box:
+    float: right
+  a.logo:
+    text-decoration: none
+  .auth-box #input0, .auth-box #input1:
+    width: 7em
+  .auth-box.logout input:
+    margin-left: 1em
+  a.review-box:
+    text-decoration: none
+    color: black
+  a.review-box:hover:
+    text-decoration: underline
+  ul.links:
+    margin->
+      top: 0
+      bottom: 0
+      left: 3em
+    float: left
+    li:
+      margin->
+        left: 0.5em
+        right: 0.5em
+
+#footer-bar:
+  margin-top: 1em;
+  text-align: center;
+  padding->
+    top: 0.25em
+    bottom: 0.25em
+  *:
+    margin->
+      top: 0.125em
+      bottom: 0.125em
+  ul.links li:
+    margin->
+      left: 0.5em
+      right: 0.5em
+
+ul.links:
+  margin-left: 0
+  padding-left: 0
+  li:
+    display: inline
+
+p.copyright:
+  margin: 0
+
+// The Pager is used to page results that won't fit on a single page.
+
+.pager:
+  text-align: center
+  margin-top: 1em
+  // Group controls in a box so that they can be logically associated.
+  .controls:
+    border: 1px solid black
+    background-color: #DDD
+    padding: 0.5em
+    .next:
+      margin-left: 2em
+  // Links should never turn the "visited" color for paging. It's logically correct, but people have come to expect otherwise.
+  a:
+    color: blue
+    text-decoration: none
+    &:hover:
+      text-decoration: underline
+  // Grey out controls that can't be used.
+  span:
+    &.prev, &.next:
+      color: #666

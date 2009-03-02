@@ -7,9 +7,9 @@
 CREATE TABLE log_type (
        name CHARACTER VARYING(32) PRIMARY KEY
 );
-INSERT INTO log_type (name) VALUES ('unknown'), ('exception'),
-                                   ('IO exception'), ('SQL error'),
-                                   ('404'), ('parse error'), ('config');
+INSERT INTO log_type (name) VALUES ('exception'), ('IO exception'),
+                                   ('SQL error'), ('404'), ('parse error'),
+                                   ('config');
 
 CREATE TABLE log (
        time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
@@ -28,6 +28,7 @@ CREATE TABLE member (
        website TEXT,
        password_hash TEXT,
 );
+CREATE INDEX member_username ON member (username);
 COMMENT ON COLUMN member IS 'At some point in time we may want to store a member''s timezone and locale so that we can report dates and times accurately to them. For example, "Your next review is scheduled on November 3rd at 10:48." For now we just use relative times ("Your next review is scheduled for 18 hours from now.").';
 COMMENT ON COLUMN member.member_no IS 'I debated about using the username as a primary key. In the end, I decided against it. Performance and space concerns won me over. It''s also nice to have a numeric reference to a member in case we need to refer to a member in some context where Unicode characters aren''t valid.';
 COMMENT ON COLUMN member.username IS 'I want to allow usernames to include any URL-safe characters, including alphanumeric Unicode characters. The regexp for username is ^[\p{L}\p{Nd}$-_.+!*''(),]{3,}$. Because usernames will be used in URLs, and displayed in various places, I want to keep them to a reasonable size. This was also a motivation for making the difficult decision to disallow spaces. All of the preceding is outdated, we allow any characters in the username.';
@@ -65,10 +66,10 @@ CREATE TABLE link (
        link_no SERIAL PRIMARY KEY,
        origin TEXT NOT NULL CHECK (length(origin) > 0),
        destination TEXT NOT NULL CHECK (length(destination) > 0),
-       link_type TEXT REFERENCES link_type (name) ON UPDATE CASCADE,
-       language CHARACTER VARYING (2) REFERENCES language (abbr) ON UPDATE CASCADE,
+       link_type TEXT NOT NULL REFERENCES link_type (name) ON UPDATE CASCADE,
+       language CHARACTER VARYING (2) NOT NULL REFERENCES language (abbr) ON UPDATE CASCADE,
        rating REAL,
-       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
+       author INTEGER NOT NULL REFERENCES member (member_no) ON UPDATE CASCADE,
        created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        deleted BOOLEAN NOT NULL DEFAULT FALSE
@@ -82,30 +83,15 @@ CREATE INDEX link_origin_index ON link (origin);
 CREATE INDEX link_destination_index ON link (destination);
 
 CREATE TABLE link_type_link_word (
-       link_no INTEGER REFERENCES link (link_no),
+       link_no INTEGER NOT NULL REFERENCES link (link_no),
        link_word TEXT NOT NULL,
        story TEXT NOT NULL
 );
 
 CREATE TABLE link_type_relationship (
-       link_no INTEGER REFERENCES link (link_no),
+       link_no INTEGER NOT NULL REFERENCES link (link_no),
        left_side TEXT NOT NULL,
        right_side TEXT NOT NULL
-);
-
-CREATE TABLE link_set (
-       set_no SERIAL PRIMARY KEY,
-       name TEXT NOT NULL,
-       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
-       created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-       updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-       UNIQUE (name, author)
-);
-
-CREATE TABLE link_set_member (
-       set_no INTEGER REFERENCES link_set (set_no) ON UPDATE CASCADE,
-       link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE,
-       PRIMARY KEY (set_no, link_no)
 );
 
 CREATE TABLE link_to_review (
@@ -140,23 +126,28 @@ COMMENT ON TABLE link_sm2 IS 'link_sm2 is used to track statistics for reviews b
 COMMENT ON COLUMN link_sm2.ef IS 'EF stands for "Easiness Factor".';
 COMMENT ON COLUMN link_sm2.n IS 'This member is in review interval n. They may have reviewed the item more than n times, but n resets with a response lower than 3 in SM-2.';
 
-CREATE TABLE blog_post (
-       post_no SERIAL PRIMARY KEY,
+-- Articles: Essays, Blog Posts, Disclaimers, etc. --
+
+CREATE TABLE article (
+       filename TEXT PRIMARY KEY,
        author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
        publish_time TIMESTAMP WITH TIME ZONE NOT NULL,
-       title TEXT,
+       update_time TIMESTAMP WITH TIME ZONE,
+       title TEXT
 );
-COMMENT ON COLUMN blog_post.publish_time IS 'A blog post is published at this time. If it''s before this time, the post is only visible to the owner.';
+COMMENT ON COLUMN article.publish_time IS 'A blog post is published at this time. If it''s before this time, the post is only visible to the owner.';
 
-CREATE TABLE blog_tag (
-       post_no INTEGER REFERENCES blog_post (post_no) ON UPDATE CASCADE,
-       tag TEXT,
-)
+CREATE RULE "replace article" AS
+    ON INSERT TO "article"
+    WHERE EXISTS (SELECT TRUE FROM article WHERE filename = NEW.filename)
+    DO INSTEAD (UPDATE article SET update_time = NEW.update_time,
+                                   title = NEW.title
+                WHERE filename = NEW.filename);
 
-CREATE TABLE blog_comment (
-       post_no INTEGER REFERENCES blog_post (post_no) ON UPDATE CASCADE,
+CREATE TABLE comment (
+       comment_no SERIAL PRIMARY KEY,
        author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
        time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        comment TEXT,
-       PRIMARY KEY (post_no, member_no, time)
+       parent_no INTEGER REFERENCES comment (comment_no)
 );

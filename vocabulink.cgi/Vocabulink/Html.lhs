@@ -7,7 +7,7 @@ formed (although we have guarantee that it will be valid). But more
 importantly, it allows us to use abstraction to get higher-level HTML-based
 functions. An example of this is |linkList|.
 
-> module Vocabulink.Html (  Dependency(..), stdPage, simplePage, displayStaticFile,
+> module Vocabulink.Html (  Dependency(..), stdPage, simplePage,
 >                           linkList, options, accesskey,
 >                           runForm, formLabel, formLabel',
 >                           pager, currentPage,
@@ -78,10 +78,10 @@ inclusion in the @<head>@ of the page.
 
 > includeDep :: Dependency -> Html
 > includeDep (CSS css) =
->   thelink ! [href ("http://s.vocabulink.com/" ++ css ++ ".css"),
+>   thelink ! [href ("http://s.vocabulink.com/css/" ++ css ++ ".css"),
 >              rel "stylesheet", thetype "text/css"] << noHtml
 > includeDep (JS js) =
->   script ! [src ("http://s.vocabulink.com/" ++ js ++ ".js"),
+>   script ! [src ("http://s.vocabulink.com/js/" ++ js ++ ".js"),
 >             thetype "text/javascript"] << noHtml
 
 The standard header bar shows the Vocabulink logo (with a link to the root
@@ -171,21 +171,6 @@ entering in the URL manually), but that might change in the future.
 > searchBox :: Html
 > searchBox = form ! [theclass "search-box", action "/links", method "GET"] <<
 >   [ textfield "contains" ! [accesskey "s"], submit "" "Search" ]
-
-Not everything on Vocabulink is dynamic. We don't want to include long text
-(something that markup is good at) in our source code. To display a static
-file, we simply read it into memory, convert it into an Html primative, and
-add it to our standard page.
-
-The static file must be be a valid fragment of XHTML.
-
-For now, our static files actually resemble articles, so we'll contain them as
-such.
-
-> displayStaticFile :: String -> FilePath -> App CGIResult
-> displayStaticFile t path = do
->   bodyHtml <- liftIO $ readFile path
->   stdPage t [CSS "article"] [] [thediv ! [theclass "article"] << primHtml bodyHtml]
 
 \subsection{Higher-Level Combinators}
 

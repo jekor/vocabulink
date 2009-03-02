@@ -12,7 +12,7 @@ dealing with constantly-changing state.
 >                         catchSqlD, catchSqlE, logMsg, logException, connect,
 >  {- Database.HDBC -}    SqlValue, toSql, fromSql, iToSql,
 >                         withTransaction, quickQuery, quickQuery',
->                         IConnection(..),
+>                         IConnection(..), execute, catchSql,
 >  {- Database.HDBC.PostgreSQL -}  Connection) where
 
 We need to keep this module independent of most other modules as most modules
@@ -127,8 +127,7 @@ timestamp. If the message type is not found, it defaults to 'unknown'.
 > logMsg :: IConnection conn => conn -> String -> String -> IO (String)
 > logMsg c t s = do
 >   quickStmt c  "INSERT INTO log (type, message) \
->                \VALUES (COALESCE((SELECT name FROM log_type \
->                                  \WHERE name = ?), 'unknown'), ?)"
+>                \VALUES ((SELECT name FROM log_type WHERE name = ?), ?)"
 >                [toSql t, toSql s]
 >     `catchSqlD` ()
 >   return s

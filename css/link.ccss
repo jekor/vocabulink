@@ -1,0 +1,68 @@
+.link:
+  text-align: center
+  margin-left: 0
+  margin-right: 0
+  img, .lexeme, input, #destination:
+    vertical-align: middle
+  lexeme:
+    padding->
+      left: 0.5em
+      right: 0.5em
+    font->
+      family: sans-serif
+      size: xx-large
+  #destination:
+    width: 10em
+    margin-left: 1em
+  > a:
+    display: block
+    text-decoration: none
+    color: black
+    border: 1px solid black
+    padding->
+      top: 2em
+      bottom: 2em
+    img:
+      border: 0
+
+#baseline:
+  margin->
+    top: 5em
+    bottom: 5em
+
+#link-details:
+  text-align: center
+
+// review
+
+a#lexeme-cover:
+  padding: 0.5em 4em
+  border: 1px solid black
+  text-decoration: none
+  color: black
+  &:visited:
+    color: inherit
+
+table.focus-box:
+  width: 100%
+  height: 300px
+  margin-top: 1em
+  td:
+    padding: 0.5em
+    vertical-align: middle
+    &.edges:
+      width: 200px
+    &.focus:
+      text-align: center
+      width: 1em
+    &.origins table, &.destinations table:
+      width: 100%
+      height: 100%
+    &.origins table td:
+      text-align: right
+    &.destinations:
+      text-align: left
+
+fieldset#link-word textarea:
+  width: 50%
+  height: 5em

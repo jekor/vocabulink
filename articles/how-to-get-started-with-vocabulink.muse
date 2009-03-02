@@ -1,6 +1,6 @@
 #title How to Get Started with Vocabulink
-#author Chris Forno (jekor)
-#date 2009-01-11
+#author jekor
+#date 2009-01-11 00:00:00 -0800
 
 * Become a Member
 
