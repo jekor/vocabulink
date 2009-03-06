@@ -37,10 +37,10 @@ caption, th, td:
   font-weight: normal
 
 blockquote:before, blockquote:after, q:before, q:after:
-	content: \"\"
+        content: \"\"
 
 blockquote, q:
-	quotes: \"\" \"\"
+        quotes: \"\" \"\"
 
 // Initialize the page and provide helpers.
 
@@ -91,6 +91,11 @@ th, td:
 li:
   line-height: 1.3
 
+a:
+  text-decoration: none
+  &:hover:
+    text-decoration: underline
+
 b, strong:
   font-weight: bold
 
@@ -105,7 +110,7 @@ tr.odd:hover, tr.even:hover:
 // Top-Level Page Elements
 
 #body:
-  margin: 1.3em;
+  margin: 1.3em
 
 #header-bar, #footer-bar:
   background-color: #CCC
@@ -125,19 +130,15 @@ tr.odd:hover, tr.even:hover:
   .logo, .auth-box, .search-box, .review-box:
     display: inline
     margin-right: 1em
+    line-height: 1.3
   .search-box, .auth-box, .review-box:
     float: right
-  a.logo:
-    text-decoration: none
   .auth-box #input0, .auth-box #input1:
     width: 7em
   .auth-box.logout input:
     margin-left: 1em
   a.review-box:
-    text-decoration: none
     color: black
-  a.review-box:hover:
-    text-decoration: underline
   ul.links:
     margin->
       top: 0
@@ -150,8 +151,8 @@ tr.odd:hover, tr.even:hover:
         right: 0.5em
 
 #footer-bar:
-  margin-top: 1em;
-  text-align: center;
+  clear: both
+  text-align: center
   padding->
     top: 0.25em
     bottom: 0.25em
@@ -188,9 +189,6 @@ p.copyright:
   // Links should never turn the "visited" color for paging. It's logically correct, but people have come to expect otherwise.
   a:
     color: blue
-    text-decoration: none
-    &:hover:
-      text-decoration: underline
   // Grey out controls that can't be used.
   span:
     &.prev, &.next:

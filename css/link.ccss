@@ -16,7 +16,6 @@
     margin-left: 1em
   > a:
     display: block
-    text-decoration: none
     color: black
     border: 1px solid black
     padding->
@@ -38,7 +37,6 @@
 a#lexeme-cover:
   padding: 0.5em 4em
   border: 1px solid black
-  text-decoration: none
   color: black
   &:visited:
     color: inherit
