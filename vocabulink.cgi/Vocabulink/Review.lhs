@@ -38,7 +38,7 @@ asynchronous call.
 >                     \VALUES (?, ?)" [toSql memberNo, toSql linkNo]
 >   case res of
 >     Nothing  -> error "Error scheduling link for review."
->     Just _   -> redirect =<< refererOrVocabulink
+>     Just _   -> redirect =<< referrerOrVocabulink
 
 The client indicates a completed review with a @POST@ to @/review/linknumber/@
 which will be dispatched to |linkReviewed|. Once we schedule the next review

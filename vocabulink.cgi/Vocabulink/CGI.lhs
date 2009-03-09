@@ -15,7 +15,7 @@ with |readInput|). This is a common pattern in other modules.
 
 > module Vocabulink.CGI (  getInput, getRequiredInput, getInputDefault,
 >                          readInput, readRequiredInput, readInputDefault,
->                          getInputs, handleErrors', refererOrVocabulink,
+>                          getInputs, handleErrors', referrerOrVocabulink,
 >  {- Network.FastCGI -}   MonadCGI, CGIResult, requestURI, requestMethod,
 >                          getVar, setHeader, output, redirect, remoteAddr,
 >                          outputError, outputMethodNotAllowed,
@@ -69,8 +69,8 @@ In some cases we'll need to redirect the client to where it came from after we
 perform some action. We use this to make sure that we don't redirect them off
 of the site.
 
-> refererOrVocabulink :: MonadCGI m => m String
-> refererOrVocabulink =
+> referrerOrVocabulink :: MonadCGI m => m String
+> referrerOrVocabulink =
 >   fromMaybe "http://www.vocabulink.com/" `liftM` getVar "HTTP_REFERER"
 
 We need to handle UTF-8-encoded GET and POST parameters. The following are

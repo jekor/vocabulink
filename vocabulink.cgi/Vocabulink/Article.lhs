@@ -78,7 +78,7 @@ it.
 >                                      \WHERE username = ?), ?, ?, ?, ?)"
 >   liftIO $ withTransaction c (\_ ->
 >     mapM_ (\a -> execute insert (rec a)) articles)
->   redirect "/articles"
+>   redirect =<< referrerOrVocabulink
 >    where rec a = [  toSql $ articleAuthor       a,
 >                     toSql $ articlePublishTime  a,
 >                     toSql $ articleUpdateTime   a,
@@ -167,10 +167,11 @@ We're going to go ahead and use fromJust here because we don't care about how
 we're notified of errors. Publishing articles is not (yet) member-facing.
 
 > articleHeader :: P.Parser Article
-> articleHeader = permute (mkArticle  <$$>  (museDirective "title")
->                                     <|?>  (Nothing, museDir "author" >> authorP)
->                                     <||>  (museDir "date" >> dateTimeP)
->                                     <|?>  (Nothing, museDir "update" >> dateTimeP))
+> articleHeader = permute
+>   (mkArticle  <$$>  (museDirective "title")
+>               <|?>  (Nothing, museDir "author" >> authorP)
+>               <||>  (museDir "date" >> dateTimeP)
+>               <|?>  (Nothing, museDir "update" >> dateTimeP))
 >     where mkArticle title author date update =
 >             Article {  articleFilename     = undefined,
 >                        articleAuthor       = author,
@@ -207,9 +208,10 @@ Retrieve an article by its filename (path, whatever you want to call it).
 
 > getArticle :: String -> App (Maybe Article)
 > getArticle filename = do
->   (>>= articleFromTuple) <$> queryTuple' "SELECT filename, author, publish_time, \
->                                    \update_time, title \
->                             \FROM article WHERE filename = ?" [toSql filename]
+>   (>>= articleFromTuple) <$>
+>     queryTuple' "SELECT filename, author, publish_time, \
+>                        \update_time, title \
+>                 \FROM article WHERE filename = ?" [toSql filename]
 
 > articleFromTuple :: [SqlValue] -> Maybe Article
 > articleFromTuple [f,a,p,u,t]  = Just $

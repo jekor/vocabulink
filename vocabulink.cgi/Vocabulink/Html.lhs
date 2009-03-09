@@ -109,7 +109,8 @@ Here are the links we want in the header of every page.
 > topLinks = linkList
 >   [  anchor ! [href "/article/how-to-get-started-with-vocabulink"] <<
 >        "Get Started",
->      anchor ! [href "/articles/"] << "Articles",
+>      anchor ! [href "/articles"] << "Articles",
+>      anchor ! [href "/forums"] << "Forums",
 >      anchor ! [href "/help"] << "Help" ]
 
 The footer bar is more simple. It just includes some links to static content.
@@ -200,13 +201,12 @@ We ofter want to "wrap" a label around a form component. This doesn't currently
 set a @for@ attribute.
 
 > formLabel :: Monad m => String -> XHtmlForm m a -> XHtmlForm m a
-> formLabel text = plug (\xhtml -> paragraph << (label << (text ++ ": ") +++ xhtml))
+> formLabel text = plug (\xhtml -> label << (text ++ ": ") +++ xhtml)
 
-Here's an alterate version of the above which doesn't wrap the form with a
-paragraph.
+Here's an alterate version of the above which also adds a paragraph.
 
 > formLabel' :: Monad m => String -> XHtmlForm m a -> XHtmlForm m a
-> formLabel' text = plug (\xhtml -> label << (text ++ ": ") +++ xhtml)
+> formLabel' text = plug (\xhtml -> paragraph << (label << (text ++ ": ") +++ xhtml))
 
 Take a form and a submit button label, run it, and return either the form to
 display (with errors, if any) or the result of the form.

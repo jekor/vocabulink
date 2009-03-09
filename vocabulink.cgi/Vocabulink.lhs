@@ -1,4 +1,4 @@
-\documentclass[oneside]{article}
+\documentclass[oneside,draft]{article}
 %include polycode.fmt
 \usepackage[T1]{fontenc}
 \usepackage{ucs}
@@ -61,6 +61,7 @@ Each of these modules will be described in its own section.
 > import Vocabulink.Article
 > import Vocabulink.DB
 > import Vocabulink.CGI
+> import Vocabulink.Forum
 > import Vocabulink.Html hiding (method, options)
 > import Vocabulink.Link
 > import Vocabulink.Member
@@ -333,6 +334,16 @@ And logging out can be done without a form.
 
 > dispatch "POST" ["member","logout"]  = logout
 
+\subsection{Forums}
+
+As Vocabulink is still growing (and in the future), it's important to help new
+members along to get feedback from them. For this, Vocabulink has forums.
+Forums have been used in communities, especially language-learning communities
+for a long time.
+
+> dispatch "GET"   ["forums"] = forumsPage
+> dispatch "POST"  ["forums"] = forumsPage
+
 \subsection{Everything Else}
 
 It would be nice to automatically respond with "Method Not Allowed" on URIs
@@ -367,5 +378,6 @@ and associated functionality by using the stdPage function.
 %include Vocabulink/Article.lhs
 %include Vocabulink/Widget.lhs
 %include Vocabulink/Widget/MyLinks.lhs
+%include Vocabulink/Forum.lhs
 
 \end{document}

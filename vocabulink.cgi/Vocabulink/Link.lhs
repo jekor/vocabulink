@@ -240,7 +240,7 @@ in most contexts.
 >                       \WHERE link_no = ?" [toSql linkNo]
 >   case res of
 >     Nothing  -> error "Failed to delete link."
->     Just _   -> redirect =<< refererOrVocabulink
+>     Just _   -> redirect =<< referrerOrVocabulink
 
 \subsection{Displaying Links}
 
@@ -249,7 +249,8 @@ Here's the simplest HTML representation of a link we use.
 > linkHtml :: Html -> Html -> Html
 > linkHtml orig dest = concatHtml
 >   [  thespan ! [theclass "lexeme"] << orig,
->      image ! [src "http://s.vocabulink.com/edges/edges-l1.png", width "200", height "1"],
+>      image ! [  src "http://s.vocabulink.com/edges/edges-l1.png",
+>                 width "200", height "1" ],
 >      thespan ! [theclass "lexeme"] << dest ]
 
 Displaying a partial link is similar. We need to do so in different contexts,
@@ -400,7 +401,8 @@ edges is to use tables.
 > linkNodeTable :: (PartialLink -> String) -> [PartialLink] -> Html -> Html
 > linkNodeTable side links newForm = table << map linkRow linkRows
 >   where linkNodes  = map (stringToHtml . encodeString . side) links
->         linkGroups = splitAt (ceiling $ fromIntegral (length linkNodes) / 2) linkNodes
+>         linkGroups = splitAt (ceiling (fromIntegral (length linkNodes) / 2 :: Double))
+>                        linkNodes
 >         linkRows   = fst linkGroups ++ [newForm] ++ snd linkGroups
 >         linkRow    = (tr <<) . (td <<)
 
@@ -449,7 +451,7 @@ how I'm using them), we need to retrieve the link type name from the link type.
 >                              linkType         = t }
 
 > linkNodeInput :: String -> AppForm String
-> linkNodeInput l = l `formLabel'` F.input Nothing `check` ensures
+> linkNodeInput l = l `formLabel` F.input Nothing `check` ensures
 >   [  ((/= "")           , l ++ " is required."),
 >      ((<= 64) . length  , l ++ " must be 64 characters or shorter.") ]
 
@@ -478,7 +480,7 @@ I'm deferring a proper implementation until it's absolutely necessary.
 Hopefully by then I will know more than I do now.
 
 > linkTypeInput :: [String] -> AppForm LinkType
-> linkTypeInput ts = (linkTypeS  <$> "Link Type" `formLabel` linkSelect Nothing
+> linkTypeInput ts = (linkTypeS  <$> "Link Type" `formLabel'` linkSelect Nothing
 >                                <*> pure Association
 >                                <*> pure Cognate
 >                                <*> fieldset' "link-word" linkTypeLinkWord
@@ -501,7 +503,7 @@ Hopefully by then I will know more than I do now.
 > linkTypeS _ _ _ _ _ = error "Unknown link type."
 
 > linkTypeLinkWord :: AppForm LinkType
-> linkTypeLinkWord = LinkWord  <$> "Link Word" `formLabel` F.input Nothing
+> linkTypeLinkWord = LinkWord  <$> "Link Word" `formLabel'` F.input Nothing
 >   <*> F.textarea (Just "Write a story linking the 2 words here.")
 
 > linkTypeRelationship :: AppForm LinkType

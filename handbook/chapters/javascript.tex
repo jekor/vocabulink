@@ -1,0 +1,30 @@
+\chapter{JavaScript}
+
+\section{MochiKit}
+
+We use MochiKit to provide a cross-browser basis for JavaScript.
+
+\section{Administrative Functions}
+
+No separate administrative pages exist. They are all integrated into the normal
+pages of the site. In order to do this, we check in most pages to see if the
+client is logged in and has sufficient privileges to perform any administrative
+actions that make sense in the current context. If so, we give some
+indicator---usually a button---that the action can be performed. We also
+generally include the HTML (form) necessary to carry out the action as a hidden
+element. This allows us to avoid a request to the server.
+
+To avoid redundant code, we have a script that can be added as a dependency to
+any page that wants to use this behavior. To do so, a page:
+
+\begin{enumerate}
+
+\item Creates a ``hidden'' element (containing a form) with a unique ID, and style
+  \verb!display: none!.
+
+\item Creates a button with the class \verb!reveal unique-id! where
+  \verb!unique-id! is the unique ID given to the hidden element.
+
+\item Adds the \verb!JS "form"! dependency to the page.
+
+\end{enumerate}

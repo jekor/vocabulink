@@ -40,7 +40,8 @@ and then continuing where it left off.
 >          paragraph << "Not a member? " +++
 >                           anchor ! [href "/member/join"] << "Join!" ]
 >     Right (user, _) -> do
->       redirect'  <- getInputDefault "/" "redirect"
+>       ref        <- referrerOrVocabulink
+>       redirect'  <- getInputDefault ref "redirect"
 >       ip         <- remoteAddr
 >       memberNo   <- getMemberNumber user
 >       case memberNo of
@@ -68,7 +69,8 @@ page after logout, add a @redirect@ query string or POST parameter.
 > logout :: App CGIResult
 > logout = do
 >   deleteAuthCookie
->   redirect =<< getInputDefault "/" "redirect"
+>   ref <- referrerOrVocabulink
+>   redirect =<< getInputDefault ref "redirect"
 
 \subsection{New Members}
 
@@ -88,7 +90,7 @@ We're very permissive with usernames. They just need to be between 3 and 32
 characters long.
 
 > username :: AppForm String
-> username = ("Username" `formLabel` F.input Nothing) `check` ensures
+> username = ("Username" `formLabel'` F.input Nothing) `check` ensures
 >   [  ((>= 3)   . length  , "Your username must be 3 characters or longer."),
 >      ((<= 32)  . length  , "Your username must be 32 characters or shorter.") ]
 
@@ -105,7 +107,7 @@ trying to register with isn't already in use.
 Our password input is as permissive as our username input.
 
 > passwd :: String -> AppForm String
-> passwd l = (l `formLabel` F.password Nothing) `check` ensures
+> passwd l = (l `formLabel'` F.password Nothing) `check` ensures
 >   [  ((>=  6)   . length  , "Your password must be 6 characters or longer."),
 >      ((<=  72)  . length  , "Your password must be 72 characters or shorter.") ]
 
@@ -121,7 +123,7 @@ other reason than that it's common practice.
 We don't currently do any validation on email addresses.
 
 > emailAddress :: AppForm String
-> emailAddress = "Email address" `formLabel` F.input Nothing
+> emailAddress = "Email address" `formLabel'` F.input Nothing
 
 Create a page with a new user form or register the user and redirect them to
 the front page.
