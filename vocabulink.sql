@@ -151,3 +151,21 @@ CREATE TABLE comment (
        comment TEXT,
        parent_no INTEGER REFERENCES comment (comment_no)
 );
+
+-- Forums
+
+CREATE TABLE forum_group (
+       group_name TEXT PRIMARY KEY,
+       position SMALLINT NOT NULL
+);
+COMMENT ON COLUMN forum_group.position IS 'The lower the position, the higher on the page the forum group is displayed.';
+
+CREATE TABLE forum (
+       group_name TEXT REFERENCES forum_group (group_name),
+       title TEXT,
+       position SMALLINT NOT NULL,
+       icon_filename TEXT NOT NULL,
+       PRIMARY KEY (group_name, title)
+);
+COMMENT ON COLUMN forum.position IS 'This is like the forum group position. The forums are listed from left to right, top to bottom. The position is only for this forum group.';
+COMMENT ON COLUMN forum.icon_filename IS 'The filename is the relative path to the icon from the configured icon directory.';

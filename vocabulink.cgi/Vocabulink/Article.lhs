@@ -138,7 +138,7 @@ this to succeed.
 > articleFromFile :: String -> App (Maybe Article)
 > articleFromFile path = do
 >   dir   <- articleDir
->   muse  <- liftIO $ readFile $ dir ++ path ++ ".muse"
+>   muse  <- liftIO $ readFile $ dir ++ "/" ++ path ++ ".muse"
 >   case P.parse articleHeader "" muse of
 >     Left e     -> logApp "parse error" (show e) >> return Nothing
 >     Right hdr  -> return $ Just $ hdr {  articleFilename  = path }
@@ -199,7 +199,7 @@ there's no point in storing it in the article record.
 
 > articleBody :: Article -> App Html
 > articleBody article = do
->   path <- (++ (articleFilename article) ++ ".html") <$> articleDir
+>   path <- (++ "/" ++ (articleFilename article) ++ ".html") <$> articleDir
 >   liftIO $ primHtml <$> readFile path
 
 \subsection{Retrieving Articles}

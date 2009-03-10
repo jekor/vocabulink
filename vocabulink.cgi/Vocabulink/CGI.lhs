@@ -16,7 +16,9 @@ with |readInput|). This is a common pattern in other modules.
 > module Vocabulink.CGI (  getInput, getRequiredInput, getInputDefault,
 >                          readInput, readRequiredInput, readInputDefault,
 >                          getInputs, handleErrors', referrerOrVocabulink,
->  {- Network.FastCGI -}   MonadCGI, CGIResult, requestURI, requestMethod,
+>                          urlify,
+>  {- Network.FastCGI -}   getInputFPS, getInputFilename,
+>                          MonadCGI, CGIResult, requestURI, requestMethod,
 >                          getVar, setHeader, output, redirect, remoteAddr,
 >                          outputError, outputMethodNotAllowed,
 >                          Cookie(..), getCookie, setCookie, deleteCookie) where
@@ -25,6 +27,7 @@ with |readInput|). This is a common pattern in other modules.
 > import Vocabulink.Utils
 
 > import Control.Exception (Exception(..))
+> import Data.Char (toLower)
 
 We're going to hide some Network.CGI functions so that we can override them
 with versions that automatically handle UTF-8-encoded input.
@@ -112,3 +115,16 @@ input to a required type (as long as that type is Readable).
 > readRequiredInput :: (Read a, MonadCGI m) => String -> m a
 > readRequiredInput p =
 >   readInputDefault (error $ "Parameter '" ++ p ++ "' is required.") p
+
+\subsection{Working with URLs}
+
+Certain dynamic parts of the site, such as forum titles, are displayed to the
+user in a friendly natural form but are also used in URLs. To deal with these
+cases, we have rules that can be applied automatically.
+
+Note that this is not meant to handle arbitrary input from users. For that we
+can use URL encoding. This is to make common URLs friendly to both users and
+web spiders.
+
+> urlify :: String -> String
+> urlify = (map toLower) . translate [(' ', '-')]

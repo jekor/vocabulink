@@ -4,6 +4,7 @@ Here are some functions that aren't specific to Vocabulink, but that don't
 exist in any libraries I know of.
 
 > module Vocabulink.Utils (         if', (?), safeHead, currentDay, currentYear,
+>                                   basename, translate,
 >  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
 >  {- Control.Applicative -}        pure, (<$>), (<*>),
 >  {- Control.Applicative.Error -}  maybeRead,
@@ -61,3 +62,14 @@ Return the current year (in the server's timezone) as a 4-digit number.
 >   day <- currentDay
 >   let (year, _, _) = toGregorian day
 >   return year
+
+For files from forms, we can't make assumptions about the path separator.
+
+> basename :: FilePath -> FilePath
+> basename = reverse . takeWhile (`notElem` "/\\") . reverse
+
+This is like the Unix tr utility. It takes a list of search/replacements and
+then performs them on the list.
+
+> translate :: (Eq a) => [(a, a)] -> [a] -> [a]
+> translate sr = map (\s -> maybe s id $ lookup s sr)

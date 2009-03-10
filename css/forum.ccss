@@ -10,6 +10,10 @@
       left: 0.5em
       right: 0.5em
   ul:
+    li:
+      margin->
+        top: 1.3em
+        bottom: 1.3em
     img:
       vertical-align: middle
       margin-right: 0.5em
@@ -97,3 +101,20 @@
     padding: 0
     textarea:
       margin: 0
+
+fieldset:
+  border: 1px solid black
+  padding->
+    left: 0.65em
+    right: 1.3em
+  table:
+    border-spacing: 0 1.3em
+  th:
+    text-align: right
+  input[type="text"], input[type="file"]:
+    width: 100%
+  input[type="submit"]:
+    display: block
+    margin->
+      left: auto
+      right: auto

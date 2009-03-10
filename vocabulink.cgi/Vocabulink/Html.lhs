@@ -10,13 +10,15 @@ functions. An example of this is |linkList|.
 > module Vocabulink.Html (  Dependency(..), stdPage, simplePage,
 >                           linkList, options, accesskey,
 >                           runForm, formLabel, formLabel',
+>                           tabularInput, tabularSubmit,
 >                           pager, currentPage,
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
 >                           (<<), (+++), (!),
 >                           identifier, theclass, thediv, thespan, style,
 >                           paragraph, pre, h1, h2, h3, br, anchor, href,
->                           image, unordList, form, action, method, fieldset,
+>                           image, unordList, form, action, method, enctype,
 >                           hidden, label, textfield, password, button, submit,
+>                           fieldset, legend, afile,
 >                           textarea, select, widget,
 >                           thestyle, src, width, height, value, name,
 >                           cols, rows,
@@ -192,6 +194,21 @@ Curiously, the accesskey attribute is missing from Text.XHtml.
 
 > accesskey :: String -> HtmlAttr
 > accesskey = strAttr "accesskey"
+
+\subsection{Form Builders}
+
+For complex forms, we use tables. They have a number of common elements that we
+can abstract out.
+
+One thing that's missing is the ability to link the label to the input with the
+``for'' attribute.
+
+> tabularInput :: String -> Html -> Html
+> tabularInput l i = tr << [  th << (label << (l ++ ":")),
+>                             td << i ]
+
+> tabularSubmit :: String -> Html
+> tabularSubmit l = tr << td ! [colspan 2] << submit "" l
 
 \subsection{Formlet Helpers}
 

@@ -344,6 +344,8 @@ for a long time.
 > dispatch "GET"   ["forums"] = forumsPage
 > dispatch "POST"  ["forums"] = forumsPage
 
+> dispatch "POST"  ["forum","new"] = createForum
+
 \subsection{Everything Else}
 
 It would be nice to automatically respond with "Method Not Allowed" on URIs

@@ -48,10 +48,30 @@
       <ul class="first">
 	<li><img src="http://s.vocabulink.com/megaphone2-64t.png" width="64" height="64"/>Announcements</li>
 	<li><a href="forum/welcome-to-vocabulink.html"><img src="http://s.vocabulink.com/welcome3-64t.png" width="64" height="64"/>Welcome to Vocabulink</a></li>
+	<li><button>New Forum</button></li>
       </ul>
       <ul>
 	<li><img src="http://s.vocabulink.com/FAQ4-64t.png" width="64" height="64"/>Questions and Assistance</li>
 	<li><img src="http://s.vocabulink.com/feedback-64t.png" width="64" height="64"/>Site Feedback</li>
+	<li>
+	  <form action="." method="POST">
+	    <fieldset>
+	      <legend>New Forum</legend>
+	      <table>
+		<tr>
+		  <th><label for="new-title">Title:</label></th>
+		  <td><input name="new-title" type="text"/></td>
+		</tr>
+		<tr>
+		  <th><label for="new-icon">Icon:</label></th>
+		  <td><input name="new-icon" type="file"/></td>
+		<tr>
+		  <td colspan="2"><input type="submit" value="Create"/></td>
+		</tr>
+              </table>
+	    </fieldset>
+	  </form>
+	</li>
       </ul>
       <p class="clear"></p>
     </div>
@@ -70,7 +90,7 @@
     <button>New Forum Group</button>
     <div class="forum-group">
       <form action="." method="POST">
-	<label for="new-name">Name:</label><input id="new-name" type="text"/>
+	<label for="new-name">Forum Group Name:</label><input name="new-name" type="text"/>
 	<input type="submit" value="Create"/>
       </form>
     </div>
