@@ -12,7 +12,7 @@ INSERT INTO log_type (name) VALUES ('exception'), ('IO exception'),
                                    ('config');
 
 CREATE TABLE log (
-       time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        type CHARACTER VARYING(32) REFERENCES log_type (name) ON UPDATE CASCADE,
        message TEXT
 );
@@ -22,7 +22,7 @@ COMMENT ON TABLE log IS 'We''d like to keep track of errors and other events we 
 CREATE TABLE member (
        member_no SERIAL PRIMARY KEY,
        username CHARACTER VARYING(32) NOT NULL UNIQUE,
-       join_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       join_date TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        email TEXT,
        email_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
        website TEXT,
@@ -70,8 +70,8 @@ CREATE TABLE link (
        language CHARACTER VARYING (2) NOT NULL REFERENCES language (abbr) ON UPDATE CASCADE,
        rating REAL,
        author INTEGER NOT NULL REFERENCES member (member_no) ON UPDATE CASCADE,
-       created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-       updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       created TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       updated TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 COMMENT ON TABLE link IS 'A link is an association between 2 ideas in a single direction. (A reverse association would require another link.)';
@@ -97,7 +97,7 @@ CREATE TABLE link_type_relationship (
 CREATE TABLE link_to_review (
        member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
        link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE,
-       target_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       target_time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        PRIMARY KEY (member_no, link_no)
 );
 COMMENT ON COLUMN link_to_review.member_no IS 'Anonymous members cannot schedule reviews. That would be chaos. It''s also confusing if you hadn''t realized that you weren''t logged in.';
@@ -106,8 +106,8 @@ COMMENT ON COLUMN link_to_review.target_time IS 'Target is the date and time at 
 CREATE TABLE link_review (
        member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
        link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE,
-       target_time TIMESTAMP WITH TIME ZONE NOT NULL,
-       actual_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       target_time TIMESTAMP (0) WITH TIME ZONE NOT NULL,
+       actual_time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        recall REAL NOT NULL,
        recall_time REAL NOT NULL,
        PRIMARY KEY (member_no, link_no, actual_time)
@@ -131,8 +131,8 @@ COMMENT ON COLUMN link_sm2.n IS 'This member is in review interval n. They may h
 CREATE TABLE article (
        filename TEXT PRIMARY KEY,
        author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
-       publish_time TIMESTAMP WITH TIME ZONE NOT NULL,
-       update_time TIMESTAMP WITH TIME ZONE,
+       publish_time TIMESTAMP (0) WITH TIME ZONE NOT NULL,
+       update_time TIMESTAMP (0) WITH TIME ZONE,
        title TEXT
 );
 COMMENT ON COLUMN article.publish_time IS 'A blog post is published at this time. If it''s before this time, the post is only visible to the owner.';
@@ -144,14 +144,6 @@ CREATE RULE "replace article" AS
                                    title = NEW.title
                 WHERE filename = NEW.filename);
 
-CREATE TABLE comment (
-       comment_no SERIAL PRIMARY KEY,
-       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
-       time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-       comment TEXT,
-       parent_no INTEGER REFERENCES comment (comment_no)
-);
-
 -- Forums
 
 CREATE TABLE forum_group (
@@ -161,11 +153,31 @@ CREATE TABLE forum_group (
 COMMENT ON COLUMN forum_group.position IS 'The lower the position, the higher on the page the forum group is displayed.';
 
 CREATE TABLE forum (
-       group_name TEXT REFERENCES forum_group (group_name),
-       title TEXT,
+       name TEXT PRIMARY KEY,
+       title TEXT NOT NULL,
+       group_name TEXT REFERENCES forum_group (group_name) ON UPDATE CASCADE,
        position SMALLINT NOT NULL,
-       icon_filename TEXT NOT NULL,
-       PRIMARY KEY (group_name, title)
+       icon_filename TEXT NOT NULL
 );
+COMMENT ON COLUMN forum.name IS 'The forum name must be URL-safe.';
 COMMENT ON COLUMN forum.position IS 'This is like the forum group position. The forums are listed from left to right, top to bottom. The position is only for this forum group.';
 COMMENT ON COLUMN forum.icon_filename IS 'The filename is the relative path to the icon from the configured icon directory.';
+
+CREATE TABLE comment (
+       comment_no SERIAL PRIMARY KEY,
+       author INTEGER NOT NULL REFERENCES member (member_no) ON UPDATE CASCADE,
+       time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       comment TEXT,
+       parent_no INTEGER REFERENCES comment (comment_no)
+);
+
+CREATE TABLE forum_topic (
+       topic_no SERIAL PRIMARY KEY,
+       forum_name TEXT NOT NULL REFERENCES forum (name) ON UPDATE CASCADE,
+       title TEXT NOT NULL,
+       root_comment INTEGER REFERENCES comment (comment_no) NOT NULL,
+       last_comment INTEGER REFERENCES comment (comment_no) NOT NULL,
+       num_replies SMALLINT NOT NULL DEFAULT 0
+);
+COMMENT ON COLUMN forum_topic.last_comment IS 'While a pointer to the last comment isn''t theoretically necessary, it greatly simplifies retrieving information on forum topics in bulk.';
+COMMENT ON COLUMN forum_topic.num_comments IS 'Again, this is not strictly necessary, but it does make queries easier.';

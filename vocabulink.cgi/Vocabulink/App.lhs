@@ -8,7 +8,7 @@ signatures a little bit.
 
 > module Vocabulink.App (      App, AppEnv(..), AppT, runApp, logApp, getOption,
 >                              withMemberNumber, withRequiredMemberNumber,
->                              output404,
+>                              withRequiredMemberName, output404,
 >                              queryTuple', queryValue', queryAttribute',
 >                              queryTuples', quickInsertNo', quickStmt',
 >                              withTransaction', run',
@@ -103,7 +103,13 @@ and a function to carry out with the member's number otherwise.
 
 > withRequiredMemberNumber :: (Integer -> App CGIResult) -> App CGIResult
 > withRequiredMemberNumber f =  asks appMemberNo >>=
->                               maybe (loginRedirectPage >>= redirect) f
+>                               maybe (redirect =<< loginRedirectPage) f
+
+Sometimes we want a member name instead of number.
+
+> withRequiredMemberName :: (String -> App CGIResult) -> App CGIResult
+> withRequiredMemberName f =  asks appMemberName >>=
+>                             maybe (redirect =<< loginRedirectPage) f
 
 When we direct a user to the login page, we want to make sure that they can
 find their way back to where they were. To do so, we get the current URI and
@@ -180,11 +186,11 @@ the exception and returns Nothing).
 >   c <- asks appDB
 >   r <- tryApp actions
 >   case r of
->     Right x  -> do liftIO $ commit c
->                    return $ Just x
->     Left e   -> do logApp "exception" $ show e
->                    liftIO $ try (rollback c) -- Discard any exception here
->                    return Nothing
+>     Right x  -> do  liftIO $ commit c
+>                     return $ Just x
+>     Left e   -> do  logApp "exception" $ show e
+>                     liftIO $ try (rollback c) -- Discard any exception here
+>                     return Nothing
 
 > run' :: String -> [SqlValue] -> App (Integer)
 > run' sql vs = do

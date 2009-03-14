@@ -4,7 +4,7 @@ Here are some functions that aren't specific to Vocabulink, but that don't
 exist in any libraries I know of.
 
 > module Vocabulink.Utils (         if', (?), safeHead, currentDay, currentYear,
->                                   basename, translate,
+>                                   basename, translate, formatTime',
 >  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
 >  {- Control.Applicative -}        pure, (<$>), (<*>),
 >  {- Control.Applicative.Error -}  maybeRead,
@@ -12,7 +12,10 @@ exist in any libraries I know of.
 >  {- Control.Monad.Trans -}        liftIO, MonadIO,
 >  {- Data.Maybe -}                 maybe, fromMaybe, fromJust, isJust, catMaybes,
 >  {- Data.Time.Calendar -}         Day,
->  {- Data.Time.Clock -}            UTCTime) where
+>  {- Data.Time.Clock -}            UTCTime,
+>  {- Data.Time.Format -}           formatTime,
+>  {- Data.Time.LocalTime -}        ZonedTime,
+>  {- System.Locale -}              defaultTimeLocale, rfc822DateFormat) where
 
 We make extensive use of the |liftM| and the Maybe monad.
 
@@ -24,7 +27,10 @@ We make extensive use of the |liftM| and the Maybe monad.
 > import Data.Maybe (maybe, fromMaybe, fromJust, isJust, catMaybes)
 > import Data.Time.Calendar (Day, toGregorian)
 > import Data.Time.Clock (getCurrentTime, UTCTime)
-> import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, LocalTime(..))
+> import Data.Time.Format (formatTime, FormatTime)
+> import Data.Time.LocalTime (  getCurrentTimeZone, utcToLocalTime,
+>                               LocalTime(..), ZonedTime)
+> import System.Locale (defaultTimeLocale, rfc822DateFormat)
 
 It's often useful to have the compactness of the traditional tertiary operator
 rather than an if then else. The |(?)| operator can be used like:
@@ -73,3 +79,6 @@ then performs them on the list.
 
 > translate :: (Eq a) => [(a, a)] -> [a] -> [a]
 > translate sr = map (\s -> maybe s id $ lookup s sr)
+
+> formatTime' :: FormatTime t => String -> t -> String
+> formatTime' = formatTime defaultTimeLocale

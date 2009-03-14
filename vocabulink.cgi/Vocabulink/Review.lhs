@@ -16,8 +16,6 @@ For now, we have only 1 algorithm (SuperMemo 2).
 > import Vocabulink.Link
 > import Vocabulink.Utils
 
-> import Control.Exception (throwDyn)
-
 \subsection{Review Scheduling}
 
 When a member indicates that they want to review a link, we just add it to the

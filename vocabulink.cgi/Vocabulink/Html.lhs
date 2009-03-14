@@ -8,12 +8,12 @@ importantly, it allows us to use abstraction to get higher-level HTML-based
 functions. An example of this is |linkList|.
 
 > module Vocabulink.Html (  Dependency(..), stdPage, simplePage,
->                           linkList, options, accesskey,
->                           runForm, formLabel, formLabel',
+>                           linkList, breadcrumbs, options, tableRows, accesskey,
+>                           AppForm, runForm, formLabel, formLabel',
 >                           tabularInput, tabularSubmit,
 >                           pager, currentPage,
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
->                           (<<), (+++), (!),
+>                           (<<), (+++), (!), showHtmlFragment,
 >                           identifier, theclass, thediv, thespan, style,
 >                           paragraph, pre, h1, h2, h3, br, anchor, href,
 >                           image, unordList, form, action, method, enctype,
@@ -21,9 +21,9 @@ functions. An example of this is |linkList|.
 >                           fieldset, legend, afile,
 >                           textarea, select, widget,
 >                           thestyle, src, width, height, value, name,
->                           cols, rows,
+>                           cols, rows, colspan,
 >                           table, thead, tbody, tfoot, th, tr, td,
->  {- Text.Formlets -}      AppForm, runFormState, nothingIfNull,
+>  {- Text.Formlets -}      runFormState, nothingIfNull,
 >                           check, ensure, ensures, checkM, ensureM,
 >                           plug,
 >  {- Text.XHtml.Strict.Formlets -} XHtmlForm) where
@@ -40,6 +40,7 @@ nice fallback, but it can mask an underlying problem.
 
 > import Control.Applicative.Error
 > import Control.Arrow (second)
+> import Data.List (intersperse)
 > import Network.URI (uriPath)
 > import Text.Regex (mkRegex, subRegex)
 > import Text.Regex.Posix ((=~))
@@ -62,6 +63,7 @@ footer. It also includes @page.css@.
 > stdPage t deps head' body' = do
 >   headerB  <- headerBar
 >   footerB  <- footerBar
+>   setHeader "Content-Type" "text/html; charset=utf-8"
 >   output $ renderHtml $ header <<
 >     (  thetitle << (encodeString t) +++
 >        concatHtml (map includeDep ([CSS "page"] ++ deps)) +++
@@ -185,10 +187,26 @@ both the standard header and footer use this.
 > linkList :: (HTML a) => [a] -> Html
 > linkList items = ulist ! [theclass "links"] << map (li <<) items
 
+Breadcrumbs are a common navigation element. This only handles wrapping the
+provided elements in an appropriate ordered list and adding decorating it.
+Adding the links is up to you.
+
+> breadcrumbs :: [Html] -> Html
+> breadcrumbs items = ulist ! [theclass "breadcrumbs"] << map (li <<) items'
+>   where items' = intersperse (stringToHtml $ encodeString " » ") items
+
 Sometimes you just want a select list where the displayed options match their values.
 
 > options :: [String] -> [Html]
 > options choices = [ option ! [value choice] << choice | choice <- choices ]
+
+This automatically adds the ``odd'' and ``even'' CSS classes to each table row.
+
+> tableRows :: [Html] -> [Html]
+> tableRows = map decorate . zip [1..]
+>   where decorate (a,b) = tr ! [theclass (odd (a :: Integer) ? "odd" $ "even")] << b
+
+foldr (\a ~(x,y) -> (a:y,x)) ([],[]) (fs' ++ creator)
 
 Curiously, the accesskey attribute is missing from Text.XHtml.
 
@@ -244,8 +262,9 @@ the type of the form.
 >   case status of
 >     Failure failures  -> do
 >       uri <- requestURI
->       return $ Left $ errors +++ form ! [action (uriPath uri), method "POST"] <<
->                                     [  xhtml, submit "" message ]
+>       return $ Left $ errors +++
+>                       form ! [action (uriPath uri), method "POST"] <<
+>                         [  xhtml, message /= "" ? (submit "" message) $ noHtml ]
 >      where errors = case meth of
 >                       "GET"  -> noHtml
 >                       _      -> unordList failures

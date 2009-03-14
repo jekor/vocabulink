@@ -10,8 +10,8 @@ dealing with constantly-changing state.
 > module Vocabulink.DB (  queryTuple, queryValue, queryAttribute,
 >                         quickStmt, insertNo, quickInsertNo,
 >                         catchSqlD, catchSqlE, logMsg, logException, connect,
->  {- Database.HDBC -}    SqlValue, toSql, fromSql, iToSql,
->                         withTransaction, quickQuery, quickQuery',
+>  {- Database.HDBC -}    SqlValue(..), toSql, fromSql, iToSql,
+>                         withTransaction, throwDyn, quickQuery, quickQuery',
 >                         IConnection(..), execute, catchSql,
 >  {- Database.HDBC.PostgreSQL -}  Connection) where
 
@@ -20,7 +20,7 @@ need to utilize the database in some way.
 
 > import Vocabulink.Utils
 
-> import Control.Exception (Exception(..), IOException, bracket)
+> import Control.Exception (Exception(..), IOException, bracket, throwDyn)
 > import Data.Maybe (listToMaybe)
 > import Database.HDBC
 > import Database.HDBC.PostgreSQL (connectPostgreSQL, Connection)

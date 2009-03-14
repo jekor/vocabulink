@@ -197,3 +197,4 @@ p.copyright:
 .breadcrumbs:
   li:
     display: inline
+  margin-bottom: 1.3em

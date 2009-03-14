@@ -171,7 +171,6 @@ when starting the program rather than in individual threads later.
 > handleRequest = do
 >   uri     <- requestURI
 >   method  <- requestMethod
->   setHeader "Content-Type" "text/html; charset=utf-8"
 >   let path = pathList uri
 >   dispatch' method path
 
@@ -345,6 +344,15 @@ for a long time.
 > dispatch "POST"  ["forums"] = forumsPage
 
 > dispatch "POST"  ["forum","new"] = createForum
+> dispatch "GET"   ["forum",x] = forumPage x
+
+> dispatch "GET"   ["forum",x,"new"] = newTopicPage x
+> dispatch "POST"  ["forum",x,"new"] = newTopicPage x
+
+> dispatch "GET"   path@["forum",x,y] =
+>   case maybeRead y of
+>     Nothing  -> output404 path
+>     Just n   -> forumTopicPage x n
 
 \subsection{Everything Else}
 

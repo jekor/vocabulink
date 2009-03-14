@@ -96,11 +96,21 @@
   form:
     display: inline
 
-.comment.reply:
+.comment.editable:
   .speech:
     padding: 0
     textarea:
       margin: 0
+  label:
+    float: left
+    margin->
+      left: 0.5em
+      right: 0.25em
+  .title:
+    overflow: hidden
+    margin-right: 0.5em
+    input:
+      width: 100%
 
 fieldset:
   border: 1px solid black
