@@ -66,6 +66,9 @@
 .comment:
   background-color: #EEE
   margin-bottom: 1.3em
+  > *:
+    margin->
+      bottom: 0.25em
   .timestamp, .signature:
     text-align: right
     margin->
@@ -96,7 +99,7 @@
   form:
     display: inline
 
-.comment.editable:
+.comment.editable, .reply.editable:
   .speech:
     padding: 0
     textarea:
@@ -111,6 +114,11 @@
     margin-right: 0.5em
     input:
       width: 100%
+
+.reply:
+  margin->
+    top: 1.3em
+    left: 50px
 
 fieldset:
   border: 1px solid black

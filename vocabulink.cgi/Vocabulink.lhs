@@ -354,6 +354,9 @@ for a long time.
 >     Nothing  -> output404 path
 >     Just n   -> forumTopicPage x n
 
+> dispatch "GET"   ["comment","reply"] = replyToComment
+> dispatch "POST"  ["comment","reply"] = replyToComment
+
 \subsection{Everything Else}
 
 It would be nice to automatically respond with "Method Not Allowed" on URIs

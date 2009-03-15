@@ -255,7 +255,7 @@ the type of the form.
 > runForm :: XHtmlForm (AppT IO) a -> String -> App (Either Html a)
 > runForm frm message = do
 >   env <- map (second Left) <$> getInputs
->   let (res, markup, _) = runFormState env "" frm
+>   let (res,markup,_) = runFormState env "" frm
 >   status  <- res
 >   xhtml   <- markup
 >   meth    <- requestMethod

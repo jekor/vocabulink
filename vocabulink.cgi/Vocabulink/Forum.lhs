@@ -18,7 +18,7 @@ problems as well.
 \end{enumerate}
 
 > module Vocabulink.Forum (  forumsPage, forumPage, createForum,
->                            newTopicPage, forumTopicPage ) where
+>                            newTopicPage, forumTopicPage, replyToComment ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -181,20 +181,20 @@ have need for more file uploads we'll generalize this if necessary.
 >   case res of
 >     Left xhtml -> simplePage "New Forum Topic" forumDeps
 >       [thediv ! [theclass "comments"] << xhtml]
->     Right topic -> do
->       r <- createTopic topic n
+>     Right (title, (body, _)) -> do
+>       r <- createTopic (title, body) n
 >       case r of
 >         Nothing  -> simplePage "Error Creating Forum Topic" forumDeps []
 >         Just _   -> redirect $ "../" ++ n
 
-> forumTopicForm :: String -> AppForm (String, String)
+> forumTopicForm :: String -> AppForm (String, (String, Maybe Integer))
 > forumTopicForm memberName =
->   commentBox ((,)  <$> ("Topic Title" `formLabel`
+>   commentBox ((,)  <$> plug (thediv <<) ("Topic Title" `formLabel`
 >                           (  plug (\xhtml -> thediv ! [theclass "title"] << xhtml) $
 >                              F.input Nothing) `check` ensures
 >     [  ((> 0)     . length, "Title must not be empty."),
 >        ((<=  80)  . length, "Title must be 80 characters or shorter.") ])
->                    <*> commentForm memberName "Create")
+>                    <*> commentForm memberName Nothing "Create")
 
 > createTopic :: (String, String) -> String -> App (Maybe Integer)
 > createTopic (t, c) fn = do
@@ -203,10 +203,7 @@ have need for more file uploads we'll generalize this if necessary.
 >     Nothing        -> return Nothing
 >     Just memberNo  -> withTransaction' $ do
 >       c' <- asks appDB
->       commentNo <- liftIO $ insertNo c'
->         "INSERT INTO comment (author, comment) \
->         \VALUES (?, ?)" [toSql memberNo, toSql c]
->         "comment_comment_no_seq"
+>       commentNo <- storeComment memberNo c Nothing
 >       case commentNo of
 >         Nothing  -> liftIO $ rollback c' >> throwDyn ()
 >         Just n   -> do
@@ -219,11 +216,10 @@ have need for more file uploads we'll generalize this if necessary.
 >             Just _   -> return n
 
 > commentBox :: Monad m => XHtmlForm m a -> XHtmlForm m a
-> commentBox = plug (\xhtml -> thediv ! [theclass "comment editable"] << xhtml)
+> commentBox = plug (\xhtml -> thediv ! [theclass "comment toplevel editable"] << xhtml)
 
-> commentForm :: String -> String -> AppForm String
-> commentForm memberName submitText = plug (\xhtml -> concatHtml [
->   paragraph ! [theclass "timestamp"] << "now",
+> commentForm :: String -> Maybe String -> String -> AppForm (String, Maybe Integer)
+> commentForm memberName parent submitText = plug (\xhtml -> concatHtml [
 >   anchor ! [href "#"] << image ! [  width "50", height "50",
 >                                     src ("http://s.vocabulink.com/" ++
 >                                          memberName ++ "-50x50.png") ],
@@ -231,9 +227,11 @@ have need for more file uploads we'll generalize this if necessary.
 >   thediv ! [theclass "signature"] << [
 >     anchor ! [href "#"] << ((encodeString "—") ++ memberName),
 >     stringToHtml " ",
->     submit "" submitText ] ]) (F.textarea Nothing `check` ensures
->       [  ((> 0)       . length, "Comment must not be empty."),
->          ((<= 10000)  . length, "Comment must be 10,000 characters or shorter.") ])
+>     submit "" submitText ] ])
+>     ((\a b -> (a, maybeRead =<< b))  <$> (F.textarea Nothing `check` ensures
+>                 [  ((> 0)       . length, "Comment must not be empty."),
+>                    ((<= 10000)  . length, "Comment must be 10,000 characters or shorter.") ])
+>           <*> (nothingIfNull $ F.hidden parent))
 
 Return a list of forum topics as HTML rows. This saves us some effort by
 avoiding any intermediate representation which we don't yet need.
@@ -276,7 +274,7 @@ avoiding any intermediate representation which we don't yet need.
 > formatSimpleTime = formatTime' "%a %b %d, %Y %R"
 
 > forumTopicPage :: String -> Integer -> App CGIResult
-> forumTopicPage n i = do
+> forumTopicPage fn i = do
 >   r <- queryTuple'  "SELECT t.root_comment, t.title, f.title \
 >                     \FROM forum_topic t, forum f \
 >                     \WHERE f.name = t.forum_name \
@@ -284,7 +282,7 @@ avoiding any intermediate representation which we don't yet need.
 >   case r of
 >     Just [root,title,fTitle] -> do
 >       comments <- queryTuples'
->         "SELECT t.level, m.username, c.time, c.comment \
+>         "SELECT c.comment_no, t.level, m.username, c.time, c.comment \
 >         \FROM comment c, member m, \
 >              \connectby('comment', 'comment_no', 'parent_no', ?, 0) \
 >              \AS t(comment_no int, parent_no int, level int) \
@@ -292,22 +290,38 @@ avoiding any intermediate representation which we don't yet need.
 >           \AND m.member_no = c.author" [root]
 >       case comments of
 >         Nothing  -> error "Error retrieving comments."
->         Just cs  -> stdPage (fromSql title) forumDeps [] [
->                       breadcrumbs [
->                         anchor ! [href "../../forums"] << "Forums",
->                         anchor ! [href $ "../" ++ n] << (fromSql fTitle :: String),
->                         stringToHtml $ fromSql title ],
->                       thediv ! [theclass "comments"] << map displayComment cs ]
->     _          -> output404 ["forum",n,show i]
+>         Just cs  -> do
+>           commentsHtml <- mapM displayComment cs
+>           stdPage (fromSql title) (forumDeps ++ [JS "forum-comment"]) [] [
+>             breadcrumbs [
+>               anchor ! [href "../../forums"] << "Forums",
+>               anchor ! [href $ "../" ++ fn] << (fromSql fTitle :: String),
+>               stringToHtml $ fromSql title ],
+>             thediv ! [theclass "comments"] << commentsHtml ]
+>     _          -> output404 ["forum",fn,show i]
 
-> displayComment :: [SqlValue] -> Html
-> displayComment [l, u, t, c]  = 
->   let l'  :: Integer  = fromSql l
+> displayComment :: [SqlValue] -> App Html
+> displayComment [n, l, u, t, c]  = do
+>   memberName <- asks appMemberName
+>   let n'  :: Integer  = fromSql n
+>       l'  :: Integer  = fromSql l
 >       u'  :: String   = fromSql u
 >       t'  :: UTCTime  = fromSql t
->       c'  :: String   = fromSql c in
->   thediv ! [  theclass "comment",
->               thestyle $ "margin-left: " ++ (show $ l'*2) ++ "em" ] << [
+>       c'  :: String   = fromSql c
+>       id'             = "reply-" ++ (show n')
+>   replyBox <- case memberName of
+>     Nothing  -> return noHtml
+>     Just mn  -> do
+>       let (_,markup,_) = runFormState [] "" $
+>                              commentForm mn (Just $ show n') "Send Reply"
+>       xhtml <- markup
+>       return $ thediv ! [  identifier id',
+>                            theclass "reply",
+>                            thestyle "display: none" ] <<
+>         thediv ! [theclass "comment editable"] <<
+>           form ! [method "POST"] << xhtml
+>   return $ thediv ! [  theclass "comment toplevel",
+>                        thestyle $ "margin-left:" ++ (show $ l'*2) ++ "em" ] << [
 >     paragraph ! [theclass "timestamp"] << formatSimpleTime t',
 >     anchor ! [href "#"] << image ! [  width "50", height "50",
 >                                       src ("http://s.vocabulink.com/" ++
@@ -316,5 +330,45 @@ avoiding any intermediate representation which we don't yet need.
 >     thediv ! [theclass "signature"] << [
 >       anchor ! [href "#"] << ((encodeString "—") ++ u'),
 >       stringToHtml " ",
->       submit "" "Reply" ] ]
-> displayComment _                = paragraph << "Error retrieving comment."
+>       button ! [theclass $ "reveal " ++ id'] << "Reply" ],
+>     replyBox ]
+> displayComment _             = return $ paragraph << "Error retrieving comment."
+
+This returns the new comment number.
+
+> storeComment :: Integer -> String -> Maybe Integer -> App (Maybe Integer)
+> storeComment memberNo body parent = do
+>   c <- asks appDB
+>   liftIO $ insertNo c  "INSERT INTO comment (author, comment, parent_no) \
+>                        \VALUES (?, ?, ?)" [toSql memberNo, toSql body, toSql parent]
+>                        "comment_comment_no_seq"
+
+> replyToComment :: App CGIResult
+> replyToComment = do
+>   memberName <- asks appMemberName
+>   case memberName of
+>     Nothing  -> outputUnauthorized
+>     Just mn  -> do
+>       parent <- getInput "parent"
+>       res <- runForm (commentForm mn parent "Send Reply") ""
+>       case res of
+>         Left xhtml           -> outputJSON [  ("html", showHtmlFragment $ thediv ! [theclass "comment editable"] << xhtml),
+>                                               ("status", "incomplete") ]
+>         Right (body,parent')  -> do
+>           memberNo <- fromJust <$> asks appMemberNo
+>           commentNo <- storeComment memberNo body parent'
+>           res' <- queryTuple'  "SELECT c.comment_no, 0 as level, m.username, \
+>                                       \c.time, c.comment \
+>                                \FROM comment c, member m \
+>                                \WHERE m.member_no = c.author \
+>                                  \AND comment_no = ?"
+>                                [toSql commentNo]
+>           case res' of
+>             Nothing  -> outputJSON [  ("html", "Error posting comment."),
+>                                       ("status", "error") ]
+>             Just c   -> do
+>               c' <- asks appDB
+>               liftIO $ commit c'
+>               comment <- displayComment c
+>               outputJSON [  ("html", showHtmlFragment comment),
+>                             ("status", "accepted") ]

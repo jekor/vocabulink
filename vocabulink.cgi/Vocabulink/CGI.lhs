@@ -16,7 +16,7 @@ with |readInput|). This is a common pattern in other modules.
 > module Vocabulink.CGI (  getInput, getRequiredInput, getInputDefault,
 >                          readInput, readRequiredInput, readInputDefault,
 >                          getInputs, handleErrors', referrerOrVocabulink,
->                          urlify,
+>                          urlify, outputUnauthorized, outputText, outputJSON,
 >  {- Network.FastCGI -}   getInputFPS, getInputFilename,
 >                          MonadCGI, CGIResult, requestURI, requestMethod,
 >                          getVar, setHeader, output, redirect, remoteAddr,
@@ -28,6 +28,7 @@ with |readInput|). This is a common pattern in other modules.
 
 > import Control.Exception (Exception(..))
 > import Data.Char (toLower, isAlphaNum)
+> import Text.JSON (JSON, encode, toJSObject)
 
 We're going to hide some Network.CGI functions so that we can override them
 with versions that automatically handle UTF-8-encoded input.
@@ -67,6 +68,23 @@ accumulating a pile of unused database handles.
 >   s <- liftIO $ logException c e
 >   liftIO $ disconnect c
 >   outputInternalServerError [s]
+
+Usually we use the |withRequired| functions when an action requires that the
+client be authenticated. However, sometimes (as with AJAX) we want to output an
+actual 403 error.
+
+> outputUnauthorized :: (MonadCGI m, MonadIO m) => m CGIResult
+> outputUnauthorized = outputError 403 "Unauthorized" []
+
+Also, we do not always output HTML. Sometimes we output JSON or HTML fragments.
+
+> outputText :: (MonadCGI m, MonadIO m) => String -> m CGIResult
+> outputText s = setHeader "Content-Type" "text/plain; charset=utf-8" >> output s
+
+Output as JSON an associative list.
+
+> outputJSON :: (MonadCGI m, MonadIO m, JSON a) => [(String, a)] -> m CGIResult
+> outputJSON = outputText . encode . toJSObject
 
 In some cases we'll need to redirect the client to where it came from after we
 perform some action. We use this to make sure that we don't redirect them off

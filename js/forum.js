@@ -6,6 +6,7 @@ function setup() {
 
 function roundDivs() {
   roundClass('div', 'forum-group');
-  roundClass('div', 'comment');
+  var toplevelComments = $$('.comment.toplevel');
+  map(roundElement, toplevelComments);
   roundElement('topics');
 }
