@@ -356,8 +356,10 @@ should be reviewed again after public release.
 >   partials <- getPartialLinks preds [] 0 100
 >   case partials of
 >     Nothing  -> error "Error while retrieving links."
->     Just ls  -> stdPage ("Links containing " ++ focus) [CSS "link"] []
->                   [linkFocusBox focus $ catMaybes ls]
+>     Just ls  -> stdPage ("Links containing " ++ focus)
+>                   [  CSS "link", CSS "link-graph",
+>                      JS "MochiKit", JS "raphael", JS "link-graph"] []
+>                   (linkFocusBox focus $ catMaybes ls)
 >    where preds = ["(origin LIKE '" ++ focus ++ "' OR \
 >                    \destination LIKE '" ++ focus ++ "')"]
 
@@ -374,37 +376,24 @@ Before we can display the 1st and later cases, we need to sort the links into
 ``links containing the focus as the origin'' and ``links containing the focus
 as the destination''.
 
-> linkFocusBox :: String -> [PartialLink] -> Html
-> linkFocusBox focus links = table ! [theclass "focus-box"] <<
->   [  tbody << tr <<
->      [  td ! [theclass "origins"] <<
->           linkNodeTable (linkOrigin . pLink) origs (linkButton "input1"),
->         td ! [theclass "edges"] << edgesImage origs "l",
->         td ! [theclass "focus"] << (encodeString focus),
->         td ! [theclass "edges"] << edgesImage dests "r",
->         td ! [theclass "destinations"] <<
->           linkNodeTable (linkDestination . pLink) dests (linkButton "input0") ] ]
->   where partitioned  = partition ((== focus) . linkOrigin . pLink) links
->         origs        = snd partitioned
->         dests        = fst partitioned
->         edgesImage ls side = image !
->           [  src ("http://s.vocabulink.com/edges/edges-" ++
->                   side ++ (show $ length ls + 1) ++ ".png"),
->              width "200" ]
->         linkButton n = form ! [action "/link", method "GET"] <<
->                         button ! [name n, value (encodeString focus)] <<
->                           "New Link"
-
-For now, the easiest way to lay up the links next to the origin and destination
-edges is to use tables.
-
-> linkNodeTable :: (PartialLink -> String) -> [PartialLink] -> Html -> Html
-> linkNodeTable side links newForm = table << map linkRow linkRows
->   where linkNodes  = map (stringToHtml . encodeString . side) links
->         linkGroups = splitAt (ceiling (fromIntegral (length linkNodes) / 2 :: Double))
->                        linkNodes
->         linkRows   = fst linkGroups ++ [newForm] ++ snd linkGroups
->         linkRow    = (tr <<) . (td <<)
+> linkFocusBox :: String -> [PartialLink] -> [Html]
+> linkFocusBox focus links = [
+>   script << primHtml
+>     (  "connect(window, 'onload', partial(draw," ++ encode focus ++ "," ++
+>        jsonNodes ("/link?input1=" ++ focus) linkOrigin origs ++ "," ++
+>        jsonNodes ("/link?input0=" ++ focus) linkDestination dests ++ "));" ),
+>   thediv ! [identifier "graph"] << noHtml ]
+>  where partitioned   = partition ((== focus) . linkOrigin . pLink) links
+>        origs         = snd partitioned
+>        dests         = fst partitioned
+>        jsonNodes url f xs  = encode $ insertMid
+>          (toJSObject [  ("lexeme","new link"),
+>                         ("url",url) ])
+>          (map (\o -> toJSObject [  ("lexeme",f $ pLink o),
+>                                    ("number",show $ linkNumber $ pLink o)]) xs)
+>        insertMid :: a -> [a] -> [a]
+>        insertMid x xs = let (l,r) = foldr (\a ~(x',y') -> (a:y',x')) ([],[]) xs in
+>                         reverse l ++ [x] ++ r
 
 \subsection{Creating New Links}
 

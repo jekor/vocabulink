@@ -21,7 +21,8 @@ with |readInput|). This is a common pattern in other modules.
 >                          MonadCGI, CGIResult, requestURI, requestMethod,
 >                          getVar, setHeader, output, redirect, remoteAddr,
 >                          outputError, outputMethodNotAllowed,
->                          Cookie(..), getCookie, setCookie, deleteCookie) where
+>                          Cookie(..), getCookie, setCookie, deleteCookie,
+>  {- Text.JSON -}         JSON, encode, toJSObject ) where
 
 > import Vocabulink.DB
 > import Vocabulink.Utils

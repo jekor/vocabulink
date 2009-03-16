@@ -15,7 +15,7 @@ functions. An example of this is |linkList|.
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
 >                           (<<), (+++), (!), showHtmlFragment,
 >                           identifier, theclass, thediv, thespan, style,
->                           paragraph, pre, h1, h2, h3, br, anchor, href,
+>                           paragraph, pre, h1, h2, h3, br, anchor, href, script,
 >                           image, unordList, form, action, method, enctype,
 >                           hidden, label, textfield, password, button, submit,
 >                           fieldset, legend, afile,
