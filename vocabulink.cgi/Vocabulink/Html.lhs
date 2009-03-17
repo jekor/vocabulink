@@ -92,8 +92,8 @@ inclusion in the @<head>@ of the page.
 
 The standard header bar shows the Vocabulink logo (with a link to the root
 page), a list of links (currently static, but eventually configurable by the
-member), and either a login box and join button or a count of links waiting for
-review and a logout button.
+member), and either a login box and sign up button or a count of links waiting
+for review and a logout button.
 
 > headerBar :: App Html
 > headerBar = do
@@ -143,19 +143,19 @@ generation time (now).
 >        anchor ! [href "http://jekor.com/"] << "Chris Forno" ]
 
 This provides a simple login box for members. Actually, it's a box for a
-username, a box for a password, a login button, and a join button.
+username, a box for a password, a login button, and a sign up button.
 
-We have to put the join button before the login form to get them to display in
-the correct order because they're both floated to the right.
+We have to put the sign up button before the login form to get them to display
+in the correct order because they're both floated to the right.
 
 Until we switch this over to using formlets, we need to manually set the inputs
 to @input0@ and @input1@ since that's what the formlets-based login page
 expects.
 
 > loginBox :: Html
-> loginBox = form ! [  theclass "auth-box", action "/member/join",
+> loginBox = form ! [  theclass "auth-box", action "/member/signup",
 >                      method "GET"] <<
->              [  submit "" "Join" ] +++
+>              [  submit "" "Sign Up" ] +++
 >            form ! [  theclass "auth-box login", action "/member/login",
 >                      method "POST"] <<
 >              [  label << "Username:",  textfield "input0",

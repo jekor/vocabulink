@@ -321,8 +321,12 @@ add a link for review             & $\rightarrow$ & @POST /review/n/add@
 
 Becoming a member is simply a matter of filling out a form.
 
-> dispatch "GET"   ["member","join"]  = registerMember
-> dispatch "POST"  ["member","join"]  = registerMember
+> dispatch "GET"   ["member","signup"]  = registerMember
+> dispatch "POST"  ["member","signup"]  = registerMember
+
+Part of becoming a member is confirming (an email address).
+
+> dispatch "GET"   ["member","signup",x]  = confirmMembership x
 
 Logging in is a similar process.
 

@@ -90,11 +90,13 @@ function draw(focus, origs, dests) {
       node.node.ellipse.animate({'fill': '#CCC'}, 250);
       g.focus.ellipse.animate({'fill': '#CCC'}, 250);
       node.line.animate({'stroke-width': 4}, 250);
+      document.body.style.cursor = 'pointer';
     };
     var mouseOut = function() {
       node.node.ellipse.animate({'fill': '#FFF'}, 250);
       g.focus.ellipse.animate({'fill': '#FFF'}, 250);
       node.line.animate({'stroke-width': 1}, 250);
+      document.body.style.cursor = 'auto';
     };
     var action = function() {
       if (link.url !== undefined)

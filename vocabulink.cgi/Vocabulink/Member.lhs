@@ -1,4 +1,5 @@
-> module Vocabulink.Member (login, logout, registerMember, getMemberNumber) where
+> module Vocabulink.Member (  login, logout, registerMember, getMemberNumber,
+>                             confirmMembership) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -7,7 +8,10 @@
 > import Vocabulink.Member.AuthToken
 > import Vocabulink.Utils
 
+> import Control.Exception (try)
 > import qualified Text.XHtml.Strict.Formlets as F
+> import System.Cmd (system)
+> import System.Exit (ExitCode(..))
 
 \section{Authentication}
 
@@ -38,7 +42,7 @@ and then continuing where it left off.
 >     Left xhtml -> simplePage "Login" []
 >       [  xhtml,
 >          paragraph << "Not a member? " +++
->                           anchor ! [href "/member/join"] << "Join!" ]
+>                           anchor ! [href "/member/signup"] << "Sign Up!" ]
 >     Right (user, _) -> do
 >       ref        <- referrerOrVocabulink
 >       redirect'  <- getInputDefault ref "redirect"
@@ -78,12 +82,12 @@ To register a new member we need their desired username, a password, and
 optionally an email address.
 
 > data Registration = Registration {  regUser   :: String,
->                                     regEmail  :: Maybe String,
+>                                     regEmail  :: String,
 >                                     regPass   :: String }
 
 > register :: AppForm Registration
 > register = Registration  <$> uniqueUser
->                          <*> nothingIfNull emailAddress
+>                          <*> uniqueEmailAddress
 >                          <*> passConfirmed
 
 We're very permissive with usernames. They just need to be between 3 and 32
@@ -99,9 +103,9 @@ trying to register with isn't already in use.
 
 > uniqueUser :: AppForm String
 > uniqueUser = username `checkM` ensureM valid err where
->   valid user = do v <- queryTuples'  "SELECT username FROM member \
->                                      \WHERE username = ?" [toSql user]
->                   return $ maybe False (== []) v
+>   valid user = do vs <- queryTuples'  "SELECT username FROM member \
+>                                       \WHERE username = ?" [toSql user]
+>                   return $ maybe False (== []) vs
 >   err = "That username is unavailable."
 
 Our password input is as permissive as our username input.
@@ -120,28 +124,96 @@ other reason than that it's common practice.
 >   equal (a,b) = a == b
 >   err = "Passwords do not match."
 
-We don't currently do any validation on email addresses.
+We don't currently do any validation on email addresses other than to check if
+the address is already in use.
+
+> uniqueEmailAddress :: AppForm String
+> uniqueEmailAddress = emailAddress `checkM` ensureM valid err where
+>   valid email = do  vs <- queryTuples'  "(SELECT email FROM member \
+>                                          \WHERE email = ?) \
+>                                         \UNION \
+>                                         \(SELECT email FROM member_confirmation \
+>                                          \WHERE email = ?)"
+>                                         [toSql email, toSql email]
+>                     return $ maybe False (== []) vs
+>   err = "That email address is unavailable."
 
 > emailAddress :: AppForm String
-> emailAddress = "Email address" `formLabel'` F.input Nothing
+> emailAddress = "Email address" `formLabel'` F.input Nothing `check` ensures
+>   [  ((/= ""), "Enter an email address.") ]
 
 Create a page with a new user form or register the user and redirect them to
 the front page.
 
 > registerMember :: App CGIResult
 > registerMember = do
->   res <- runForm register "Join"
+>   res <- runForm register "Sign Up"
 >   case res of
->     Left xhtml  -> simplePage "Join Vocabulink" [] [xhtml]
+>     Left xhtml  -> simplePage "Sign Up for Vocabulink" [] [xhtml]
 >     Right reg   -> do
 >       memberNo <- quickInsertNo'
->         "INSERT INTO member (username, email, password_hash) \
->         \VALUES (?, ?, crypt(?, gen_salt('bf')))"
->         [toSql (regUser reg), toSql (regEmail reg), toSql (regPass reg)]
+>         "INSERT INTO member (username, password_hash) \
+>         \VALUES (?, crypt(?, gen_salt('bf')))"
+>         [toSql (regUser reg), toSql (regPass reg)]
 >         "member_member_no_seq"
 >       case memberNo of
 >         Nothing  -> error "Registration failure (this is not your fault)."
 >         Just n   -> do
 >           ip <- remoteAddr
 >           setAuthCookie n (regUser reg) ip
+>           sendConfirmationEmail n reg
 >           redirect "/"
+
+> sendConfirmationEmail :: Integer -> Registration -> App (Maybe ())
+> sendConfirmationEmail memberNo r = do
+>   quickStmt'  "INSERT INTO member_confirmation \
+>               \(member_no, hash, email) VALUES \
+>               \(?, md5(random()::text), ?)"
+>               [toSql memberNo, toSql (regEmail r)]
+>   hash <- queryValue'  "SELECT hash FROM member_confirmation \
+>                        \WHERE member_no = ?" [toSql memberNo]
+>   case hash of
+>     Nothing  -> return Nothing
+>     Just h   -> do
+>       let email = unlines [
+>                     "From: vocabulink@vocabulink.com",
+>                     "To: <" ++ (regEmail r) ++ ">",
+>                     "Subject: Welcome to Vocabulink",
+>                     "",
+>                     "Welcome to Vocabulink.",
+>                     "",
+>                     "Click http://www.vocabulink.com/member/signup/" ++
+>                     (fromSql h) ++ " to confirm your email address." ]
+>       res <- liftIO $ try $ system $
+>         (  "echo -e \""   ++ email         ++ "\" | \
+>            \sendmail \""  ++ (regEmail r)  ++ "\"")
+>       case res of
+>         Right ExitSuccess  -> quickStmt'
+>           "UPDATE member_confirmation \
+>           \SET email_sent = current_timestamp \
+>           \WHERE member_no = ?" [toSql memberNo]
+>         _                  -> return Nothing
+
+> confirmMembership :: String -> App CGIResult
+> confirmMembership hash = do
+>   memberNo <- asks appMemberNo
+>   case memberNo of
+>     Nothing  -> redirect =<< loginRedirectPage
+>     Just n   -> do
+>       match <- queryValue'  "SELECT ? = hash FROM member_confirmation \
+>                             \WHERE member_no = ?" [toSql hash, toSql n]
+>       let match' = maybe False fromSql match
+>       case match' of
+>         False  -> error "Confirmation mismatch."
+>         True   -> do
+>           res <- withTransaction' $ do
+>             runStmt'  "UPDATE member SET email = \
+>                          \(SELECT email FROM member_confirmation \
+>                           \WHERE member_no = ?) \
+>                       \WHERE member_no = ?" [toSql n, toSql n]
+>             runStmt'  "DELETE FROM member_confirmation \
+>                       \WHERE member_no = ?" [toSql n]
+>           case res of
+>             Nothing  -> error "Confirmation error. \
+>                               \Please contact support@vocabulink.com."
+>             Just _   -> redirect =<< referrerOrVocabulink

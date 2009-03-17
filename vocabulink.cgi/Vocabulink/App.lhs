@@ -8,9 +8,9 @@ signatures a little bit.
 
 > module Vocabulink.App (      App, AppEnv(..), AppT, runApp, logApp, getOption,
 >                              withMemberNumber, withRequiredMemberNumber,
->                              withRequiredMemberName, output404,
+>                              withRequiredMemberName, output404, loginRedirectPage,
 >                              queryTuple', queryValue', queryAttribute',
->                              queryTuples', quickInsertNo', quickStmt',
+>                              queryTuples', quickInsertNo', runStmt', quickStmt',
 >                              withTransaction', run',
 >  {- Control.Monad.Reader -}  asks) where
 
@@ -168,6 +168,11 @@ it's much easier than manually wrapping the query with |catchSql|.
 > quickInsertNo' sql vs seqname = do
 >   c <- asks appDB
 >   liftIO $ quickInsertNo c sql vs seqname `catchSqlD` Nothing
+
+> runStmt' :: String -> [SqlValue] -> App (Maybe Integer)
+> runStmt' sql vs = do
+>   c <- asks appDB
+>   liftIO $ (run c sql vs >>= return . Just) `catchSqlD` Nothing
 
 It may seem strange to return Maybe (), but we want to know if the database
 change succeeded.

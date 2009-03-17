@@ -24,19 +24,29 @@ CREATE TABLE member (
        username CHARACTER VARYING(32) NOT NULL UNIQUE,
        join_date TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        email TEXT,
-       email_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
        website TEXT,
        password_hash TEXT,
 );
 CREATE INDEX member_username ON member (username);
+CREATE INDEX member_email ON member (email);
 COMMENT ON COLUMN member IS 'At some point in time we may want to store a member''s timezone and locale so that we can report dates and times accurately to them. For example, "Your next review is scheduled on November 3rd at 10:48." For now we just use relative times ("Your next review is scheduled for 18 hours from now.").';
 COMMENT ON COLUMN member.member_no IS 'I debated about using the username as a primary key. In the end, I decided against it. Performance and space concerns won me over. It''s also nice to have a numeric reference to a member in case we need to refer to a member in some context where Unicode characters aren''t valid.';
 COMMENT ON COLUMN member.username IS 'I want to allow usernames to include any URL-safe characters, including alphanumeric Unicode characters. The regexp for username is ^[\p{L}\p{Nd}$-_.+!*''(),]{3,}$. Because usernames will be used in URLs, and displayed in various places, I want to keep them to a reasonable size. This was also a motivation for making the difficult decision to disallow spaces. All of the preceding is outdated, we allow any characters in the username.';
-COMMENT ON COLUMN member.email IS 'In order to allow any reasonable email address from members, the regexp for email addresses is ^[\p{L}\p{N}\p{P}\p{S}]+@[\p{L}\p{N}\p{P}\p{S}]+$. Again, this should accept Unicode characters';
+COMMENT ON COLUMN member.email IS 'The email address here represents confirmed email addresses. If the member has not been confirmed, their email address lives in the member_confirmation relation.';
 COMMENT ON COLUMN member.password_hash IS 'The member''s password is stored as a hash, calculated by the pgcrypto contrib functions. See /usr/share/postgresql/contrib/pgcrypto.sql. The actual function used is crypt(?, gen_salt(''bf'')) (bf is for blowfish). A password is not required so that non-members can interact to some extend with the site (such as posting comments). The idea is that someone can provide an email address and confirm it each time if they just want to comment on blog postings.';
 
 INSERT INTO member (member_no, username, password_hash)
 VALUES (0, 'anonymous', '');
+
+CREATE TABLE member_confirmation (
+       member_no INTEGER REFERENCES member (member_no) PRIMARY KEY,
+       hash TEXT NOT NULL,
+       email TEXT NOT NULL,
+       email_sent TIMESTAMP (0) WITH TIME ZONE
+);
+COMMENT ON TABLE member_confirmation IS 'This allows us to keep track of in-progress member confirmations. A tuple exists for each unconfirmed member.';
+COMMENT ON COLUMN member_confirmation.hash IS 'This is a random hash that we can email to the user (in the form of a link) to ensure that they''ve actually received the confirmation email. It should be random so that it''s not guessable';
+COMMENT ON COLUMN member_confirmation.email_sent IS 'email_sent is the time a confirmation email was successfully sent (or at least when our MTA says it was sent).';
 
 -- For our purposes, a lexeme is any text or symbol which can be linked. Each lexeme has a lemma, which is the canonical representation of different forms of the lexeme.
 -- Lexemes include "日本語", "語", "五", "5", "five", "language", "にほんご" and "に".

@@ -4,7 +4,7 @@
 
 * Become a Member
 
-Click the [[/member/join][Join]] link. Membership is free.
+Click the [[/member/signup][Sign Up]] link. Membership is free.
 
 * Input Some "Links"
 
