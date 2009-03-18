@@ -198,3 +198,11 @@ p.copyright:
   li:
     display: inline
   margin-bottom: 1.3em
+
+noscript > p:
+  width: 33em
+  margin->
+    left: auto
+    right: auto
+  background-color: pink
+  text-align: center

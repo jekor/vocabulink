@@ -40,7 +40,7 @@ nice fallback, but it can mask an underlying problem.
 
 > import Control.Applicative.Error
 > import Control.Arrow (second)
-> import Data.List (intersperse)
+> import Data.List (intersperse, find)
 > import Network.URI (uriPath)
 > import Text.Regex (mkRegex, subRegex)
 > import Text.Regex.Posix ((=~))
@@ -69,8 +69,15 @@ footer. It also includes @page.css@.
 >        concatHtml (map includeDep ([CSS "page"] ++ deps)) +++
 >        concatHtml head') +++
 >     body << [  headerB,
+>                jsNotice,
 >                thediv ! [identifier "body"] << concatHtml body',
 >                footerB ]
+>  where jsNotice = case find (\e -> case e of
+>                                      JS _  -> True
+>                                      _     -> False) deps of
+>                     Nothing  -> noHtml
+>                     Just _   -> noscript << paragraph <<
+>                       "This page requires JavaScript for some functionality."
 
 Often we want a simple page where the title and header are the same.
 
