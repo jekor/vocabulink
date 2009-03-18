@@ -4,7 +4,7 @@ Here are some functions that aren't specific to Vocabulink, but that don't
 exist in any libraries I know of.
 
 > module Vocabulink.Utils (         if', (?), safeHead, currentDay, currentYear,
->                                   basename, translate, formatTime',
+>                                   basename, translate, formatTime', (<$$>),
 >  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
 >  {- Control.Applicative -}        pure, (<$>), (<*>),
 >  {- Control.Applicative.Error -}  maybeRead,
@@ -82,3 +82,10 @@ then performs them on the list.
 
 > formatTime' :: FormatTime t => String -> t -> String
 > formatTime' = formatTime defaultTimeLocale
+
+Often it's handy to be able to lift an operation into 2 monads with little
+verbosity. Parsec may have claimed this before me, but |<$$>| just makes too
+much sense as 2 |<$>|s.
+
+> (<$$>) :: (Monad m1, Monad m) => (a -> r) -> m (m1 a) -> m (m1 r)
+> (<$$>) = liftM . liftM

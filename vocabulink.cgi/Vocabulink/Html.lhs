@@ -160,9 +160,7 @@ to @input0@ and @input1@ since that's what the formlets-based login page
 expects.
 
 > loginBox :: Html
-> loginBox = form ! [  theclass "auth-box", action "/member/signup",
->                      method "GET"] <<
->              [  submit "" "Sign Up" ] +++
+> loginBox = anchor ! [theclass "auth-box", href "/member/signup"] << "Sign Up" +++
 >            form ! [  theclass "auth-box login", action "/member/login",
 >                      method "POST"] <<
 >              [  label << "Username:",  textfield "input0",
@@ -259,8 +257,11 @@ attempts to validate against the environment. If it fails, it returns a form
 (as Html) to display to the client, but if it succeeds it returns a value of
 the type of the form.
 
-> runForm :: XHtmlForm (AppT IO) a -> String -> App (Either Html a)
-> runForm frm message = do
+s is either a label or custom Html for the submit button (or noHtml if you
+don't want a submit button).
+
+> runForm :: XHtmlForm (AppT IO) a -> Either String Html -> App (Either Html a)
+> runForm frm s = do
 >   env <- map (second Left) <$> getInputs
 >   let (res,markup,_) = runFormState env "" frm
 >   status  <- res
@@ -269,9 +270,12 @@ the type of the form.
 >   case status of
 >     Failure failures  -> do
 >       uri <- requestURI
+>       let submit' = case s of
+>                       Left s'  -> submit "" s'
+>                       Right h  -> h
 >       return $ Left $ errors +++
 >                       form ! [action (uriPath uri), method "POST"] <<
->                         [  xhtml, message /= "" ? (submit "" message) $ noHtml ]
+>                         [  xhtml, submit' ]
 >      where errors = case meth of
 >                       "GET"  -> noHtml
 >                       _      -> unordList failures

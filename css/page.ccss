@@ -18,6 +18,9 @@ html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockq
 :focus:
   outline: 0
 
+a:focus:
+  outline: 1px dotted black
+
 body:
   line-height: 1
   color: black
@@ -35,6 +38,21 @@ table:
 caption, th, td:
   text-align: left
   font-weight: normal
+
+form > table:
+  border-spacing: 0.5em
+  th:
+    text-align: right
+  tfoot:
+    td:
+      text-align: center
+
+fieldset:
+  margin->
+    top: 1.3em
+    bottom: 1.3em
+  & > p:
+    margin-top: 0
 
 blockquote:before, blockquote:after, q:before, q:after:
         content: \"\"

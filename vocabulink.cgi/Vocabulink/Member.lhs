@@ -17,9 +17,13 @@
 
 To authenticate a member, we need their username and password.
 
-> loginForm :: AppForm (String, String)
-> loginForm = ((,) <$> username <*> passwd "Password") `checkM`
->             ensureM passMatch err
+> loginForm :: String -> AppForm (String, String)
+> loginForm ref = plug (\xhtml -> hidden "redirect" ref +++
+>                                 table ! [thestyle "margin-left: auto; \
+>                                                   \margin-right: auto"] <<
+>                                   (xhtml +++ tfoot << tabularSubmit "Login"))
+>                  ((,) <$> username <*> passwd "Password") `checkM`
+>                    ensureM passMatch err
 >   where passMatch (u, p) = do
 >           valid <- queryValue'  "SELECT password_hash = crypt(?, password_hash) \
 >                                 \FROM member WHERE username = ?"
@@ -37,14 +41,15 @@ and then continuing where it left off.
 
 > login :: App CGIResult
 > login = do
->   res <- runForm loginForm "Log In"
+>   ref <- referrerOrVocabulink
+>   res <- runForm (loginForm ref) (Right noHtml)
 >   case res of
 >     Left xhtml -> simplePage "Login" []
 >       [  xhtml,
->          paragraph << "Not a member? " +++
->                           anchor ! [href "/member/signup"] << "Sign Up!" ]
+>          paragraph ! [thestyle "text-align: center"] <<
+>            [  stringToHtml "Not a member? ",
+>               anchor ! [href "/member/signup"] << "Sign Up for free!" ] ]
 >     Right (user, _) -> do
->       ref        <- referrerOrVocabulink
 >       redirect'  <- getInputDefault ref "redirect"
 >       ip         <- remoteAddr
 >       memberNo   <- getMemberNumber user
@@ -86,15 +91,18 @@ optionally an email address.
 >                                     regPass   :: String }
 
 > register :: AppForm Registration
-> register = Registration  <$> uniqueUser
->                          <*> uniqueEmailAddress
->                          <*> passConfirmed
+> register = plug (\xhtml -> table ! [thestyle "margin-left: auto; \
+>                                              \margin-right: auto"] <<
+>                              (xhtml +++ tfoot << tabularSubmit "Sign Up"))
+>                 (Registration  <$> uniqueUser
+>                                <*> uniqueEmailAddress
+>                                <*> passConfirmed)
 
 We're very permissive with usernames. They just need to be between 3 and 32
 characters long.
 
 > username :: AppForm String
-> username = ("Username" `formLabel'` F.input Nothing) `check` ensures
+> username = (plug (tabularInput "Username") $ F.input Nothing) `check` ensures
 >   [  ((>= 3)   . length  , "Your username must be 3 characters or longer."),
 >      ((<= 32)  . length  , "Your username must be 32 characters or shorter.") ]
 
@@ -111,7 +119,7 @@ trying to register with isn't already in use.
 Our password input is as permissive as our username input.
 
 > passwd :: String -> AppForm String
-> passwd l = (l `formLabel'` F.password Nothing) `check` ensures
+> passwd l = (plug (tabularInput l) $ F.password Nothing) `check` ensures
 >   [  ((>=  6)   . length  , "Your password must be 6 characters or longer."),
 >      ((<=  72)  . length  , "Your password must be 72 characters or shorter.") ]
 
@@ -139,7 +147,7 @@ the address is already in use.
 >   err = "That email address is unavailable."
 
 > emailAddress :: AppForm String
-> emailAddress = "Email address" `formLabel'` F.input Nothing `check` ensures
+> emailAddress = (plug (tabularInput "Email address") $ F.input Nothing) `check` ensures
 >   [  ((/= ""), "Enter an email address.") ]
 
 Create a page with a new user form or register the user and redirect them to
@@ -147,7 +155,7 @@ the front page.
 
 > registerMember :: App CGIResult
 > registerMember = do
->   res <- runForm register "Sign Up"
+>   res <- runForm register $ Right noHtml
 >   case res of
 >     Left xhtml  -> simplePage "Sign Up for Vocabulink" [] [xhtml]
 >     Right reg   -> do

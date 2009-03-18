@@ -407,7 +407,7 @@ JavaScript) based on the type of the link being created.
 >   case ts of
 >     Nothing   -> error "Unable to retrieve link types."
 >     Just ts'  -> do
->       res <- runForm (establish ts') "Link"
+>       res <- runForm (establish ts') $ Left "Link"
 >       case res of
 >         Left xhtml  -> stdPage "Create a Link"
 >                          [CSS "link", JS "MochiKit", JS "link"]

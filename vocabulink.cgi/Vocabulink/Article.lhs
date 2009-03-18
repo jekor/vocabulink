@@ -13,7 +13,7 @@ It turns out that using our program gives us some additional consistency
 > import Vocabulink.CGI
 > import Vocabulink.DB
 > import Vocabulink.Html
-> import Vocabulink.Utils
+> import Vocabulink.Utils hiding ((<$$>))
 
 > import Control.Monad (filterM)
 > import Data.Time.Format (parseTime)

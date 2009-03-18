@@ -37,7 +37,7 @@ Also, we include an administrative interface for creating new groups.
 
 > forumsPage :: App CGIResult
 > forumsPage = do
->   res <- runForm ("Forum Group Name" `formLabel` F.input Nothing) "Create"
+>   res <- runForm ("Forum Group Name" `formLabel` F.input Nothing) $ Left "Create"
 >   memberName <- asks appMemberName
 >   case (res, memberName) of
 >     (Right s, Just "jekor")  -> createForumGroup s
@@ -50,8 +50,9 @@ Also, we include an administrative interface for creating new groups.
 >                       return $ concatHtml gs'
 >                     Nothing  -> return $ stringToHtml "Error retrieving forums."
 >       simplePage "Forums" forumDeps
->         [  form ! [action "/forum/threads", method "POST"] <<
->              [  textfield "containing", submit "" "Search" ],
+>         [  -- Forum search disabled until it works.
+>            --form ! [action "/forum/threads", method "POST"] <<
+>            --  [  textfield "containing", submit "" "Search" ],
 >            groups',
 >            if memberName == Just "jekor"
 >              then button ! [theclass "reveal forum-group-creator"] <<
@@ -179,7 +180,7 @@ have need for more file uploads we'll generalize this if necessary.
 > newTopicPage :: String -> App CGIResult
 > newTopicPage n = withRequiredMemberName $ \memberName -> do
 >   email <- asks appMemberEmail
->   res <- runForm (forumTopicForm memberName email) ""
+>   res <- runForm (forumTopicForm memberName email) $ Right noHtml
 >   case res of
 >     Left xhtml -> simplePage "New Forum Topic" forumDeps
 >       [thediv ! [theclass "comments"] << xhtml]
@@ -356,7 +357,7 @@ This returns the new comment number.
 >     Nothing  -> outputUnauthorized
 >     Just mn  -> do
 >       parent <- getInput "parent"
->       res <- runForm (commentForm mn email parent "Send Reply") ""
+>       res <- runForm (commentForm mn email parent "Send Reply") $ Right noHtml
 >       case res of
 >         Left xhtml           -> outputJSON [  ("html", showHtmlFragment $ thediv ! [theclass "comment editable"] << xhtml),
 >                                               ("status", "incomplete") ]

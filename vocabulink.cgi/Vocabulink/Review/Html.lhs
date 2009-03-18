@@ -65,8 +65,7 @@ true only if the member is currently reviewing the link, not if they've
 reviewed it in the past but removed it from their review.
 
 > reviewing :: Integer -> Integer -> App (Maybe Bool)
-> reviewing memberNo linkNo = do
->   r <- queryValue'  "SELECT link_no FROM link_to_review \
->                     \WHERE member_no = ? AND link_no = ? LIMIT 1"
->                     [toSql memberNo, toSql linkNo]
->   return $ fmap fromSql r
+> reviewing memberNo linkNo =
+>   (/= []) <$$> queryTuples'  "SELECT link_no FROM link_to_review \
+>                              \WHERE member_no = ? AND link_no = ?"
+>                              [toSql memberNo, toSql linkNo]
