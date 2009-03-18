@@ -178,7 +178,8 @@ have need for more file uploads we'll generalize this if necessary.
 
 > newTopicPage :: String -> App CGIResult
 > newTopicPage n = withRequiredMemberName $ \memberName -> do
->   res <- runForm (forumTopicForm memberName) ""
+>   email <- asks appMemberEmail
+>   res <- runForm (forumTopicForm memberName email) ""
 >   case res of
 >     Left xhtml -> simplePage "New Forum Topic" forumDeps
 >       [thediv ! [theclass "comments"] << xhtml]
@@ -188,14 +189,14 @@ have need for more file uploads we'll generalize this if necessary.
 >         Nothing  -> simplePage "Error Creating Forum Topic" forumDeps []
 >         Just _   -> redirect $ "../" ++ n
 
-> forumTopicForm :: String -> AppForm (String, (String, Maybe Integer))
-> forumTopicForm memberName =
+> forumTopicForm :: String -> Maybe String -> AppForm (String, (String, Maybe Integer))
+> forumTopicForm memberName email =
 >   commentBox ((,)  <$> plug (thediv <<) ("Topic Title" `formLabel`
 >                           (  plug (\xhtml -> thediv ! [theclass "title"] << xhtml) $
 >                              F.input Nothing) `check` ensures
 >     [  ((> 0)     . length, "Title must not be empty."),
 >        ((<=  80)  . length, "Title must be 80 characters or shorter.") ])
->                    <*> commentForm memberName Nothing "Create")
+>                    <*> commentForm memberName email Nothing "Create")
 
 > createTopic :: (String, String) -> String -> App (Maybe Integer)
 > createTopic (t, c) fn = do
@@ -219,11 +220,12 @@ have need for more file uploads we'll generalize this if necessary.
 > commentBox :: Monad m => XHtmlForm m a -> XHtmlForm m a
 > commentBox = plug (\xhtml -> thediv ! [theclass "comment toplevel editable"] << xhtml)
 
-> commentForm :: String -> Maybe String -> String -> AppForm (String, Maybe Integer)
-> commentForm memberName parent submitText = plug (\xhtml -> concatHtml [
+> commentForm :: String -> Maybe String -> Maybe String ->
+>                String -> AppForm (String, Maybe Integer)
+> commentForm memberName email parent submitText = plug (\xhtml -> concatHtml [
 >   anchor ! [href "#"] << image ! [  width "50", height "50",
->                                     src ("http://s.vocabulink.com/" ++
->                                          memberName ++ "-50x50.png") ],
+>                                     src $ gravatarWith (fromMaybe "" email)
+>                                                        Nothing (size 50) (Just "wavatar") ],
 >   thediv ! [theclass "speech"] << xhtml,
 >   thediv ! [theclass "signature"] << [
 >     anchor ! [href "#"] << ((encodeString "—") ++ memberName),
@@ -305,6 +307,7 @@ avoiding any intermediate representation which we don't yet need.
 > displayComment :: [SqlValue] -> App Html
 > displayComment [n, l, u, e, t, c]  = do
 >   memberName <- asks appMemberName
+>   email <- asks appMemberEmail
 >   let n'  :: Integer  = fromSql n
 >       l'  :: Integer  = fromSql l
 >       u'  :: String   = fromSql u
@@ -316,7 +319,7 @@ avoiding any intermediate representation which we don't yet need.
 >     Nothing  -> return noHtml
 >     Just mn  -> do
 >       let (_,markup,_) = runFormState [] "" $
->                              commentForm mn (Just $ show n') "Send Reply"
+>                              commentForm mn email (Just $ show n') "Send Reply"
 >       xhtml <- markup
 >       return $ thediv ! [  identifier id',
 >                            theclass "reply",
@@ -348,11 +351,12 @@ This returns the new comment number.
 > replyToComment :: App CGIResult
 > replyToComment = do
 >   memberName <- asks appMemberName
+>   email <- asks appMemberEmail
 >   case memberName of
 >     Nothing  -> outputUnauthorized
 >     Just mn  -> do
 >       parent <- getInput "parent"
->       res <- runForm (commentForm mn parent "Send Reply") ""
+>       res <- runForm (commentForm mn email parent "Send Reply") ""
 >       case res of
 >         Left xhtml           -> outputJSON [  ("html", showHtmlFragment $ thediv ! [theclass "comment editable"] << xhtml),
 >                                               ("status", "incomplete") ]

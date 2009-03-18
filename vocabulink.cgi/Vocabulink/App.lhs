@@ -36,7 +36,8 @@ signatures a little bit.
 > data AppEnv = AppEnv {  appDB          :: Connection,
 >                         appCP          :: ConfigParser,
 >                         appMemberNo    :: Maybe Integer,
->                         appMemberName  :: Maybe String }
+>                         appMemberName  :: Maybe String,
+>                         appMemberEmail :: Maybe String }
 
 The App monad is a combination of the CGI and Reader monads.
 
@@ -70,10 +71,17 @@ CGIResult from within the App monad to the CGI monad.
 > runApp c cp (AppT a) = do
 >   let salt = forceEither $ get cp "DEFAULT" "authtokensalt"
 >   token <- verifiedAuthToken salt
+>   email <- liftIO $ maybe (return Nothing)
+>                           (\n -> do
+>                              e <- queryValue c  "SELECT email FROM member \
+>                                                 \WHERE member_no = ?" [toSql n]
+>                              return $ fromSql <$> e)
+>                           (authMemberNo <$> token)
 >   res <- runReaderT a $ AppEnv {  appDB          = c,
 >                                   appCP          = cp,
 >                                   appMemberNo    = authMemberNo `liftM` token,
->                                   appMemberName  = authUsername `liftM` token }
+>                                   appMemberName  = authUsername `liftM` token,
+>                                   appMemberEmail = email }
 >   return res
 
 At some point it's going to be essential to have all errors and notices logged
