@@ -1,5 +1,5 @@
 > module Vocabulink.Member (  login, logout, registerMember, getMemberNumber,
->                             confirmMembership) where
+>                             confirmMembership ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI

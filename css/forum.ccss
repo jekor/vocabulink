@@ -83,7 +83,9 @@
   img:
     display: block
     float: left
-    margin-left: 0.25em
+    margin->
+      left: 0.5em
+      right: 0.5em
     width: 50px
   p:
     margin: 0

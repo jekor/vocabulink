@@ -27,6 +27,7 @@ problems as well.
 > import Vocabulink.Utils
 
 > import qualified Data.ByteString.Lazy as BS
+> import Network.Gravatar (gravatarWith, size)
 > import qualified Text.XHtml.Strict.Formlets as F
 
 The Forums page is a high-level look into Vocabulink's forums. Each forum is
@@ -282,7 +283,8 @@ avoiding any intermediate representation which we don't yet need.
 >   case r of
 >     Just [root,title,fTitle] -> do
 >       comments <- queryTuples'
->         "SELECT c.comment_no, t.level, m.username, c.time, c.comment \
+>         "SELECT c.comment_no, t.level, m.username, m.email, \
+>                \c.time, c.comment \
 >         \FROM comment c, member m, \
 >              \connectby('comment', 'comment_no', 'parent_no', ?, 0) \
 >              \AS t(comment_no int, parent_no int, level int) \
@@ -301,11 +303,12 @@ avoiding any intermediate representation which we don't yet need.
 >     _          -> output404 ["forum",fn,show i]
 
 > displayComment :: [SqlValue] -> App Html
-> displayComment [n, l, u, t, c]  = do
+> displayComment [n, l, u, e, t, c]  = do
 >   memberName <- asks appMemberName
 >   let n'  :: Integer  = fromSql n
 >       l'  :: Integer  = fromSql l
 >       u'  :: String   = fromSql u
+>       e'  :: String   = e == SqlNull ? "" $ fromSql e
 >       t'  :: UTCTime  = fromSql t
 >       c'  :: String   = fromSql c
 >       id'             = "reply-" ++ (show n')
@@ -324,8 +327,7 @@ avoiding any intermediate representation which we don't yet need.
 >                        thestyle $ "margin-left:" ++ (show $ l'*2) ++ "em" ] << [
 >     paragraph ! [theclass "timestamp"] << formatSimpleTime t',
 >     anchor ! [href "#"] << image ! [  width "50", height "50",
->                                       src ("http://s.vocabulink.com/" ++
->                                            u' ++ "-50x50.png") ],
+>                                       src $ gravatarWith e' Nothing (size 50) (Just "wavatar") ],
 >     thediv ! [theclass "speech"] << c',
 >     thediv ! [theclass "signature"] << [
 >       anchor ! [href "#"] << ((encodeString "—") ++ u'),
