@@ -117,6 +117,18 @@
     input:
       width: 100%
 
+.speech:
+  p:first-child, ul:first-child, ol:first-child:
+    margin-top: 0
+  p, ul, ol:
+    margin-top: 1.3em
+  ul:
+    list-style-type: disc
+    margin-left: 1em
+  ol:
+    list-style-type: decimal
+    margin-left: 1.5em
+
 .reply:
   margin->
     top: 1.3em

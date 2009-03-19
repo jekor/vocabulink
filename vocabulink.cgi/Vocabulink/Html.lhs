@@ -9,6 +9,7 @@ functions. An example of this is |linkList|.
 
 > module Vocabulink.Html (  Dependency(..), stdPage, simplePage,
 >                           linkList, breadcrumbs, options, tableRows, accesskey,
+>                           markdownToHtml,
 >                           AppForm, runForm, formLabel, formLabel',
 >                           tabularInput, tabularSubmit,
 >                           pager, currentPage,
@@ -46,6 +47,8 @@ nice fallback, but it can mask an underlying problem.
 > import Text.Regex.Posix ((=~))
 > import Text.Formlets (  runFormState, plug, nothingIfNull,
 >                         check, ensure, ensures, checkM, ensureM)
+> import Text.Pandoc (  readMarkdown, writeHtml, defaultParserState,
+>                       defaultWriterOptions )
 > import Text.XHtml.Strict
 > import Text.XHtml.Strict.Formlets (XHtmlForm)
 
@@ -217,6 +220,15 @@ Curiously, the accesskey attribute is missing from Text.XHtml.
 
 > accesskey :: String -> HtmlAttr
 > accesskey = strAttr "accesskey"
+
+\subsection{Other Markup}
+
+A modified version of Markdown (Pandoc Markdown) is used in comments and link
+bodies.
+
+> markdownToHtml :: String -> Html
+> markdownToHtml = (writeHtml defaultWriterOptions) .
+>                    readMarkdown defaultParserState
 
 \subsection{Form Builders}
 

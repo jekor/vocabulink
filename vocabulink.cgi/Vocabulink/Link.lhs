@@ -272,7 +272,7 @@ type, which varies based on type.
 > linkTypeHtml Cognate = []
 > linkTypeHtml (LinkWord linkWord story) =
 >   [  paragraph << ("link word: " ++ (encodeString linkWord)), br,
->      paragraph << story]
+>      paragraph << markdownToHtml story]
 > linkTypeHtml (Relationship leftSide rightSide) =
 >   [ paragraph << ((encodeString leftSide) ++ " -> " ++ (encodeString rightSide)) ]
 
@@ -357,7 +357,7 @@ should be reviewed again after public release.
 >   case partials of
 >     Nothing  -> error "Error while retrieving links."
 >     Just ls  -> stdPage ("Links containing " ++ focus)
->                   [  CSS "link", CSS "link-graph",
+>                   [  CSS "link",
 >                      JS "MochiKit", JS "raphael", JS "link-graph"] []
 >                   (linkFocusBox focus $ catMaybes ls)
 >    where preds = ["(origin LIKE '" ++ focus ++ "' OR \

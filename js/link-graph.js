@@ -77,9 +77,11 @@ function arcNodes(g, ss, reverse) {
 // For now the arguments are strings.
 function draw(focus, origs, dests) {
   var graph = $('graph');
-  var dims = getElementDimensions(graph);
-  var graph = Raphael('graph', dims.w, dims.h);
-  var g = {'graph': graph, 'width': dims.w, 'height': dims.h};
+  var vdims = getViewportDimensions();
+  vdims.h = Math.max(vdims.h - 100, 400);
+  var gdims = getElementDimensions(graph);
+  var graph = Raphael('graph', gdims.w, vdims.h);
+  var g = {'graph': graph, 'width': gdims.w, 'height': vdims.h};
   g.focus = graphNode(g, focus, {'x': g.width/2, 'y': g.height/2});
   var destsNodes = zip(dests, arcNodes(g, map(function(x) {return x.lexeme;}, dests)));
   var origsNodes = zip(origs, arcNodes(g, map(function(x) {return x.lexeme;}, origs), true));

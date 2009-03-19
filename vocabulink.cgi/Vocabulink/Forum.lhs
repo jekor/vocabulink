@@ -332,7 +332,7 @@ avoiding any intermediate representation which we don't yet need.
 >     paragraph ! [theclass "timestamp"] << formatSimpleTime t',
 >     anchor ! [href "#"] << image ! [  width "50", height "50",
 >                                       src $ gravatarWith e' Nothing (size 50) (Just "wavatar") ],
->     thediv ! [theclass "speech"] << c',
+>     thediv ! [theclass "speech"] << markdownToHtml c',
 >     thediv ! [theclass "signature"] << [
 >       anchor ! [href "#"] << ((encodeString "—") ++ u'),
 >       stringToHtml " ",
@@ -364,7 +364,8 @@ This returns the new comment number.
 >         Right (body,parent')  -> do
 >           memberNo <- fromJust <$> asks appMemberNo
 >           commentNo <- storeComment memberNo body parent'
->           res' <- queryTuple'  "SELECT c.comment_no, 0 as level, m.username, \
+>           res' <- queryTuple'  "SELECT c.comment_no, 0 as level, \
+>                                       \m.username, m.email, \
 >                                       \c.time, c.comment \
 >                                \FROM comment c, member m \
 >                                \WHERE m.member_no = c.author \
