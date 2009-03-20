@@ -267,14 +267,14 @@ so we have 2 different functions.
 More comprehensive display of a link involves displaying information on its
 type, which varies based on type.
 
-> linkTypeHtml :: LinkType -> [Html]
-> linkTypeHtml Association = []
-> linkTypeHtml Cognate = []
+> linkTypeHtml :: LinkType -> Html
+> linkTypeHtml Association = noHtml
+> linkTypeHtml Cognate = noHtml
 > linkTypeHtml (LinkWord linkWord story) =
->   [  paragraph << ("link word: " ++ (encodeString linkWord)), br,
->      paragraph << markdownToHtml story]
+>   paragraph << ("link word: " ++ (encodeString linkWord)) +++
+>      markdownToHtml story
 > linkTypeHtml (Relationship leftSide rightSide) =
->   [ paragraph << ((encodeString leftSide) ++ " -> " ++ (encodeString rightSide)) ]
+>   paragraph << ((encodeString leftSide) ++ " -> " ++ (encodeString rightSide))
 
 To show a specific link, we retrieve the link from the database and then
 display it. Most of the extra code in the following is for handling the display
@@ -297,12 +297,14 @@ exceptions, etc.
 >                      "Unable to determine link ownership."
 >       let orig  = linkOrigin l'
 >           dest  = linkDestination l'
->       stdPage (orig ++ " -> " ++ dest) [CSS "link"] []
+>       stdPage (orig ++ " -> " ++ dest) [
+>         CSS "link", JS "MochiKit", JS "raphael", JS "link-graph"] []
 >         [  review, ops,
->            thediv ! [identifier "baseline", theclass "link"] <<
->              (  [linkHtml  (stringToHtml $ encodeString orig)
->                            (stringToHtml $ encodeString dest)] ++
->                 linkTypeHtml (linkType l')) ]
+>            script << primHtml (
+>              "connect(window, 'onload', partial(drawLink," ++
+>              encode orig ++ "," ++ encode dest ++ "));" ),
+>            thediv ! [identifier "graph", thestyle "height: 160px"] << noHtml,
+>            thediv ! [identifier "link-details"] << linkTypeHtml (linkType l') ]
 
 Each link can be ``operated on''. It can be reviewed (added to the member's
 review set) and deleted (marked as deleted). In the future, I expect operations
@@ -379,7 +381,8 @@ as the destination''.
 > linkFocusBox :: String -> [PartialLink] -> [Html]
 > linkFocusBox focus links = [
 >   script << primHtml
->     (  "connect(window, 'onload', partial(draw," ++ encode focus ++ "," ++
+>     (  "connect(window, 'onload', partial(drawLinks," ++
+>        encode focus ++ "," ++
 >        jsonNodes ("/link?input1=" ++ focus) linkOrigin origs ++ "," ++
 >        jsonNodes ("/link?input0=" ++ focus) linkDestination dests ++ "));" ),
 >   thediv ! [identifier "graph"] << noHtml ]

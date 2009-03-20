@@ -11,15 +11,21 @@
 // Create a classic ellipse-and-label graph node.
 //
 // "label" is a string to display on the node.
-function graphNode(g, label, p) {
-  var l = g.graph.text(p.x, p.y, label).attr({'font-size': '14pt', 'fill': '#00F'});
+function graphNode(g, label, p, color) {
+  var l = g.graph.text(p.x, p.y, label).attr({'font-size': '14pt', 'fill': color});
   var dims = l.getBBox();
   var e = g.graph.ellipse(p.x, p.y, dims.width, dims.height*1.8).attr({'fill': '#FFF'});
   // We have to place the text first so that we can calculate the dimensions of
   // the ellipse. But we want the ellipse behind the label since it needs to be
   // non-transparent to be clickable.
   e.insertBefore(l);
-  return {'label': l, 'ellipse': e};
+  // We add event handling functions that allow us to easy add the functions to
+  // both the ellipse and the label (the interface is difficult to use without
+  // that).
+  return {'label': l, 'ellipse': e,
+          'mouseover': function(f) {l.mouseover(f); e.mouseover(f);},
+          'mouseout': function(f) {l.mouseout(f); e.mouseout(f);},
+          'click': function(f) {l.click(f); e.click(f);}};
 }
 
 // In order to place nodes in a visually-pleasing and space-optimal way, we can
@@ -63,7 +69,7 @@ function arcNodes(g, ss, reverse) {
                var point = normalize(g, p);
                if (reverse)
                  point.x = g.width/2 - (point.x - g.width/2);
-               var n = graphNode(g, s, point, partial(log, 'hello'));
+               var n = graphNode(g, s, point, '#00F');
                var l = g.graph.path({'stroke': '#000'}).moveTo(g.width/2, g.height/2).lineTo(point.x, point.y).toBack();
                return {'node': n, 'line': l}; },
              ellipticalArc(g.width*0.8, g.height*0.9, Math.PI, 3/2*Math.PI, ss.length),
@@ -75,14 +81,14 @@ function arcNodes(g, ss, reverse) {
 // participates in.
 //
 // For now the arguments are strings.
-function draw(focus, origs, dests) {
+function drawLinks(focus, origs, dests) {
   var graph = $('graph');
   var vdims = getViewportDimensions();
-  vdims.h = Math.max(vdims.h - 100, 400);
+  vdims.h = Math.max(vdims.h - 200, 400);
   var gdims = getElementDimensions(graph);
   var graph = Raphael('graph', gdims.w, vdims.h);
   var g = {'graph': graph, 'width': gdims.w, 'height': vdims.h};
-  g.focus = graphNode(g, focus, {'x': g.width/2, 'y': g.height/2});
+  g.focus = graphNode(g, focus, {'x': g.width/2, 'y': g.height/2}, '#000');
   var destsNodes = zip(dests, arcNodes(g, map(function(x) {return x.lexeme;}, dests)));
   var origsNodes = zip(origs, arcNodes(g, map(function(x) {return x.lexeme;}, origs), true));
   forEach(chain(destsNodes, origsNodes), function(ns) {
@@ -106,11 +112,33 @@ function draw(focus, origs, dests) {
       else if (link.number !== undefined)
         document.location = "/link/" + link.number;
     };
-    node.node.ellipse.mouseover(mouseIn);
-    node.node.ellipse.mouseout(mouseOut);
-    node.node.ellipse.click(action);
-    node.node.label.mouseover(mouseIn);
-    node.node.label.mouseout(mouseOut);
-    node.node.label.click(action);
+    node.node.mouseover(mouseIn);
+    node.node.mouseout(mouseOut);
+    node.node.click(action);
   });
+}
+
+function drawLink(orig, dest) {
+  var graph = $('graph');
+  var gdims = getElementDimensions(graph);
+  var graph = Raphael('graph', gdims.w, gdims.h);
+  var g = {'graph': graph, 'width': gdims.w, 'height': gdims.h};
+  var l = g.graph.path({'stroke': '#000'}).moveTo(g.width*0.3, g.height/2).lineTo(g.width*0.7, g.height/2);
+  var origNode = graphNode(g, orig, {'x': g.width*0.3, 'y': g.height/2}, '#00F');
+  var destNode = graphNode(g, dest, {'x': g.width*0.7, 'y': g.height/2}, '#00F');
+  var mouseIn  = function(node) {
+    node.ellipse.animate({'fill': '#CCC'}, 250);
+    document.body.style.cursor = 'pointer';
+  };
+  var mouseOut = function(node) {
+    node.ellipse.animate({'fill': '#FFF'}, 250);
+    document.body.style.cursor = 'auto';
+  };
+  var action = function(s) {document.location = "/links?contains=" + s;};
+  origNode.mouseover(partial(mouseIn, origNode));
+  origNode.mouseout(partial(mouseOut, origNode));
+  origNode.click(partial(action, orig));
+  destNode.mouseover(partial(mouseIn, destNode));
+  destNode.mouseout(partial(mouseOut, destNode));
+  destNode.click(partial(action, dest));
 }
