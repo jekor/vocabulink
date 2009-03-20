@@ -358,8 +358,12 @@ for a long time.
 >     Nothing  -> output404 path
 >     Just n   -> forumTopicPage x n
 
+``reply'' and ``preview'' are used here as nouns.
+
 > dispatch "GET"   ["comment","reply"] = replyToComment
 > dispatch "POST"  ["comment","reply"] = replyToComment
+
+> dispatch "GET"   ["comment","preview"] = commentPreview
 
 \subsection{Everything Else}
 

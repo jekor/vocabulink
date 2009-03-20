@@ -1,12 +1,14 @@
 connect(window, 'onload', setup);
 
 function setup() {
-  map(connectReply, $$('.reply'));
+  map(connectButtons, $$('.reply'));
 }
 
-function connectReply(elem) {
-  var button = findChildElements(elem, ['input[type=submit]'])[0];
-  connect(button, 'onclick', partial(sendReply, elem, button));
+function connectButtons(elem) {
+  var button = getFirstElementByTagAndClassName('button', null, elem);
+  connect(button, 'onclick', partial(previewReply, elem, button));
+  var submit = findChildElements(elem, ['input[type=submit]'])[0];
+  connect(submit, 'onclick', partial(sendReply, elem, button));
 }
 
 function postXHR(url, postVars) {
@@ -28,6 +30,17 @@ function overlay(elem) {
   return function() {removeElement(over); undoPositioned(elem);};
 }
 
+function previewReply(replyBox, button, e) {
+  e.stop();
+  setNodeAttribute(button, 'disabled', null);
+  var remove = overlay(getFirstElementByTagAndClassName('div', 'speech', replyBox));
+  var speech = getFirstElementByTagAndClassName('div', 'speech', replyBox);
+  var t = getFirstElementByTagAndClassName('textarea', null, speech);
+  var d = loadJSONDoc('/comment/preview', {'comment': t.value});
+  d.addCallbacks(function(r) {previewSuccess(speech, button, r); remove();},
+                 function(r) {previewFailure(speech, button, r); remove();});
+}
+
 function sendReply(replyBox, button, e) {
   e.stop();
   setNodeAttribute(button, 'disabled', null);
@@ -35,6 +48,32 @@ function sendReply(replyBox, button, e) {
   var d = postXHR('/comment/reply', formContents(replyBox));
   d.addCallbacks(function(r) {replySuccess(replyBox, r); remove()},
                  function(r) {replyFailure(replyBox, r); remove()});
+}
+
+function previewSuccess(speech, button, response) {
+  if (response.status == 'OK' && response.html !== undefined) {
+    var editButton = BUTTON('Edit');
+    hideElement(button);
+    button.removeAttribute('disabled');
+    insertSiblingNodesAfter(button, editButton);
+    speechPreview = DIV({'class': 'speech'});
+    hideElement(speech);
+    insertSiblingNodesAfter(speech, speechPreview);
+    speechPreview.innerHTML = response.html;
+    connect(editButton, 'onclick', function(e) {
+      e.stop();
+      button.innerHtml = 'Preview';
+      removeElement(speechPreview);
+      showElement(speech);
+      removeElement(editButton);
+      // We can't use showElement, because it assumes display: block.
+      setDisplayForElement('inline', button);
+    });
+  }
+}
+
+function previewFailure(speech, response) {
+  alert('Error generating preview.');
 }
 
 function replySuccess(replyBox, response) {

@@ -18,7 +18,8 @@ problems as well.
 \end{enumerate}
 
 > module Vocabulink.Forum (  forumsPage, forumPage, createForum,
->                            newTopicPage, forumTopicPage, replyToComment ) where
+>                            newTopicPage, forumTopicPage,
+>                            replyToComment, commentPreview ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -197,7 +198,7 @@ have need for more file uploads we'll generalize this if necessary.
 >                              F.input Nothing) `check` ensures
 >     [  ((> 0)     . length, "Title must not be empty."),
 >        ((<=  80)  . length, "Title must be 80 characters or shorter.") ])
->                    <*> commentForm memberName email Nothing "Create")
+>                    <*> commentForm memberName email Nothing)
 
 > createTopic :: (String, String) -> String -> App (Maybe Integer)
 > createTopic (t, c) fn = do
@@ -221,9 +222,13 @@ have need for more file uploads we'll generalize this if necessary.
 > commentBox :: Monad m => XHtmlForm m a -> XHtmlForm m a
 > commentBox = plug (\xhtml -> thediv ! [theclass "comment toplevel editable"] << xhtml)
 
+|parent| should be set to the comment number of the comment this is in reply to
+(for replies) or nothing if this comment begins a new thread (or is commenting
+directly on an object).
+
 > commentForm :: String -> Maybe String -> Maybe String ->
->                String -> AppForm (String, Maybe Integer)
-> commentForm memberName email parent submitText = plug (\xhtml -> concatHtml [
+>                AppForm (String, Maybe Integer)
+> commentForm memberName email parent = plug (\xhtml -> concatHtml [
 >   anchor ! [href "#"] << image ! [  width "50", height "50",
 >                                     src $ gravatarWith (fromMaybe "" email)
 >                                                        Nothing (size 50) (Just "wavatar") ],
@@ -231,7 +236,9 @@ have need for more file uploads we'll generalize this if necessary.
 >   thediv ! [theclass "signature"] << [
 >     anchor ! [href "#"] << ((encodeString "—") ++ memberName),
 >     stringToHtml " ",
->     submit "" submitText ] ])
+>     isJust parent  ?  button << "Preview" +++ stringToHtml " " +++
+>                       submit "" "Send Reply"
+>                    $  submit "" "Create" ] ])
 >     ((\a b -> (a, maybeRead =<< b))  <$> (F.textarea Nothing `check` ensures
 >                 [  ((> 0)       . length, "Comment must not be empty."),
 >                    ((<= 10000)  . length, "Comment must be 10,000 characters or shorter.") ])
@@ -320,7 +327,7 @@ avoiding any intermediate representation which we don't yet need.
 >     Nothing  -> return noHtml
 >     Just mn  -> do
 >       let (_,markup,_) = runFormState [] "" $
->                              commentForm mn email (Just $ show n') "Send Reply"
+>                              commentForm mn email (Just $ show n')
 >       xhtml <- markup
 >       return $ thediv ! [  identifier id',
 >                            theclass "reply",
@@ -332,13 +339,18 @@ avoiding any intermediate representation which we don't yet need.
 >     paragraph ! [theclass "timestamp"] << formatSimpleTime t',
 >     anchor ! [href "#"] << image ! [  width "50", height "50",
 >                                       src $ gravatarWith e' Nothing (size 50) (Just "wavatar") ],
->     thediv ! [theclass "speech"] << markdownToHtml c',
+>     thediv ! [theclass "speech"] << displayCommentBody c',
 >     thediv ! [theclass "signature"] << [
 >       anchor ! [href "#"] << ((encodeString "—") ++ u'),
 >       stringToHtml " ",
 >       button ! [theclass $ "reveal " ++ id'] << "Reply" ],
 >     replyBox ]
 > displayComment _             = return $ paragraph << "Error retrieving comment."
+
+We don't want comment display going out-of-sync with comment previewing.
+
+> displayCommentBody :: String -> Html
+> displayCommentBody = markdownToHtml
 
 This returns the new comment number.
 
@@ -357,7 +369,7 @@ This returns the new comment number.
 >     Nothing  -> outputUnauthorized
 >     Just mn  -> do
 >       parent <- getInput "parent"
->       res <- runForm (commentForm mn email parent "Send Reply") $ Right noHtml
+>       res <- runForm (commentForm mn email parent) $ Right noHtml
 >       case res of
 >         Left xhtml           -> outputJSON [  ("html", showHtmlFragment $ thediv ! [theclass "comment editable"] << xhtml),
 >                                               ("status", "incomplete") ]
@@ -380,3 +392,17 @@ This returns the new comment number.
 >               comment <- displayComment c
 >               outputJSON [  ("html", showHtmlFragment comment),
 >                             ("status", "accepted") ]
+
+We need to make sure that this doesn't go out of sync with displayComment.
+
+Does this lead to XSS vulnerabilities?
+
+> commentPreview :: App CGIResult
+> commentPreview = do
+>   memberName <- asks appMemberName
+>   case memberName of
+>     Nothing  -> outputUnauthorized
+>     Just _   -> do
+>       comment <- getRequiredInput "comment"
+>       outputJSON [  ("html", showHtmlFragment $ displayCommentBody comment),
+>                     ("status", "OK") ]
