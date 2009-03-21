@@ -29,8 +29,9 @@
     top: 5em
     bottom: 5em
 
-#link-details:
-  text-align: center
+.preview:
+  border: 1px solid #CCC
+  margin-bottom: 1.3em * 3
 
 // review
 
@@ -64,3 +65,15 @@ table.focus-box:
 fieldset#link-word textarea:
   width: 50%
   height: 20em
+
+.link-details:
+  width: 50%
+  margin->
+    left: auto
+    right: auto
+  ul:
+    list-style-type: disc
+    margin-left: 1em
+  ol:
+    list-style-type: decimal
+    margin-left: 1.5em

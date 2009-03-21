@@ -14,7 +14,6 @@ For now, we have only 1 algorithm (SuperMemo 2).
 > import Vocabulink.DB
 > import Vocabulink.Html
 > import Vocabulink.Link
-> import Vocabulink.Utils
 
 \subsection{Review Scheduling}
 
@@ -123,13 +122,16 @@ which begins the process all over again.
 >   case l of
 >     Nothing  -> simplePage "Error: Unable to retrieve link." [CSS "link"] []
 >     Just l'  -> do
->       let source  = encodeString $ linkOrigin l'
->           dest    = encodeString $ linkDestination l'
+>       let source  = linkOrigin l'
+>           dest    = linkDestination l'
 >       stdPage ("Review: " ++ source ++ " -> ?")
 >               [CSS "link", JS "MochiKit", JS "review"] []
 >         [  thediv ! [identifier "baseline", theclass "link"] <<
->              linkHtml (stringToHtml source)
->                (anchor ! [identifier "lexeme-cover", href "#"] << "?"),
+>              [  thespan ! [theclass "lexeme"] << (stringToHtml source),
+>                 image ! [  src "http://s.vocabulink.com/edges/edges-l1.png",
+>                            width "200", height "1" ],
+>                 thespan ! [theclass "lexeme"] <<
+>                   (anchor ! [identifier "lexeme-cover", href "#"] << "?")],
 >            form ! [action ("/review/" ++ (show linkNo)), method "POST"] <<
 >              [  hidden "recall-time" "",
 >                 hidden "hidden-lexeme" dest,

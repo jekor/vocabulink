@@ -60,8 +60,7 @@ Also, we include an administrative interface for creating new groups.
 >                     "New Forum Group" +++
 >                   thediv ! [  identifier "forum-group-creator",
 >                               theclass "forum-group",
->                               thestyle "display: none" ] <<
->                     xhtml
+>                               thestyle "display: none" ] << xhtml
 >              else noHtml ]
 >     _                        -> outputError 403 "Access Denied" []
 
@@ -229,12 +228,12 @@ directly on an object).
 > commentForm :: String -> Maybe String -> Maybe String ->
 >                AppForm (String, Maybe Integer)
 > commentForm memberName email parent = plug (\xhtml -> concatHtml [
->   anchor ! [href "#"] << image ! [  width "50", height "50",
+>   anchor ! [href "#"] << image ! [  width "60", height "60",
 >                                     src $ gravatarWith (fromMaybe "" email)
->                                                        Nothing (size 50) (Just "wavatar") ],
+>                                                        Nothing (size 60) (Just "wavatar") ],
 >   thediv ! [theclass "speech"] << xhtml,
 >   thediv ! [theclass "signature"] << [
->     anchor ! [href "#"] << ((encodeString "—") ++ memberName),
+>     anchor ! [href "#"] << ("—" ++ memberName),
 >     stringToHtml " ",
 >     isJust parent  ?  button << "Preview" +++ stringToHtml " " +++
 >                       submit "" "Send Reply"
@@ -326,9 +325,7 @@ avoiding any intermediate representation which we don't yet need.
 >   replyBox <- case memberName of
 >     Nothing  -> return noHtml
 >     Just mn  -> do
->       let (_,markup,_) = runFormState [] "" $
->                              commentForm mn email (Just $ show n')
->       xhtml <- markup
+>       (_, xhtml) <- runForm' $ commentForm mn email (Just $ show n')
 >       return $ thediv ! [  identifier id',
 >                            theclass "reply",
 >                            thestyle "display: none" ] <<
@@ -337,11 +334,11 @@ avoiding any intermediate representation which we don't yet need.
 >   return $ thediv ! [  theclass "comment toplevel",
 >                        thestyle $ "margin-left:" ++ (show $ l'*2) ++ "em" ] << [
 >     paragraph ! [theclass "timestamp"] << formatSimpleTime t',
->     anchor ! [href "#"] << image ! [  width "50", height "50",
->                                       src $ gravatarWith e' Nothing (size 50) (Just "wavatar") ],
+>     anchor ! [href "#"] << image ! [  width "60", height "60",
+>                                       src $ gravatarWith e' Nothing (size 60) (Just "wavatar") ],
 >     thediv ! [theclass "speech"] << displayCommentBody c',
 >     thediv ! [theclass "signature"] << [
->       anchor ! [href "#"] << ((encodeString "—") ++ u'),
+>       anchor ! [href "#"] << ("—" ++ u'),
 >       stringToHtml " ",
 >       button ! [theclass $ "reveal " ++ id'] << "Reply" ],
 >     replyBox ]

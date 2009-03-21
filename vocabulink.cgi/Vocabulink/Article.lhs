@@ -20,6 +20,7 @@ It turns out that using our program gives us some additional consistency
 > import System.Directory (  getDirectoryContents, getPermissions, doesFileExist,
 >                            readable)
 > import System.FilePath (takeExtension, replaceExtension, takeBaseName)
+> import qualified System.IO.UTF8 as IO.UTF8
 > import System.Locale (defaultTimeLocale)
 > import qualified Text.ParserCombinators.Parsec as P
 > import Text.ParserCombinators.Parsec.Perm ((<$$>), (<||>), (<|?>), permute)
@@ -138,7 +139,7 @@ this to succeed.
 > articleFromFile :: String -> App (Maybe Article)
 > articleFromFile path = do
 >   dir   <- articleDir
->   muse  <- liftIO $ readFile $ dir ++ "/" ++ path ++ ".muse"
+>   muse  <- liftIO $ IO.UTF8.readFile $ dir ++ "/" ++ path ++ ".muse"
 >   case P.parse articleHeader "" muse of
 >     Left e     -> logApp "parse error" (show e) >> return Nothing
 >     Right hdr  -> return $ Just $ hdr {  articleFilename  = path }
@@ -200,7 +201,7 @@ there's no point in storing it in the article record.
 > articleBody :: Article -> App Html
 > articleBody article = do
 >   path <- (++ "/" ++ (articleFilename article) ++ ".html") <$> articleDir
->   liftIO $ primHtml <$> readFile path
+>   liftIO $ primHtml <$> IO.UTF8.readFile path
 
 \subsection{Retrieving Articles}
 

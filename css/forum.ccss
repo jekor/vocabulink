@@ -86,7 +86,6 @@
     margin->
       left: 0.5em
       right: 0.5em
-    width: 50px
   p:
     margin: 0
   .speech:
@@ -120,8 +119,8 @@
 .speech:
   p:first-child, ul:first-child, ol:first-child:
     margin-top: 0
-  p, ul, ol:
-    margin-top: 1.3em
+  p:last-child, ul:last-child, ol:last-child:
+    margin-bottom: 0
   ul:
     list-style-type: disc
     margin-left: 1em
@@ -132,7 +131,7 @@
 .reply:
   margin->
     top: 1.3em
-    left: 50px
+    left: 60px
 
 fieldset:
   border: 1px solid black

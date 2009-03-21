@@ -19,8 +19,7 @@ To authenticate a member, we need their username and password.
 
 > loginForm :: String -> AppForm (String, String)
 > loginForm ref = plug (\xhtml -> hidden "redirect" ref +++
->                                 table ! [thestyle "margin-left: auto; \
->                                                   \margin-right: auto"] <<
+>                                 table <<
 >                                   (xhtml +++ tfoot << tabularSubmit "Login"))
 >                  ((,) <$> username <*> passwd "Password") `checkM`
 >                    ensureM passMatch err
@@ -91,9 +90,7 @@ optionally an email address.
 >                                     regPass   :: String }
 
 > register :: AppForm Registration
-> register = plug (\xhtml -> table ! [thestyle "margin-left: auto; \
->                                              \margin-right: auto"] <<
->                              (xhtml +++ tfoot << tabularSubmit "Sign Up"))
+> register = plug (\xhtml -> table << (xhtml +++ tfoot << tabularSubmit "Sign Up"))
 >                 (Registration  <$> uniqueUser
 >                                <*> uniqueEmailAddress
 >                                <*> passConfirmed)

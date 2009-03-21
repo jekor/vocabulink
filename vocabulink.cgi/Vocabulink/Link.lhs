@@ -5,8 +5,7 @@ them.
 
 > module Vocabulink.Link (  Link(..), PartialLink(..), LinkType(..),
 >                           getPartialLink, getPartialLinks,
->                           getLinkFromPartial, getLink,
->                           linkHtml, linkPage, deleteLink,
+>                           getLinkFromPartial, getLink, linkPage, deleteLink,
 >                           linksPage, linksContainingPage, newLink,
 >                           partialLinkHtml, partialLinkFromValues) where
 
@@ -244,25 +243,28 @@ in most contexts.
 
 \subsection{Displaying Links}
 
-Here's the simplest HTML representation of a link we use.
+Generate the JavaScript necessary to draw a link on the page using SVG. You'll
+need to make sure to include both |JS "raphael"| and |JS "link-graph"| as
+dependencies when using this.
 
-> linkHtml :: Html -> Html -> Html
-> linkHtml orig dest = concatHtml
->   [  thespan ! [theclass "lexeme"] << orig,
->      image ! [  src "http://s.vocabulink.com/edges/edges-l1.png",
->                 width "200", height "1" ],
->      thespan ! [theclass "lexeme"] << dest ]
+> drawLinkSVG :: String -> String -> Html
+> drawLinkSVG orig dest = script << primHtml (
+>   "connect(window, 'onload', partial(drawLink," ++
+>   encode orig ++ "," ++ encode dest ++ "));") +++
+>   thediv ! [identifier "graph", thestyle "height: 150px"] << noHtml
+
+> displayLink :: Link -> Html
+> displayLink l =  concatHtml [
+>   drawLinkSVG (linkOrigin l) (linkDestination l),
+>   thediv ! [theclass "link-details"] << linkTypeHtml (linkType l)]
 
 Displaying a partial link is similar. We need to do so in different contexts,
 so we have 2 different functions.
 
-> displayPartialHtml :: PartialLink -> Html
-> displayPartialHtml l = thediv ! [theclass "link"] << (partialLinkHtml l)
-
 > partialLinkHtml :: PartialLink -> Html
 > partialLinkHtml (PartialLink l) =
 >   anchor ! [href ("/link/" ++ (show $ linkNumber l))] <<
->     (linkOrigin l ++ (encodeString " -- ") ++ linkDestination l)
+>     (linkOrigin l ++ " — " ++ linkDestination l)
 
 More comprehensive display of a link involves displaying information on its
 type, which varies based on type.
@@ -271,10 +273,10 @@ type, which varies based on type.
 > linkTypeHtml Association = noHtml
 > linkTypeHtml Cognate = noHtml
 > linkTypeHtml (LinkWord linkWord story) =
->   paragraph << ("link word: " ++ (encodeString linkWord)) +++
+>   paragraph << ("link word: " ++ linkWord) +++
 >      markdownToHtml story
 > linkTypeHtml (Relationship leftSide rightSide) =
->   paragraph << ((encodeString leftSide) ++ " -> " ++ (encodeString rightSide))
+>   paragraph << (leftSide ++ " → " ++ rightSide)
 
 To show a specific link, we retrieve the link from the database and then
 display it. Most of the extra code in the following is for handling the display
@@ -299,12 +301,7 @@ exceptions, etc.
 >           dest  = linkDestination l'
 >       stdPage (orig ++ " -> " ++ dest) [
 >         CSS "link", JS "MochiKit", JS "raphael", JS "link-graph"] []
->         [  review, ops,
->            script << primHtml (
->              "connect(window, 'onload', partial(drawLink," ++
->              encode orig ++ "," ++ encode dest ++ "));" ),
->            thediv ! [identifier "graph", thestyle "height: 160px"] << noHtml,
->            thediv ! [identifier "link-details"] << linkTypeHtml (linkType l') ]
+>         [review, ops, displayLink l']
 
 Each link can be ``operated on''. It can be reviewed (added to the member's
 review set) and deleted (marked as deleted). In the future, I expect operations
@@ -340,8 +337,9 @@ away shortly after public release.
 >       pagerControl <- pager pg n $ offset + (length ps)
 >       simplePage "Links" [CSS "link"]
 >         [ map displayPossiblePartial (take n ps) +++ pagerControl ]
->    where displayPossiblePartial =
->            maybe (paragraph << "Error retrieving link.") displayPartialHtml
+>    where displayPossiblePartial l =
+>            maybe (paragraph << "Error retrieving link.")
+>                  (\l' -> thediv ! [theclass "link"] << (partialLinkHtml l')) l
 
 But more practical for the long run is providing search. ``Containing'' search
 is a search for links that ``contain'' the given ``focus'' lexeme on one side
@@ -406,28 +404,50 @@ JavaScript) based on the type of the link being created.
 
 > newLink :: App CGIResult
 > newLink = do
->   ts <- linkTypes
+>   ts    <- linkTypes
+>   uri   <- requestURI
+>   meth  <- requestMethod
 >   case ts of
 >     Nothing   -> error "Unable to retrieve link types."
 >     Just ts'  -> do
->       res <- runForm (establish ts') $ Left "Link"
->       case res of
->         Left xhtml  -> stdPage "Create a Link"
->                          [CSS "link", JS "MochiKit", JS "link"]
->                          [style << "form {text-align: center}"]
->                          [  h1 << "Create a Link",
->                             xhtml ]
->         Right link  -> withRequiredMemberNumber $ \memberNo -> do
->           linkNo <- establishLink link memberNo
->           case linkNo of
->             Just n   -> redirect $ "/link/" ++ (show n)
->             Nothing  -> error "Failed to establish link."
+>       preview <- getInput "preview"
+>       (status, xhtml) <- runForm' (establish ts')
+>       case preview of
+>         Just _  -> do
+>           let preview' = case status of
+>                            Failure failures  -> unordList failures
+>                            Success link      -> thediv ! [theclass "preview"] <<
+>                                                   displayLink link
+>           simplePage "Create a Link (preview)" deps
+>             [  preview',
+>                form ! [  thestyle "text-align: center",
+>                          action (uriPath uri), method "POST"] <<
+>                  [xhtml, actionBar] ]
+>         Nothing -> do
+>           case status of
+>             Failure failures  -> simplePage "Create a Link" deps
+>               [  form ! [  thestyle "text-align: center",
+>                            action (uriPath uri), method "POST"] <<
+>                    [  meth == "GET" ? noHtml $ unordList failures,
+>                       xhtml, actionBar ] ]
+>             Success link -> withRequiredMemberNumber $ \memberNo -> do
+>               linkNo <- establishLink link memberNo
+>               case linkNo of
+>                 Just n   -> redirect $ "/link/" ++ (show n)
+>                 Nothing  -> error "Failed to establish link."
+>  where deps = [  CSS "link", JS "MochiKit", JS "link",
+>                  JS "raphael", JS "link-graph"]
+>        actionBar = thediv ! [thestyle "margin-left: auto; margin-right: auto; \
+>                                       \width: 12em"] <<
+>                      [  submit "preview" "Preview" ! [thestyle "float: left; width: 5.5em"],
+>                         submit "" "Link" ! [thestyle "float: right; width: 5.5em"],
+>                         paragraph ! [thestyle "clear: both"] << noHtml ]
 
 Here's a form for creating a link. It gathers all of the required details
 (origin, destination, and link type details).
 
 > establish :: [String] -> AppForm Link
-> establish ts = mkLink  <$> linkNodeInput "Origin"
+> establish ts = mkLink  <$> plug (+++ stringToHtml " ") (linkNodeInput "Origin")
 >                        <*> linkNodeInput "Destination"
 >                        <*> linkTypeInput ts
 

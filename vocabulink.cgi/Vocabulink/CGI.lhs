@@ -17,24 +17,29 @@ with |readInput|). This is a common pattern in other modules.
 >                          readInput, readRequiredInput, readInputDefault,
 >                          getInputs, handleErrors', referrerOrVocabulink,
 >                          urlify, outputUnauthorized, outputText, outputJSON,
+>                          output',
 >  {- Network.FastCGI -}   getInputFPS, getInputFilename,
 >                          MonadCGI, CGIResult, requestURI, requestMethod,
 >                          getVar, setHeader, output, redirect, remoteAddr,
 >                          outputError, outputMethodNotAllowed,
 >                          Cookie(..), getCookie, setCookie, deleteCookie,
+>  {- Network.URI -}       uriPath,
 >  {- Text.JSON -}         JSON, encode, toJSObject ) where
 
 > import Vocabulink.DB
 > import Vocabulink.Utils
 
 > import Control.Exception (Exception(..))
+> import Data.ByteString.Lazy.UTF8 (fromString)
 > import Data.Char (toLower, isAlphaNum)
+> import Network.URI (uriPath)
 > import Text.JSON (JSON, encode, toJSObject)
 
 We're going to hide some Network.CGI functions so that we can override them
 with versions that automatically handle UTF-8-encoded input.
 
 > import Network.FastCGI hiding (getInput, readInput, getInputs)
+> import Network.CGI.Protocol (CGIResult(..))
 > import qualified Network.FastCGI as FCGI
 
 It's quite probable that we're going to trigger an unexpected exception
@@ -77,10 +82,16 @@ actual 403 error.
 > outputUnauthorized :: (MonadCGI m, MonadIO m) => m CGIResult
 > outputUnauthorized = outputError 403 "Unauthorized" []
 
+The default |output| method provided by |Network.CGI| does not automatically
+encode the input.
+
+> output' :: MonadCGI m => String -> m CGIResult
+> output' = return . CGIOutput . fromString
+
 Also, we do not always output HTML. Sometimes we output JSON or HTML fragments.
 
 > outputText :: (MonadCGI m, MonadIO m) => String -> m CGIResult
-> outputText s = setHeader "Content-Type" "text/plain; charset=utf-8" >> output s
+> outputText s = setHeader "Content-Type" "text/plain; charset=utf-8" >> output' s
 
 Output as JSON an associative list.
 

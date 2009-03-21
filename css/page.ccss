@@ -28,6 +28,9 @@ body:
 
 ol, ul:
   list-style: none
+  margin->
+    top: 1.3em
+    bottom: 1.3em
 
 // tables still need 'cellspacing="0"' in the markup
 table:
@@ -224,3 +227,11 @@ noscript > p:
     right: auto
   background-color: pink
   text-align: center
+
+form:
+  table:
+    margin->
+      left: auto
+      right: auto
+  > ul:
+    text-align: center

@@ -16,7 +16,7 @@ you are (or at least can be enhanced by that knowledge).
 > import Data.Time.Format (parseTime)
 > import System.Locale (defaultTimeLocale, iso8601DateFormat)
 > import System.Time (TimeDiff(..), getClockTime, addToClockTime, toCalendarTime)
-> import Network.URI (escapeURIString, unEscapeString)
+> import Network.URI (escapeURIString, unEscapeString, isUnescapedInURI)
 > import Text.ParserCombinators.Parsec (  Parser, parse, manyTill, many1,
 >                                         anyChar, char, string)
 
@@ -52,10 +52,10 @@ Here is the format of the actual cookie we send to the client.
 > instance Show AuthToken where
 >   show a =  "exp="    ++ showGregorian (authExpiry a) ++
 >             "&no="    ++ show (authMemberNo a) ++
->             "&name="  ++ escapeURIString allowed (authUsername a) ++
+>             "&name="  ++ escapeURIString isUnescapedInURI
+>                            (encodeString $ authUsername a) ++
 >             "&ip="    ++ authIPAddress a ++
 >             "&mac="   ++ authDigest a
->     where allowed c = c /= ';' && c /= '&'
 
 This creates an AuthToken with the default expiration time, automatically
 calculating the digest.
@@ -66,12 +66,12 @@ calculating the digest.
 >   let expires = addDays cookieShelfLife now
 >   digest <- tokenDigest (AuthToken {  authExpiry     = expires,
 >                                       authMemberNo   = memberNo,
->                                       authUsername   = encodeString username,
+>                                       authUsername   = username,
 >                                       authIPAddress  = ip,
 >                                       authDigest     = "" }) salt
 >   return AuthToken {  authExpiry     = expires,
 >                       authMemberNo   = memberNo,
->                       authUsername   = encodeString username,
+>                       authUsername   = username,
 >                       authIPAddress  = ip,
 >                       authDigest     = digest }
 
@@ -85,7 +85,7 @@ this, authentication is less secure.
 > tokenDigest a salt = hmac sha1 (pack salt) (pack token)
 >   where token =  showGregorian (authExpiry a) ++
 >                  show (authMemberNo a) ++
->                  authUsername a ++
+>                  encodeString (authUsername a) ++
 >                  authIPAddress a
 
 Setting the cookie is rather simple by this point. We just create the auth
@@ -105,7 +105,7 @@ token and send it to the client.
 >                                             tdSec      = 0,
 >                                             tdPicosec  = 0 }) now)
 >   setCookie Cookie {  cookieName     = "auth",
->                       cookieValue    = (show authTok),
+>                       cookieValue    = show authTok,
 >                       cookieExpires  = Just expires,
 >                       cookieDomain   = Just "vocabulink.com",
 >                       cookiePath     = Just "/",
@@ -155,7 +155,7 @@ This is a Parsec parser for auth tokens (as stored in cookies).
 >   let day = parseTime defaultTimeLocale (iso8601DateFormat Nothing) day'
 >   return $ day >>= \d -> Just AuthToken {  authExpiry     = d,
 >                                            authMemberNo   = read memberNo,
->                                            authUsername   = unEscapeString username,
+>                                            authUsername   = decodeString $ unEscapeString username,
 >                                            authIPAddress  = ip,
 >                                            authDigest     = digest }
 

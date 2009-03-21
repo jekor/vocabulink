@@ -7,7 +7,7 @@ exist in any libraries I know of.
 >                                   basename, translate, formatTime', (<$$>),
 >  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
 >  {- Control.Applicative -}        pure, (<$>), (<*>),
->  {- Control.Applicative.Error -}  maybeRead,
+>  {- Control.Applicative.Error -}  Failing(..), maybeRead,
 >  {- Control.Monad -}              liftM,
 >  {- Control.Monad.Trans -}        liftIO, MonadIO,
 >  {- Data.Maybe -}                 maybe, fromMaybe, fromJust, isJust, catMaybes,
@@ -21,7 +21,7 @@ We make extensive use of the |liftM| and the Maybe monad.
 
 > import Codec.Binary.UTF8.String (encodeString, decodeString)
 > import Control.Applicative (pure, (<$>), (<*>))
-> import Control.Applicative.Error (maybeRead)
+> import Control.Applicative.Error (Failing(..), maybeRead)
 > import Control.Monad (liftM)
 > import Control.Monad.Trans (liftIO, MonadIO)
 > import Data.Maybe (maybe, fromMaybe, fromJust, isJust, catMaybes)

@@ -10,7 +10,7 @@ functions. An example of this is |linkList|.
 > module Vocabulink.Html (  Dependency(..), stdPage, simplePage,
 >                           linkList, breadcrumbs, options, tableRows, accesskey,
 >                           markdownToHtml,
->                           AppForm, runForm, formLabel, formLabel',
+>                           AppForm, runForm, runForm', formLabel, formLabel',
 >                           tabularInput, tabularSubmit,
 >                           pager, currentPage,
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
@@ -39,10 +39,8 @@ carefully encode everything we need to. If we don't, non-ASCII (non-iso8859-1?)
 characters will be converted to entities. This automatic conversion may be a
 nice fallback, but it can mask an underlying problem.
 
-> import Control.Applicative.Error
 > import Control.Arrow (second)
 > import Data.List (intersperse, find)
-> import Network.URI (uriPath)
 > import Text.Regex (mkRegex, subRegex)
 > import Text.Regex.Posix ((=~))
 > import Text.Formlets (  runFormState, plug, nothingIfNull,
@@ -67,10 +65,10 @@ footer. It also includes @page.css@.
 >   headerB  <- headerBar
 >   footerB  <- footerBar
 >   setHeader "Content-Type" "text/html; charset=utf-8"
->   output $ renderHtml $ header <<
->     (  thetitle << (encodeString t) +++
->        concatHtml (map includeDep ([CSS "page"] ++ deps)) +++
->        concatHtml head') +++
+>   output' $ renderHtml $ header <<
+>     [  thetitle << t,
+>        concatHtml (map includeDep ([CSS "page"] ++ deps)),
+>        concatHtml head' ] +++
 >     body << [  headerB,
 >                jsNotice,
 >                thediv ! [identifier "body"] << concatHtml body',
@@ -148,7 +146,7 @@ generation time (now).
 > copyrightNotice = do
 >   year <- liftIO currentYear
 >   return $ paragraph ! [theclass "copyright"] <<
->     [  stringToHtml $ encodeString "© 2008–",
+>     [  stringToHtml "© 2008–",
 >        stringToHtml ((show year) ++ " "),
 >        anchor ! [href "http://jekor.com/"] << "Chris Forno" ]
 
@@ -201,7 +199,7 @@ Adding the links is up to you.
 
 > breadcrumbs :: [Html] -> Html
 > breadcrumbs items = ulist ! [theclass "breadcrumbs"] << map (li <<) items'
->   where items' = intersperse (stringToHtml $ encodeString " » ") items
+>   where items' = intersperse (stringToHtml " » ") items
 
 Sometimes you just want a select list where the displayed options match their values.
 
@@ -274,24 +272,30 @@ don't want a submit button).
 
 > runForm :: XHtmlForm (AppT IO) a -> Either String Html -> App (Either Html a)
 > runForm frm s = do
->   env <- map (second Left) <$> getInputs
->   let (res,markup,_) = runFormState env "" frm
->   status  <- res
->   xhtml   <- markup
->   meth    <- requestMethod
+>   (status, xhtml) <- runForm' frm
 >   case status of
 >     Failure failures  -> do
->       uri <- requestURI
+>       uri   <- requestURI
+>       meth  <- requestMethod
 >       let submit' = case s of
 >                       Left s'  -> submit "" s'
 >                       Right h  -> h
->       return $ Left $ errors +++
->                       form ! [action (uriPath uri), method "POST"] <<
->                         [  xhtml, submit' ]
->      where errors = case meth of
->                       "GET"  -> noHtml
->                       _      -> unordList failures
+>       return $ Left $ form ! [action (uriPath uri), method "POST"] <<
+>                         [  (meth == "GET" ? noHtml $ unordList failures),
+>                            xhtml, submit' ]
 >     Success result    -> return $ Right result
+
+This is a slimmer wrapper around runFormState for when you want to get access
+to the errors before they're packed into the returned Html. This is also handy
+when implementing ``preview'' functionality for forms.
+
+> runForm' :: XHtmlForm (AppT IO) a -> App (Failing a, Html)
+> runForm' frm = do
+>   env <- map (second Left) <$> getInputs
+>   let (res, markup, _) = runFormState env "" frm
+>   status  <- res
+>   xhtml   <- markup
+>   return (status, xhtml)
 
 \subsection{Paging}
 
