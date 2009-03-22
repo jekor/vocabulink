@@ -19,7 +19,7 @@ problems as well.
 
 > module Vocabulink.Forum (  forumsPage, forumPage, createForum,
 >                            newTopicPage, forumTopicPage,
->                            replyToComment, commentPreview ) where
+>                            replyToForumComment, commentPreview ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -178,8 +178,9 @@ have need for more file uploads we'll generalize this if necessary.
 >              tfoot << tr << noHtml ] ]
 
 > newTopicPage :: String -> App CGIResult
-> newTopicPage n = withRequiredMemberName $ \memberName -> do
+> newTopicPage n = withRequiredMemberNumber $ \_ -> do
 >   email <- asks appMemberEmail
+>   memberName <- fromJust <$> asks appMemberName
 >   res <- runForm (forumTopicForm memberName email) $ Right noHtml
 >   case res of
 >     Left xhtml -> simplePage "New Forum Topic" forumDeps
@@ -302,7 +303,7 @@ avoiding any intermediate representation which we don't yet need.
 >       case comments of
 >         Nothing  -> error "Error retrieving comments."
 >         Just cs  -> do
->           commentsHtml <- mapM displayComment cs
+>           commentsHtml <- mapM (displayForumComment i) cs
 >           stdPage (fromSql title) (forumDeps ++ [JS "forum-comment"]) [] [
 >             breadcrumbs [
 >               anchor ! [href "../../forums"] << "Forums",
@@ -311,8 +312,8 @@ avoiding any intermediate representation which we don't yet need.
 >             thediv ! [theclass "comments"] << commentsHtml ]
 >     _          -> output404 ["forum",fn,show i]
 
-> displayComment :: [SqlValue] -> App Html
-> displayComment [n, l, u, e, t, c]  = do
+> displayForumComment :: Integer -> [SqlValue] -> App Html
+> displayForumComment i [n, l, u, e, t, c]  = do
 >   memberName <- asks appMemberName
 >   email <- asks appMemberEmail
 >   let n'  :: Integer  = fromSql n
@@ -322,27 +323,31 @@ avoiding any intermediate representation which we don't yet need.
 >       t'  :: UTCTime  = fromSql t
 >       c'  :: String   = fromSql c
 >       id'             = "reply-" ++ (show n')
->   replyBox <- case memberName of
->     Nothing  -> return noHtml
->     Just mn  -> do
->       (_, xhtml) <- runForm' $ commentForm mn email (Just $ show n')
->       return $ thediv ! [  identifier id',
->                            theclass "reply",
->                            thestyle "display: none" ] <<
->         thediv ! [theclass "comment editable"] <<
->           form ! [method "POST"] << xhtml
+>   reply <- case (memberName, email) of
+>              (Just mn, Just _)  -> do
+>                (_, xhtml) <- runForm' $ commentForm mn email (Just $ show n')
+>                return $ concatHtml [
+>                  button ! [  theclass $ "reveal " ++ id' ] << "Reply",
+>                  paragraph ! [thestyle "clear: both"] << noHtml,
+>                  thediv ! [  thestyle "display: none",
+>                              identifier id',
+>                              theclass "reply" ] << [
+>                    thediv ! [theclass "comment editable"] <<
+>                       form ! [method "POST"] << [  hidden "topic" (show i),
+>                                                    xhtml ] ] ]
+>              (Just _, Nothing)  -> return $ anchor ! [href "/member/confirmation"] <<
+>                                               "Confirm Your Email to Reply"
+>              _                  -> return $ anchor ! [href "/member/login"] <<
+>                                               "Login to Reply"
 >   return $ thediv ! [  theclass "comment toplevel",
 >                        thestyle $ "margin-left:" ++ (show $ l'*2) ++ "em" ] << [
 >     paragraph ! [theclass "timestamp"] << formatSimpleTime t',
 >     anchor ! [href "#"] << image ! [  width "60", height "60",
 >                                       src $ gravatarWith e' Nothing (size 60) (Just "wavatar") ],
 >     thediv ! [theclass "speech"] << displayCommentBody c',
->     thediv ! [theclass "signature"] << [
->       anchor ! [href "#"] << ("—" ++ u'),
->       stringToHtml " ",
->       button ! [theclass $ "reveal " ++ id'] << "Reply" ],
->     replyBox ]
-> displayComment _             = return $ paragraph << "Error retrieving comment."
+>     thediv ! [theclass "signature"] << [anchor ! [href "#"] << ("—" ++ u')],
+>     thediv ! [theclass "reply-options"] << reply ]
+> displayForumComment _ _             = return $ paragraph << "Error retrieving comment."
 
 We don't want comment display going out-of-sync with comment previewing.
 
@@ -358,13 +363,13 @@ This returns the new comment number.
 >                        \VALUES (?, ?, ?)" [toSql memberNo, toSql body, toSql parent]
 >                        "comment_comment_no_seq"
 
-> replyToComment :: App CGIResult
-> replyToComment = do
+> replyToForumComment :: App CGIResult
+> replyToForumComment = do
 >   memberName <- asks appMemberName
 >   email <- asks appMemberEmail
->   case memberName of
->     Nothing  -> outputUnauthorized
->     Just mn  -> do
+>   topicNum <- fromJust . maybeRead <$> getRequiredInput "topic"
+>   case (memberName, email) of
+>     (Just mn, Just _)  -> do
 >       parent <- getInput "parent"
 >       res <- runForm (commentForm mn email parent) $ Right noHtml
 >       case res of
@@ -372,23 +377,32 @@ This returns the new comment number.
 >                                               ("status", "incomplete") ]
 >         Right (body,parent')  -> do
 >           memberNo <- fromJust <$> asks appMemberNo
->           commentNo <- storeComment memberNo body parent'
->           res' <- queryTuple'  "SELECT c.comment_no, 0 as level, \
->                                       \m.username, m.email, \
->                                       \c.time, c.comment \
->                                \FROM comment c, member m \
->                                \WHERE m.member_no = c.author \
->                                  \AND comment_no = ?"
->                                [toSql commentNo]
+>           res' <- withTransaction' $ do
+>             commentNo <- storeComment memberNo body parent'
+>             run'  "UPDATE forum_topic \
+>                   \SET last_comment = ?, \
+>                       \num_replies = num_replies + 1 \
+>                   \WHERE topic_no = ?"
+>                   [toSql commentNo, toSql topicNum]
+>             res'' <- queryTuple'  "SELECT c.comment_no, 0 as level, \
+>                                          \m.username, m.email, \
+>                                          \c.time, c.comment \
+>                                   \FROM comment c, member m \
+>                                   \WHERE m.member_no = c.author \
+>                                     \AND comment_no = ?"
+>                                   [toSql commentNo]
+>             liftIO . commit =<< asks appDB
+>             return $ fromJust res''
 >           case res' of
 >             Nothing  -> outputJSON [  ("html", "Error posting comment."),
 >                                       ("status", "error") ]
 >             Just c   -> do
 >               c' <- asks appDB
 >               liftIO $ commit c'
->               comment <- displayComment c
+>               comment <- displayForumComment topicNum c
 >               outputJSON [  ("html", showHtmlFragment comment),
 >                             ("status", "accepted") ]
+>     _                  -> outputUnauthorized
 
 We need to make sure that this doesn't go out of sync with displayComment.
 

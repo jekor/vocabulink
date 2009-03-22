@@ -326,12 +326,16 @@ Becoming a member is simply a matter of filling out a form.
 
 Part of becoming a member is confirming (an email address).
 
-> dispatch "GET"   ["member","signup",x]  = confirmMembership x
+> dispatch "GET"   ["member","confirmation"]    = emailConfirmationPage
+> dispatch "GET"   ["member","confirmation",x]  = confirmMembership x
 
 Logging in is a similar process.
 
 > dispatch "GET"   ["member","login"]  = login
 > dispatch "POST"  ["member","login"]  = login
+
+> dispatch "GET"   ["member","support"]  = memberSupport
+> dispatch "POST"  ["member","support"]  = memberSupport
 
 And logging out can be done without a form.
 
@@ -360,8 +364,8 @@ for a long time.
 
 ``reply'' and ``preview'' are used here as nouns.
 
-> dispatch "GET"   ["comment","reply"] = replyToComment
-> dispatch "POST"  ["comment","reply"] = replyToComment
+> dispatch "GET"   ["comment","reply"] = replyToForumComment
+> dispatch "POST"  ["comment","reply"] = replyToForumComment
 
 > dispatch "GET"   ["comment","preview"] = commentPreview
 

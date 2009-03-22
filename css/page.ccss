@@ -38,8 +38,13 @@ table:
     collapse: separate
     spacing: 0
 
-caption, th, td:
+th, td:
   text-align: left
+  font-weight: normal
+  vertical-align: middle
+
+caption:
+  text-align: center
   font-weight: normal
 
 form > table:
@@ -233,5 +238,16 @@ form:
     margin->
       left: auto
       right: auto
+    input[type=text]:
+      width: 25em
+    textarea:
+      width: 25em
+      height: 10em
   > ul:
     text-align: center
+
+#main-column:
+  width: 50%
+  margin->
+    left: auto
+    right: auto

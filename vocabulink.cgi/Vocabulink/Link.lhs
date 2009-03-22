@@ -403,7 +403,7 @@ done using a single page with a form. The form dynamically updates (via
 JavaScript) based on the type of the link being created.
 
 > newLink :: App CGIResult
-> newLink = do
+> newLink = withRequiredMemberNumber $ \memberNo -> do
 >   ts    <- linkTypes
 >   uri   <- requestURI
 >   meth  <- requestMethod
@@ -430,7 +430,7 @@ JavaScript) based on the type of the link being created.
 >                            action (uriPath uri), method "POST"] <<
 >                    [  meth == "GET" ? noHtml $ unordList failures,
 >                       xhtml, actionBar ] ]
->             Success link -> withRequiredMemberNumber $ \memberNo -> do
+>             Success link -> do
 >               linkNo <- establishLink link memberNo
 >               case linkNo of
 >                 Just n   -> redirect $ "/link/" ++ (show n)

@@ -21,7 +21,6 @@ need to utilize the database in some way.
 > import Vocabulink.Utils
 
 > import Control.Exception (Exception(..), IOException, bracket, throwDyn)
-> import Data.Maybe (listToMaybe)
 > import Database.HDBC
 > import Database.HDBC.PostgreSQL (connectPostgreSQL, Connection)
 > import System.IO.Error (isUserError, ioeGetErrorString)
@@ -50,7 +49,12 @@ Sometimes you just want to retrieve a single attribute from a single tuple.
 This will return either Just the value you were expecting or Nothing.
 
 > queryValue :: IConnection conn => conn -> String -> [SqlValue] -> IO (Maybe SqlValue)
-> queryValue c sql vs = listToMaybe `liftM` queryTuple c sql vs
+> queryValue c sql vs = do
+>   t <- queryTuple c sql vs
+>   return $ case t of
+>     [SqlNull]  -> Nothing
+>     [x]        -> Just x
+>     _          -> Nothing
 
 And finally, sometimes you just want to retrieve a single attribute for
 multiple tuples. This assumes that the attribute you want is the first one

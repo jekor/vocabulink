@@ -8,7 +8,7 @@ signatures a little bit.
 
 > module Vocabulink.App (      App, AppEnv(..), AppT, runApp, logApp, getOption,
 >                              withMemberNumber, withRequiredMemberNumber,
->                              withRequiredMemberName, output404, loginRedirectPage,
+>                              output404, reversibleRedirect,
 >                              queryTuple', queryValue', queryAttribute',
 >                              queryTuples', quickInsertNo', runStmt', quickStmt',
 >                              withTransaction', run',
@@ -106,28 +106,31 @@ and a function to carry out with the member's number otherwise.
 > withMemberNumber :: a -> (Integer -> App a) -> App a
 > withMemberNumber d f = asks appMemberNo >>= maybe (return d) f
 
-|withRequiredMemberNumber| is like |withMemberNumber|, but it provides a
-``logged out default'' of redirecting the client to the login page.
+|withRequiredMemberNumber| is like |withMemberNumber|, but it also checks to
+see if the member has confirmed their email adress and provides a ``logged out
+default'' of redirecting the client to the login page.
+
+Use this any time a member number is generally required. If you only use
+withMemberNumber you will allow posting from unconfirmed members.
 
 > withRequiredMemberNumber :: (Integer -> App CGIResult) -> App CGIResult
-> withRequiredMemberNumber f =  asks appMemberNo >>=
->                               maybe (redirect =<< loginRedirectPage) f
+> withRequiredMemberNumber f = do
+>   memberNo <- asks appMemberNo
+>   email <- asks appMemberEmail
+>   case (memberNo, email) of
+>     (Just mn, Just _)  -> f mn
+>     (Just _, Nothing)  -> redirect =<< reversibleRedirect "/member/confirmation"
+>     _                  -> redirect =<< reversibleRedirect "/member/login"
 
-Sometimes we want a member name instead of number.
+When we direct a user to the some page, we might want to make sure that they
+can find their way back to where they were. To do so, we get the current URI
+and append it to the target page in the query string. The receiving page might
+know what to do with it.
 
-> withRequiredMemberName :: (String -> App CGIResult) -> App CGIResult
-> withRequiredMemberName f =  asks appMemberName >>=
->                             maybe (redirect =<< loginRedirectPage) f
-
-When we direct a user to the login page, we want to make sure that they can
-find their way back to where they were. To do so, we get the current URI and
-append it to the login page in the query string. The login page will know what
-to do with it.
-
-> loginRedirectPage :: App String
-> loginRedirectPage = do
+> reversibleRedirect :: String -> App String
+> reversibleRedirect path = do
 >   request <- fromMaybe "/" `liftM` getVar "REQUEST_URI"
->   return $ "/member/login?redirect=" ++ escapeURIString isUnescapedInURI request
+>   return $ path ++ "?redirect=" ++ escapeURIString isUnescapedInURI request
 
 We want to log 404 errors in the database, as they may indicate a problem or
 opportunity with the site. This takes a list of Strings that are stored in the

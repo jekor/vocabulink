@@ -22,7 +22,7 @@ functions. An example of this is |linkList|.
 >                           fieldset, legend, afile,
 >                           textarea, select, widget,
 >                           thestyle, src, width, height, value, name,
->                           cols, rows, colspan,
+>                           cols, rows, colspan, caption,
 >                           table, thead, tbody, tfoot, th, tr, td,
 >  {- Text.Formlets -}      runFormState, nothingIfNull,
 >                           check, ensure, ensures, checkM, ensureM,

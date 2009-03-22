@@ -1,5 +1,6 @@
 > module Vocabulink.Member (  login, logout, registerMember, getMemberNumber,
->                             confirmMembership ) where
+>                             confirmMembership, emailConfirmationPage,
+>                             memberSupport ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -44,10 +45,10 @@ and then continuing where it left off.
 >   res <- runForm (loginForm ref) (Right noHtml)
 >   case res of
 >     Left xhtml -> simplePage "Login" []
->       [  xhtml,
->          paragraph ! [thestyle "text-align: center"] <<
+>       [  paragraph ! [thestyle "text-align: center"] <<
 >            [  stringToHtml "Not a member? ",
->               anchor ! [href "/member/signup"] << "Sign Up for free!" ] ]
+>               anchor ! [href "/member/signup"] << "Sign Up for free!" ],
+>          xhtml ]
 >     Right (user, _) -> do
 >       redirect'  <- getInputDefault ref "redirect"
 >       ip         <- remoteAddr
@@ -187,29 +188,39 @@ the front page.
 >                     "",
 >                     "Welcome to Vocabulink.",
 >                     "",
->                     "Click http://www.vocabulink.com/member/signup/" ++
+>                     "Click http://www.vocabulink.com/member/confirmation/" ++
 >                     (fromSql h) ++ " to confirm your email address." ]
->       res <- liftIO $ try $ system $
->         (  "echo -e \""   ++ email         ++ "\" | \
->            \sendmail \""  ++ (regEmail r)  ++ "\"")
->       case res of
->         Right ExitSuccess  -> quickStmt'
->           "UPDATE member_confirmation \
->           \SET email_sent = current_timestamp \
->           \WHERE member_no = ?" [toSql memberNo]
->         _                  -> return Nothing
+>       res <- sendMail (regEmail r) "Welcome to Vocabulink" email
+>       maybe (return Nothing) (\_ -> quickStmt'
+>         "UPDATE member_confirmation \
+>         \SET email_sent = current_timestamp \
+>         \WHERE member_no = ?" [toSql memberNo]) res
+
+> sendMail :: String -> String -> String -> App (Maybe ())
+> sendMail to subject body = do
+>   let body' = unlines [  "From: vocabulink@vocabulink.com",
+>                          "To: <" ++ to ++ ">",
+>                          "Subject: " ++ subject,
+>                          "",
+>                          body ]
+>   res <- liftIO $ try $ system $
+>            (  "echo -e \""   ++ body'  ++ "\" | \
+>               \sendmail \""  ++ to     ++ "\"" )
+>   case res of
+>     Right ExitSuccess  -> return $ Just ()
+>     _                  -> return Nothing
 
 > confirmMembership :: String -> App CGIResult
 > confirmMembership hash = do
 >   memberNo <- asks appMemberNo
 >   case memberNo of
->     Nothing  -> redirect =<< loginRedirectPage
+>     Nothing  -> redirect =<< reversibleRedirect "/member/login"
 >     Just n   -> do
 >       match <- queryValue'  "SELECT ? = hash FROM member_confirmation \
 >                             \WHERE member_no = ?" [toSql hash, toSql n]
 >       let match' = maybe False fromSql match
 >       case match' of
->         False  -> error "Confirmation mismatch."
+>         False  -> emailConfirmationPage
 >         True   -> do
 >           res <- withTransaction' $ do
 >             runStmt'  "UPDATE member SET email = \
@@ -219,6 +230,73 @@ the front page.
 >             runStmt'  "DELETE FROM member_confirmation \
 >                       \WHERE member_no = ?" [toSql n]
 >           case res of
->             Nothing  -> error "Confirmation error. \
->                               \Please contact support@vocabulink.com."
+>             Nothing  -> emailConfirmationPage
 >             Just _   -> redirect =<< referrerOrVocabulink
+
+> emailConfirmationPage :: App CGIResult
+> emailConfirmationPage = do
+>   ref <- referrerOrVocabulink
+>   redirect' <- getInputDefault ref "redirect"
+>   support <- getSupportForm $ Just redirect'
+>   simplePage "Email Confirmation Required" [] [
+>     thediv ! [identifier "main-column"] << [
+>       paragraph << "In order to interact with Vocabulink, \
+>                    \you need to confirm your email address.",
+>       paragraph << "If you haven't received a confirmation email \
+>                    \or are having trouble, let us know.",
+>       support,
+>       paragraph << [
+>         anchor ! [href redirect'] << "Click here to go back",
+>         stringToHtml " to where you came from." ] ] ]
+
+At some point members (or clients) may have difficulties with the site. I
+debated about giving out an email address, but I suspect that filtering for
+spam among support requests might be pretty difficult. I also don't want to go
+dead to support request email.
+
+So, this uses the tried-and-true contact form method.
+
+> supportForm :: Maybe String -> App (AppForm (String, String, String))
+> supportForm redirect' = do
+>   ref <- referrerOrVocabulink
+>   email <- asks appMemberEmail
+>   let  redirect'' = fromMaybe ref redirect'
+>        emailInput = case email of
+>                       Nothing  -> plug (tabularInput "Email Address") $ F.input Nothing `check` ensures
+>                                           [((/= ""), "We need an email address to contact you at.")]
+>                       Just _   -> F.hidden email
+>   return $ plug (\xhtml -> table << [
+>                    xhtml, tfoot << tabularSubmit "Get Support" ])
+>              ((,,)  <$>  emailInput
+>                    <*>  (plug (tabularInput "Problem") $ F.textarea Nothing) `check` ensures
+>                            [((/= ""), "It would help us to know what the problem you're experiencing is ;).")]
+>                    <*>  F.hidden (Just redirect''))
+
+Get a fresh support form (don't attempt to run it).
+
+> getSupportForm :: Maybe String -> App Html
+> getSupportForm redirect' = do
+>   (_, xhtml) <- runForm' =<< supportForm redirect'
+>   return $ form ! [action "/member/support", method "POST"] << xhtml
+
+> memberSupport :: App CGIResult
+> memberSupport = do
+>   form' <- supportForm =<< getInput "redirect"
+>   res <- runForm form' (Right noHtml)
+>   case res of
+>     Left xhtml -> simplePage "Need Help?" []
+>       [  thediv ! [identifier "main-column"] <<
+>            xhtml ]
+>     Right (email, problem, redirect') -> do
+>       res' <- sendMail "chris@forno.us" "Support Request" $
+>                 unlines [  "Email: " ++ email,
+>                            "Problem: " ++ problem ]
+>       case res' of
+>         Nothing  -> error "Error sending support request. \
+>                           \Please contact vocabulink.jekor@spamgourmet.com for support."
+>         Just _   -> simplePage "Support Request Sent" []
+>                       [  thediv ! [identifier "main-column"] << [
+>                            paragraph << "Your support request was sent successfully.",
+>                            paragraph << [
+>                              anchor ! [href redirect'] << "Click here to go back",
+>                              stringToHtml " to where you came from." ] ] ]
