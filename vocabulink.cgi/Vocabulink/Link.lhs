@@ -53,6 +53,14 @@ client or the database.
 > linkTypeNameFromType (LinkWord _ _)      = "link word"
 > linkTypeNameFromType (Relationship _ _)  = "relationship"
 
+> linkColor :: Link -> String
+> linkColor l = case linkTypeName l of
+>                 "association"   -> "#000000"
+>                 "cognate"       -> "#00AA00"
+>                 "link word"     -> "#0000CC"
+>                 "relationship"  -> "#6600AA"
+>                 _               -> "#FF00FF"
+
 Fully loading a link from the database requires a join. However, the join
 depends on the type of thi link. But we don't always need the type-specific
 data associated with a link. Sometimes it's not even possible to have it, such
@@ -247,15 +255,27 @@ Generate the JavaScript necessary to draw a link on the page using SVG. You'll
 need to make sure to include both |JS "raphael"| and |JS "link-graph"| as
 dependencies when using this.
 
-> drawLinkSVG :: String -> String -> Html
-> drawLinkSVG orig dest = script << primHtml (
+> drawLinkSVG :: Link -> Html
+> drawLinkSVG link = script << primHtml (
 >   "connect(window, 'onload', partial(drawLink," ++
->   encode orig ++ "," ++ encode dest ++ "));") +++
->   thediv ! [identifier "graph", thestyle "height: 150px"] << noHtml
+>   showLinkJSON link ++ "));") +++
+>   thediv ! [identifier "graph", thestyle "height: 100px"] << noHtml
+
+It seems that the JSON library author does not want us making new instances of
+the JSON class. Oh well, I didn't want to write |readJSON| anyway.
+
+> showLinkJSON :: Link -> String
+> showLinkJSON link =  let obj = [  ("orig", linkOrigin link),
+>                                   ("dest", linkDestination link),
+>                                   ("color", linkColor link),
+>                                   ("label", linkLabel $ linkType link)] in
+>                      encode $ toJSObject obj
+>                        where linkLabel (LinkWord word _)  = word
+>                              linkLabel _                  = ""
 
 > displayLink :: Link -> Html
-> displayLink l =  concatHtml [
->   drawLinkSVG (linkOrigin l) (linkDestination l),
+> displayLink l = concatHtml [
+>   drawLinkSVG l,
 >   thediv ! [theclass "link-details"] << linkTypeHtml (linkType l)]
 
 Displaying a partial link is similar. We need to do so in different contexts,
@@ -272,11 +292,12 @@ type, which varies based on type.
 > linkTypeHtml :: LinkType -> Html
 > linkTypeHtml Association = noHtml
 > linkTypeHtml Cognate = noHtml
-> linkTypeHtml (LinkWord linkWord story) =
->   paragraph << ("link word: " ++ linkWord) +++
->      markdownToHtml story
+> linkTypeHtml (LinkWord _ story) =
+>   markdownToHtml story
 > linkTypeHtml (Relationship leftSide rightSide) =
->   paragraph << (leftSide ++ " → " ++ rightSide)
+>   paragraph ! [thestyle "text-align: center"] << [
+>     stringToHtml "as", br,
+>     stringToHtml $ leftSide ++ " → " ++ rightSide ]
 
 To show a specific link, we retrieve the link from the database and then
 display it. Most of the extra code in the following is for handling the display
@@ -381,17 +402,23 @@ as the destination''.
 >   script << primHtml
 >     (  "connect(window, 'onload', partial(drawLinks," ++
 >        encode focus ++ "," ++
->        jsonNodes ("/link?input1=" ++ focus) linkOrigin origs ++ "," ++
->        jsonNodes ("/link?input0=" ++ focus) linkDestination dests ++ "));" ),
+>        jsonNodes ("/link?input1=" ++ focus) origs ++ "," ++
+>        jsonNodes ("/link?input0=" ++ focus) dests ++ "));" ),
 >   thediv ! [identifier "graph"] << noHtml ]
 >  where partitioned   = partition ((== focus) . linkOrigin . pLink) links
 >        origs         = snd partitioned
 >        dests         = fst partitioned
->        jsonNodes url f xs  = encode $ insertMid
->          (toJSObject [  ("lexeme","new link"),
->                         ("url",url) ])
->          (map (\o -> toJSObject [  ("lexeme",f $ pLink o),
->                                    ("number",show $ linkNumber $ pLink o)]) xs)
+>        jsonNodes url xs  = encode $ insertMid
+>          (toJSObject [  ("orig",   "new link"),
+>                         ("dest",   "new link"),
+>                         ("color",  "#000000"),
+>                         ("style",  "dotted"),
+>                         ("url",    url) ])
+>          (map (\o ->  let o' = pLink o in
+>                       toJSObject [  ("orig",    linkOrigin o'),
+>                                     ("dest",    linkDestination o'),
+>                                     ("color",   linkColor $ pLink o),
+>                                     ("number",  show $ linkNumber $ pLink o)]) xs)
 >        insertMid :: a -> [a] -> [a]
 >        insertMid x xs = let (l,r) = foldr (\a ~(x',y') -> (a:y',x')) ([],[]) xs in
 >                         reverse l ++ [x] ++ r
