@@ -24,6 +24,7 @@ enough to get going in a language
 ** install tablefunc (used for storing trees)
 *** \i /usr/share/postgresql-8.3/contrib/tablefunc.sql
 ** \c vocabulink vocabulink
+** \i path/to/vocabulink.sql
 * Articles
 ** How to get started learning another language.
 ** Why only link to the Hiragana/Katakana spelling of a word? Why not the Kanji or romaji, or some combination?

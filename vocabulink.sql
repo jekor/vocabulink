@@ -25,11 +25,11 @@ CREATE TABLE member (
        join_date TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        email TEXT,
        website TEXT,
-       password_hash TEXT,
+       password_hash TEXT
 );
 CREATE INDEX member_username ON member (username);
 CREATE INDEX member_email ON member (email);
-COMMENT ON COLUMN member IS 'At some point in time we may want to store a member''s timezone and locale so that we can report dates and times accurately to them. For example, "Your next review is scheduled on November 3rd at 10:48." For now we just use relative times ("Your next review is scheduled for 18 hours from now.").';
+COMMENT ON TABLE member IS 'At some point in time we may want to store a member''s timezone and locale so that we can report dates and times accurately to them. For example, "Your next review is scheduled on November 3rd at 10:48." For now we just use relative times ("Your next review is scheduled for 18 hours from now.").';
 COMMENT ON COLUMN member.member_no IS 'I debated about using the username as a primary key. In the end, I decided against it. Performance and space concerns won me over. It''s also nice to have a numeric reference to a member in case we need to refer to a member in some context where Unicode characters aren''t valid.';
 COMMENT ON COLUMN member.username IS 'I want to allow usernames to include any URL-safe characters, including alphanumeric Unicode characters. The regexp for username is ^[\p{L}\p{Nd}$-_.+!*''(),]{3,}$. Because usernames will be used in URLs, and displayed in various places, I want to keep them to a reasonable size. This was also a motivation for making the difficult decision to disallow spaces. All of the preceding is outdated, we allow any characters in the username.';
 COMMENT ON COLUMN member.email IS 'The email address here represents confirmed email addresses. If the member has not been confirmed, their email address lives in the member_confirmation relation.';
@@ -65,7 +65,7 @@ CREATE TABLE link_type (
        relation TEXT
 );
 COMMENT ON TABLE link_type IS 'There are different types of links between lexemes. From simple associations (just asserting that a link exists) to full-blown stories with pictures that use a native-language link word.';
-COMMENT ON COLUMN link_type.table IS 'For most link types, an individual link carries with it extra information. We use a separate table for each to store the extra information for each link. I considered using PostgreSQL''s inheritance features, but they seem to be problematic and I don''t know how well they perform. More than 1 link type can share the same table.';
+COMMENT ON COLUMN link_type.relation IS 'For most link types, an individual link carries with it extra information. We use a separate table for each to store the extra information for each link. I considered using PostgreSQL''s inheritance features, but they seem to be problematic and I don''t know how well they perform. More than 1 link type can share the same table.';
 INSERT INTO link_type (name, description, relation)
      VALUES ('association', 'A simple association with no attached meaning', NULL),
             ('cognate', 'A sound-alike or borrowed word', NULL),
@@ -190,4 +190,4 @@ CREATE TABLE forum_topic (
        num_replies SMALLINT NOT NULL DEFAULT 0
 );
 COMMENT ON COLUMN forum_topic.last_comment IS 'While a pointer to the last comment isn''t theoretically necessary, it greatly simplifies retrieving information on forum topics in bulk.';
-COMMENT ON COLUMN forum_topic.num_comments IS 'Again, this is not strictly necessary, but it does make queries easier.';
+COMMENT ON COLUMN forum_topic.num_replies IS 'Again, this is not strictly necessary, but it does make queries easier.';

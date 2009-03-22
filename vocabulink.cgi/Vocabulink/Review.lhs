@@ -162,9 +162,10 @@ Here's a critical chance to:
 
 > noLinksToReviewPage :: App CGIResult
 > noLinksToReviewPage = do
->   simplePage "No Links to Review" [CSS "link"]
->     [ paragraph << "Take a break! \
->                    \You don't have any links to review right now." ]
+>   simplePage "No Links to Review" [CSS "link"] [
+>     thediv ! [identifier "main-column"] << [
+>       paragraph << "Take a break! \
+>                    \You don't have any links to review right now." ] ]
 
 In order to determine the next review interval, the review scheduling algorithm
 may need to know how long the last review period was (in fact, any algorithm
@@ -177,9 +178,13 @@ the review algorithm does not have to be used for determining the first review
 
 > previousInterval :: Integer -> Integer -> App (Maybe Integer)
 > previousInterval memberNo linkNo = do
->   v <- queryValue'  "SELECT extract(epoch from current_timestamp - \
->                                    \(SELECT actual_time FROM link_review \
->                                     \WHERE member_no = ? AND link_no = ? \
->                                     \ORDER BY actual_time DESC LIMIT 1))"
->                     [toSql memberNo, toSql linkNo]
+>   v <- queryValue'  "SELECT COALESCE(extract(epoch from current_timestamp - \
+>                                             \(SELECT actual_time FROM link_review \
+>                                              \WHERE member_no = ? AND link_no = ? \
+>                                              \ORDER BY actual_time DESC LIMIT 1)), \
+>                                     \extract(epoch from current_timestamp - \
+>                                             \(SELECT target_time FROM link_to_review \
+>                                              \WHERE member_no = ? AND link_no = ?)))"
+>                     [  toSql memberNo, toSql linkNo,
+>                        toSql memberNo, toSql linkNo ]
 >   return $ fmap fromSql v

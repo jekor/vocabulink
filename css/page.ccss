@@ -125,6 +125,9 @@ a:
 b, strong:
   font-weight: bold
 
+em:
+  font-style: oblique
+
 .clear:
   clear: both
 
@@ -204,7 +207,9 @@ p.copyright:
 
 .pager:
   text-align: center
-  margin-top: 1em
+  margin->
+    top: 1.3em
+    bottom: 1.3em
   // Group controls in a box so that they can be logically associated.
   .controls:
     border: 1px solid black
@@ -238,10 +243,9 @@ form:
     margin->
       left: auto
       right: auto
-    input[type=text]:
+    input[type=text], input[type=password], textarea:
       width: 25em
     textarea:
-      width: 25em
       height: 10em
   > ul:
     text-align: center

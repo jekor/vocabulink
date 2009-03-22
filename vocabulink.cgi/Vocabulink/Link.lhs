@@ -58,7 +58,7 @@ client or the database.
 >                 "association"   -> "#000000"
 >                 "cognate"       -> "#00AA00"
 >                 "link word"     -> "#0000CC"
->                 "relationship"  -> "#6600AA"
+>                 "relationship"  -> "#AA0077"
 >                 _               -> "#FF00FF"
 
 Fully loading a link from the database requires a join. However, the join

@@ -28,10 +28,9 @@ To authenticate a member, we need their username and password.
 >           valid <- queryValue'  "SELECT password_hash = crypt(?, password_hash) \
 >                                 \FROM member WHERE username = ?"
 >                                 [toSql p, toSql u]
->           case valid of
->             Nothing  -> error "Internal Authentication Error \
->                               \(This is not your fault.)"
->             Just v   -> return $ fromSql v
+>           return $ case valid of
+>             Nothing  -> False
+>             Just v   -> fromSql v
 >         err = "Username and password do not match (or don't exist)."
 
 If a member authenticates correctly, we redirect them to either the frontpage
@@ -67,9 +66,7 @@ put this step into password verification so that we don't need 2 queries.
 > getMemberNumber user = do
 >   n <- queryValue' "SELECT member_no FROM member \
 >                    \WHERE username = ?" [toSql user]
->   case n of
->     Nothing  -> error "Failed to retrieve member number from username."
->     Just n'  -> return $ fromSql n'
+>   return $ maybe Nothing fromSql n
 
 To logout the member, we simply clear their auth cookie and redirect them
 somewhere sensible. If you want to send a client somewhere other than the front
