@@ -4,8 +4,8 @@ Links are the center of interest in our program. Most activities revolve around
 them.
 
 > module Vocabulink.Link (  Link(..), PartialLink(..), LinkType(..),
->                           getPartialLink, getPartialLinks,
->                           getLinkFromPartial, getLink, linkPage, deleteLink,
+>                           getPartialLink, getLinkFromPartial, getLink,
+>                           memberLinks, latestLinks, linkPage, deleteLink,
 >                           linksPage, linksContainingPage, newLink,
 >                           partialLinkHtml, partialLinkFromValues) where
 
@@ -57,7 +57,7 @@ client or the database.
 > linkColor l = case linkTypeName l of
 >                 "association"   -> "#000000"
 >                 "cognate"       -> "#00AA00"
->                 "link word"     -> "#0000CC"
+>                 "link word"     -> "#0000FF"
 >                 "relationship"  -> "#AA0077"
 >                 _               -> "#FF00FF"
 
@@ -159,29 +159,6 @@ linkType undefined.
 >                         linkDestination  = fromSql d,
 >                         linkType         = undefined }
 > partialLinkFromValues _  = Nothing
-
-Here we retrieve multiple links at once. This was the original motivation for
-dividing links into full links and partial links. Often we need to retrieve
-links for display but we don't need or want extra trips to the database. Here
-we need 1 query instead of potentially @limit@ queries.
-
-This assumes the ordering of links is determined by link number. It's used by
-the page which displays a listing of links. We don't want to display deleted
-links (which are left in the database for people still reviewing them).
-
-This takes a list of predicates (as SQL strings) to filter the results by. It's
-dangerous, to do string munging like this, but perhaps equally dangerous to
-have multiple similar functions go out of sync.
-
-> getPartialLinks ::  [String] -> [SqlValue] -> Int -> Int ->
->                     App (Maybe [Maybe PartialLink])
-> getPartialLinks preds replacements offset limit = do
->   ts <- queryTuples'  ("SELECT link_no, link_type, origin, destination \
->                        \FROM link WHERE NOT deleted " ++ conditions ++
->                        "OFFSET ? LIMIT ?")
->                       (replacements ++ [toSql offset, toSql limit])
->   return $ map partialLinkFromValues `liftM` ts
->     where conditions = concatMap ("AND " ++) preds
 
 Once we have a partial link, it's a simple matter to turn it into a full link.
 We just need to retrieve its type-level details from the database.
@@ -351,16 +328,15 @@ away shortly after public release.
 > linksPage :: App CGIResult
 > linksPage  = do
 >   (pg, n, offset) <- currentPage
->   partials <- getPartialLinks [] [] offset (n + 1)
->   case partials of
+>   ts <- latestLinks offset (n + 1)
+>   case ts of
 >     Nothing  -> error "Error while retrieving links."
 >     Just ps  -> do
 >       pagerControl <- pager pg n $ offset + (length ps)
 >       simplePage "Links" [CSS "link"]
->         [ map displayPossiblePartial (take n ps) +++ pagerControl ]
->    where displayPossiblePartial l =
->            maybe (paragraph << "Error retrieving link.")
->                  (\l' -> thediv ! [theclass "link"] << (partialLinkHtml l')) l
+>         [ map displayPartial (take n ps) +++ pagerControl ]
+>    where displayPartial l =
+>            thediv ! [theclass "link"] << (partialLinkHtml l)
 
 But more practical for the long run is providing search. ``Containing'' search
 is a search for links that ``contain'' the given ``focus'' lexeme on one side
@@ -374,15 +350,17 @@ should be reviewed again after public release.
 
 > linksContainingPage :: String -> App CGIResult
 > linksContainingPage focus = do
->   partials <- getPartialLinks preds [] 0 100
->   case partials of
+>   ts <- queryTuples'  "SELECT link_no, link_type, origin, destination \
+>                       \FROM link WHERE NOT deleted \
+>                       \AND (origin LIKE ? OR destination LIKE ?) \
+>                       \LIMIT 20"
+>                       [toSql focus, toSql focus]
+>   case ts of
 >     Nothing  -> error "Error while retrieving links."
 >     Just ls  -> stdPage ("Links containing " ++ focus)
 >                   [  CSS "link",
 >                      JS "MochiKit", JS "raphael", JS "link-graph"] []
->                   (linkFocusBox focus $ catMaybes ls)
->    where preds = ["(origin LIKE '" ++ focus ++ "' OR \
->                    \destination LIKE '" ++ focus ++ "')"]
+>                   (linkFocusBox focus (catMaybes $ map partialLinkFromValues ls))
 
 When the links containing a search term have been found, we need a way to
 display them. This is where HTML is inadequate. Ideally we could create some
@@ -548,3 +526,37 @@ Hopefully by then I will know more than I do now.
 > linkTypeRelationship :: AppForm LinkType
 > linkTypeRelationship = Relationship <$>
 >   plug (+++ stringToHtml " is to ") (F.input Nothing) <*> F.input Nothing
+
+We want to be able to display links to members (and non-members) in various
+ways.
+
+It would be really nice to have lazy result lists. However, it doesn't seem to
+work too well. For now, you need to specify how many results you want, as well
+as an offset.
+
+Here we retrieve multiple links at once. This was the original motivation for
+dividing links into full links and partial links. Often we need to retrieve
+links for display but we don't need or want extra trips to the database. Here
+we need 1 query instead of potentially @limit@ queries.
+
+This assumes the ordering of links is determined by link number. It's used by
+the page which displays a listing of links. We don't want to display deleted
+links (which are left in the database for people still reviewing them).
+
+> memberLinks :: Integer -> Int -> Int -> App (Maybe [PartialLink])
+> memberLinks memberNo offset limit = do
+>   ts <- queryTuples'  "SELECT link_no, link_type, origin, destination \
+>                       \FROM link WHERE NOT deleted \
+>                       \AND author = ? \
+>                       \ORDER BY link_no DESC \
+>                       \OFFSET ? LIMIT ?"
+>                       [toSql memberNo, toSql offset, toSql limit]
+>   return $ (catMaybes . map partialLinkFromValues) `liftM` ts
+
+> latestLinks :: Int -> Int -> App (Maybe [PartialLink])
+> latestLinks offset limit = do
+>   ts <- queryTuples'  "SELECT link_no, link_type, origin, destination \
+>                       \FROM link WHERE NOT deleted \
+>                       \ORDER BY link_no DESC \
+>                       \OFFSET ? LIMIT ?" [toSql offset, toSql limit]
+>   return $ (catMaybes . map partialLinkFromValues) `liftM` ts

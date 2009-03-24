@@ -101,7 +101,7 @@ them. Then we return a list of Articles with undefined numbers and bodies.
 > publishedArticles = do
 >   dir <- articleDir
 >   ls <- liftIO $ getDirectoryContents dir
->   let fullPaths = map (dir ++) ls
+>   let fullPaths = map (\l -> dir ++ "/" ++ l) ls
 >   paths <- liftIO $ (map takeBaseName) <$> filterM isPublished fullPaths
 >   catMaybes <$> mapM articleFromFile paths
 

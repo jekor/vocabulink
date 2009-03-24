@@ -194,6 +194,14 @@ tr.odd:hover, tr.even:hover:
       left: 0.5em
       right: 0.5em
 
+#main-content:
+  width: 60%
+  float: left
+
+#sidebar:
+  width: 40%
+  float: right
+
 ul.links:
   margin-left: 0
   padding-left: 0

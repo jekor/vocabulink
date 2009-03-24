@@ -15,7 +15,7 @@ function graphNode(g, label, p, labelColor, ellipseColor, style) {
   var t = g.graph.text(p.x, p.y, label).attr({'font-size': '14pt','fill': labelColor});
   var dims = t.getBBox();
   var height = dims.height*1.7;
-  var e = g.graph.ellipse(p.x, p.y, Math.max(dims.width, height), height).attr({'fill': '#FFF', 'stroke': ellipseColor});
+  var e = g.graph.ellipse(p.x, p.y, Math.max(dims.width, height), height).attr({'fill': '#FFF', 'stroke': ellipseColor, 'stroke-width': 3});
   if (style == 'dotted')
     e.attr({'stroke-dasharray': '.'});
   // We have to place the text first so that we can calculate the dimensions of
@@ -73,7 +73,7 @@ function arcNodes(g, ss, reverse) {
                if (reverse)
                  point.x = g.width/2 - (point.x - g.width/2);
                var n = graphNode(g, reverse ? s.orig : s.dest, point, '#00F', s.color, s.style);
-               var l = g.graph.path({'stroke': s.color});
+               var l = g.graph.path({'stroke': s.color, 'stroke-width': 3});
                if (s.style == 'dotted')
                  l.attr({'stroke-dasharray': '.'});
                l.moveTo(g.width/2, g.height/2).lineTo(point.x, point.y).toBack();
@@ -109,7 +109,7 @@ function drawLinks(focus, origs, dests) {
     var mouseOut = function() {
       node.node.ellipse.animate({'fill': '#FFF'}, 250);
       g.focus.ellipse.animate({'fill': '#FFF'}, 250);
-      node.line.animate({'stroke-width': 1}, 250);
+      node.line.animate({'stroke-width': 3}, 250);
       document.body.style.cursor = 'auto';
     };
     var action = function() {
@@ -129,7 +129,7 @@ function drawLink(link) {
   var gdims = getElementDimensions(graph);
   var graph = Raphael('graph', gdims.w, gdims.h);
   var g = {'graph': graph, 'width': gdims.w, 'height': gdims.h};
-  var l = g.graph.path({'stroke': link.color}).moveTo(g.width*0.3, g.height/2).lineTo(g.width*0.7, g.height/2);
+  var l = g.graph.path({'stroke': link.color, 'stroke-width': 3}).moveTo(g.width*0.3, g.height/2).lineTo(g.width*0.7, g.height/2);
   var origNode = graphNode(g, link.orig, {'x': g.width*0.3, 'y': g.height/2}, '#00F', '#000');
   var destNode = graphNode(g, link.dest, {'x': g.width*0.7, 'y': g.height/2}, '#00F', link.color);
   if (link.label !== "") {

@@ -67,8 +67,6 @@ Each of these modules will be described in its own section.
 > import Vocabulink.Member
 > import Vocabulink.Review
 > import Vocabulink.Utils
-> import Vocabulink.Widget
-> import Vocabulink.Widget.MyLinks
 
 \section{Other Modules}
 
@@ -386,8 +384,23 @@ and associated functionality by using the stdPage function.
 > frontPage :: App CGIResult
 > frontPage = do
 >   memberNo <- asks appMemberNo
->   w <- maybe (return noHtml) (\_ -> renderWidget (MyLinks 10)) memberNo
->   simplePage "Welcome to Vocabulink" [] [w]
+>   my <- maybe (return noHtml) (myLinks) memberNo
+>   latest <- newLinks
+>   stdPage "Welcome to Vocabulink" [] [] [
+>     thediv ! [identifier "main-content"] << [
+>       h1 << "Welcome to Vocabulink" ],
+>     thediv ! [identifier "sidebar"] << [
+>       my, latest ] ]
+>  where myLinks mn = do
+>          ls <- memberLinks mn 0 10
+>          return $ maybe (noHtml) (\l -> concatHtml [
+>                                           h3 << "My Links",
+>                                           unordList $ map partialLinkHtml l ]) ls
+>        newLinks = do
+>          ls <- latestLinks 0 10
+>          return $ maybe (noHtml) (\l -> concatHtml [
+>                                           h3 << "Latest Links",
+>                                           unordList $ map partialLinkHtml l ]) ls
 
 %include Vocabulink/Utils.lhs
 %include Vocabulink/CGI.lhs
@@ -401,8 +414,6 @@ and associated functionality by using the stdPage function.
 %include Vocabulink/Review/Html.lhs
 %include Vocabulink/Review/SM2.lhs
 %include Vocabulink/Article.lhs
-%include Vocabulink/Widget.lhs
-%include Vocabulink/Widget/MyLinks.lhs
 %include Vocabulink/Forum.lhs
 
 \end{document}

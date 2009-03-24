@@ -26,7 +26,9 @@ while they are browsing another part of the site, we want them to be notified.
 >     Just 0   -> anchor ! [href "/links", theclass "review-box"] <<
 >                   "No links to review"
 >     Just n'  -> anchor ! [href "/review/next", theclass "review-box"] <<
->                   [(strong << show n') +++ " links to review"]
+>                   [  strong << (show n'),
+>                      stringToHtml (n' > 1 ? "links" $ "link"),
+>                      stringToHtml " to review" ]
 >     Nothing  -> stringToHtml "Error finding links for review."
 
 Get the number of links that a user has for review. We display this number to
