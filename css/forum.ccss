@@ -2,7 +2,7 @@
   margin->
     top: 1.3em
     bottom: 1.3em
-  background-color: #CCC
+  background-color: $bar_and_box_background
   h2, ul:
     float: left
   h2, ul, label:
@@ -35,7 +35,7 @@
 
 #topics:
   width: 100%
-  background-color: #CCC
+  background-color: $bar_and_box_background
   table:
     width: 100%
     tbody:
@@ -90,7 +90,7 @@
   .speech:
     overflow: hidden
     margin-right: 0.5em
-    border: 1px solid #CCC
+    border: 1px solid $bar_and_box_background
     background-color: white
     padding: 0.25em
     textarea:

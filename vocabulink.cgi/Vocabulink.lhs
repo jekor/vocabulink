@@ -386,21 +386,26 @@ and associated functionality by using the stdPage function.
 >   memberNo <- asks appMemberNo
 >   my <- maybe (return noHtml) (myLinks) memberNo
 >   latest <- newLinks
->   stdPage "Welcome to Vocabulink" [] [] [
->     thediv ! [identifier "main-content"] << [
->       h1 << "Welcome to Vocabulink" ],
+>   let article = isJust memberNo ? "welcome-member" $ "welcome-non-member"
+>   article' <- getArticle article
+>   body <- maybe (return $ h1 << "Welcome to Vocabulink") articleBody article'
+>   stdPage "Welcome to Vocabulink" [JS "MochiKit", JS "page"] [] [
+>     thediv ! [identifier "main-content"] << body,
 >     thediv ! [identifier "sidebar"] << [
->       my, latest ] ]
+>       latest, my ] ]
 >  where myLinks mn = do
 >          ls <- memberLinks mn 0 10
->          return $ maybe (noHtml) (\l -> concatHtml [
+>          return $ maybe (noHtml) (\l -> thediv ! [theclass "sidebox"] << [
 >                                           h3 << "My Links",
->                                           unordList $ map partialLinkHtml l ]) ls
+>                                           unordList (map partialLinkHtml l) !
+>                                             [theclass "links"] ]) ls
 >        newLinks = do
 >          ls <- latestLinks 0 10
->          return $ maybe (noHtml) (\l -> concatHtml [
->                                           h3 << "Latest Links",
->                                           unordList $ map partialLinkHtml l ]) ls
+>          return $ maybe (noHtml) (\l -> thediv ! [theclass "sidebox"] << [
+>                                           h3 << anchor ! [href "/links"] <<
+>                                             "Latest Links",
+>                                           unordList (map partialLinkHtml l) !
+>                                             [theclass "links"] ]) ls
 
 %include Vocabulink/Utils.lhs
 %include Vocabulink/CGI.lhs

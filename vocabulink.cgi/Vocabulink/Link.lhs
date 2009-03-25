@@ -61,6 +61,14 @@ client or the database.
 >                 "relationship"  -> "#AA0077"
 >                 _               -> "#FF00FF"
 
+> linkBackgroundColor :: Link -> String
+> linkBackgroundColor l = case linkTypeName l of
+>                 "association"   -> "#DFDFDF"
+>                 "cognate"       -> "#DFF4DF"
+>                 "link word"     -> "#DFDFFF"
+>                 "relationship"  -> "#F4DFEE"
+>                 _               -> "#FFDFFF"
+
 Fully loading a link from the database requires a join. However, the join
 depends on the type of thi link. But we don't always need the type-specific
 data associated with a link. Sometimes it's not even possible to have it, such
@@ -245,6 +253,7 @@ the JSON class. Oh well, I didn't want to write |readJSON| anyway.
 > showLinkJSON link =  let obj = [  ("orig", linkOrigin link),
 >                                   ("dest", linkDestination link),
 >                                   ("color", linkColor link),
+>                                   ("bgcolor", linkBackgroundColor link),
 >                                   ("label", linkLabel $ linkType link)] in
 >                      encode $ toJSObject obj
 >                        where linkLabel (LinkWord word _)  = word
@@ -260,8 +269,11 @@ so we have 2 different functions.
 
 > partialLinkHtml :: PartialLink -> Html
 > partialLinkHtml (PartialLink l) =
->   anchor ! [href ("/link/" ++ (show $ linkNumber l))] <<
->     (linkOrigin l ++ " — " ++ linkDestination l)
+>   anchor ! [  href ("/link/" ++ (show $ linkNumber l)),
+>               thestyle $  "color: " ++ linkColor l ++
+>                           "; background-color: " ++ linkBackgroundColor l ++
+>                           "; border: 1px solid " ++ linkColor l ] <<
+>     (linkOrigin l ++ " → " ++ linkDestination l)
 
 More comprehensive display of a link involves displaying information on its
 type, which varies based on type.
@@ -333,10 +345,10 @@ away shortly after public release.
 >     Nothing  -> error "Error while retrieving links."
 >     Just ps  -> do
 >       pagerControl <- pager pg n $ offset + (length ps)
->       simplePage "Links" [CSS "link"]
->         [ map displayPartial (take n ps) +++ pagerControl ]
->    where displayPartial l =
->            thediv ! [theclass "link"] << (partialLinkHtml l)
+>       simplePage "Links" [CSS "link"] [
+>         unordList (map partialLinkHtml (take n ps)) !
+>           [identifier "central-column", theclass "links"],
+>         pagerControl ]
 
 But more practical for the long run is providing search. ``Containing'' search
 is a search for links that ``contain'' the given ``focus'' lexeme on one side
@@ -390,13 +402,15 @@ as the destination''.
 >          (toJSObject [  ("orig",   "new link"),
 >                         ("dest",   "new link"),
 >                         ("color",  "#000000"),
+>                         ("bgcolor", "#DFDFDF"),
 >                         ("style",  "dotted"),
 >                         ("url",    url) ])
 >          (map (\o ->  let o' = pLink o in
->                       toJSObject [  ("orig",    linkOrigin o'),
->                                     ("dest",    linkDestination o'),
->                                     ("color",   linkColor $ pLink o),
->                                     ("number",  show $ linkNumber $ pLink o)]) xs)
+>                       toJSObject [  ("orig",     linkOrigin o'),
+>                                     ("dest",     linkDestination o'),
+>                                     ("color",    linkColor $ pLink o),
+>                                     ("bgcolor",  linkBackgroundColor $ pLink o),
+>                                     ("number",   show $ linkNumber $ pLink o)]) xs)
 >        insertMid :: a -> [a] -> [a]
 >        insertMid x xs = let (l,r) = foldr (\a ~(x',y') -> (a:y',x')) ([],[]) xs in
 >                         reverse l ++ [x] ++ r

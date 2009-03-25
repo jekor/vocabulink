@@ -30,7 +30,7 @@
     bottom: 5em
 
 .preview:
-  border: 1px solid #CCC
+  border: 1px solid $bar_and_box_background
   margin-bottom: 1.3em * 3
 
 // review

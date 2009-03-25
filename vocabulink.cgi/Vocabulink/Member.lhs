@@ -236,7 +236,7 @@ the front page.
 >   redirect' <- getInputDefault ref "redirect"
 >   support <- getSupportForm $ Just redirect'
 >   simplePage "Email Confirmation Required" [] [
->     thediv ! [identifier "main-column"] << [
+>     thediv ! [identifier "central-column"] << [
 >       paragraph << "In order to interact with Vocabulink, \
 >                    \you need to confirm your email address.",
 >       paragraph << "If you haven't received a confirmation email \
@@ -282,7 +282,7 @@ Get a fresh support form (don't attempt to run it).
 >   res <- runForm form' (Right noHtml)
 >   case res of
 >     Left xhtml -> simplePage "Need Help?" []
->       [  thediv ! [identifier "main-column"] <<
+>       [  thediv ! [identifier "central-column"] <<
 >            xhtml ]
 >     Right (email, problem, redirect') -> do
 >       res' <- sendMail "chris@forno.us" "Support Request" $
@@ -292,7 +292,7 @@ Get a fresh support form (don't attempt to run it).
 >         Nothing  -> error "Error sending support request. \
 >                           \Please contact vocabulink.jekor@spamgourmet.com for support."
 >         Just _   -> simplePage "Support Request Sent" []
->                       [  thediv ! [identifier "main-column"] << [
+>                       [  thediv ! [identifier "central-column"] << [
 >                            paragraph << "Your support request was sent successfully.",
 >                            paragraph << [
 >                              anchor ! [href redirect'] << "Click here to go back",

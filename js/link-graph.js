@@ -11,11 +11,11 @@
 // Create a classic ellipse-and-label graph node.
 //
 // "label" is a string to display on the node.
-function graphNode(g, label, p, labelColor, ellipseColor, style) {
+function graphNode(g, label, p, labelColor, outlineColor, hoverColor, style) {
   var t = g.graph.text(p.x, p.y, label).attr({'font-size': '14pt','fill': labelColor});
   var dims = t.getBBox();
   var height = dims.height*1.7;
-  var e = g.graph.ellipse(p.x, p.y, Math.max(dims.width, height), height).attr({'fill': '#FFF', 'stroke': ellipseColor, 'stroke-width': 3});
+  var e = g.graph.ellipse(p.x, p.y, Math.max(dims.width, height), height).attr({'fill': '#FFF', 'stroke': outlineColor, 'stroke-width': 3});
   if (style == 'dotted')
     e.attr({'stroke-dasharray': '.'});
   // We have to place the text first so that we can calculate the dimensions of
@@ -26,6 +26,9 @@ function graphNode(g, label, p, labelColor, ellipseColor, style) {
   // both the ellipse and the label (the interface is difficult to use without
   // that).
   return {'label': t, 'ellipse': e,
+          'labelcolor': labelColor,
+          'outline': outlineColor,
+          'hovercolor': hoverColor,
           'mouseover': function(f) {t.mouseover(f); e.mouseover(f);},
           'mouseout': function(f) {t.mouseout(f); e.mouseout(f);},
           'click': function(f) {t.click(f); e.click(f);}};
@@ -72,13 +75,13 @@ function arcNodes(g, ss, reverse) {
                var point = normalize(g, p);
                if (reverse)
                  point.x = g.width/2 - (point.x - g.width/2);
-               var n = graphNode(g, reverse ? s.orig : s.dest, point, '#00F', s.color, s.style);
+               var n = graphNode(g, reverse ? s.orig : s.dest, point, '#00F', s.color, s.bgcolor, s.style);
                var l = g.graph.path({'stroke': s.color, 'stroke-width': 3});
                if (s.style == 'dotted')
                  l.attr({'stroke-dasharray': '.'});
                l.moveTo(g.width/2, g.height/2).lineTo(point.x, point.y).toBack();
                return {'node': n, 'line': l}; },
-             ellipticalArc(g.width*0.8, g.height*0.9, Math.PI, 3/2*Math.PI, ss.length),
+             ellipticalArc(g.width*0.667, g.height*0.9, Math.PI, 3/2*Math.PI, ss.length),
              ss);
 }
 
@@ -94,15 +97,15 @@ function drawLinks(focus, origs, dests) {
   var gdims = getElementDimensions(graph);
   var graph = Raphael('graph', gdims.w, vdims.h);
   var g = {'graph': graph, 'width': gdims.w, 'height': vdims.h};
-  g.focus = graphNode(g, focus, {'x': g.width/2, 'y': g.height/2}, '#000', '#000');
+  g.focus = graphNode(g, focus, {'x': g.width/2, 'y': g.height/2}, '#000', '#000', '#DFDFDF');
   var destsNodes = zip(dests, arcNodes(g, dests));
   var origsNodes = zip(origs, arcNodes(g, origs, true));
   forEach(chain(destsNodes, origsNodes), function(ns) {
     var link = ns[0];
     var node = ns[1];
     var mouseIn  = function() {
-      node.node.ellipse.animate({'fill': '#DDD'}, 250);
-      g.focus.ellipse.animate({'fill': '#DDD'}, 250);
+      node.node.ellipse.animate({'fill': node.node.hovercolor}, 250);
+      g.focus.ellipse.animate({'fill': g.focus.hovercolor}, 250);
       node.line.animate({'stroke-width': 4}, 250);
       document.body.style.cursor = 'pointer';
     };
@@ -130,8 +133,8 @@ function drawLink(link) {
   var graph = Raphael('graph', gdims.w, gdims.h);
   var g = {'graph': graph, 'width': gdims.w, 'height': gdims.h};
   var l = g.graph.path({'stroke': link.color, 'stroke-width': 3}).moveTo(g.width*0.3, g.height/2).lineTo(g.width*0.7, g.height/2);
-  var origNode = graphNode(g, link.orig, {'x': g.width*0.3, 'y': g.height/2}, '#00F', '#000');
-  var destNode = graphNode(g, link.dest, {'x': g.width*0.7, 'y': g.height/2}, '#00F', link.color);
+  var origNode = graphNode(g, link.orig, {'x': g.width*0.3, 'y': g.height/2}, '#00F', '#000', '#DFDFDF');
+  var destNode = graphNode(g, link.dest, {'x': g.width*0.7, 'y': g.height/2}, '#00F', link.color, link.bgcolor);
   if (link.label !== "") {
     var ldims = origNode.ellipse.getBBox();
     var rdims = destNode.ellipse.getBBox();
@@ -140,7 +143,7 @@ function drawLink(link) {
     var linkLabel = g.graph.text(midpoint, g.height/2 - 18, link.label).attr({'font-size': '14pt', 'fill': '#000'});
   }
   var mouseIn  = function(node) {
-    node.ellipse.animate({'fill': '#DDD'}, 250);
+    node.ellipse.animate({'fill': node.hovercolor}, 250);
     document.body.style.cursor = 'pointer';
   };
   var mouseOut = function(node) {

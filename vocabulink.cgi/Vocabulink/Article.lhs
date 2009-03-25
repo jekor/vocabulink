@@ -7,7 +7,8 @@ want to publish static data there, we need some outlet for it.
 It turns out that using our program gives us some additional consistency
 (standard header and footer) and abstraction.
 
-> module Vocabulink.Article (articlePage, articlesPage, refreshArticles) where
+> module Vocabulink.Article (  articlePage, articlesPage, refreshArticles,
+>                              getArticle, articleBody ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI

@@ -23,11 +23,12 @@ while they are browsing another part of the site, we want them to be notified.
 > reviewBox = withMemberNumber noHtml $ \memberNo -> do
 >   n <- numLinksToReview memberNo
 >   return $ case n of
->     Just 0   -> anchor ! [href "/links", theclass "review-box"] <<
+>     Just 0   -> anchor ! [  href "/links", theclass "review-box",
+>                             thestyle "color: black" ] <<
 >                   "No links to review"
 >     Just n'  -> anchor ! [href "/review/next", theclass "review-box"] <<
 >                   [  strong << (show n'),
->                      stringToHtml (n' > 1 ? "links" $ "link"),
+>                      stringToHtml (n' > 1 ? " links" $ " link"),
 >                      stringToHtml " to review" ]
 >     Nothing  -> stringToHtml "Error finding links for review."
 

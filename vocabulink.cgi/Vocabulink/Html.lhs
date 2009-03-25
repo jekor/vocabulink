@@ -108,7 +108,9 @@ for review and a logout button.
 >   username <- asks appMemberName
 >   review <- reviewBox
 >   return $ thediv ! [identifier "header-bar"] <<
->     [  anchor ! [theclass "logo", href "/", accesskey "1"] << "Vocabulink",
+>     [  anchor ! [theclass "logo", href "/", accesskey "1"] << [
+>          stringToHtml "Vocabulink", br,
+>          thespan ! [theclass "tagline"] << "learn languages through fiction" ],
 >        topLinks,
 >        maybe loginBox logoutBox username,
 >        searchBox,
@@ -119,10 +121,8 @@ Here are the links we want in the header of every page.
 
 > topLinks :: Html
 > topLinks = linkList
->   [  anchor ! [href "/article/how-to-get-started-with-vocabulink"] <<
->        "Get Started",
+>   [  anchor ! [href "/forums"] << "Forums",
 >      anchor ! [href "/articles"] << "Articles",
->      anchor ! [href "/forums"] << "Forums",
 >      anchor ! [href "/help"] << "Help" ]
 
 The footer bar is more simple. It just includes some links to static content.
@@ -161,12 +161,9 @@ to @input0@ and @input1@ since that's what the formlets-based login page
 expects.
 
 > loginBox :: Html
-> loginBox = anchor ! [theclass "auth-box", href "/member/signup"] << "Sign Up" +++
->            form ! [  theclass "auth-box login", action "/member/login",
->                      method "POST"] <<
->              [  label << "Username:",  textfield "input0",
->                 label << "Password:",  password "input1",
->                 submit "" "Log In" ]
+> loginBox = thespan ! [theclass "auth-box login"] << [
+>   anchor ! [href "/member/login"] << "Login", stringToHtml " | ",
+>   anchor ! [href "/member/signup"] << "Sign Up" ]
 
 For logged-in members, we provide a simple logout button (with an indicator of
 your username to show that you're logged in).
@@ -183,7 +180,8 @@ entering in the URL manually), but that might change in the future.
 
 > searchBox :: Html
 > searchBox = form ! [theclass "search-box", action "/links", method "GET"] <<
->   [ textfield "contains" ! [accesskey "s"], submit "" "Search" ]
+>   [ textfield "contains" ! [accesskey "s"], stringToHtml " ",
+>     submit "" "Search Links" ]
 
 \subsection{Higher-Level Combinators}
 
@@ -191,7 +189,7 @@ It's common to use an unordered list to present a series of links. For example,
 both the standard header and footer use this.
 
 > linkList :: (HTML a) => [a] -> Html
-> linkList items = ulist ! [theclass "links"] << map (li <<) items
+> linkList items = ulist ! [theclass "hyperlinks"] << map (li <<) items
 
 Breadcrumbs are a common navigation element. This only handles wrapping the
 provided elements in an appropriate ordered list and adding decorating it.

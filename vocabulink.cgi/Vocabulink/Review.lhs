@@ -163,7 +163,7 @@ Here's a critical chance to:
 > noLinksToReviewPage :: App CGIResult
 > noLinksToReviewPage = do
 >   simplePage "No Links to Review" [CSS "link"] [
->     thediv ! [identifier "main-column"] << [
+>     thediv ! [identifier "central-column"] << [
 >       paragraph << "Take a break! \
 >                    \You don't have any links to review right now." ] ]
 
