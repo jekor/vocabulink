@@ -40,8 +40,9 @@ and then continuing where it left off.
 
 > login :: App CGIResult
 > login = do
->   ref <- referrerOrVocabulink
->   res <- runForm (loginForm ref) (Right noHtml)
+>   ref    <- referrerOrVocabulink
+>   redir  <- getInputDefault ref "redirect"
+>   res    <- runForm (loginForm redir) (Right noHtml)
 >   case res of
 >     Left xhtml -> simplePage "Login" []
 >       [  paragraph ! [thestyle "text-align: center"] <<
@@ -49,14 +50,13 @@ and then continuing where it left off.
 >               anchor ! [href "/member/signup"] << "Sign Up for free!" ],
 >          xhtml ]
 >     Right (user, _) -> do
->       redirect'  <- getInputDefault ref "redirect"
 >       ip         <- remoteAddr
 >       memberNo   <- getMemberNumber user
 >       case memberNo of
->         Nothing  -> redirect redirect'
+>         Nothing  -> redirect redir
 >         Just n   -> do
 >           setAuthCookie n user ip
->           redirect redirect'
+>           redirect redir
 
 At the time of authentication, we have to fetch the member's number from the
 database before it can be packed into their auth token. There may be a way to

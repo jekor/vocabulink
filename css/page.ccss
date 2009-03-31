@@ -2,7 +2,7 @@
 
 // Based on Eric Meyer's CSS Reset - http://meyerweb.com/eric/thoughts/2007/05/01/reset-reloaded/
 
-html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, font, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td:
+html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, font, img, ins, kbd, q, s, samp, small, strike, strong, tt, var, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td:
   margin: 0
   padding: 0
   border: 0
@@ -211,7 +211,7 @@ tr.odd:hover, tr.even:hover:
     margin-top: 0
 
 #sidebar:
-  width: 33%
+  width: 30%
   float: right
   .sidebox:
     margin-bottom: 1.3em
@@ -307,3 +307,34 @@ form:
   margin->
     left: auto
     right: auto
+
+// pull quotes (http://en.wikipedia.org/wiki/Pull_quote)
+blockquote:
+  width: 15em
+  padding: 1em
+  border->
+    top: 3px solid $bar_and_box_border
+    bottom: 3px solid $bar_and_box_border
+  background-color: $bar_and_box_background
+  p:
+    margin: 0
+    text-align: center
+    font->
+      size: 1.125em
+      style: italic
+      family: Georgia, serif
+  &.right:
+    float: right
+    clear: right
+    margin-left: 1.3em
+  &.left:
+    float: left
+    clear: left
+    margin-right: 1.3em
+
+.footnote:
+  font-size: 0.875em
+  line-height: 1.486
+  margin->
+    top: 1.486em
+    bottom: 1.486em
