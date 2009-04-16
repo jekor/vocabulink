@@ -303,15 +303,14 @@ exceptions, etc.
 >       review <- reviewIndicator linkNo
 >       owner <- queryValue'  "SELECT author = ? FROM link WHERE link_no = ?"
 >                             [toSql memberNo, toSql linkNo]
->       ops <- case owner of
->         Just o  -> linkOperations linkNo (isJust memberNo && fromSql o)
->         _       -> return $ stringToHtml
->                      "Unable to determine link ownership."
+>       ops <- linkOperations linkNo $ maybe False fromSql owner
 >       let orig  = linkOrigin l'
 >           dest  = linkDestination l'
 >       stdPage (orig ++ " -> " ++ dest) [
 >         CSS "link", JS "MochiKit", JS "raphael", JS "link-graph"] []
->         [review, ops, displayLink l']
+>         [  drawLinkSVG l',
+>            thediv ! [theclass "link-ops"] << [review, ops],
+>            thediv ! [theclass "link-details"] << linkTypeHtml (linkType l') ]
 
 Each link can be ``operated on''. It can be reviewed (added to the member's
 review set) and deleted (marked as deleted). In the future, I expect operations
@@ -345,7 +344,7 @@ away shortly after public release.
 >     Nothing  -> error "Error while retrieving links."
 >     Just ps  -> do
 >       pagerControl <- pager pg n $ offset + (length ps)
->       simplePage "Links" [CSS "link"] [
+>       simplePage "Latest Links" [CSS "link"] [
 >         unordList (map partialLinkHtml (take n ps)) !
 >           [identifier "central-column", theclass "links"],
 >         pagerControl ]

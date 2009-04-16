@@ -18,6 +18,9 @@ html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockq
 :focus:
   outline: 0
 
+h1, h2, h3, h4, h5, h6, p, ol, ul, dl, table:
+  font-family: Verdana, sans-serif
+
 a:
   color: #00F
   &:focus:
@@ -154,12 +157,12 @@ tr.odd:hover, tr.even:hover:
     right: 0.75em
     top: 0.5em
     bottom: 0.5em
+  font-family: Verdana, sans-serif
   a.logo:
     display: block
     float: left
     font->
       size: 1.25em
-      family: sans-serif
       weight: bold
     color: black
     line-height: 1.0

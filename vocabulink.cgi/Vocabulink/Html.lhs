@@ -123,6 +123,7 @@ Here are the links we want in the header of every page.
 > topLinks = linkList
 >   [  anchor ! [href "/forums"] << "Forums",
 >      anchor ! [href "/articles"] << "Articles",
+>      anchor ! [href "/links"] << "Latest Links",
 >      anchor ! [href "/help"] << "Help" ]
 
 The footer bar is more simple. It just includes some links to static content.

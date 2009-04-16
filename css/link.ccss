@@ -77,3 +77,15 @@ fieldset#link-word textarea:
   ol:
     list-style-type: decimal
     margin-left: 1.5em
+
+.link-ops:
+  width: 25%
+  float: left
+  padding-top: 1.3em
+  form:
+    margin: 1em
+    input:
+      display: block
+      margin->
+        left: auto
+        right: auto

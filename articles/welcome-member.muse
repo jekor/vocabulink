@@ -1,4 +1,7 @@
 #title Welcome Back
 #date 2009-03-24 21:54:00 -0700
 
-Hey there, not-so-newb.
+Welcome back.
+
+Wondering how to [[/article/how-to-get-started-with-vocabulink][get started]]?
+
