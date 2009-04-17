@@ -3,7 +3,7 @@
 Now that we know how to create links, its time to look at how to present them
 to a member for review.
 
-> module Vocabulink.Review (  newReview, linkReviewed, nextReview) where
+> module Vocabulink.Review (newReview, linkReviewed, nextReview) where
 
 For now, we have only 1 algorithm (SuperMemo 2).
 
@@ -124,14 +124,9 @@ which begins the process all over again.
 >     Just l'  -> do
 >       let source  = linkOrigin l'
 >           dest    = linkDestination l'
->       stdPage ("Review: " ++ source ++ " -> ?")
->               [CSS "link", JS "MochiKit", JS "review"] []
->         [  thediv ! [identifier "baseline", theclass "link"] <<
->              [  thespan ! [theclass "lexeme"] << (stringToHtml source),
->                 image ! [  src "http://s.vocabulink.com/edges/edges-l1.png",
->                            width "200", height "1" ],
->                 thespan ! [theclass "lexeme"] <<
->                   (anchor ! [identifier "lexeme-cover", href "#"] << "?")],
+>       stdPage ("Review: " ++ source ++ " -- ?")
+>               [CSS "link", JS "MochiKit", JS "review", JS "raphael", JS "link-graph"] []
+>         [  drawLinkSVG' "drawReview" l',
 >            form ! [action ("/review/" ++ (show linkNo)), method "POST"] <<
 >              [  hidden "recall-time" "",
 >                 hidden "hidden-lexeme" dest,

@@ -93,7 +93,14 @@
     border: 1px solid $bar_and_box_background
     background-color: white
     padding: 0.25em
+    text-align: left
+    // the "soft" class is a bit of a hack
+    &.soft:
+      background-color: inherit
+      border: none
+      margin-right: 0
     textarea:
+      overflow: auto
       width: 100%
       height: 10em
   form:
@@ -117,6 +124,9 @@
     margin-right: 0.5em
     input:
       width: 100%
+  .signature:
+    a:
+      margin-right: 1em
 
 .speech:
   p:first-child, ul:first-child, ol:first-child:
@@ -131,9 +141,7 @@
     margin-left: 1.5em
 
 .reply:
-  margin->
-    top: 1.3em
-    left: 60px
+  margin-top: 1.3em
 
 fieldset:
   border: 1px solid black

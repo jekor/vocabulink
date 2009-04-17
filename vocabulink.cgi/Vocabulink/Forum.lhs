@@ -150,7 +150,7 @@ have need for more file uploads we'll generalize this if necessary.
 >                \Make sure to include an icon."
 
 > iconDir :: App String
-> iconDir = (++ "/icons") . fromJust <$> getOption "staticDir"
+> iconDir = (++ "/icons") . fromJust <$> getOption "staticdir"
 
 > forumPage :: String -> App CGIResult
 > forumPage forum = do
@@ -228,14 +228,14 @@ directly on an object).
 
 > commentForm :: String -> Maybe String -> Maybe String ->
 >                AppForm (String, Maybe Integer)
-> commentForm memberName email parent = plug (\xhtml -> concatHtml [
->   anchor ! [href "#"] << image ! [  width "60", height "60",
->                                     src $ gravatarWith (fromMaybe "" email)
->                                                        Nothing (size 60) (Just "wavatar") ],
->   thediv ! [theclass "speech"] << xhtml,
+> commentForm _ email parent = plug (\xhtml -> concatHtml [
+>   image ! [  width "60", height "60",
+>              src $ gravatarWith (maybe "" (map toLower) email)
+>                                 Nothing (size 60) (Just "wavatar") ],
+>   thediv ! [theclass "speech soft"] << xhtml,
 >   thediv ! [theclass "signature"] << [
->     anchor ! [href "#"] << ("—" ++ memberName),
->     stringToHtml " ",
+>     anchor ! [href "http://daringfireball.net/projects/markdown/basics"] <<
+>       "Formatting Help",
 >     isJust parent  ?  button << "Preview" +++ stringToHtml " " +++
 >                       submit "" "Send Reply"
 >                    $  submit "" "Create" ] ])
@@ -342,10 +342,11 @@ avoiding any intermediate representation which we don't yet need.
 >   return $ thediv ! [  theclass "comment toplevel",
 >                        thestyle $ "margin-left:" ++ (show $ l'*2) ++ "em" ] << [
 >     paragraph ! [theclass "timestamp"] << formatSimpleTime t',
->     anchor ! [href "#"] << image ! [  width "60", height "60",
->                                       src $ gravatarWith e' Nothing (size 60) (Just "wavatar") ],
+>     image ! [  width "60", height "60",
+>                src $  gravatarWith (map toLower e')
+>                                    Nothing (size 60) (Just "wavatar") ],
 >     thediv ! [theclass "speech"] << displayCommentBody c',
->     thediv ! [theclass "signature"] << [anchor ! [href "#"] << ("—" ++ u')],
+>     thediv ! [theclass "signature"] << ("—" ++ u'),
 >     thediv ! [theclass "reply-options"] << reply ]
 > displayForumComment _ _             = return $ paragraph << "Error retrieving comment."
 

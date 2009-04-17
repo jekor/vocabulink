@@ -127,11 +127,16 @@ function drawLinks(focus, origs, dests) {
   });
 }
 
-function drawLink(link) {
+function createGraph() {
   var graph = $('graph');
   var gdims = getElementDimensions(graph);
   var graph = Raphael('graph', gdims.w, gdims.h);
   var g = {'graph': graph, 'width': gdims.w, 'height': gdims.h};
+  return g;
+}
+
+function drawLink(link) {
+  var g = createGraph();
   var l = g.graph.path({'stroke': link.color, 'stroke-width': 3}).moveTo(g.width*0.3, g.height/2).lineTo(g.width*0.7, g.height/2);
   var origNode = graphNode(g, link.orig, {'x': g.width*0.3, 'y': g.height/2}, '#00F', '#000', '#DFDFDF');
   var destNode = graphNode(g, link.dest, {'x': g.width*0.7, 'y': g.height/2}, '#00F', link.color, link.bgcolor);
@@ -139,7 +144,6 @@ function drawLink(link) {
     var ldims = origNode.ellipse.getBBox();
     var rdims = destNode.ellipse.getBBox();
     var midpoint = (rdims.x + (ldims.x + ldims.width)) / 2;
-    log(midpoint);
     var linkLabel = g.graph.text(midpoint, g.height/2 - 18, link.label).attr({'font-size': '14pt', 'fill': '#000'});
   }
   var mouseIn  = function(node) {
@@ -157,4 +161,35 @@ function drawLink(link) {
   destNode.mouseover(partial(mouseIn, destNode));
   destNode.mouseout(partial(mouseOut, destNode));
   destNode.click(partial(action, link.dest));
+}
+
+// This draws a link with the destination obscured (for reviews).
+function drawLinkReview(link, callback) {
+  // We want to give away as little as possible about the link.
+  // The idea is that eventually we'll support hinting. When a member asks for
+  // a hint, we might show the color of the link. The next hint might be the
+  // link word (if one exists), etc.
+  // At first, I thought I could repurpose drawLink() or make it more general.
+  // But after some review it has less in common with the needs of this
+  // function than I thought.
+  var g = createGraph();
+  var l = g.graph.path({'stroke': '#000', 'stroke-width': 3}).moveTo(g.width*0.3, g.height/2).lineTo(g.width*0.7, g.height/2);
+  var origNode = graphNode(g, link.orig, {'x': g.width*0.3, 'y': g.height/2}, '#000', '#000', '#DFDFDF');
+  var destNode = graphNode(g, '?', {'x': g.width*0.7, 'y': g.height/2}, '#000', '#000', '#DFDFDF');
+  var mouseIn  = function(node) {
+    node.ellipse.animate({'fill': node.hovercolor}, 250);
+    document.body.style.cursor = 'pointer';
+  };
+  var mouseOut = function(node) {
+    node.ellipse.animate({'fill': '#FFF'}, 250);
+    document.body.style.cursor = 'auto';
+  };
+  origNode.mouseover(partial(mouseIn, origNode));
+  origNode.mouseout(partial(mouseOut, origNode));
+  destNode.mouseover(partial(mouseIn, destNode));
+  destNode.mouseout(partial(mouseOut, destNode));
+  return {'graph': g.graph, 'node': destNode};
+  // var reveal = function() {g.graph.remove(); drawLink(link);};
+  // destNode.click(callback);
+  // return reveal;
 }

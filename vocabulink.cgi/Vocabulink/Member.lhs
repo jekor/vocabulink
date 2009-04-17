@@ -107,7 +107,7 @@ trying to register with isn't already in use.
 > uniqueUser :: AppForm String
 > uniqueUser = username `checkM` ensureM valid err where
 >   valid user = do vs <- queryTuples'  "SELECT username FROM member \
->                                       \WHERE username = ?" [toSql user]
+>                                       \WHERE username ILIKE ?" [toSql user]
 >                   return $ maybe False (== []) vs
 >   err = "That username is unavailable."
 
@@ -285,7 +285,8 @@ Get a fresh support form (don't attempt to run it).
 >       [  thediv ! [identifier "central-column"] <<
 >            xhtml ]
 >     Right (email, problem, redirect') -> do
->       res' <- sendMail "chris@forno.us" "Support Request" $
+>       supportAddress <- fromJust <$> getOption "staticDir"
+>       res' <- sendMail supportAddress "Support Request" $
 >                 unlines [  "Email: " ++ email,
 >                            "Problem: " ++ problem ]
 >       case res' of

@@ -147,7 +147,7 @@ for them at load time and they can be safely read later with |forceEither $
 get|.
 
 > requiredConfigVars :: [String]
-> requiredConfigVars = ["authtokensalt", "articledir"]
+> requiredConfigVars = ["authtokensalt", "articledir", "staticdir", "supportaddress"]
 
 This retrieves the config file and makes sure that it contains all of the
 required configuration parameters. This is so that we find out about errors

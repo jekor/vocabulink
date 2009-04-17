@@ -89,3 +89,10 @@ fieldset#link-word textarea:
       margin->
         left: auto
         right: auto
+  p:
+    text-align: center
+
+#recall-buttons:
+  text-align: center
+  button:
+    padding: 0.5em 0.75em

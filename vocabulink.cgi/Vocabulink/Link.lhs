@@ -7,7 +7,8 @@ them.
 >                           getPartialLink, getLinkFromPartial, getLink,
 >                           memberLinks, latestLinks, linkPage, deleteLink,
 >                           linksPage, linksContainingPage, newLink,
->                           partialLinkHtml, partialLinkFromValues) where
+>                           partialLinkHtml, partialLinkFromValues,
+>                           drawLinkSVG, drawLinkSVG' ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -241,8 +242,11 @@ need to make sure to include both |JS "raphael"| and |JS "link-graph"| as
 dependencies when using this.
 
 > drawLinkSVG :: Link -> Html
-> drawLinkSVG link = script << primHtml (
->   "connect(window, 'onload', partial(drawLink," ++
+> drawLinkSVG = drawLinkSVG' "drawLink"
+
+> drawLinkSVG' :: String -> Link -> Html
+> drawLinkSVG' f link = script << primHtml (
+>   "connect(window, 'onload', partial(" ++ f ++ "," ++
 >   showLinkJSON link ++ "));") +++
 >   thediv ! [identifier "graph", thestyle "height: 100px"] << noHtml
 
@@ -309,7 +313,8 @@ exceptions, etc.
 >       stdPage (orig ++ " -> " ++ dest) [
 >         CSS "link", JS "MochiKit", JS "raphael", JS "link-graph"] []
 >         [  drawLinkSVG l',
->            thediv ! [theclass "link-ops"] << [review, ops],
+>            thediv ! [theclass "link-ops"] <<
+>              [review, ops, paragraph ! [thestyle "clear: both"] << noHtml],
 >            thediv ! [theclass "link-details"] << linkTypeHtml (linkType l') ]
 
 Each link can be ``operated on''. It can be reviewed (added to the member's
@@ -323,7 +328,7 @@ mark a link without adding it to a review set.
 >                           \WHERE link_no = ?" [toSql n]
 >   return $ case deleted of
 >     Just d  -> if fromSql d
->       then stringToHtml "Deleted"
+>       then paragraph << "Deleted"
 >       else form ! [action ("/link/" ++ (show n) ++ "/delete"), method "POST"] <<
 >              submit "" "Delete"
 >     _       -> stringToHtml

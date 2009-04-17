@@ -10,6 +10,7 @@ exist in any libraries I know of.
 >  {- Control.Applicative.Error -}  Failing(..), maybeRead,
 >  {- Control.Monad -}              liftM,
 >  {- Control.Monad.Trans -}        liftIO, MonadIO,
+>  {- Data.Char -}                  toLower,
 >  {- Data.Maybe -}                 maybe, fromMaybe, fromJust, isJust, catMaybes,
 >  {- Data.Time.Calendar -}         Day,
 >  {- Data.Time.Clock -}            UTCTime,
@@ -24,6 +25,7 @@ We make extensive use of the |liftM| and the Maybe monad.
 > import Control.Applicative.Error (Failing(..), maybeRead)
 > import Control.Monad (liftM)
 > import Control.Monad.Trans (liftIO, MonadIO)
+> import Data.Char (toLower)
 > import Data.Maybe (maybe, fromMaybe, fromJust, isJust, catMaybes)
 > import Data.Time.Calendar (Day, toGregorian)
 > import Data.Time.Clock (getCurrentTime, UTCTime)
