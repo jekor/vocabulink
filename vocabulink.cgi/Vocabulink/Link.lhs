@@ -27,11 +27,13 @@ well as its type. Practically, we also need to carry around information such as
 its link number (in the database) as well as a string representation of its
 type (for partially constructed links, which you'll see later).
 
-> data Link = Link {  linkNumber       :: Integer,
->                     linkTypeName     :: String,
->                     linkOrigin       :: String,
->                     linkDestination  :: String,
->                     linkType         :: LinkType }
+> data Link = Link {  linkNumber           :: Integer,
+>                     linkTypeName         :: String,
+>                     linkOrigin           :: String,
+>                     linkOriginLang       :: String,
+>                     linkDestination      :: String,
+>                     linkDestinationLang  :: String,
+>                     linkType             :: LinkType }
 
 We can associate 2 lexemes in many different ways. Because different linking
 methods require different information, they each need different representations
@@ -69,6 +71,21 @@ client or the database.
 >                 "link word"     -> "#DFDFFF"
 >                 "relationship"  -> "#F4DFEE"
 >                 _               -> "#FFDFFF"
+
+> linkCopyright :: Link -> App String
+> linkCopyright l = do
+>   t <- queryTuple'  "SELECT username, \
+>                            \extract(year from created), \
+>                            \extract(year from updated) \
+>                     \FROM link, member \
+>                     \WHERE member_no = author AND link_no = ?"
+>                     [toSql $ linkNumber l]
+>   return $ "© " ++ case t of
+>                      Just [a,c,u]  ->  let c'  = show (fromSql c :: Integer)
+>                                            u'  = show (fromSql u :: Integer)
+>                                            r   = c' == u' ? c' $ c' ++ "–" ++ u' in
+>                                        r ++ " " ++ (fromSql a)
+>                      _             ->  "unknown"
 
 Fully loading a link from the database requires a join. However, the join
 depends on the type of thi link. But we don't always need the type-specific
@@ -109,10 +126,12 @@ This returns the newly established link number.
 >   r <- withTransaction' $ do
 >     c <- asks appDB
 >     linkNo <- liftIO $ insertNo c
->       "INSERT INTO link (origin, destination, link_type, \
->                         \language, author) \
->                 \VALUES (?, ?, ?, 'en', ?)"
+>       "INSERT INTO link (origin, destination, \
+>                         \origin_language, destination_language, \
+>                         \link_type, author) \
+>                 \VALUES (?, ?, ?, ?, ?, ?)"
 >       [  toSql (linkOrigin l), toSql (linkDestination l),
+>          toSql (linkOriginLang l), toSql (linkDestinationLang l),
 >          toSql (linkTypeName l), toSql memberNo ]
 >       "link_link_no_seq"
 >     case linkNo of
@@ -152,7 +171,8 @@ Retrieving a partial link is simple.
 
 > getPartialLink :: Integer -> App (Maybe PartialLink)
 > getPartialLink linkNo = do
->   t <- queryTuple'  "SELECT link_no, link_type, origin, destination \
+>   t <- queryTuple'  "SELECT link_no, link_type, origin, destination, \
+>                            \origin_language, destination_language \
 >                     \FROM link WHERE link_no = ?" [toSql linkNo]
 >   return $ partialLinkFromValues =<< t
 
@@ -161,12 +181,14 @@ since we need to do so in our next function. Note that we leave the link's
 linkType undefined.
 
 > partialLinkFromValues :: [SqlValue] -> Maybe PartialLink
-> partialLinkFromValues [n, t, o, d] = Just $
->   PartialLink $ Link {  linkNumber       = fromSql n,
->                         linkTypeName     = fromSql t,
->                         linkOrigin       = fromSql o,
->                         linkDestination  = fromSql d,
->                         linkType         = undefined }
+> partialLinkFromValues [n, t, o, d, ol, dl] = Just $
+>   PartialLink $ Link {  linkNumber           = fromSql n,
+>                         linkTypeName         = fromSql t,
+>                         linkOrigin           = fromSql o,
+>                         linkDestination      = fromSql d,
+>                         linkOriginLang       = fromSql ol,
+>                         linkDestinationLang  = fromSql dl,
+>                         linkType             = undefined }
 > partialLinkFromValues _  = Nothing
 
 Once we have a partial link, it's a simple matter to turn it into a full link.
@@ -266,7 +288,7 @@ the JSON class. Oh well, I didn't want to write |readJSON| anyway.
 > displayLink :: Link -> Html
 > displayLink l = concatHtml [
 >   drawLinkSVG l,
->   thediv ! [theclass "link-details"] << linkTypeHtml (linkType l)]
+>   thediv ! [theclass "link-details"] << linkTypeHtml (linkType l) ]
 
 Displaying a partial link is similar. We need to do so in different contexts,
 so we have 2 different functions.
@@ -308,14 +330,15 @@ exceptions, etc.
 >       owner <- queryValue'  "SELECT author = ? FROM link WHERE link_no = ?"
 >                             [toSql memberNo, toSql linkNo]
 >       ops <- linkOperations linkNo $ maybe False fromSql owner
+>       copyright <- linkCopyright l'
 >       let orig  = linkOrigin l'
 >           dest  = linkDestination l'
 >       stdPage (orig ++ " -> " ++ dest) [
 >         CSS "link", JS "MochiKit", JS "raphael", JS "link-graph"] []
 >         [  drawLinkSVG l',
->            thediv ! [theclass "link-ops"] <<
->              [review, ops, paragraph ! [thestyle "clear: both"] << noHtml],
->            thediv ! [theclass "link-details"] << linkTypeHtml (linkType l') ]
+>            thediv ! [theclass "link-ops"] << [review, ops],
+>            thediv ! [theclass "link-details"] << linkTypeHtml (linkType l'),
+>            paragraph ! [theclass "copyright"] << copyright ]
 
 Each link can be ``operated on''. It can be reviewed (added to the member's
 review set) and deleted (marked as deleted). In the future, I expect operations
@@ -341,15 +364,15 @@ While Vocabulink is still small, it makes sense to have a page just for
 displaying all the (non-deleted) links in the system. This will probably go
 away shortly after public release.
 
-> linksPage :: App CGIResult
-> linksPage  = do
+> linksPage :: String -> (Int -> Int -> App (Maybe [PartialLink])) -> App CGIResult
+> linksPage title f = do
 >   (pg, n, offset) <- currentPage
->   ts <- latestLinks offset (n + 1)
+>   ts <- f offset (n + 1)
 >   case ts of
 >     Nothing  -> error "Error while retrieving links."
 >     Just ps  -> do
 >       pagerControl <- pager pg n $ offset + (length ps)
->       simplePage "Latest Links" [CSS "link"] [
+>       simplePage title [CSS "link"] [
 >         unordList (map partialLinkHtml (take n ps)) !
 >           [identifier "central-column", theclass "links"],
 >         pagerControl ]
@@ -366,16 +389,20 @@ should be reviewed again after public release.
 
 > linksContainingPage :: String -> App CGIResult
 > linksContainingPage focus = do
->   ts <- queryTuples'  "SELECT link_no, link_type, origin, destination \
->                       \FROM link WHERE NOT deleted \
->                       \AND (origin LIKE ? OR destination LIKE ?) \
+>   ts <- queryTuples'  "SELECT link_no, link_type, origin, destination, \
+>                              \origin_language, destination_language \
+>                       \FROM link \
+>                       \WHERE NOT deleted \
+>                         \AND (origin LIKE ? OR destination LIKE ?) \
 >                       \LIMIT 20"
 >                       [toSql focus, toSql focus]
 >   case ts of
 >     Nothing  -> error "Error while retrieving links."
->     Just ls  -> stdPage ("Links containing " ++ focus)
+>     Just ls  -> simplePage (  "Found " ++ (show $ length ls) ++
+>                               " link" ++ (length ls == 1 ? "" $ "s") ++ 
+>                               " containing \"" ++ focus ++ "\"")
 >                   [  CSS "link",
->                      JS "MochiKit", JS "raphael", JS "link-graph"] []
+>                      JS "MochiKit", JS "raphael", JS "link-graph"]
 >                   (linkFocusBox focus (catMaybes $ map partialLinkFromValues ls))
 
 When the links containing a search term have been found, we need a way to
@@ -434,7 +461,8 @@ JavaScript) based on the type of the link being created.
 >     Nothing   -> error "Unable to retrieve link types."
 >     Just ts'  -> do
 >       preview <- getInput "preview"
->       (status, xhtml) <- runForm' (establish ts')
+>       establishF <- establish ts'
+>       (status, xhtml) <- runForm' establishF
 >       case preview of
 >         Just _  -> do
 >           let preview' = case status of
@@ -469,26 +497,65 @@ JavaScript) based on the type of the link being created.
 Here's a form for creating a link. It gathers all of the required details
 (origin, destination, and link type details).
 
-> establish :: [String] -> AppForm Link
-> establish ts = mkLink  <$> plug (+++ stringToHtml " ") (linkNodeInput "Origin")
->                        <*> linkNodeInput "Destination"
->                        <*> linkTypeInput ts
+> establish :: [String] -> App (AppForm Link)
+> establish ts = do
+>   originPicker       <- languagePicker $ Left ()
+>   destinationPicker  <- languagePicker $ Right ()
+>   return (mkLink  <$> linkNodeInput "Origin"
+>                   <*> plug (+++ stringToHtml " ") originPicker
+>                   <*> linkNodeInput "Destination"
+>                   <*> destinationPicker
+>                   <*> linkTypeInput ts)
 
 When creating a link from a form, the link number must be undefined until the
 link is established in the database. Also, because of the way formlets work (or
 how I'm using them), we need to retrieve the link type name from the link type.
 
-> mkLink :: String -> String -> LinkType -> Link
-> mkLink orig dest t = Link {  linkNumber       = undefined,
->                              linkTypeName     = linkTypeNameFromType t,
->                              linkOrigin       = orig,
->                              linkDestination  = dest,
->                              linkType         = t }
+> mkLink :: String -> String -> String -> String -> LinkType -> Link
+> mkLink o ol d dl t = Link {  linkNumber           = undefined,
+>                              linkTypeName         = linkTypeNameFromType t,
+>                              linkOrigin           = o,
+>                              linkOriginLang       = ol,
+>                              linkDestination      = d,
+>                              linkDestinationLang  = dl,
+>                              linkType             = t }
 
 > linkNodeInput :: String -> AppForm String
 > linkNodeInput l = l `formLabel` F.input Nothing `check` ensures
 >   [  ((/= "")           , l ++ " is required."),
 >      ((<= 64) . length  , l ++ " must be 64 characters or shorter.") ]
+
+So that the member doesn't have to sort through the entire list of languages
+every time they go to establish a link, we want to sort, by frequency of usage,
+the languages which they've used in the past to the top.
+
+This takes an either parameter to signify origin language (Left) or destination
+language (Right). This is so that we can sort each separately so that if
+someone is adding a series of links they'll have to do less work and make fewer
+mistakes.
+
+> languagePicker :: Either () () -> App (AppForm String)
+> languagePicker side = do
+>   let side' = case side of
+>                 Left _   -> "origin"
+>                 Right _  -> "destination"
+>   memberNo <- asks appMemberNo
+>   langs <- (map pairUp) . fromJust <$> queryTuples'
+>              ("SELECT " ++ side' ++ "_language, name \
+>               \FROM link, language \
+>               \WHERE language.abbr = link." ++ side' ++ "_language \
+>                 \AND link.author = ? \
+>               \GROUP BY " ++ side' ++ "_language, name \
+>               \ORDER BY COUNT(" ++ side' ++ "_language) DESC")
+>              [toSql memberNo]
+>   allLangs <- (map pairUp) . fromJust <$> queryTuples'
+>                 "SELECT abbr, name FROM language ORDER BY abbr" []
+>   let choices = langs ++ [("","")] ++ allLangs
+>   return $ F.select choices (Just $ fst . head $ choices) `check` ensures
+>              [  ((/= "")  ,  side' ++ " language is required") ]
+>  where pairUp :: [SqlValue] -> (String,String)
+>        pairUp [x,y]  = (fromSql x, fromSql y)
+>        pairUp _      = error "Invalid pair."
 
 We have a bit of a challenge with link types. We want the form to adjust
 dynamically using JavaScript when a member chooses one of the link types from a
@@ -563,9 +630,10 @@ links (which are left in the database for people still reviewing them).
 
 > memberLinks :: Integer -> Int -> Int -> App (Maybe [PartialLink])
 > memberLinks memberNo offset limit = do
->   ts <- queryTuples'  "SELECT link_no, link_type, origin, destination \
->                       \FROM link WHERE NOT deleted \
->                       \AND author = ? \
+>   ts <- queryTuples'  "SELECT link_no, link_type, origin, destination, \
+>                              \origin_language, destination_language \
+>                       \FROM link \
+>                       \WHERE NOT deleted AND author = ? \
 >                       \ORDER BY link_no DESC \
 >                       \OFFSET ? LIMIT ?"
 >                       [toSql memberNo, toSql offset, toSql limit]
@@ -573,7 +641,8 @@ links (which are left in the database for people still reviewing them).
 
 > latestLinks :: Int -> Int -> App (Maybe [PartialLink])
 > latestLinks offset limit = do
->   ts <- queryTuples'  "SELECT link_no, link_type, origin, destination \
+>   ts <- queryTuples'  "SELECT link_no, link_type, origin, destination, \
+>                              \origin_language, destination_language \
 >                       \FROM link WHERE NOT deleted \
 >                       \ORDER BY link_no DESC \
 >                       \OFFSET ? LIMIT ?" [toSql offset, toSql limit]

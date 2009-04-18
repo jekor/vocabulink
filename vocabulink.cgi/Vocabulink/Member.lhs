@@ -1,4 +1,5 @@
-> module Vocabulink.Member (  login, logout, registerMember, getMemberNumber,
+> module Vocabulink.Member (  login, logout, registerMember,
+>                             getMemberNumber, getMemberName,
 >                             confirmMembership, emailConfirmationPage,
 >                             memberSupport ) where
 
@@ -67,6 +68,11 @@ put this step into password verification so that we don't need 2 queries.
 >   n <- queryValue' "SELECT member_no FROM member \
 >                    \WHERE username = ?" [toSql user]
 >   return $ maybe Nothing fromSql n
+
+> getMemberName :: Integer -> App (Maybe String)
+> getMemberName number = do
+>   maybe Nothing fromSql <$> queryValue' "SELECT username FROM member \
+>                                         \WHERE member_no = ?" [toSql number]
 
 To logout the member, we simply clear their auth cookie and redirect them
 somewhere sensible. If you want to send a client somewhere other than the front

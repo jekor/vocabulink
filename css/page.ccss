@@ -257,6 +257,8 @@ ul.hyperlinks:
 
 p.copyright:
   margin: 0
+  text-align: center
+  clear: both
 
 // The Pager is used to page results that won't fit on a single page.
 

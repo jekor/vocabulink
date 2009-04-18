@@ -93,7 +93,7 @@ function arcNodes(g, ss, reverse) {
 function drawLinks(focus, origs, dests) {
   var graph = $('graph');
   var vdims = getViewportDimensions();
-  vdims.h = Math.max(vdims.h - 200, 400);
+  vdims.h = Math.max(vdims.h - 275, 400);
   var gdims = getElementDimensions(graph);
   var graph = Raphael('graph', gdims.w, vdims.h);
   var g = {'graph': graph, 'width': gdims.w, 'height': vdims.h};

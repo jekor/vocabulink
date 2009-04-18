@@ -274,7 +274,15 @@ in the query string for the links page, it will do a search.
 
 > dispatch "GET" ["links"] = do
 >   contains <- getInput "contains"
->   maybe linksPage linksContainingPage contains
+>   maybe (linksPage "Latest Links" latestLinks) linksContainingPage contains
+> dispatch "GET" path@["links",x] = do
+>   case maybeRead x of
+>     Nothing  -> output404 path
+>     Just n   -> do
+>       memberName <- getMemberName n
+>       case memberName of
+>         Nothing  -> output404 path
+>         Just n'  -> linksPage ("Links by " ++ n') (memberLinks n)
 
 Creating a new link is a 2-step process. First, the member must request a page
 on which to enter information about the link. Then they @POST@ the details to
@@ -396,7 +404,8 @@ and associated functionality by using the stdPage function.
 >  where myLinks mn = do
 >          ls <- memberLinks mn 0 10
 >          return $ maybe (noHtml) (\l -> thediv ! [theclass "sidebox"] << [
->                                           h3 << "My Links",
+>                                           h3 << anchor ! [href ("/links/" ++ (show mn))] <<
+>                                             "My Links",
 >                                           unordList (map partialLinkHtml l) !
 >                                             [theclass "links"] ]) ls
 >        newLinks = do

@@ -5,40 +5,69 @@ We value privacy, and we do what we can to protect yours.
 
 * Information We Collect
 
-When you sign up as a member, we do not require any personally identifiable information. Providing your email address is optional and is only necessary if you want to recover a lost password in the future.
+When you sign up as a member, we require your email address. This is used to
+display a globally unique avatar ([[http://en.gravatar.com/][Gravatar]]) on your contributions. We may also
+use it to communicate with you. We will not sell your email address to a 3rd
+party.
 
 ** Logging
 
-We log each web request in a format similar to the [[http://en.wikipedia.org/wiki/Common_Log_Format][Common Log Format]], including the IP address and user agent. This is common practice for most websites. We intend to use this information to determine how people use the site in general, including what pages are popular, etc. We do not currently associate the information in our logs with information in our database, such as member names and member numbers.
+We log each web request in a format similar to the [[http://en.wikipedia.org/wiki/Common_Log_Format][Common Log Format]], including
+the IP address and user agent. This is common practice for most websites. We
+intend to use this information to determine how people use the site in general,
+including what pages are popular, etc. We do not currently associate the
+information in our logs with information in our database, such as member names
+and member numbers.
 
-Log data may be examined in detail by developers in the course of solving a technical problem or investigating abuse.
+Log data may be examined in detail by developers in the course of solving a
+technical problem or investigating abuse.
 
 ** Cookies
 
-If you are a member, we use a cookie to identify you. This cookie is used for authentication only. It contains your member number and IP address. Your IP address is stored in the cookie to help protect you from forged requests, but it is not stored in our database or otherwise associated with your member account.
+If you are a member, we use a cookie to identify you. This cookie is used for
+authentication. It contains your member number and IP address. Your IP address
+is stored in the cookie to help protect you from requests forged to look as if
+they came from you.
 
-** Web Bugs
-
-We do not currently use web bugs.
+We also use Google Analytics which will set its own cookies. You may reject
+these cookies.
 
 ** Study Statistics
 
-We collect statistics on your link reviews (studying). Keeping a history of your past reviews is necessary for the review algorithm(s) to schedule your next review time.
+We collect statistics on your link reviews (studying). Keeping a history of
+your past reviews is necessary for the review algorithm(s) to schedule your
+next review time.
 
-We intend to analyze this data in aggregate to improve the algorithms in the future. We don't intend to look at this information for individual members, but it may be necessary for us to do so in order to understand how the algorithms are functioning.
+We intend to analyze this data in aggregate to improve the algorithms in the
+future. We don't intend to look at this information for individual members, but
+it may be necessary for us to do so in order to understand how the algorithms
+are functioning.
 
 * Sharing Information with 3rd Parties
 
-We will not sell or share private with any 3rd parties unless you agree to release the information, except when required by law.
+We will not sell your private information (email address) with any 3rd parties
+unless you agree to release the information, except when required by law.
 
-Any information you add to the site, whether text or images, may be visible to anyone on the site. Do not post any private information you would not want to be publicly visible. Do not rely on content permissions to keep data you've posted private.
+Any information you add to the site, whether text or images, may be visible to
+anyone on the site. Do not post any private information you would not want to
+be publicly visible. Do not rely on content permissions to keep data you've
+posted private.
 
 * Deletion of Content
 
-Using the delete function on the site will not necessarily delete the underlying content. Typically, it will mark it for deletion at such a time as it is safe to do so (which may be never, in order to keep the database consistent).
+Using the delete function on the site will not necessarily delete the
+underlying content. Typically, it will mark it for deletion at such a time as
+it is safe to do so (which may be never, in order to keep the database
+consistent).
 
-For example, if you create a link word mnemonic, others are able to add the link to their review stack. If you decide later to delete it, the link will be removed from public view for users who have no added it to one of their review stacks, but it will still be visible to users who are reviewing it. Only if no user has added a link to their review stack will the link be permanently deleted.
+For example, if you create a link word mnemonic, others are able to add the
+link to their review stack. If you decide later to delete it, the link will be
+removed from public view for users who have no added it to one of their review
+stacks, but it will still be visible to users who are reviewing it. Only if no
+user has added a link to their review stack will the link be permanently
+deleted.
 
 * Changes and Updates
 
-We may update this privacy policy in the future. If we update our privacy policy, we will post a notice to the site.
+We may update this privacy policy in the future. If we update our privacy
+policy, we will post a notice to the site.

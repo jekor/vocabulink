@@ -137,7 +137,8 @@ The footer bar is more simple. It just includes some links to static content.
 >           anchor ! [href "/privacy"] << "privacy policy",
 >           anchor ! [href "/copyrights"] << "copyright policy",
 >           anchor ! [href "/disclaimer"] << "disclaimer"],
->        copy ]
+>        copy,
+>        googleAnalyticsTag ]
 
 We want a copyright notice at the bottom of every page. Since this is a
 copyright notice for dynamic content, we want it to be up-to-date with the
@@ -150,6 +151,18 @@ generation time (now).
 >     [  stringToHtml "© 2008–",
 >        stringToHtml ((show year) ++ " "),
 >        anchor ! [href "http://jekor.com/"] << "Chris Forno" ]
+
+> googleAnalyticsTag :: Html
+> googleAnalyticsTag = primHtml $ unlines [
+>   "<script type=\"text/javascript\">",
+>   "var gaJsHost = ((\"https:\" == document.location.protocol) ? \"https://ssl.\" : \"http://www.\");",
+>   "document.write(unescape(\"%3Cscript src='\" + gaJsHost + \"google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E\"));",
+>   "</script>",
+>   "<script type=\"text/javascript\">",
+>   "try {",
+>   "var pageTracker = _gat._getTracker(\"UA-73938-2\");",
+>   "pageTracker._trackPageview();",
+>   "} catch(err) {}</script>" ]
 
 This provides a simple login box for members. Actually, it's a box for a
 username, a box for a password, a login button, and a sign up button.
