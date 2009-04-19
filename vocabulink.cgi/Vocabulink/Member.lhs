@@ -95,9 +95,11 @@ optionally an email address.
 
 > register :: AppForm Registration
 > register = plug (\xhtml -> table << (xhtml +++ tfoot << tabularSubmit "Sign Up"))
->                 (Registration  <$> uniqueUser
->                                <*> uniqueEmailAddress
->                                <*> passConfirmed)
+>                 (reg  <$> uniqueUser
+>                       <*> uniqueEmailAddress
+>                       <*> passConfirmed
+>                       <*> termsOfUse `check` ensure (isJust) "You must agree to the Terms of Use.")
+>   where reg u e p _ = Registration u e p
 
 We're very permissive with usernames. They just need to be between 3 and 32
 characters long.
@@ -132,6 +134,13 @@ other reason than that it's common practice.
 >   passwords = (,) <$> passwd "Password" <*> passwd "Password (confirm)"
 >   equal (a,b) = a == b
 >   err = "Passwords do not match."
+
+> termsOfUse :: AppForm (Maybe String)
+> termsOfUse = plug (\xhtml -> tr << td ! [colspan 2, thestyle "text-align: center"] << [
+>                xhtml,
+>                stringToHtml " I agree to the ",
+>                anchor ! [href "/terms-of-use"] << "Terms of Use",
+>                stringToHtml "." ]) (checkbox' "")
 
 We don't currently do any validation on email addresses other than to check if
 the address is already in use.
@@ -288,8 +297,12 @@ Get a fresh support form (don't attempt to run it).
 >   res <- runForm form' (Right noHtml)
 >   case res of
 >     Left xhtml -> simplePage "Need Help?" []
->       [  thediv ! [identifier "central-column"] <<
->            xhtml ]
+>       [  thediv ! [identifier "central-column"] << [
+>            paragraph ! [thestyle "text-align: center"] <<
+>              [  stringToHtml "Have you checked the ",
+>                 anchor ! [href "/forum/help"] << "help forum",
+>                 stringToHtml "?" ],
+>            xhtml ] ]
 >     Right (email, problem, redirect') -> do
 >       supportAddress <- fromJust <$> getOption "staticDir"
 >       res' <- sendMail supportAddress "Support Request" $

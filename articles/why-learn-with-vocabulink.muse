@@ -1,5 +1,4 @@
 #title Why Learn with Vocabulink?
-#author jekor
 #date 2009-01-11 00:00:00 -0800
 
 * Why Links Instead of Flashcards?

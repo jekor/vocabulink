@@ -582,7 +582,10 @@ I'm deferring a proper implementation until it's absolutely necessary.
 Hopefully by then I will know more than I do now.
 
 > linkTypeInput :: [String] -> AppForm LinkType
-> linkTypeInput ts = (linkTypeS  <$> "Link Type" `formLabel'` linkSelect Nothing
+> linkTypeInput ts = (linkTypeS  <$> plug (\xhtml ->
+>                                            paragraph << [  xhtml,
+>                                                            helpButton "/article/understanding-link-types" Nothing])
+>                                      ("Link Type" `formLabel` linkSelect Nothing)
 >                                <*> pure Association
 >                                <*> pure Cognate
 >                                <*> fieldset' "link-word" linkTypeLinkWord

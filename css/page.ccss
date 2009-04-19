@@ -36,6 +36,10 @@ ol, ul:
   margin->
     top: 1.3em
     bottom: 1.3em
+  li:
+    margin->
+      top: 0.667em
+      bottom: 0.667em
 
 // tables still need 'cellspacing="0"' in the markup
 table:
@@ -219,22 +223,22 @@ tr.odd:hover, tr.even:hover:
   .sidebox:
     margin-bottom: 1.3em
     background-color: $bar_and_box_background
-    h3:
-      text-align: center
+    ul, ol:
       margin->
-        top: 0.667em
-        bottom: 0.667em
-    .links:
-      margin->
-        top: 0
-        bottom: 0.667em
         left: 0.667em
         right: 0.667em
+        top: 0
+        bottom: 0.667em
       li:
         margin-top: 0.333em
         text-align: center
         a:
           line-height: 1.667
+    h3:
+      text-align: center
+      margin->
+        top: 0.667em
+        bottom: 0.667em
 
 // These are mnemonic links.
 ul.links:
@@ -343,3 +347,18 @@ blockquote:
   margin->
     top: 1.486em
     bottom: 1.486em
+
+// Buttons!
+.button:
+  line-height: 1.3em
+  color: inherit
+  font-size: 0.875em
+  margin->
+    left: 0.667em
+    right: 0.667em
+  img:
+    vertical-align: middle
+
+button, input:
+  line-height: 1.3em
+  vertical-align: middle

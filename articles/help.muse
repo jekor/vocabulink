@@ -1,4 +1,11 @@
 #title Vocabulink Help
 #date 2008-11-17 00:00:00 -0800
 
-Check out the [[/forums][forums]].
+If you don't find what you need here, check the [[/forum/help][help forum]].
+
+Check out the following articles on how to get started and get the most out of
+Vocabulink.
+
+ - [[/article/how-to-get-started-with-vocabulink][How to Get Started with Vocabulink]]
+ - [[/article/understanding-link-types][Understanding Link Types]]
+ - [[/article/how-to-write-a-memorable-mnemonic-story][How to Write a Memorable Mnemonic Story]]

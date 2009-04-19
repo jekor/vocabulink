@@ -8,7 +8,8 @@ It turns out that using our program gives us some additional consistency
 (standard header and footer) and abstraction.
 
 > module Vocabulink.Article (  articlePage, articlesPage, refreshArticles,
->                              getArticle, articleBody ) where
+>                              getArticle, articleBody, getArticles,
+>                              articleLinkHtml ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -39,6 +40,7 @@ filename in the articles directory.
 >                           articleAuthor       :: Maybe String,
 >                           articlePublishTime  :: UTCTime,
 >                           articleUpdateTime   :: Maybe UTCTime,
+>                           articleSection      :: Maybe String,
 >                           articleTitle        :: String }
 
 Articles are actually used for articles, blog posts, and other static pages of
@@ -75,15 +77,16 @@ it.
 >   c <- asks appDB
 >   insert  <- liftIO $ prepare c
 >                "INSERT INTO article (author, publish_time, update_time, \
->                                     \title, filename) \
+>                                     \section, title, filename) \
 >                             \VALUES ((SELECT member_no FROM member \
->                                      \WHERE username = ?), ?, ?, ?, ?)"
+>                                      \WHERE username = ?), ?, ?, ?, ?, ?)"
 >   liftIO $ withTransaction c (\_ ->
 >     mapM_ (\a -> execute insert (rec a)) articles)
 >   redirect =<< referrerOrVocabulink
 >    where rec a = [  toSql $ articleAuthor       a,
 >                     toSql $ articlePublishTime  a,
 >                     toSql $ articleUpdateTime   a,
+>                     toSql $ articleSection      a,
 >                     toSql $ articleTitle        a,
 >                     toSql $ articleFilename     a ]
 
@@ -155,6 +158,7 @@ An accepted article's first lines will consist of something like:
  #author jekor
  #date 2009-01-11 16:04 -0800
  #update 2009-02-28 14:55 -0800
+ #section main
 \end{verbatim}
 
 \begin{description}
@@ -163,6 +167,10 @@ An accepted article's first lines will consist of something like:
 \item[@#date@] is the date in ISO-8601 format (with spaces between the date,
                time, and timezone).
 \item[@#update@] is an optional update time (in the same format as @#date@).
+\item[@#section@] is the section of the site to publish the article. For static
+                  content "articles" such as the privacy policy, don't include
+                  a section. For now, only "main" is supported with our simple
+                  publishing system.
 \end{description}
 
 We're going to go ahead and use fromJust here because we don't care about how
@@ -173,12 +181,14 @@ we're notified of errors. Publishing articles is not (yet) member-facing.
 >   (mkArticle  <$$>  (museDirective "title")
 >               <|?>  (Nothing, museDir "author" >> authorP)
 >               <||>  (museDir "date" >> dateTimeP)
->               <|?>  (Nothing, museDir "update" >> dateTimeP))
->     where mkArticle title author date update =
+>               <|?>  (Nothing, museDir "update" >> dateTimeP)
+>               <|?>  (Nothing, Just <$> museDirective "section"))
+>     where mkArticle title author date update section =
 >             Article {  articleFilename     = undefined,
 >                        articleAuthor       = author,
 >                        articlePublishTime  = fromJust date,
 >                        articleUpdateTime   = update,
+>                        articleSection      = section,
 >                        articleTitle        = title }
 
 A muse directive looks sort of like a C preprocessor directive.
@@ -212,15 +222,16 @@ Retrieve an article by its filename (path, whatever you want to call it).
 > getArticle filename = do
 >   (>>= articleFromTuple) <$>
 >     queryTuple' "SELECT filename, author, publish_time, \
->                        \update_time, title \
+>                        \section, update_time, title \
 >                 \FROM article WHERE filename = ?" [toSql filename]
 
 > articleFromTuple :: [SqlValue] -> Maybe Article
-> articleFromTuple [f,a,p,u,t]  = Just $
+> articleFromTuple [f,a,p,u,s,t]  = Just $
 >   Article {  articleFilename     = fromSql f,
 >              articleAuthor       = fromSql a,
 >              articlePublishTime  = fromSql p,
 >              articleUpdateTime   = fromSql u,
+>              articleSection      = fromSql s,
 >              articleTitle        = fromSql t }
 > articleFromTuple _            = Nothing
 
@@ -229,8 +240,11 @@ Here's how we get official articles.
 > getArticles :: App (Maybe [Article])
 > getArticles = do
 >   rs <- queryTuples' "SELECT filename, author, publish_time, \
->                             \update_time, title \
->                      \FROM article" []
+>                             \update_time, section, title \
+>                      \FROM article \
+>                      \WHERE publish_time < CURRENT_TIMESTAMP \
+>                        \AND section = 'main' \
+>                      \ORDER BY publish_time DESC" []
 >   case rs of
 >     Nothing   -> return Nothing
 >     Just rs'  -> return $ Just $ catMaybes $ map articleFromTuple rs'
@@ -259,8 +273,10 @@ Display a listing of published articles to the client.
 >   memberName <- asks appMemberName
 >   case articles of
 >     Nothing  -> error "Error retrieving articles"
->     Just as  -> simplePage "Articles" []
->       [unordList $ map articleLinkHtml as, refresh memberName]
+>     Just as  -> simplePage "Articles" [CSS "article"]
+>       [  thediv ! [theclass "article"] << [
+>            unordList $ map articleLinkHtml as,
+>            refresh memberName ] ]
 >  where refresh member = case member of
 >                           Just "jekor"  ->
 >                             form ! [action "/articles", method "POST"] <<

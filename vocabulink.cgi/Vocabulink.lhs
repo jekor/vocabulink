@@ -132,7 +132,7 @@ environment.
 > main = do  cp' <- getConfig
 >            case cp' of
 >              Left e    -> print e
->              Right cp  -> runFastCGIConcurrent' forkIO 10 (do
+>              Right cp  -> runFastCGIConcurrent' forkIO 2048 (do
 >                c <- liftIO connect
 >                handleErrors' c (runApp c cp handleRequest))
 
@@ -219,10 +219,9 @@ articles. We use articles because the system for managing them exists already
 Each @.html@ file is actually an HTML fragment. These happen to be generated
 from Muse Mode files by Emacs, but we don't really care where they come from.
 
-> dispatch "GET" ["privacy"]     =  articlePage "privacy"
-> dispatch "GET" ["help"]        =  articlePage "help"
-> dispatch "GET" ["copyrights"]  =  articlePage "copyrights"
-> dispatch "GET" ["disclaimer"]  =  articlePage "disclaimer"
+> dispatch "GET" ["privacy"]       =  articlePage "privacy"
+> dispatch "GET" ["help"]          =  articlePage "help"
+> dispatch "GET" ["terms-of-use"]  =  articlePage "terms-of-use"
 
 Other articles can be created without recompilation. We just have to rescan the
 filesystem for them. They also live in the @/article@ namespace (specifically
@@ -394,13 +393,14 @@ and associated functionality by using the stdPage function.
 >   memberNo <- asks appMemberNo
 >   my <- maybe (return noHtml) (myLinks) memberNo
 >   latest <- newLinks
+>   articles <- latestArticles
 >   let article = isJust memberNo ? "welcome-member" $ "welcome-non-member"
 >   article' <- getArticle article
 >   body <- maybe (return $ h1 << "Welcome to Vocabulink") articleBody article'
 >   stdPage "Welcome to Vocabulink" [JS "MochiKit", JS "page"] [] [
 >     thediv ! [identifier "main-content"] << body,
 >     thediv ! [identifier "sidebar"] << [
->       latest, my ] ]
+>       latest, my, articles ] ]
 >  where myLinks mn = do
 >          ls <- memberLinks mn 0 10
 >          return $ maybe (noHtml) (\l -> thediv ! [theclass "sidebox"] << [
@@ -415,6 +415,12 @@ and associated functionality by using the stdPage function.
 >                                             "Latest Links",
 >                                           unordList (map partialLinkHtml l) !
 >                                             [theclass "links"] ]) ls
+>        latestArticles = do
+>          ls <- getArticles
+>          return $ maybe (noHtml) (\l -> thediv ! [theclass "sidebox"] << [
+>                                           h3 << anchor ! [href "/articles"] <<
+>                                             "Latest Articles",
+>                                           unordList (map articleLinkHtml l)]) ls
 
 %include Vocabulink/Utils.lhs
 %include Vocabulink/CGI.lhs

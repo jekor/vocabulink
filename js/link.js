@@ -1,7 +1,7 @@
 connect(window, 'onload', setupSignals);
 
 function setupSignals() {
-    var linkTypeSelector = $$('select[name=input2]')[0];
+    var linkTypeSelector = $$('select[name=input4]')[0];
     connect(linkTypeSelector, 'onchange', partial(showLinkEditor, linkTypeSelector));
     signal(linkTypeSelector, 'onchange');
 }

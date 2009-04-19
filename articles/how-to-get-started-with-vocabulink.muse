@@ -1,10 +1,101 @@
 #title How to Get Started with Vocabulink
 #date 2009-01-11 00:00:00 -0800
-
-* Become a Member or Log In
-
-Click the [[/member/signup][Sign Up]] link. Membership is free.
+#section main
 
 * Find Some Links for Review or Create Your Own
 
+Click [[/links][Latest Links]] to begin browsing through links. Or you can search for a
+link containing a particular word by using the search box above.
+
+If you don't find a link that works for you, consider creating your own. The
+easiest way to create a link is to search for a link containing the word you're
+interested in.[1]
+
+** How to Create a New Link
+
+To demonstrate, let's learn the word "lerni" ("to learn" in Esperanto).
+
+ 1. Enter =lerni= into the search box at the top of the page and click =Search
+    Links=.
+ 2. The search results page will tell you that it found 0 (or more) links
+    containing =lerni=. Click on a =new link= node (oval) to the right of
+    =lerni=.[2]
+ 3. You'll now be on the =Create a Link= page and the =Origin= side of the link
+    will be pre-filled with =lerni=.
+ 4. Choose =Esperanto= from the drop-down menu next to the origin.
+ 5. Fill in =to learn= in the destination box and choose =English= as the
+    destination language.
+ 6. Because this link is a cognate (see [[/article/understanding-link-types][Understanding Link Types]]), choose
+    =Cognate= from the =Link Type= drop-down menu.
+ 7. Click =Preview= to see what your link will look like when it's created.
+ 8. Once you're satisfied, click =Link=. This will establish the link.
+ 9. Add the link to your review set by clicking the =Review= button to the left
+    of the newly created link.
+
+Congratulations! Continue on to see how to review your newly created link.
+
 * Review Your Links Regularly
+
+For best results, you should review your links daily. You can review more
+frequently than once a day, but you shouldn't go too long without a review. If
+you wait too long, you risk forgetting the link. You also risk having links
+pile up which discourages you from reviewing (creating a negative feedback
+cycle).
+
+* How to Review
+
+In the header bar you will see "n links to review" where n is the number of
+links you should review before calling it a day. Click the link and you'll be
+taken to the link that our algorithm has determined you should review next.
+
+You'll be prompted with the left (origin) side of the link and the right
+(destination) side will be covered by a question mark. Click the question mark
+(or press the space bar) once you've remembered the link or are sure that you
+don't remember it.
+
+After the answer is revealed, you'll see 6 buttons labelled from 0 to 5. Use
+the buttons to rate how well you remembered the link. You can also use the
+numbers 0-5 on your keyboard.
+
+ 5 ::
+   You remembered immediately and perfectly!
+ 4 ::
+   You remembered correctly, but not immediately.
+ 3 ::
+   It took you a while to remember, but you did. Your answer is 95% correct or better.
+ 2 ::
+   You answered incorrectly, but when you see the answer you slap your forehead because you almost had it.
+ 1 ::
+   You answered incorrectly. The correct answer seems vaguely familiar.
+ 0 ::
+   You had no idea what the answer to this was, and you might not even remember reviewing it before.
+
+The important thing to remember here is the cutoff. An answer of 3 or more is
+considered good enough for now and we'll reschedule the link for review. An
+answer of 2 or less means that you haven't learned the link yet and we'll move
+it to the end of the review queue.
+
+** Don't Give Up Too Soon!
+
+Do not reveal the destination of the link if you don't immediately remember it.
+Spend some time calmly pondering what the destination could be. This will give
+your brain a chance to find the association, or if it's not found it will
+create a stronger one next time (once you've revealed the destination).
+
+* Setting Up Your Browser to Display Foreign Writing Systems
+
+Vocabulink makes use of many different written languages. To take full
+advantage of the site, your browser will need Unicode support and you'll need
+some Unicode fonts. Most modern browsers and operating systems already support
+Unicode.
+
+If you are seeing boxes instead of letters, see [[http://unicode.org/help/display_problems.html][this article]] for help.
+
+Footnotes: 
+[1] You can also navigate directly to the [[/link][new link]] page. However, using the
+    search page might save you some time if someone has already created a link
+    that you can use.
+
+[2] In almost all cases you'll want to click on the "new link" node to the
+    right of the word you're interested in learning.
+

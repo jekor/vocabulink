@@ -330,6 +330,7 @@ CREATE TABLE article (
        author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
        publish_time TIMESTAMP (0) WITH TIME ZONE NOT NULL,
        update_time TIMESTAMP (0) WITH TIME ZONE,
+       section TEXT,
        title TEXT
 );
 COMMENT ON COLUMN article.publish_time IS 'A blog post is published at this time. If it''s before this time, the post is only visible to the owner.';
@@ -338,7 +339,8 @@ CREATE RULE "replace article" AS
     ON INSERT TO "article"
     WHERE EXISTS (SELECT TRUE FROM article WHERE filename = NEW.filename)
     DO INSTEAD (UPDATE article SET update_time = NEW.update_time,
-                                   title = NEW.title
+                                   title = NEW.title,
+                                   section = NEW.section
                 WHERE filename = NEW.filename);
 
 -- Forums

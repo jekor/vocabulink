@@ -229,13 +229,12 @@ directly on an object).
 > commentForm :: String -> Maybe String -> Maybe String ->
 >                AppForm (String, Maybe Integer)
 > commentForm _ email parent = plug (\xhtml -> concatHtml [
->   image ! [  width "60", height "60",
+>   image ! [  width "60", height "60", theclass "avatar",
 >              src $ gravatarWith (maybe "" (map toLower) email)
 >                                 Nothing (size 60) (Just "wavatar") ],
 >   thediv ! [theclass "speech soft"] << xhtml,
 >   thediv ! [theclass "signature"] << [
->     anchor ! [href "http://daringfireball.net/projects/markdown/basics"] <<
->       "Formatting Help",
+>     helpButton "http://daringfireball.net/projects/markdown/basics" (Just "Formatting Help"),
 >     isJust parent  ?  button << "Preview" +++ stringToHtml " " +++
 >                       submit "" "Send Reply"
 >                    $  submit "" "Create" ] ])
@@ -342,7 +341,7 @@ avoiding any intermediate representation which we don't yet need.
 >   return $ thediv ! [  theclass "comment toplevel",
 >                        thestyle $ "margin-left:" ++ (show $ l'*2) ++ "em" ] << [
 >     paragraph ! [theclass "timestamp"] << formatSimpleTime t',
->     image ! [  width "60", height "60",
+>     image ! [  width "60", height "60", theclass "avatar",
 >                src $  gravatarWith (map toLower e')
 >                                    Nothing (size 60) (Just "wavatar") ],
 >     thediv ! [theclass "speech"] << displayCommentBody c',

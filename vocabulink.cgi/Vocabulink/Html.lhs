@@ -9,9 +9,9 @@ functions. An example of this is |linkList|.
 
 > module Vocabulink.Html (  Dependency(..), stdPage, simplePage,
 >                           linkList, breadcrumbs, options, tableRows, accesskey,
->                           markdownToHtml,
+>                           helpButton, markdownToHtml,
 >                           AppForm, runForm, runForm', formLabel, formLabel',
->                           tabularInput, tabularSubmit,
+>                           checkbox', tabularInput, tabularSubmit,
 >                           pager, currentPage,
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
 >                           (<<), (+++), (!), showHtmlFragment,
@@ -47,6 +47,7 @@ nice fallback, but it can mask an underlying problem.
 >                         check, ensure, ensures, checkM, ensureM)
 > import Text.Pandoc (  readMarkdown, writeHtml, defaultParserState,
 >                       defaultWriterOptions )
+> import Text.Formlets as F
 > import Text.XHtml.Strict
 > import Text.XHtml.Strict.Formlets (XHtmlForm)
 
@@ -68,6 +69,7 @@ footer. It also includes @page.css@.
 >   output' $ renderHtml $ header <<
 >     [  thetitle << t,
 >        concatHtml (map includeDep ([CSS "page"] ++ deps)),
+>        primHtml "<!--[if IE]><link rel=\"stylesheet\" type=\"text/css\" href=\"http://s.vocabulink.com/css/ie.css\" /><![endif]-->",
 >        concatHtml head' ] +++
 >     body << [  headerB,
 >                jsNotice,
@@ -135,8 +137,7 @@ The footer bar is more simple. It just includes some links to static content.
 >     [  linkList
 >        [  anchor ! [href "/help"] << "help",
 >           anchor ! [href "/privacy"] << "privacy policy",
->           anchor ! [href "/copyrights"] << "copyright policy",
->           anchor ! [href "/disclaimer"] << "disclaimer"],
+>           anchor ! [href "/terms-of-use"] << "terms of use"],
 >        copy,
 >        googleAnalyticsTag ]
 
@@ -231,6 +232,18 @@ Curiously, the accesskey attribute is missing from Text.XHtml.
 > accesskey :: String -> HtmlAttr
 > accesskey = strAttr "accesskey"
 
+It's nice to have little help buttons and such where necessary. Making them
+easier to create means that we're more likely to do so, which leads to a more
+helpful user interface.
+
+Currently this uses an icon from the FamFamFam "Mini" set
+(http://www.famfamfam.com/lab/icons/mini/).
+
+> helpButton :: String -> Maybe String -> Html
+> helpButton url label' = anchor ! [href url, theclass "button"] << [
+>                           image ! [src "http://s.vocabulink.com/icon_info.gif"],
+>                           maybe noHtml (\x -> stringToHtml $ " " ++ x) label' ]
+
 \subsection{Other Markup}
 
 A modified version of Markdown (Pandoc Markdown) is used in comments and link
@@ -270,6 +283,14 @@ Here's an alterate version of the above which also adds a paragraph.
 > formLabel' :: Monad m => String -> XHtmlForm m a -> XHtmlForm m a
 > formLabel' text = plug (\xhtml -> paragraph << (label << (text ++ ": ") +++ xhtml))
 
+Curiously, the formlets library is missing a checkbox implementation. Thanks to
+Chris Done (http://chrisdone.com/blog/html/2008-12-14-haskell-formlets-composable-web-form-construction-and-validation.html)
+for this one.
+
+> checkbox' :: Monad m => String -> XHtmlForm m (Maybe String)
+> checkbox' l = optionalInput box where
+>   box name' =  input ! [thetype "checkbox", name name'] +++ l
+
 Take a form and a submit button label, run it, and return either the form to
 display (with errors, if any) or the result of the form.
 
@@ -279,7 +300,7 @@ attempts to validate against the environment. If it fails, it returns a form
 (as Html) to display to the client, but if it succeeds it returns a value of
 the type of the form.
 
-s is either a label or custom Html for the submit button (or noHtml if you
+|s| is either a label or custom Html for the submit button (or noHtml if you
 don't want a submit button).
 
 > runForm :: XHtmlForm (AppT IO) a -> Either String Html -> App (Either Html a)
