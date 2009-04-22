@@ -82,6 +82,13 @@ Spend some time calmly pondering what the destination could be. This will give
 your brain a chance to find the association, or if it's not found it will
 create a stronger one next time (once you've revealed the destination).
 
+* Changing Your Avatar
+
+When you post on the [[/forums][forums]], you'll be identified by your [[http://gravatar.com/][gravatar]]. If you
+haven't setup a gravatar before, you'll get a randomly selected one. To change
+your gravatar, sign up at [[http://gravatar.com/][gravatar.com]] with the same email address you used to
+sign up here. Note that it takes about 5 minutes for your gravatar to update.
+
 * Setting Up Your Browser to Display Foreign Writing Systems
 
 Vocabulink makes use of many different written languages. To take full

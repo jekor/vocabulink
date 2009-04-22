@@ -255,8 +255,8 @@ COMMENT ON COLUMN link_type.relation IS 'For most link types, an individual link
 INSERT INTO link_type (name, description, relation)
      VALUES ('association', 'A simple association with no attached meaning', NULL),
             ('cognate', 'A sound-alike or borrowed word', NULL),
-            ('link word', 'A story derived from a native-language link word', 'link_type_link_word'),
-            ('relationship', 'A relationship between 2 native words and a corresponding pair in a foreign language', 'link_type_relationship');
+            ('link word', 'A story derived from a native-language link word', 'link_type_link_word');
+--            ('relationship', 'A relationship between 2 native words and a corresponding pair in a foreign language', 'link_type_relationship');
 
 CREATE TABLE link (
        link_no SERIAL PRIMARY KEY,

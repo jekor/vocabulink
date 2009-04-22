@@ -211,6 +211,7 @@ the front page.
 > sendMail :: String -> String -> String -> App (Maybe ())
 > sendMail to subject body = do
 >   let body' = unlines [  "From: vocabulink@vocabulink.com",
+>                          "Return-Path: vocabulink@vocabulink.com",
 >                          "To: <" ++ to ++ ">",
 >                          "Subject: " ++ subject,
 >                          "",

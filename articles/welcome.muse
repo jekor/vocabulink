@@ -1,5 +1,6 @@
 #title Welcome to Vocabulink
 #date 2009-03-24 21:54:00 -0700
+#section main
 
 Vocabulink is devoted to helping you learn foreign languages as quickly and
 effortlessly as possible. We do this by focusing only on vocabulary. Contrary
@@ -46,7 +47,7 @@ an entertaining story.
 According to some estimates[1], there are nearly 1 million words in the English
 language. That seems very daunting until you realize that the word "the" makes
 up 7% of the total words we read[2]. Following "the", the word "of" accounts
-for 3.5%. The next word, "and" makes up another 2.8% or so. With only 3 words
+for 3.5%. The next word, "and", makes up another 2.8% or so. With only 3 words
 you can read something like 13% of written English! You only need 135 words to
 read 50%[3]. And 135 words can be learned in a week with the right stories.
 

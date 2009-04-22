@@ -376,6 +376,10 @@ for a long time.
 
 \subsection{Everything Else}
 
+For Google Webmaster tools, we need to respond to a certain URL.
+
+> dispatch "GET" ["google46b9909165f12901.html"] = output' ""
+
 It would be nice to automatically respond with "Method Not Allowed" on URIs
 that exist but don't make sense for the requested method (presumably @POST@).
 However, we need to take a simpler approach because of how the dispatch method
@@ -394,7 +398,7 @@ and associated functionality by using the stdPage function.
 >   my <- maybe (return noHtml) (myLinks) memberNo
 >   latest <- newLinks
 >   articles <- latestArticles
->   let article = isJust memberNo ? "welcome-member" $ "welcome-non-member"
+>   let article = isJust memberNo ? "welcome-member" $ "welcome"
 >   article' <- getArticle article
 >   body <- maybe (return $ h1 << "Welcome to Vocabulink") articleBody article'
 >   stdPage "Welcome to Vocabulink" [JS "MochiKit", JS "page"] [] [

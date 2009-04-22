@@ -60,21 +60,21 @@ of their slogan. What they wanted to say was "It won't leak into your pocket
 and embarrass you" but they ended up saying "It won't leak in your pocket and
 make you pregnant."[2]
 
-* <literal><span style="color: #AA0077"></literal>Relationship<literal></span></literal>
+; * <literal><span style="color: #AA0077"></literal>Relationship<literal></span></literal>
 
-The relationship link is an experimental link type. Vocabulink is about
-research just as much as it's about learning, and in time we will be able to
-figure out how useful this link type is. A relationship link says that 2 words
-are related in the same or a similar way that 2 other words are related. If
-you've taken an SAT test, you're probably familiar with these types of word
-associations. For example:
+; The relationship link is an experimental link type. Vocabulink is about
+; research just as much as it's about learning, and in time we will be able to
+; figure out how useful this link type is. A relationship link says that 2 words
+; are related in the same or a similar way that 2 other words are related. If
+; you've taken an SAT test, you're probably familiar with these types of word
+; associations. For example:
 
-> cat is to fish as
-> snake is to mouse
+; > cat is to fish as
+; > snake is to mouse
 
-These associations can be subjective. In fact, truly objective associations are
-probably rare. Often times the association is multi-faceted and draws upon
-subtle generalizations from your experience of the world.
+; These associations can be subjective. In fact, truly objective associations are
+; probably rare. Often times the association is multi-faceted and draws upon
+; subtle generalizations from your experience of the world.
 
 Footnotes: 
 [1]  If you want to get technical, cognates are only words that share common ancestry. However, for study purposes we may make use of [[http://en.wikipedia.org/wiki/False_cognate][False cognates]].
