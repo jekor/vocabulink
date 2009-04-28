@@ -195,10 +195,6 @@ the front page.
 >     Nothing  -> return Nothing
 >     Just h   -> do
 >       let email = unlines [
->                     "From: vocabulink@vocabulink.com",
->                     "To: <" ++ (regEmail r) ++ ">",
->                     "Subject: Welcome to Vocabulink",
->                     "",
 >                     "Welcome to Vocabulink.",
 >                     "",
 >                     "Click http://www.vocabulink.com/member/confirmation/" ++
@@ -211,14 +207,15 @@ the front page.
 
 > sendMail :: String -> String -> String -> App (Maybe ())
 > sendMail to subject body = do
->   let body' = unlines [  "From: vocabulink@vocabulink.com",
->                          "Return-Path: vocabulink@vocabulink.com",
->                          "To: <" ++ to ++ ">",
+>   let body' = unlines [  "To: <" ++ to ++ ">",
 >                          "Subject: " ++ subject,
 >                          "",
 >                          body ]
 >   res <- liftIO $ try $ system $
->            (  "echo -e \""   ++ body'  ++ "\" | \
+>            (  "export MAILUSER=vocabulink; \
+>               \export MAILHOST=vocabulink.com; \
+>               \export MAILNAME=Vocabulink; \
+>               \echo -e \""   ++ body'  ++ "\" | \
 >               \sendmail \""  ++ to     ++ "\"" )
 >   case res of
 >     Right ExitSuccess  -> return $ Just ()
