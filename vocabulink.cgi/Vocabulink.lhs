@@ -376,7 +376,7 @@ for a long time.
 
 \subsection{Everything Else}
 
-For Google Webmaster tools, we need to respond to a certain URL.
+For Google Webmaster Tools, we need to respond to a certain URL.
 
 > dispatch "GET" ["google46b9909165f12901.html"] = output' ""
 

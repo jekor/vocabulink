@@ -172,7 +172,7 @@ We have to put the sign up button before the login form to get them to display
 in the correct order because they're both floated to the right.
 
 Until we switch this over to using formlets, we need to manually set the inputs
-to @input0@ and @input1@ since that's what the formlets-based login page
+to @input0@ and @input2@ since that's what the formlets-based login page
 expects.
 
 > loginBox :: Html

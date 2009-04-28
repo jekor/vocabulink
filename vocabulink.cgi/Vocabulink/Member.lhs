@@ -158,7 +158,8 @@ the address is already in use.
 
 > emailAddress :: AppForm String
 > emailAddress = (plug (tabularInput "Email address") $ F.input Nothing) `check` ensures
->   [  ((/= ""), "Enter an email address.") ]
+>   [  ((/= ""), "Enter an email address."),
+>      ((<= 320) . length, "Your email address must be 320 characters or shorter.") ]
 
 Create a page with a new user form or register the user and redirect them to
 the front page.

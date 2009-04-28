@@ -2,34 +2,30 @@
   width: 50%
   margin-left: auto
   margin-right: auto
-
-dl:
-  border: 3px double #CCC
-  padding: 0.667em 0.667em 0 0.667em
-  margin: 1.3em
-  dt:
-    float: left
-    clear: left
-    line-height: 1.3em
-    width: 3em
-    text-align: right
+  dl:
+    border: 3px double #CCC
+    padding: 0.667em 0.667em 0 0.667em
+    margin: 1.3em
+    dt:
+      float: left
+      clear: left
+      line-height: 1.3em
+      width: 3em
+      text-align: right
+      font-weight: bold
+      &:after:
+        content: ":"
+    dd:
+      line-height: 1.3em
+      margin->
+        left: 4.3em
+        bottom: 0.667em
+  ul:
+    list-style-type: disc
+    margin-left: 1em
+  ol:
+    list-style-type: decimal
+    margin-left: 1.5em
+  code:
+    font-family: Courier New, monospace
     font-weight: bold
-    &:after:
-      content: ":"
-  dd:
-    line-height: 1.3em
-    margin->
-      left: 4.3em
-      bottom: 0.667em
-
-ul:
-  list-style-type: disc
-  margin-left: 1em
-
-ol:
-  list-style-type: decimal
-  margin-left: 1.5em
-
-code:
-  font-family: Courier New, monospace
-  font-weight: bold

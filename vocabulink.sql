@@ -366,7 +366,7 @@ CREATE TABLE comment (
        comment_no SERIAL PRIMARY KEY,
        author INTEGER NOT NULL REFERENCES member (member_no) ON UPDATE CASCADE,
        time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-       comment TEXT,
+       comment TEXT NOT NULL,
        parent_no INTEGER REFERENCES comment (comment_no)
 );
 

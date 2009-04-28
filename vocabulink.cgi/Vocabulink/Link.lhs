@@ -423,7 +423,7 @@ as the destination''.
 >   script << primHtml
 >     (  "connect(window, 'onload', partial(drawLinks," ++
 >        encode focus ++ "," ++
->        jsonNodes ("/link?input1=" ++ focus) origs ++ "," ++
+>        jsonNodes ("/link?input2=" ++ focus) origs ++ "," ++
 >        jsonNodes ("/link?input0=" ++ focus) dests ++ "));" ),
 >   thediv ! [identifier "graph"] << noHtml ]
 >  where partitioned   = partition ((== focus) . linkOrigin . pLink) links

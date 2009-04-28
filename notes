@@ -23,6 +23,7 @@ enough to get going in a language
 *** \i /usr/share/postgresql-8.3/contrib/pgcrypto.sql
 ** install tablefunc (used for storing trees)
 *** \i /usr/share/postgresql-8.3/contrib/tablefunc.sql
+** CREATE LANGUAGE plpgsql;
 ** \c vocabulink vocabulink
 ** \i path/to/vocabulink.sql
 * Articles

@@ -142,9 +142,9 @@ em:
   clear: both
 
 .even:
-  background-color: #EEE
+  background-color: $bar_and_box_background
 tr.odd:hover, tr.even:hover:
-  background-color: #DDD
+  background-color: $bar_and_box_border
 
 // Top-Level Page Elements
 
@@ -162,6 +162,7 @@ tr.odd:hover, tr.even:hover:
     top: 0.5em
     bottom: 0.5em
   font-family: Verdana, sans-serif
+  background: url($images + "header-gradient.gif") repeat-x;
   a.logo:
     display: block
     float: left
@@ -202,6 +203,7 @@ tr.odd:hover, tr.even:hover:
   padding->
     top: 0.5em
     bottom: 0.5em
+  background: url($images + "footer-gradient.gif") repeat-x;
   *:
     margin->
       top: 0.125em
@@ -273,8 +275,8 @@ p.copyright:
     bottom: 1.3em
   // Group controls in a box so that they can be logically associated.
   .controls:
-    border: 1px solid black
-    background-color: #DDD
+    border: 1px solid $bar_and_box_border
+    background-color: $bar_and_box_background
     padding: 0.5em
     .next:
       margin-left: 2em
@@ -284,7 +286,7 @@ p.copyright:
   // Grey out controls that can't be used.
   span:
     &.prev, &.next:
-      color: #666
+      color: $bar_and_box_border
 
 .breadcrumbs:
   li:

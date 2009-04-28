@@ -2,7 +2,7 @@
 #date 2008-11-13 00:00:00 -0800
 #section main
 
-For あるく -> to walk, it's easy to think of the link word "ark". And you could make up a mnemonic link such as "Noah walked around the ark."
+For あるく ➝ to walk, it's easy to think of the link word "ark". And you could make up a mnemonic link such as "Noah walked around the ark."
 
 On its own, that would be a pretty weak mnemonic. While it might be somewhat vivid and memorable to you now, you may forget the association at some point. One end of the association is strong: When hearing あるく you probably will think of "ark" which will probably make you think of Noah. But will you remember that the action was "walk"?
 
@@ -25,3 +25,5 @@ You'll find that as you begin, with what you thought was a weak mnemonic, the ve
 * What to Avoid
 
 Avoid introducing similar meanings in the story if possible. This may be unavoidable in some cases where in English we don't distinguish between 2 meanings. In that case, don't worry about it. Experience will eventually differentiate the meaning. It's better to have some idea of what a word means initially, so that you can learn the nuance of its meaning through reading and listening.
+
+Try using a less-recognizable form of a word if you need to use a comparison. For example, if you're trying to write a story for みず ➝ water, instead of using the word "rain" use "downpour", "drenching", or another word that emphasizes water more than weather.
