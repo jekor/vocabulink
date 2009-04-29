@@ -1,0 +1,36 @@
+#!/sbin/runscript
+# Copyright 1999-2004 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Header: /var/cvsroot/gentoo-x86/www-servers/lighttpd/files/spawn-fcgi.initd,v 1.2 2007/04/02 12:46:08 uberlord Exp $
+
+SPAWNFCGI_PID="/var/run/vocabulink-fcgi.pid"
+
+depend() {
+        need net
+        after postgresql-8.3
+}
+
+start() {
+        local my_end
+
+        ebegin "Starting cms-fcgi"
+        ${SPAWNFCGI} -f "${FCGI_PROGRAM} 2>> ${FCGI_ERROR_LOG}" -a ${FCGI_ADDRESS} -p ${FCGI_PORT} -u ${USER} -g ${GROUP}
+
+        # Write the PID to a file.
+        FCGI_PPID=`ps -ef | grep ${FCGI_PROGRAM} | head -n 1 | tr -s ' ' | cut -d ' ' -f 2`
+        echo ${FCGI_PPID} > ${SPAWNFCGI_PID}
+
+        eend 0
+}
+
+stop() {
+        ebegin "Stopping spawn-fcgi"
+        if ! kill `cat ${SPAWNFCGI_PID}` ; then
+	    eend $?
+	    return 1
+	fi
+        if [ -w ${SPAWNFCGI_PID} ]; then
+                rm ${SPAWNFCGI_PID}
+        fi
+        eend 0
+}

@@ -19,8 +19,9 @@ Vocabulink.tex : $(lhss)
 
 install : vocabulink.fcgi
 	install -o root -g root $(fcgi) /usr/local/bin
-	-killall $(fcgi)
-	spawn-fcgi -f "/usr/local/bin/$(fcgi) 2>> /tmp/vocabulink.error.log" -p 10033 -u lighttpd -g lighttpd
+# The following is now handled by an init script.
+#	-killall $(fcgi)
+#	spawn-fcgi -f "/usr/local/bin/$(fcgi) 2>> /tmp/vocabulink.error.log" -p 10033 -u lighttpd -g lighttpd
 
 tags : $(lhss)
 	hasktags -e $^
