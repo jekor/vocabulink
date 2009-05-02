@@ -1,0 +1,17 @@
+This is Vocabulink, the program that powers www.vocabulink.com.
+
+This source distribution consists mostly of a literate Haskell CGI application,
+but also contains the JavaScript, SQL, and CSS used by the site as well. It
+contains everything you need to create a working copy of Vocabulink. It does
+not include any articles, database records, or any other content from the site.
+Such content is copyrighted by its respective owners and has NOT been released
+to you under the GNU Affero Public license.
+
+How to Build
+============
+Just run gmake. The program has not been built for Cabal as it's not intended
+to be a general purpose application or library.
+
+Contact
+=======
+Questions, comments, suggestions? Contact <jekor@jekor.com>.

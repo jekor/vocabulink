@@ -31,3 +31,7 @@ Try using a less-recognizable form of a word if you need to use a comparison. Fo
 Avoid making up words when you're searching for a link word. It's especially tempting to do so when the word you're creating a mnemonic for sounds like a compound word. Avoid doing this because a made up word won't spring to mind as readily as a word you've used for years.
 
 Don't just take the first story that comes to mind! Ponder it for a while. See if you can work the definition or link word into the story in more ways or using more of the senses.
+
+* Other Notes
+
+Make sure that you're conveying the correct meaning of the word. Look through some example sentences in the dictionary to make sure that you're not mistranslating the word or applying native-language meanings that don't apply to the foreign-language word. This is especially important for short, common words like particles.

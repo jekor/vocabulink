@@ -1,10 +1,29 @@
+% Copyright 2008, 2009 Chris Forno
+
+% This file is part of Vocabulink.
+
+% Vocabulink is free software: you can redistribute it and/or modify it under
+% the terms of the GNU Affero General Public License as published by the Free
+% Software Foundation, either version 3 of the License, or (at your option) any
+% later version.
+
+% Vocabulink is distributed in the hope that it will be useful, but WITHOUT ANY
+% WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+% A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+% details.
+
+% You should have received a copy of the GNU Affero General Public License
+% along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
+
 \section{Utility Functions}
 
 Here are some functions that aren't specific to Vocabulink, but that don't
-exist in any libraries I know of.
+exist in any libraries I know of. We also use this module to export some
+oft-used functions for other modules.
 
 > module Vocabulink.Utils (         if', (?), safeHead, currentDay, currentYear,
->                                   basename, translate, formatTime', (<$$>),
+>                                   formatSimpleTime, basename, translate, (<$$>),
+>                                   sendMail,
 >  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
 >  {- Control.Applicative -}        pure, (<$>), (<*>),
 >  {- Control.Applicative.Error -}  Failing(..), maybeRead,
@@ -18,26 +37,46 @@ exist in any libraries I know of.
 >  {- Data.Time.LocalTime -}        ZonedTime,
 >  {- System.Locale -}              defaultTimeLocale, rfc822DateFormat) where
 
-We make extensive use of the |liftM| and the Maybe monad.
+Vocabulink deals with all strings as UTF8. Every part of the website
+potentially makes use of foreign writing systems. Occasionally I also like
+using other Unicode characters.
 
 > import Codec.Binary.UTF8.String (encodeString, decodeString)
+
+Applicative was first introduced to Vocabulink for working with Formlets.
+However, it seems to be a style that the Haskell community is using more and
+more.
+
 > import Control.Applicative (pure, (<$>), (<*>))
 > import Control.Applicative.Error (Failing(..), maybeRead)
+> import Control.Exception (try)
+
+We make particularly extensive use of |liftM| and the Maybe monad.
+
 > import Control.Monad (liftM)
 > import Control.Monad.Trans (liftIO, MonadIO)
 > import Data.Char (toLower)
 > import Data.Maybe (maybe, fromMaybe, fromJust, isJust, catMaybes)
+
+Time is notoriously difficult to deal with in Haskell. It gets especially
+tricky when working with the database and libraries that expect different
+formats.
+
 > import Data.Time.Calendar (Day, toGregorian)
 > import Data.Time.Clock (getCurrentTime, UTCTime)
-> import Data.Time.Format (formatTime, FormatTime)
+> import Data.Time.Format (formatTime)
 > import Data.Time.LocalTime (  getCurrentTimeZone, utcToLocalTime,
 >                               LocalTime(..), ZonedTime)
+> import System.Cmd (system)
 > import System.Locale (defaultTimeLocale, rfc822DateFormat)
+> import System.Exit (ExitCode(..))
 
 It's often useful to have the compactness of the traditional tertiary operator
 rather than an if then else. The |(?)| operator can be used like:
 
 \begin{quote}|Bool ? trueExpression $ falseExpression|\end{quote}
+
+I think I originally saw this on the Haskell wiki.
 
 > infixl 1 ?
 > (?)  :: Bool -> a -> a -> a
@@ -54,7 +93,7 @@ empty list, we need to provide a default:
 > safeHead d []     = d
 > safeHead _ (x:_)  = x
 
-Return the  current day (in the server's timezone).
+Return the current day. I'm not sure that this is useful on its own.
 
 > currentDay :: IO Day
 > currentDay = do
@@ -63,7 +102,7 @@ Return the  current day (in the server's timezone).
 >   let (LocalTime day _) = utcToLocalTime tz now
 >   return day
 
-Return the current year (in the server's timezone) as a 4-digit number.
+Return the current year as a 4-digit number.
 
 > currentYear :: IO Integer
 > currentYear = do
@@ -71,7 +110,13 @@ Return the current year (in the server's timezone) as a 4-digit number.
 >   let (year, _, _) = toGregorian day
 >   return year
 
-For files from forms, we can't make assumptions about the path separator.
+Displaying a time is a common enough task.
+
+> formatSimpleTime :: UTCTime -> String
+> formatSimpleTime = formatTime defaultTimeLocale "%a %b %d, %Y %R"
+
+For files we receive via HTTP, we can't make assumptions about the path
+separator.
 
 > basename :: FilePath -> FilePath
 > basename = reverse . takeWhile (`notElem` "/\\") . reverse
@@ -82,12 +127,29 @@ then performs them on the list.
 > translate :: (Eq a) => [(a, a)] -> [a] -> [a]
 > translate sr = map (\s -> maybe s id $ lookup s sr)
 
-> formatTime' :: FormatTime t => String -> t -> String
-> formatTime' = formatTime defaultTimeLocale
-
 Often it's handy to be able to lift an operation into 2 monads with little
-verbosity. Parsec may have claimed this before me, but |<$$>| just makes too
-much sense as 2 |<$>|s.
+verbosity. Parsec may have claimed this operator name before me, but |<$$>|
+just makes too much sense as 2 |<$>|s.
 
 > (<$$>) :: (Monad m1, Monad m) => (a -> r) -> m (m1 a) -> m (m1 r)
 > (<$$>) = liftM . liftM
+
+Sending mail is pretty easy. We just deliver it to a local MTA. Even if we have
+no MTA running locally, there are sendmail emulators that will handle the SMTP
+forwarding for us so that we don't have to deal with SMTP here.
+
+> sendMail :: String -> String -> String -> IO (Maybe ())
+> sendMail to subject body = do
+>   let body' = unlines [  "To: <" ++ to ++ ">",
+>                          "Subject: " ++ subject,
+>                          "",
+>                          body ]
+>   res <- try $ system $
+>            (  "export MAILUSER=vocabulink; \
+>               \export MAILHOST=vocabulink.com; \
+>               \export MAILNAME=Vocabulink; \
+>               \echo -e \""   ++ body'  ++ "\" | \
+>               \sendmail \""  ++ to     ++ "\"" )
+>   case res of
+>     Right ExitSuccess  -> return $ Just ()
+>     _                  -> return Nothing

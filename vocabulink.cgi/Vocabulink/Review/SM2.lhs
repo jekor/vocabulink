@@ -1,13 +1,31 @@
+% Copyright 2008, 2009 Chris Forno
+
+% This file is part of Vocabulink.
+
+% Vocabulink is free software: you can redistribute it and/or modify it under
+% the terms of the GNU Affero General Public License as published by the Free
+% Software Foundation, either version 3 of the License, or (at your option) any
+% later version.
+
+% Vocabulink is distributed in the hope that it will be useful, but WITHOUT ANY
+% WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+% A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+% details.
+
+% You should have received a copy of the GNU Affero General Public License
+% along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
+
 \section{Review Algorithm SM2}
 
-> module Vocabulink.Review.SM2 (reviewInterval) where
+This is SuperMemo algorithm SM-2
+(\url{http://www.supermemo.com/english/ol/sm2.htm})
 
-SuperMemo algorithm SM-2 (\url{http://www.supermemo.com/english/ol/sm2.htm})
+> module Vocabulink.Review.SM2 (reviewInterval) where
 
 > import Vocabulink.App
 > import Vocabulink.DB
 
-Each algorithm needs to export a |reviewInterval| function which takes some
+Each algorithm needs to export a |reviewInterval| function that accepts some
 basic information about a completed review and returns the time (in seconds
 from now) to schedule the next review for. |reviewInterval| will be called with
 an active transaction, so it must not commit anything to the database (such as
@@ -68,16 +86,16 @@ of the previous interval (|p|) and the easiness factor (|ef|).
 
 The easiness factor is the core calculation of the SM-2 algorithm.
 
-We have a unique advantage in that it's possible for us to determine EF
+We have a unique advantage in that it's possible for us to determine the EF
 (easiness factor) of an item through collaboration. However, I'm not sure if
 that's necessary or will pay off as much as moving to a newer algorithm. But
-for now we'll stick to separate EF for each member.
+for now we'll stick to a separate EF for each member.
 
 > easinessFactor' :: Double -> Integer -> Double
 > easinessFactor' ef q = max 1.3 $ ef + (0.1 - x * (0.08 + x * 0.02))
 >     where x :: Double = fromIntegral $ 5 - q
 
-For the SM2 algorithm to work, we need to keep track of a couple variables for
+For the SM-2 algorithm to work, we need to keep track of a couple variables for
 each link. This establishes the variable record in the database the first time
 a link is reviewed.
 

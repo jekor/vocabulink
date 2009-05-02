@@ -1,6 +1,24 @@
+% Copyright 2008, 2009 Chris Forno
+
+% This file is part of Vocabulink.
+
+% Vocabulink is free software: you can redistribute it and/or modify it under
+% the terms of the GNU Affero General Public License as published by the Free
+% Software Foundation, either version 3 of the License, or (at your option) any
+% later version.
+
+% Vocabulink is distributed in the hope that it will be useful, but WITHOUT ANY
+% WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+% A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+% details.
+
+% You should have received a copy of the GNU Affero General Public License
+% along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
+
 \section{Forum}
 
-Vocabulink uses a custom forums implementation. It does so for a couple reasons:
+Vocabulink uses a custom forums implementation. I created it for a couple
+reasons:
 
 \begin{enumerate}
 
@@ -10,10 +28,12 @@ evolution of the site).
 
 \item Much of the forum logic is based on comments, which is common to the
 forums, articles, and most importantly, links. Once we have comment threads,
-the forums are almost free.
+the forums come almost for free. (Note that comments on articles and links are
+currently supported but will be soon.)
 
 \item We reduce a source of security problems, and potentially maintenance
-problems as well.
+problems as well. (Most software is implemented in PHP which is notorious for
+security problems.)
 
 \end{enumerate}
 
@@ -32,7 +52,7 @@ problems as well.
 > import qualified Text.XHtml.Strict.Formlets as F
 
 The Forums page is a high-level look into Vocabulink's forums. Each forum is
-part of a group of like forums. We have a placeholder for an eventual search
+part of a group of similar forums. We have a placeholder for an eventual search
 function which will search through the text of all comments in all forums.
 Also, we include an administrative interface for creating new groups.
 
@@ -64,8 +84,14 @@ Also, we include an administrative interface for creating new groups.
 >              else noHtml ]
 >     _                        -> outputError 403 "Access Denied" []
 
+The dependencies for forum pages are all the same.
+
 > forumDeps :: [Dependency]
 > forumDeps = [CSS "forum", JS "MochiKit", JS "forum", JS "form"]
+
+Displaying an individual group of forums is a little bit tougher than it would
+seem (we have to also support the administrative interface for creating new
+forums within the group).
 
 > renderForumGroup :: String -> App Html
 > renderForumGroup g = do
@@ -101,6 +127,10 @@ Also, we include an administrative interface for creating new groups.
 >                        tabularInput "Icon (64x64)" $ afile "forum-icon",
 >                        tabularSubmit "Create" ] ]
 
+Displaying individual forums within the group is easier. Each forum requires an
+icon. This allows faster visual navigation to the forum of interest when first
+arriving at the top-level forums page.
+
 > renderForum :: [SqlValue] -> Html
 > renderForum [n, t, i]  =
 >   anchor ! [href $ "/forum/" ++ (fromSql n)] << [
@@ -109,9 +139,9 @@ Also, we include an administrative interface for creating new groups.
 >     stringToHtml $ fromSql t ]
 > renderForum _       = stringToHtml "Error retrieving forum."
 
-Create a forum group. For now, we're not concerned with error handling and
-such. Maybe later when bringing on volunteer moderators or someone else I'll be
-motivated to make this nicer.
+Creating a forum group is a rare administrative action. For now, we're not
+concerned with error handling and such. Maybe later when bringing on volunteer
+moderators or someone else I'll be motivated to make this nicer.
 
 > createForumGroup :: String -> App CGIResult
 > createForumGroup s = do
@@ -122,8 +152,7 @@ motivated to make this nicer.
 >                         [toSql s]
 >   redirect =<< referrerOrVocabulink
 
-For now, we just upload to the icons directory in our static directory. Once we
-have need for more file uploads we'll generalize this if necessary.
+For now, we just upload to the icons directory in our static directory.
 
 > createForum :: App CGIResult
 > createForum = do
@@ -149,8 +178,15 @@ have need for more file uploads we'll generalize this if necessary.
 >     _ -> error "Please fill in the form completely. \
 >                \Make sure to include an icon."
 
+The directory for forum icons is located within the static directory (and hence
+served from the static subdomain).
+
 > iconDir :: App String
 > iconDir = (++ "/icons") . fromJust <$> getOption "staticdir"
+
+Each forum page is a table of topics. Each topic lists the title (a description
+of the topic), how many replies the topic has received, who created the topic,
+and the time of the latest topic.
 
 > forumPage :: String -> App CGIResult
 > forumPage forum = do
@@ -177,74 +213,12 @@ have need for more file uploads we'll generalize this if necessary.
 >              tbody << tableRows (tc:topics),
 >              tfoot << tr << noHtml ] ]
 
-> newTopicPage :: String -> App CGIResult
-> newTopicPage n = withRequiredMemberNumber $ \_ -> do
->   email <- asks appMemberEmail
->   memberName <- fromJust <$> asks appMemberName
->   res <- runForm (forumTopicForm memberName email) $ Right noHtml
->   case res of
->     Left xhtml -> simplePage "New Forum Topic" forumDeps
->       [thediv ! [theclass "comments"] << xhtml]
->     Right (title, (body, _)) -> do
->       r <- createTopic (title, body) n
->       case r of
->         Nothing  -> simplePage "Error Creating Forum Topic" forumDeps []
->         Just _   -> redirect $ "../" ++ n
+This returns a list of forum topics, sorted by creation date, as HTML rows. It
+saves us some effort by avoiding any intermediate representation which we don't
+yet need.
 
-> forumTopicForm :: String -> Maybe String -> AppForm (String, (String, Maybe Integer))
-> forumTopicForm memberName email =
->   commentBox ((,)  <$> plug (thediv <<) ("Topic Title" `formLabel`
->                           (  plug (\xhtml -> thediv ! [theclass "title"] << xhtml) $
->                              F.input Nothing) `check` ensures
->     [  ((> 0)     . length, "Title must not be empty."),
->        ((<=  80)  . length, "Title must be 80 characters or shorter.") ])
->                    <*> commentForm memberName email Nothing)
-
-> createTopic :: (String, String) -> String -> App (Maybe Integer)
-> createTopic (t, c) fn = do
->   memberNo' <- asks appMemberNo
->   case memberNo' of
->     Nothing        -> return Nothing
->     Just memberNo  -> withTransaction' $ do
->       c' <- asks appDB
->       commentNo <- storeComment memberNo c Nothing
->       case commentNo of
->         Nothing  -> liftIO $ rollback c' >> throwDyn ()
->         Just n   -> do
->           r <- quickStmt'  "INSERT INTO forum_topic \
->                            \(forum_name, title, root_comment, last_comment) \
->                            \VALUES (?, ?, ?, ?)"
->                            [toSql fn, toSql t, toSql n, toSql n]
->           case r of
->             Nothing  -> liftIO $ rollback c' >> throwDyn ()
->             Just _   -> return n
-
-> commentBox :: Monad m => XHtmlForm m a -> XHtmlForm m a
-> commentBox = plug (\xhtml -> thediv ! [theclass "comment toplevel editable"] << xhtml)
-
-|parent| should be set to the comment number of the comment this is in reply to
-(for replies) or nothing if this comment begins a new thread (or is commenting
-directly on an object).
-
-> commentForm :: String -> Maybe String -> Maybe String ->
->                AppForm (String, Maybe Integer)
-> commentForm _ email parent = plug (\xhtml -> concatHtml [
->   image ! [  width "60", height "60", theclass "avatar",
->              src $ gravatarWith (maybe "" (map toLower) email)
->                                 Nothing (size 60) (Just "wavatar") ],
->   thediv ! [theclass "speech soft"] << xhtml,
->   thediv ! [theclass "signature"] << [
->     helpButton "http://daringfireball.net/projects/markdown/basics" (Just "Formatting Help"),
->     isJust parent  ?  button << "Preview" +++ stringToHtml " " +++
->                       submit "" "Send Reply"
->                    $  submit "" "Create" ] ])
->     ((\a b -> (a, maybeRead =<< b))  <$> (F.textarea Nothing `check` ensures
->                 [  ((> 0)       . length, "Comment must not be empty."),
->                    ((<= 10000)  . length, "Comment must be 10,000 characters or shorter.") ])
->           <*> (nothingIfNull $ F.hidden parent))
-
-Return a list of forum topics as HTML rows. This saves us some effort by
-avoiding any intermediate representation which we don't yet need.
+The structure of the comment relations make sorting by latest comment a little
+bit more difficult and a task for later.
 
 > forumTopicRows :: String -> App [Html]
 > forumTopicRows t = do
@@ -280,8 +254,94 @@ avoiding any intermediate representation which we don't yet need.
 >                    stringToHtml la' ] ]
 >              topicRow _ = td << "Error retrieving topic."
 
-> formatSimpleTime :: UTCTime -> String
-> formatSimpleTime = formatTime' "%a %b %d, %Y %R"
+The page for creating a new topic is very plain. In fact, it doesn't even have
+a way to preview the text of the first comment to the topic.
+
+> newTopicPage :: String -> App CGIResult
+> newTopicPage n = withRequiredMemberNumber $ \_ -> do
+>   email <- asks appMemberEmail
+>   memberName <- fromJust <$> asks appMemberName
+>   res <- runForm (forumTopicForm memberName email) $ Right noHtml
+>   case res of
+>     Left xhtml -> simplePage "New Forum Topic" forumDeps
+>       [thediv ! [theclass "comments"] << xhtml]
+>     Right (title, (body, _)) -> do
+>       r <- createTopic (title, body) n
+>       case r of
+>         Nothing  -> simplePage "Error Creating Forum Topic" forumDeps []
+>         Just _   -> redirect $ "../" ++ n
+
+The form for creating the topic is very simple. All we need is a title and the
+body of the first comment (topics can't be created without a root comment).
+
+> forumTopicForm ::  String -> Maybe String ->
+>                    AppForm (String, (String, Maybe Integer))
+> forumTopicForm memberName email =
+>   commentBox ((,)  <$> plug (thediv <<) ("Topic Title" `formLabel`
+>                           (  plug (\xhtml -> thediv ! [theclass "title"] << xhtml) $
+>                              F.input Nothing) `check` ensures
+>     [  ((> 0)     . length, "Title must not be empty."),
+>        ((<=  80)  . length, "Title must be 80 characters or shorter.") ])
+>                    <*> commentForm memberName email Nothing)
+
+This creates the topic in the database given the title and root comment body.
+
+> createTopic :: (String, String) -> String -> App (Maybe Integer)
+> createTopic (t, c) fn = do
+>   memberNo' <- asks appMemberNo
+>   case memberNo' of
+>     Nothing        -> return Nothing
+>     Just memberNo  -> withTransaction' $ do
+>       c' <- asks appDB
+>       commentNo <- storeComment memberNo c Nothing
+>       case commentNo of
+>         Nothing  -> liftIO $ rollback c' >> throwDyn ()
+>         Just n   -> do
+>           r <- quickStmt'  "INSERT INTO forum_topic \
+>                            \(forum_name, title, root_comment, last_comment) \
+>                            \VALUES (?, ?, ?, ?)"
+>                            [toSql fn, toSql t, toSql n, toSql n]
+>           case r of
+>             Nothing  -> liftIO $ rollback c' >> throwDyn ()
+>             Just _   -> return n
+
+The following HTML is pretty messy. I now know why threaded comments are rare:
+they're difficult to implement! It's not just the database threading that's
+difficult but the display as well.
+
+> commentBox :: Monad m => XHtmlForm m a -> XHtmlForm m a
+> commentBox = plug (\xhtml -> thediv ! [theclass "comment toplevel editable"] <<
+>                                xhtml)
+
+Creating the form for a comment requires knowing the comment's parent (as a
+comment number). If this comment is not a reply to another comment (in the case
+of root comments), it sould be passed as Nothing.
+
+The comment form displays the member's gravatar as a visual hint to what the
+comment will eventually look like when posted.
+
+> commentForm :: String -> Maybe String -> Maybe String ->
+>                AppForm (String, Maybe Integer)
+> commentForm _ email parent = plug (\xhtml -> concatHtml [
+>   image ! [  width "60", height "60", theclass "avatar",
+>              src $ gravatarWith (maybe "" (map toLower) email)
+>                                 Nothing (size 60) (Just "wavatar") ],
+>   thediv ! [theclass "speech soft"] << xhtml,
+>   thediv ! [theclass "signature"] << [
+>     helpButton  "http://daringfireball.net/projects/markdown/basics"
+>                 (Just "Formatting Help"),
+>     isJust parent  ?  button << "Preview" +++ stringToHtml " " +++
+>                       submit "" "Send Reply"
+>                    $  submit "" "Create" ] ])
+>     ((\a b -> (a, maybeRead =<< b))  <$> (F.textarea Nothing `check` ensures
+>                 [  ((> 0)       . length,  "Comment must not be empty."),
+>                    ((<= 10000)  . length,  "Comment must be 10,000 characters \
+>                                            \or shorter.") ])
+>           <*> (nothingIfNull $ F.hidden parent))
+
+We're finally getting to the core of the forum: individual topic pages. The
+forum topic page displays the entire comment thread. Eventually it will
+probably need paging.
 
 > forumTopicPage :: String -> Integer -> App CGIResult
 > forumTopicPage fn i = do
@@ -310,6 +370,14 @@ avoiding any intermediate representation which we don't yet need.
 >               stringToHtml $ fromSql title ],
 >             thediv ! [theclass "comments"] << commentsHtml ]
 >     _          -> output404 ["forum",fn,show i]
+
+Displaying forum comments is complicated by the fact that we insert hidden
+comment forms along with each comment if the page is going to a confirmed
+member. This allows instant dynamic interactivity. However, it comes at the
+cost of inflated HTML pages.
+
+There is a more efficient way to do this that involves more JavaScript, but for
+now we keep it simple.
 
 > displayForumComment :: Integer -> [SqlValue] -> App Html
 > displayForumComment i [n, l, u, e, t, c]  = do
@@ -349,12 +417,12 @@ avoiding any intermediate representation which we don't yet need.
 >     thediv ! [theclass "reply-options"] << reply ]
 > displayForumComment _ _             = return $ paragraph << "Error retrieving comment."
 
-We don't want comment display going out-of-sync with comment previewing.
+Each comment uses (Pandoc-extended) Markdown syntax.
 
 > displayCommentBody :: String -> Html
 > displayCommentBody = markdownToHtml
 
-This returns the new comment number.
+Storing a comment establishes and returns its unique comment number.
 
 > storeComment :: Integer -> String -> Maybe Integer -> App (Maybe Integer)
 > storeComment memberNo body parent = do
@@ -362,6 +430,13 @@ This returns the new comment number.
 >   liftIO $ insertNo c  "INSERT INTO comment (author, comment, parent_no) \
 >                        \VALUES (?, ?, ?)" [toSql memberNo, toSql body, toSql parent]
 >                        "comment_comment_no_seq"
+
+Replying to a comment is also a complex matter (are you noticing a trend
+here?). The complexity is mainly because we need to update information in a
+couple relations. Determining the number of comments or the time of the latest
+comment in a thread is possible with SQL, but it can be expensive. So when
+adding a comment to a thread we update the number of comments in the thread and
+the last comment time.
 
 > replyToForumComment :: App CGIResult
 > replyToForumComment = do
@@ -373,7 +448,8 @@ This returns the new comment number.
 >       parent <- getInput "parent"
 >       res <- runForm (commentForm mn email parent) $ Right noHtml
 >       case res of
->         Left xhtml           -> outputJSON [  ("html", showHtmlFragment $ thediv ! [theclass "comment editable"] << xhtml),
+>         Left xhtml           -> outputJSON [  ("html", showHtmlFragment $ thediv !
+>                                                          [theclass "comment editable"] << xhtml),
 >                                               ("status", "incomplete") ]
 >         Right (body,parent')  -> do
 >           memberNo <- fromJust <$> asks appMemberNo
@@ -404,9 +480,12 @@ This returns the new comment number.
 >                             ("status", "accepted") ]
 >     _                  -> outputUnauthorized
 
+Previewing comments is a truely asynchronous process (the first one
+implemented). It makes for complicated JavaScript but a smoother interface.
+
 We need to make sure that this doesn't go out of sync with displayComment.
 
-Does this lead to XSS vulnerabilities?
+Also, does this lead to XSS vulnerabilities?
 
 > commentPreview :: App CGIResult
 > commentPreview = do

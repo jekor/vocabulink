@@ -1,9 +1,26 @@
+% Copyright 2008, 2009 Chris Forno
+
+% This file is part of Vocabulink.
+
+% Vocabulink is free software: you can redistribute it and/or modify it under
+% the terms of the GNU Affero General Public License as published by the Free
+% Software Foundation, either version 3 of the License, or (at your option) any
+% later version.
+
+% Vocabulink is distributed in the hope that it will be useful, but WITHOUT ANY
+% WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+% A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+% details.
+
+% You should have received a copy of the GNU Affero General Public License
+% along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
+
 \section{Html}
 
 Much of Vocabulink consists of simple, program-generated HTML. Rather than use
 templates or HTML in strings, we use an HTML combinator library
 (Text.XHtml.Strict). This makes it almost certain that our HTML will be well
-formed (although we have guarantee that it will be valid). But more
+formed (although we have no guarantee that it will be valid). But more
 importantly, it allows us to use abstraction to get higher-level HTML-based
 functions. An example of this is |linkList|.
 
@@ -19,8 +36,7 @@ functions. An example of this is |linkList|.
 >                           paragraph, pre, h1, h2, h3, br, anchor, href, script,
 >                           image, unordList, form, action, method, enctype,
 >                           hidden, label, textfield, password, button, submit,
->                           fieldset, legend, afile,
->                           textarea, select, widget,
+>                           fieldset, legend, afile, textarea, select, widget,
 >                           thestyle, src, width, height, value, name,
 >                           cols, rows, colspan, caption,
 >                           table, thead, tbody, tfoot, th, tr, td,
@@ -33,11 +49,6 @@ functions. An example of this is |linkList|.
 > import Vocabulink.CGI
 > import Vocabulink.Review.Html
 > import Vocabulink.Utils
-
-Currently Text.XHtml does not automatically handle UTF-8 output. We have to
-carefully encode everything we need to. If we don't, non-ASCII (non-iso8859-1?)
-characters will be converted to entities. This automatic conversion may be a
-nice fallback, but it can mask an underlying problem.
 
 > import Control.Arrow (second)
 > import Data.List (intersperse, find)
@@ -57,19 +68,26 @@ Most pages depend on some external CSS and/or JavaScript files.
 
 |stdPage| takes a title, a list of dependencies, and list of HTML objects to
 place into the body of the page. It automatically adds a standard header and
-footer. It also includes @page.css@.
+footer. It also includes @page.css@ and conditionally includes an Internet
+Explorer-specific stylesheet for the few cases when there's no other way to
+work around a defect in Internet Explorer that would otherwise seriously impact
+usability.
 
-|stdPage| expects title to already be encoded as UTF-8.
+If any JavaScript files are required, |stdPage| will automatically add a
+@<noscript>@ warning to the top of the page.
 
 > stdPage :: String -> [Dependency] -> [Html] -> [Html] -> App CGIResult
-> stdPage t deps head' body' = do
+> stdPage title' deps head' body' = do
 >   headerB  <- headerBar
 >   footerB  <- footerBar
 >   setHeader "Content-Type" "text/html; charset=utf-8"
 >   output' $ renderHtml $ header <<
->     [  thetitle << t,
+>     [  thetitle << title',
 >        concatHtml (map includeDep ([CSS "page"] ++ deps)),
->        primHtml "<!--[if IE]><link rel=\"stylesheet\" type=\"text/css\" href=\"http://s.vocabulink.com/css/ie.css\" /><![endif]-->",
+>        primHtml  "<!--[if IE]>\
+>                  \<link rel=\"stylesheet\" type=\"text/css\" \
+>                  \href=\"http://s.vocabulink.com/css/ie.css\" />\
+>                  \<![endif]-->",
 >        concatHtml head' ] +++
 >     body << [  headerB,
 >                jsNotice,
@@ -82,15 +100,15 @@ footer. It also includes @page.css@.
 >                     Just _   -> noscript << paragraph <<
 >                       "This page requires JavaScript for some functionality."
 
-Often we want a simple page where the title and header are the same.
+Often we just need a simple page where the title and header are the same.
 
 > simplePage :: String -> [Dependency] -> [Html] -> App CGIResult
 > simplePage t deps h = stdPage t deps [] $ [ h1 << t ] ++ h
 
-Each dependency is expressed as the path from the root of the static subdomain
-(for now, @s.vocabulink.com@) to the file. Do not include the file suffix
-(@.css@ or @.js@), it will be appended automatically. These are meant for
-inclusion in the @<head>@ of the page.
+Each dependency is expressed as the path from the root of the static files
+subdomain (for now, @s.vocabulink.com@) to the file. Do not include the file
+suffix (@.css@ or @.js@); it will be appended automatically. These are meant
+for inclusion in the @<head>@ of the page.
 
 > includeDep :: Dependency -> Html
 > includeDep (CSS css) =
@@ -100,10 +118,10 @@ inclusion in the @<head>@ of the page.
 >   script ! [src ("http://s.vocabulink.com/js/" ++ js ++ ".js"),
 >             thetype "text/javascript"] << noHtml
 
-The standard header bar shows the Vocabulink logo (with a link to the root
-page), a list of links (currently static, but eventually configurable by the
-member), and either a login box and sign up button or a count of links waiting
-for review and a logout button.
+The standard header bar shows the Vocabulink logo (currently just some text), a
+list of hyperlinks, a search box, and either a login/sign up button or a logout
+button. If the page is being served to a logged-in member it also includes a
+notice about the number of links that the member has waiting for review.
 
 > headerBar :: App Html
 > headerBar = do
@@ -119,7 +137,7 @@ for review and a logout button.
 >        review,
 >        thediv ! [theclass "clear"] << noHtml ]
 
-Here are the links we want in the header of every page.
+Here are the hyperlinks we want in the header of every page.
 
 > topLinks :: Html
 > topLinks = linkList
@@ -128,7 +146,8 @@ Here are the links we want in the header of every page.
 >      anchor ! [href "/links"] << "Latest Links",
 >      anchor ! [href "/help"] << "Help" ]
 
-The footer bar is more simple. It just includes some links to static content.
+The footer bar is more simple. It just includes some hyperlinks to static
+content.
 
 > footerBar :: App Html
 > footerBar = do
@@ -137,7 +156,8 @@ The footer bar is more simple. It just includes some links to static content.
 >     [  linkList
 >        [  anchor ! [href "/help"] << "help",
 >           anchor ! [href "/privacy"] << "privacy policy",
->           anchor ! [href "/terms-of-use"] << "terms of use"],
+>           anchor ! [href "/terms-of-use"] << "terms of use",
+>           anchor ! [href "/source"] << "source"],
 >        copy,
 >        googleAnalyticsTag ]
 
@@ -153,11 +173,17 @@ generation time (now).
 >        stringToHtml ((show year) ++ " "),
 >        anchor ! [href "http://jekor.com/"] << "Chris Forno" ]
 
+We use Google Analytics for tracking site usage. It requires the JavaScript tag
+to be placed on every page.
+
 > googleAnalyticsTag :: Html
 > googleAnalyticsTag = primHtml $ unlines [
 >   "<script type=\"text/javascript\">",
->   "var gaJsHost = ((\"https:\" == document.location.protocol) ? \"https://ssl.\" : \"http://www.\");",
->   "document.write(unescape(\"%3Cscript src='\" + gaJsHost + \"google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E\"));",
+>   "var gaJsHost = ((\"https:\" == document.location.protocol) ?\
+>                  \ \"https://ssl.\" : \"http://www.\");",
+>   "document.write(unescape(\"%3Cscript src='\" + gaJsHost \
+>   \+ \"google-analytics.com/ga.js' \
+>   \type='text/javascript'%3E%3C/script%3E\"));",
 >   "</script>",
 >   "<script type=\"text/javascript\">",
 >   "try {",
@@ -165,22 +191,14 @@ generation time (now).
 >   "pageTracker._trackPageview();",
 >   "} catch(err) {}</script>" ]
 
-This provides a simple login box for members. Actually, it's a box for a
-username, a box for a password, a login button, and a sign up button.
-
-We have to put the sign up button before the login form to get them to display
-in the correct order because they're both floated to the right.
-
-Until we switch this over to using formlets, we need to manually set the inputs
-to @input0@ and @input2@ since that's what the formlets-based login page
-expects.
+The following are just login and signup buttons.
 
 > loginBox :: Html
 > loginBox = thespan ! [theclass "auth-box login"] << [
 >   anchor ! [href "/member/login"] << "Login", stringToHtml " | ",
 >   anchor ! [href "/member/signup"] << "Sign Up" ]
 
-For logged-in members, we provide a simple logout button (with an indicator of
+For logged-in members, we provide a logout button (with an indicator of
 your username to show that you're logged in).
 
 > logoutBox :: String -> Html
@@ -200,15 +218,15 @@ entering in the URL manually), but that might change in the future.
 
 \subsection{Higher-Level Combinators}
 
-It's common to use an unordered list to present a series of links. For example,
-both the standard header and footer use this.
+It's common to use an unordered list to present a series of hyperlinks. For
+example, both the standard header and footer use this.
 
 > linkList :: (HTML a) => [a] -> Html
 > linkList items = ulist ! [theclass "hyperlinks"] << map (li <<) items
 
 Breadcrumbs are a common navigation element. This only handles wrapping the
-provided elements in an appropriate ordered list and adding decorating it.
-Adding the links is up to you.
+provided elements in an appropriate ordered list and adding decorations. Adding
+the anchors is up to you.
 
 > breadcrumbs :: [Html] -> Html
 > breadcrumbs items = ulist ! [theclass "breadcrumbs"] << map (li <<) items'
@@ -219,13 +237,11 @@ Sometimes you just want a select list where the displayed options match their va
 > options :: [String] -> [Html]
 > options choices = [ option ! [value choice] << choice | choice <- choices ]
 
-This automatically adds the ``odd'' and ``even'' CSS classes to each table row.
+This automatically adds ``odd'' and ``even'' CSS classes to each table row.
 
 > tableRows :: [Html] -> [Html]
 > tableRows = map decorate . zip [1..]
 >   where decorate (a,b) = tr ! [theclass (odd (a :: Integer) ? "odd" $ "even")] << b
-
-foldr (\a ~(x,y) -> (a:y,x)) ([],[]) (fs' ++ creator)
 
 Curiously, the accesskey attribute is missing from Text.XHtml.
 
@@ -236,8 +252,8 @@ It's nice to have little help buttons and such where necessary. Making them
 easier to create means that we're more likely to do so, which leads to a more
 helpful user interface.
 
-Currently this uses an icon from the FamFamFam "Mini" set
-(http://www.famfamfam.com/lab/icons/mini/).
+Currently this uses an icon from the FamFamFam ``Mini'' set\\*
+(\url{http://www.famfamfam.com/lab/icons/mini/}).
 
 > helpButton :: String -> Maybe String -> Html
 > helpButton url label' = anchor ! [href url, theclass "button"] << [
@@ -255,25 +271,34 @@ bodies.
 
 \subsection{Form Builders}
 
-For complex forms, we use tables. They have a number of common elements that we
-can abstract out.
+For complex forms, we use tables. Tables allow for proper alignment that makes
+the form much easier to read. This type of form tends to have a number of
+common elements that we can abstract out.
 
-One thing that's missing is the ability to link the label to the input with the
-``for'' attribute.
+One thing that we're don't currently do is hook the label to the control using
+the ``for'' attribute.
 
 > tabularInput :: String -> Html -> Html
 > tabularInput l i = tr << [  th << (label << (l ++ ":")),
 >                             td << i ]
+
+We want any submit button centered on a row of its own.
 
 > tabularSubmit :: String -> Html
 > tabularSubmit l = tr << td ! [colspan 2] << submit "" l
 
 \subsection{Formlet Helpers}
 
+Formlets are a great tool for abstracting and building complex forms. But the
+library is still a bit rough around the edges. These helpers are by no means
+elegant, but they help get the job done.
+
+All of the formlets we build have this type:
+
 > type AppForm a = XHtmlForm (AppT IO) a
 
-We ofter want to "wrap" a label around a form component. This doesn't currently
-set a @for@ attribute.
+We ofter want to ``wrap'' a label around a form component. Note that this
+doesn't currently set a @for@ attribute either.
 
 > formLabel :: Monad m => String -> XHtmlForm m a -> XHtmlForm m a
 > formLabel text = plug (\xhtml -> label << (text ++ ": ") +++ xhtml)
@@ -291,8 +316,9 @@ for this one.
 > checkbox' l = optionalInput box where
 >   box name' =  input ! [thetype "checkbox", name name'] +++ l
 
-Take a form and a submit button label, run it, and return either the form to
-display (with errors, if any) or the result of the form.
+We use |runForm| for most of the heavy lifting. It takes a form and a submit
+button label, runs the form, and returns either the form to display (with
+errors, if any) or the result of the form.
 
 ``Running'' the form involves taking the form inputs from the ``environment''
 (the CGI input variables) and ``passing'' them to the form. The form then
@@ -300,8 +326,8 @@ attempts to validate against the environment. If it fails, it returns a form
 (as Html) to display to the client, but if it succeeds it returns a value of
 the type of the form.
 
-|s| is either a label or custom Html for the submit button (or noHtml if you
-don't want a submit button).
+|s| is either a label or some custom Html for the submit button (or noHtml if
+you don't want a submit button).
 
 > runForm :: XHtmlForm (AppT IO) a -> Either String Html -> App (Either Html a)
 > runForm frm s = do
@@ -333,19 +359,20 @@ when implementing ``preview'' functionality for forms.
 \subsection{Paging}
 
 We'd like to have a consistent way of ``paging'' lists that don't fit on a
-single page. This could be for search results, a set of links, articles, etc.
+single page. This can be used to page search results, a set of links, articles,
+etc.
 
 This reads the page query parameters and returns them along with the current
-offset (as a convenience).
-
-A reasonable default is 10 items per page. We also don't want to chew up
-resources retrieving too many items, so we cap the max at 100.
+offset (as a convenience). In the absence of certain parameters, we fall back
+to reasonable defaults like 10 items per page. We also don't want to chew up
+resources retrieving too many items, so we cap the max that a client can
+request at 100.
 
 Limiting the paging elements to Int bounds is necessary for the functions that
 use the pager (they often need to |take| some number of tuples from a list, for
 instance) and does not limit the design of our HTTP interface much, if at all.
-I cannot think of an instance where we'd need to go past the 65,000th page
-unless we were paging through every link in the system.
+I cannot think of an instance where we'd need to go past the 65,000th page of
+anything.
 
 > currentPage :: App (Int, Int, Int)
 > currentPage = do
@@ -356,14 +383,15 @@ unless we were paging through every link in the system.
 >        offset  = (pg - 1) * n
 >   return (pg, n, offset)
 
-This will handle the query string in the links it generates while it replaces
-the @n@ (number of items per page) and @page@ (the page we're on) parameters.
-We give it the page we're currently on, the number of items per page, and the
-total number of items available, and it does the rest.
+This will handle the query string in the hyperlinks it generates while it
+replaces the @n@ (number of items per page) and @page@ (the page we're on)
+parameters. We give it the page we're currently on, the number of items per
+page, and the total number of items available, and it does the rest.
 
-This doesn't actually display clickable numeric links such as you'd see on a
-Google search results page. It only provides the client with ``previous'' and
-``next''. This is for faster database queries.
+This doesn't actually display clickable numeric hyperlinks such as you'd see on
+a Google search results page. It only provides the client with ``previous'' and
+``next''. We do this because determining the number of pages in a result can be
+expensive.
 
 > pager :: Int -> Int -> Int -> App Html
 > pager pg n total = do

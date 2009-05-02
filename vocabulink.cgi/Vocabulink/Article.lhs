@@ -1,11 +1,26 @@
+% Copyright 2008, 2009 Chris Forno
+
+% This file is part of Vocabulink.
+
+% Vocabulink is free software: you can redistribute it and/or modify it under
+% the terms of the GNU Affero General Public License as published by the Free
+% Software Foundation, either version 3 of the License, or (at your option) any
+% later version.
+
+% Vocabulink is distributed in the hope that it will be useful, but WITHOUT ANY
+% WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+% A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+% details.
+
+% You should have received a copy of the GNU Affero General Public License
+% along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
+
 \section{Articles}
 \label{Article}
 
 All of Vocabulink's @www@ subdomain is served by this program. As such, if we
-want to publish static data there, we need some outlet for it.
-
-It turns out that using our program gives us some additional consistency
-(standard header and footer) and abstraction.
+want to publish static data there, we need some outlet for it. The only form of
+static page we currently display is an article.
 
 > module Vocabulink.Article (  articlePage, articlesPage, refreshArticles,
 >                              getArticle, articleBody, getArticles,
@@ -32,9 +47,9 @@ All articles have some common metadata.
 The article file path is not strictly necessary to store, but it does allow an
 article to have a different representation on the filesystem than some
 translation of its title. This avoids potential problems with automatic
-title-to-path translation such as characters that the filesystem doesn't like
+title-to-path translation, such as characters that the filesystem doesn't like
 or articles with very long titles. The filepath however is just the relative
-filename in the articles directory.
+filename in the articles directory, not an absolute path.
 
 > data Article = Article {  articleFilename     :: FilePath,
 >                           articleAuthor       :: Maybe String,
@@ -43,14 +58,6 @@ filename in the articles directory.
 >                           articleSection      :: Maybe String,
 >                           articleTitle        :: String }
 
-Articles are actually used for articles, blog posts, and other static pages of
-the site (that allow comments). The idea is that the ``blog'' section of the
-site will chronologically list articles and allow interaction in a way similar
-to most blogs. But there could be an ``articles'' section of the site that
-contains a subset of the articles so that no time-sensitive articles are
-displayed. Or an article could be used for a static page such as a
-``privacy policy''.
-
 For now, article storage is very simple. That may need to change in the future
 for efficiency and to allow people without access to the article repository to
 contribute.
@@ -58,9 +65,9 @@ contribute.
 \subsection{Retrieving Articles}
 
 Creating articles is done outside of this program. They are currently generated
-from Muse-mode (\url{http://mwolson.org/projects/EmacsMuse.html}) files using
+from Muse-mode files (\url{http://mwolson.org/projects/EmacsMuse.html}) using
 Emacs. However, we can reconstruct the metadata for an article by parsing the
-file.
+file ourselves.
 
 Keeping the body of the article outside of the database gives us some of the
 advantages of the filesystem such as revision control.
@@ -69,7 +76,8 @@ advantages of the filesystem such as revision control.
 > articleDir = fromJust <$> getOption "articledir"
 
 We need a way of keeping the database consistent with the filesystem. This is
-it.
+it. For a logged in administrator, the articles page displays a ``Refresh from
+Filesystem'' button that POSTs here.
 
 > refreshArticles :: App CGIResult
 > refreshArticles = do
@@ -114,7 +122,7 @@ We consider an article (file) published if it:
 \begin{enumerate}
 \item ends with @.muse@
 \item is readable
-\item the corresponding @.html@ file is readable
+\item has a corresponding readable @.html@ file
 \end{enumerate}
 
 > isPublished :: FilePath -> IO Bool
@@ -149,7 +157,7 @@ this to succeed.
 >     Right hdr  -> return $ Just $ hdr {  articleFilename  = path }
 
 Each article is expected to have a particular structure. The structure is based
-off of a required subset the Muse-mode directives.
+off of a required subset of the Muse-mode directives.
 
 An accepted article's first lines will consist of something like:
 
@@ -167,14 +175,17 @@ An accepted article's first lines will consist of something like:
 \item[@#date@] is the date in ISO-8601 format (with spaces between the date,
                time, and timezone).
 \item[@#update@] is an optional update time (in the same format as @#date@).
-\item[@#section@] is the section of the site to publish the article. For static
-                  content "articles" such as the privacy policy, don't include
-                  a section. For now, only "main" is supported with our simple
-                  publishing system.
+\item[@#section@] is the section of the site in to publish the article. For
+                  static content ``articles'' such as the privacy policy, don't
+                  include a section. For now, only ``main'' is supported with
+                  our simple publishing system.
 \end{description}
 
+Parsing an article's metadata is pretty simple with Parsec's permutation
+combinators.
+
 We're going to go ahead and use fromJust here because we don't care about how
-we're notified of errors. Publishing articles is not (yet) member-facing.
+we're notified of errors (publishing articles is not (yet) member-facing).
 
 > articleHeader :: P.Parser Article
 > articleHeader = permute
@@ -216,7 +227,8 @@ there's no point in storing it in the article record.
 
 \subsection{Retrieving Articles}
 
-Retrieve an article by its filename (path, whatever you want to call it).
+To retrieve an article with need its (relative) filename (or path, or whatever
+you want to call it).
 
 > getArticle :: String -> App (Maybe Article)
 > getArticle filename = do
@@ -224,6 +236,8 @@ Retrieve an article by its filename (path, whatever you want to call it).
 >     queryTuple' "SELECT filename, author, publish_time, \
 >                        \section, update_time, title \
 >                 \FROM article WHERE filename = ?" [toSql filename]
+
+As with links, we use a helper function to convert a raw SQL tuple.
 
 > articleFromTuple :: [SqlValue] -> Maybe Article
 > articleFromTuple [f,a,p,u,s,t]  = Just $
@@ -235,7 +249,8 @@ Retrieve an article by its filename (path, whatever you want to call it).
 >              articleTitle        = fromSql t }
 > articleFromTuple _            = Nothing
 
-Here's how we get official articles.
+To get a list of articles for display on the main articles page, we look for
+published articles in the database that are in the ``main'' section.
 
 > getArticles :: App (Maybe [Article])
 > getArticles = do
@@ -251,9 +266,9 @@ Here's how we get official articles.
 
 \subsection{Article Pages}
 
-Display an article to the client. We don't care whether or not it's published
-(past its publication date) as unpublished articles presumably don't have links
-to them.
+Here's how to display an article to the client. We don't check here to see
+whether or not it's published (past its publication date) as unpublished
+articles presumably don't have links to them.
 
 > articlePage :: String -> App CGIResult
 > articlePage path = do
@@ -265,7 +280,7 @@ to them.
 >       stdPage (articleTitle a) [CSS "article"] []
 >         [thediv ! [theclass "article"] << body]
 
-Display a listing of published articles to the client.
+This page is for displaying a listing of published articles.
 
 > articlesPage :: App CGIResult
 > articlesPage = do

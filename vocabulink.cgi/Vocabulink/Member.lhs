@@ -1,6 +1,28 @@
+% Copyright 2008, 2009 Chris Forno
+
+% This file is part of Vocabulink.
+
+% Vocabulink is free software: you can redistribute it and/or modify it under
+% the terms of the GNU Affero General Public License as published by the Free
+% Software Foundation, either version 3 of the License, or (at your option) any
+% later version.
+
+% Vocabulink is distributed in the hope that it will be useful, but WITHOUT ANY
+% WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+% A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+% details.
+
+% You should have received a copy of the GNU Affero General Public License
+% along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
+
+\section{Members}
+
+Most functionality on Vocabulink---such as review scheduling---is for
+registered members only.
+
 > module Vocabulink.Member (  login, logout, registerMember,
 >                             getMemberNumber, getMemberName,
->                             confirmMembership, emailConfirmationPage,
+>                             confirmEmail, confirmEmailPage,
 >                             memberSupport ) where
 
 > import Vocabulink.App
@@ -10,14 +32,13 @@
 > import Vocabulink.Member.AuthToken
 > import Vocabulink.Utils
 
-> import Control.Exception (try)
 > import qualified Text.XHtml.Strict.Formlets as F
-> import System.Cmd (system)
-> import System.Exit (ExitCode(..))
 
-\section{Authentication}
+\subsection{Authentication}
 
-To authenticate a member, we need their username and password.
+To authenticate a member, we need their username and password. This is our
+first example of a formlet. The formlet nicely encapsulates validating the
+member's password against the database as part of normal formlet validation.
 
 > loginForm :: String -> AppForm (String, String)
 > loginForm ref = plug (\xhtml -> hidden "redirect" ref +++
@@ -43,7 +64,7 @@ and then continuing where it left off.
 > login = do
 >   ref    <- referrerOrVocabulink
 >   redir  <- getInputDefault ref "redirect"
->   res    <- runForm (loginForm redir) (Right noHtml)
+>   res    <- runForm (loginForm redir) $ Right noHtml
 >   case res of
 >     Left xhtml -> simplePage "Login" []
 >       [  paragraph ! [thestyle "text-align: center"] <<
@@ -74,7 +95,7 @@ put this step into password verification so that we don't need 2 queries.
 >   maybe Nothing fromSql <$> queryValue' "SELECT username FROM member \
 >                                         \WHERE member_no = ?" [toSql number]
 
-To logout the member, we simply clear their auth cookie and redirect them
+To logout a member, we simply clear their auth cookie and redirect them
 somewhere sensible. If you want to send a client somewhere other than the front
 page after logout, add a @redirect@ query string or POST parameter.
 
@@ -93,16 +114,23 @@ optionally an email address.
 >                                     regEmail  :: String,
 >                                     regPass   :: String }
 
+They must also agree to the Terms of Use.
+
 > register :: AppForm Registration
 > register = plug (\xhtml -> table << (xhtml +++ tfoot << tabularSubmit "Sign Up"))
 >                 (reg  <$> uniqueUser
 >                       <*> uniqueEmailAddress
 >                       <*> passConfirmed
->                       <*> termsOfUse `check` ensure (isJust) "You must agree to the Terms of Use.")
+>                       <*> termsOfUse `check` ensure (isJust)
+>                             "You must agree to the Terms of Use.")
 >   where reg u e p _ = Registration u e p
 
 We're very permissive with usernames. They just need to be between 3 and 32
 characters long.
+
+Since this is a site about learning languages, we really want members to be
+able to express themselves with their username. This may turn out to be a major
+pain to deal with for things like URIs, but there's 1 way to find out...
 
 > username :: AppForm String
 > username = (plug (tabularInput "Username") $ F.input Nothing) `check` ensures
@@ -135,15 +163,30 @@ other reason than that it's common practice.
 >   equal (a,b) = a == b
 >   err = "Passwords do not match."
 
+To indicate acceptance of the Terms of Use, the member checks a box. This is
+still a little bit awkward because the checkbox doesn't maintain its state if
+validation fails. I'm hoping to fix that later when I understand formlets in
+more depth.
+
 > termsOfUse :: AppForm (Maybe String)
-> termsOfUse = plug (\xhtml -> tr << td ! [colspan 2, thestyle "text-align: center"] << [
+> termsOfUse = plug (\xhtml -> tr << td ! [  colspan 2,
+>                                            thestyle "text-align: center"] << [
 >                xhtml,
 >                stringToHtml " I agree to the ",
 >                anchor ! [href "/terms-of-use"] << "Terms of Use",
 >                stringToHtml "." ]) (checkbox' "")
 
 We don't currently do any validation on email addresses other than to check if
-the address is already in use.
+the address is already in use. We need to check both the @member@ and
+@member_confirmation@ relations so that we catch unconfirmed email addresses as
+well.
+
+> emailAddress :: AppForm String
+> emailAddress = (plug (tabularInput "Email address") $ F.input Nothing) `check`
+>   ensures
+>     [  ((/= ""), "Enter an email address."),
+>        ((<= 320) . length, "Your email address must be \
+>                            \320 characters or shorter.") ]
 
 > uniqueEmailAddress :: AppForm String
 > uniqueEmailAddress = emailAddress `checkM` ensureM valid err where
@@ -156,13 +199,8 @@ the address is already in use.
 >                     return $ maybe False (== []) vs
 >   err = "That email address is unavailable."
 
-> emailAddress :: AppForm String
-> emailAddress = (plug (tabularInput "Email address") $ F.input Nothing) `check` ensures
->   [  ((/= ""), "Enter an email address."),
->      ((<= 320) . length, "Your email address must be 320 characters or shorter.") ]
-
-Create a page with a new user form or register the user and redirect them to
-the front page.
+The registration process consists of a single form. Once the user has
+registered, we log them in and redirect them to the front page.
 
 > registerMember :: App CGIResult
 > registerMember = do
@@ -183,6 +221,14 @@ the front page.
 >           sendConfirmationEmail n reg
 >           redirect "/"
 
+Once a user registers, they can log in. However, they won't be able to use most
+member-specific functions until they've confirmed their email address. This is
+to make sure that people cannot impersonate or spam others.
+
+Email confirmation consists of generating a unique random string and emailing
+it to the member as a hyperlink. Once they click the hyperlink we consider the
+email address confirmed.
+
 > sendConfirmationEmail :: Integer -> Registration -> App (Maybe ())
 > sendConfirmationEmail memberNo r = do
 >   quickStmt'  "INSERT INTO member_confirmation \
@@ -199,30 +245,18 @@ the front page.
 >                     "",
 >                     "Click http://www.vocabulink.com/member/confirmation/" ++
 >                     (fromSql h) ++ " to confirm your email address." ]
->       res <- sendMail (regEmail r) "Welcome to Vocabulink" email
+>       res <- liftIO $ sendMail (regEmail r) "Welcome to Vocabulink" email
 >       maybe (return Nothing) (\_ -> quickStmt'
 >         "UPDATE member_confirmation \
 >         \SET email_sent = current_timestamp \
 >         \WHERE member_no = ?" [toSql memberNo]) res
 
-> sendMail :: String -> String -> String -> App (Maybe ())
-> sendMail to subject body = do
->   let body' = unlines [  "To: <" ++ to ++ ">",
->                          "Subject: " ++ subject,
->                          "",
->                          body ]
->   res <- liftIO $ try $ system $
->            (  "export MAILUSER=vocabulink; \
->               \export MAILHOST=vocabulink.com; \
->               \export MAILNAME=Vocabulink; \
->               \echo -e \""   ++ body'  ++ "\" | \
->               \sendmail \""  ++ to     ++ "\"" )
->   case res of
->     Right ExitSuccess  -> return $ Just ()
->     _                  -> return Nothing
+This is the place that the dispatcher will send the client to if they click the
+hyperlink in the email. If confirmation is successful it redirects them to some
+hopefully useful page.
 
-> confirmMembership :: String -> App CGIResult
-> confirmMembership hash = do
+> confirmEmail :: String -> App CGIResult
+> confirmEmail hash = do
 >   memberNo <- asks appMemberNo
 >   case memberNo of
 >     Nothing  -> redirect =<< reversibleRedirect "/member/login"
@@ -231,7 +265,7 @@ the front page.
 >                             \WHERE member_no = ?" [toSql hash, toSql n]
 >       let match' = maybe False fromSql match
 >       case match' of
->         False  -> emailConfirmationPage
+>         False  -> confirmEmailPage
 >         True   -> do
 >           res <- withTransaction' $ do
 >             runStmt'  "UPDATE member SET email = \
@@ -241,11 +275,14 @@ the front page.
 >             runStmt'  "DELETE FROM member_confirmation \
 >                       \WHERE member_no = ?" [toSql n]
 >           case res of
->             Nothing  -> emailConfirmationPage
+>             Nothing  -> confirmEmailPage
 >             Just _   -> redirect =<< referrerOrVocabulink
 
-> emailConfirmationPage :: App CGIResult
-> emailConfirmationPage = do
+This is the page we redirect unconfirmed members to when they try to interact
+with the site in a way that requires a confirmed email address.
+
+> confirmEmailPage :: App CGIResult
+> confirmEmailPage = do
 >   ref <- referrerOrVocabulink
 >   redirect' <- getInputDefault ref "redirect"
 >   support <- getSupportForm $ Just redirect'
@@ -260,12 +297,11 @@ the front page.
 >         anchor ! [href redirect'] << "Click here to go back",
 >         stringToHtml " to where you came from." ] ] ]
 
-At some point members (or clients) may have difficulties with the site. I
+At some point members (or non-members) may have difficulties with the site. I
 debated about giving out an email address, but I suspect that filtering for
 spam among support requests might be pretty difficult. I also don't want to go
-dead to support request email.
-
-So, this uses the tried-and-true contact form method.
+dead to support request email. So this uses the tried and true contact form
+method.
 
 > supportForm :: Maybe String -> App (AppForm (String, String, String))
 > supportForm redirect' = do
@@ -273,14 +309,16 @@ So, this uses the tried-and-true contact form method.
 >   email <- asks appMemberEmail
 >   let  redirect'' = fromMaybe ref redirect'
 >        emailInput = case email of
->                       Nothing  -> plug (tabularInput "Email Address") $ F.input Nothing `check` ensures
->                                           [((/= ""), "We need an email address to contact you at.")]
+>                       Nothing  -> plug (tabularInput "Email Address") $ F.input Nothing `check`
+>                                     ensures
+>                                       [((/= ""), "We need an email address to contact you at.")]
 >                       Just _   -> F.hidden email
 >   return $ plug (\xhtml -> table << [
 >                    xhtml, tfoot << tabularSubmit "Get Support" ])
 >              ((,,)  <$>  emailInput
 >                    <*>  (plug (tabularInput "Problem") $ F.textarea Nothing) `check` ensures
->                            [((/= ""), "It would help us to know what the problem you're experiencing is ;).")]
+>                            [((/= ""),  "It would help us to know \
+>                                        \what the problem you're experiencing is ;).")]
 >                    <*>  F.hidden (Just redirect''))
 
 Get a fresh support form (don't attempt to run it).
@@ -290,10 +328,16 @@ Get a fresh support form (don't attempt to run it).
 >   (_, xhtml) <- runForm' =<< supportForm redirect'
 >   return $ form ! [action "/member/support", method "POST"] << xhtml
 
+And finally, here is the actual support page. It's not just for member support.
+If the client isn't logged in it will ask for a contact email address.
+
+Because support is so critical, in case there's an error submitting the support
+form we fall back to a secondary (disposable) support address.
+
 > memberSupport :: App CGIResult
 > memberSupport = do
 >   form' <- supportForm =<< getInput "redirect"
->   res <- runForm form' (Right noHtml)
+>   res <- runForm form' $ Right noHtml
 >   case res of
 >     Left xhtml -> simplePage "Need Help?" []
 >       [  thediv ! [identifier "central-column"] << [
@@ -304,7 +348,7 @@ Get a fresh support form (don't attempt to run it).
 >            xhtml ] ]
 >     Right (email, problem, redirect') -> do
 >       supportAddress <- fromJust <$> getOption "staticDir"
->       res' <- sendMail supportAddress "Support Request" $
+>       res' <- liftIO $ sendMail supportAddress "Support Request" $
 >                 unlines [  "Email: " ++ email,
 >                            "Problem: " ++ problem ]
 >       case res' of
@@ -312,7 +356,8 @@ Get a fresh support form (don't attempt to run it).
 >                           \Please contact vocabulink.jekor@spamgourmet.com for support."
 >         Just _   -> simplePage "Support Request Sent" []
 >                       [  thediv ! [identifier "central-column"] << [
->                            paragraph << "Your support request was sent successfully.",
+>                            paragraph <<  "Your support request \
+>                                          \was sent successfully.",
 >                            paragraph << [
 >                              anchor ! [href redirect'] << "Click here to go back",
 >                              stringToHtml " to where you came from." ] ] ]

@@ -1,3 +1,20 @@
+% Copyright 2008, 2009 Chris Forno
+
+% This file is part of Vocabulink.
+
+% Vocabulink is free software: you can redistribute it and/or modify it under
+% the terms of the GNU Affero General Public License as published by the Free
+% Software Foundation, either version 3 of the License, or (at your option) any
+% later version.
+
+% Vocabulink is distributed in the hope that it will be useful, but WITHOUT ANY
+% WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+% A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+% details.
+
+% You should have received a copy of the GNU Affero General Public License
+% along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
+
 \section{CGI}
 \label{CGI}
 
@@ -9,9 +26,9 @@ not the end of the world if we generate an error or don't catch an exception.
 
 To keep other modules from having to know exactly which CGI method we're using
 (who knows, we may want to switch to SCGI later), we export some FastCGI
-functions. This allows other modules to just import Vocabulink.CGI and allows
+functions. This allows other modules to just import Vocabulink.CGI and gives
 us the option of overriding its functions in the future (which we do already
-with |readInput|). This is a common pattern in other modules.
+with |readInput|). This is a common pattern in other Vocabulink modules.
 
 > module Vocabulink.CGI (  getInput, getRequiredInput, getInputDefault,
 >                          readInput, readRequiredInput, readInputDefault,
@@ -65,8 +82,7 @@ characters. I'm not sure how |outputInternalServerError| will handle it.
 
 By the time we output the error to the client we no longer need the database
 handle. This is the perfect place to close it, as it'll be the last thing we do
-in the CGI monad (and the thrtead). If we didn't close it, we'd probably start
-accumulating a pile of unused database handles.
+in the CGI monad (and the thread).
 
 > outputException' ::  (MonadCGI m, MonadIO m, IConnection conn) =>
 >                      conn -> Exception -> m CGIResult
@@ -93,7 +109,7 @@ Also, we do not always output HTML. Sometimes we output JSON or HTML fragments.
 > outputText :: (MonadCGI m, MonadIO m) => String -> m CGIResult
 > outputText s = setHeader "Content-Type" "text/plain; charset=utf-8" >> output' s
 
-Output as JSON an associative list.
+To output JSON, we just need an associative list.
 
 > outputJSON :: (MonadCGI m, MonadIO m, JSON a) => [(String, a)] -> m CGIResult
 > outputJSON = outputText . encode . toJSObject
@@ -125,7 +141,7 @@ default value.
 > getInputDefault :: MonadCGI m => String -> String -> m String
 > getInputDefault d p = getInput p >>= return . fromMaybe d
 
-As a convenience, |readRequiredInput| will throw an error on a missing input.
+As a convenience, |getRequiredInput| will throw an error on a missing input.
 It allows us to write simpler code, but eventually most calls to this should be
 removed and we should more gracefully handle the error.
 
@@ -160,7 +176,8 @@ Note that this is not meant to handle arbitrary input from users. For that we
 can use URL encoding. This is to make common URLs friendly.
 
 Note that this is currently very restrictive until the need arises to permit
-new characters.
+new characters. It converts spaces to hyphens and only allows alphanumeric
+characters and hyphens in the resulting string.
 
 > urlify :: String -> String
 > urlify = map toLower . filter (\e -> isAlphaNum e || (e == '-')) . translate [(' ', '-')]

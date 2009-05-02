@@ -1,7 +1,24 @@
+% Copyright 2008, 2009 Chris Forno
+
+% This file is part of Vocabulink.
+
+% Vocabulink is free software: you can redistribute it and/or modify it under
+% the terms of the GNU Affero General Public License as published by the Free
+% Software Foundation, either version 3 of the License, or (at your option) any
+% later version.
+
+% Vocabulink is distributed in the hope that it will be useful, but WITHOUT ANY
+% WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+% A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+% details.
+
+% You should have received a copy of the GNU Affero General Public License
+% along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
+
 \section{Authentication Tokens}
 
 Much of what you can do on Vocabulink requires us to know and trust who you say
-you are (or at least can be enhanced by that knowledge).
+you are.
 
 > module Vocabulink.Member.AuthToken (  AuthToken(..), verifiedAuthToken,
 >                                       setAuthCookie, deleteAuthCookie) where
@@ -22,13 +39,15 @@ you are (or at least can be enhanced by that knowledge).
 
 \subsection{Creating the Auth Token}
 
-Each time a user logs in, we send an authentication cookie to their browser.
+Each time a member logs in, we send an authentication cookie to their browser.
 The cookie is a digest of some state information. We then use the cookie for
 authenticating their identity on subsequent requests.
 
-We don't want to store information like IP address in our database. All of the
-session state stays in the cookie. This also keeps us from having to deal with
-storing session state on our end.
+We don't want to associate personally-identifying information like IP addresses
+to member names in our database. However, we do need to know which IP address
+the member logged in from so that we can protect against request spoofing. The
+solution is to store all of the session state stays in the cookie. This also
+means we don't have to deal with storing session state on our end.
 
 > data AuthToken = AuthToken {
 >   authExpiry     :: Day,
@@ -126,8 +145,8 @@ token and send it to the client.
 
 This retrieves the auth token from the HTTP request, verifies it, and if valid,
 returns it. To verify an auth token, we verify the token digest, check that the
-cookie hasn't expired, and verify the sending IP address against the one in the
-token.
+cookie hasn't expired, and check the requestor's IP address against the one in
+the token.
 
 > verifiedAuthToken :: (MonadCGI m, MonadIO m) => String -> m (Maybe AuthToken)
 > verifiedAuthToken salt = do
@@ -155,7 +174,8 @@ This is a Parsec parser for auth tokens (as stored in cookies).
 >   let day = parseTime defaultTimeLocale (iso8601DateFormat Nothing) day'
 >   return $ day >>= \d -> Just AuthToken {  authExpiry     = d,
 >                                            authMemberNo   = read memberNo,
->                                            authUsername   = decodeString $ unEscapeString username,
+>                                            authUsername   = decodeString $
+>                                                               unEscapeString username,
 >                                            authIPAddress  = ip,
 >                                            authDigest     = digest }
 
