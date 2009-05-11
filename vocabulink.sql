@@ -54,7 +54,7 @@ COMMENT ON COLUMN member_confirmation.email_sent IS 'email_sent is the time a co
 
 CREATE TABLE language (
        abbr CHARACTER VARYING (3) PRIMARY KEY,
-       name TEXT
+       name TEXT UNIQUE
 );
 COMMENT ON COLUMN language.abbr IS 'We use 2-letter language codes (ISO 639-1) when available and 3-letter codes for languages that don''t have a 2-letter code (the notable case of which is Lojban which any self-respecting language-learning site should support.';
 INSERT INTO language (abbr, name) VALUES
@@ -262,11 +262,10 @@ CREATE TABLE link (
        link_no SERIAL PRIMARY KEY,
        origin TEXT NOT NULL CHECK (length(origin) > 0),
        destination TEXT NOT NULL CHECK (length(destination) > 0),
-       origin_language CHARACTER VARYING (3) NOT NULL REFERENCES language (abbr) ON UPDATE CASCADE,
-       destination_language CHARACTER VARYING (3) NOT NULL REFERENCES language (abbr) ON UPDATE CASCADE,
-       link_type TEXT NOT NULL REFERENCES link_type (name) ON UPDATE CASCADE,
-       rating REAL,
-       author INTEGER NOT NULL REFERENCES member (member_no) ON UPDATE CASCADE,
+       origin_language CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE,
+       destination_language CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE,
+       link_type TEXT REFERENCES link_type (name) ON UPDATE CASCADE,
+       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
        created TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        updated TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        deleted BOOLEAN NOT NULL DEFAULT FALSE
@@ -280,15 +279,32 @@ CREATE INDEX link_origin_index ON link (origin);
 CREATE INDEX link_destination_index ON link (destination);
 
 CREATE TABLE link_type_link_word (
-       link_no INTEGER NOT NULL REFERENCES link (link_no),
+       link_no INTEGER REFERENCES link (link_no),
        link_word TEXT NOT NULL,
        story TEXT NOT NULL
 );
 
 CREATE TABLE link_type_relationship (
-       link_no INTEGER NOT NULL REFERENCES link (link_no),
+       link_no INTEGER REFERENCES link (link_no),
        left_side TEXT NOT NULL,
        right_side TEXT NOT NULL
+);
+
+CREATE TABLE link_pack (
+       pack_no SERIAL PRIMARY KEY,
+       name TEXT NOT NULL,
+       description TEXT NOT NULL,
+       image_ext TEXT,
+       creator INTEGER REFERENCES member (member_no),
+       created TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       updated TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       deleted BOOLEAN NOT NULL DEFAULT FALSE       
+);
+
+CREATE TABLE link_pack_link (
+       pack_no INTEGER REFERENCES link_pack (pack_no),
+       link_no INTEGER REFERENCES link (link_no),
+       added TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp
 );
 
 CREATE TABLE link_to_review (
@@ -364,7 +380,7 @@ COMMENT ON COLUMN forum.icon_filename IS 'The filename is the relative path to t
 
 CREATE TABLE comment (
        comment_no SERIAL PRIMARY KEY,
-       author INTEGER NOT NULL REFERENCES member (member_no) ON UPDATE CASCADE,
+       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
        time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        comment TEXT NOT NULL,
        parent_no INTEGER REFERENCES comment (comment_no)
@@ -372,7 +388,7 @@ CREATE TABLE comment (
 
 CREATE TABLE forum_topic (
        topic_no SERIAL PRIMARY KEY,
-       forum_name TEXT NOT NULL REFERENCES forum (name) ON UPDATE CASCADE,
+       forum_name TEXT REFERENCES forum (name) ON UPDATE CASCADE,
        title TEXT NOT NULL,
        root_comment INTEGER REFERENCES comment (comment_no) NOT NULL,
        last_comment INTEGER REFERENCES comment (comment_no) NOT NULL,

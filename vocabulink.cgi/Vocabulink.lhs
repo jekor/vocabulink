@@ -31,7 +31,7 @@
 
 \title{Vocabulink}
 \author{Chris Forno (jekor)}
-\date{May 2nd, 2009}
+\date{May 3rd, 2009}
 
 \begin{document}
 \maketitle
@@ -147,6 +147,11 @@ share the changes if you're interested.}
 \item[Network.Gravatar] The gravatar library is a simple and convenient way to
 generate links to gravatar images. It was a bit of a pleasant surprise, and a
 sign of Haskell's maturity, to find it.
+
+\item[Network.Memcache] Interacting with memcached is very simple because it
+uses a simple text protocol. However, a library already exists, so we take
+advantage of it. As with Network.FastCGI, I slightly modified this one to use
+UTF-8 output by default and to support the flush command.
 
 \item[Network.URI] Various parts of the code may need to construct or
 deconstruct URLs. Using this library should be safer than using various
@@ -356,9 +361,20 @@ in the query string for the links page, it will do a search. E.g.
 @GET /links?contains=water@
 \end{center}
 
-> dispatch "GET" ["links"] = do
+> dispatch "GET" path@["links"] = do
 >   contains <- getInput "contains"
->   maybe (linksPage "Latest Links" latestLinks) linksContainingPage contains
+>   ol <- getInput "ol"
+>   dl <- getInput "dl"
+>   case (contains, ol, dl) of
+>     (Just contains', _, _)   -> linksContainingPage contains'
+>     (_, Just ol', Just dl')  -> do
+>       ol'' <- languageNameFromAbbreviation ol'
+>       dl'' <- languageNameFromAbbreviation dl'
+>       case (ol'', dl'') of
+>         (Just ol''', Just dl''')  -> linksPage  ("Links from " ++ ol''' ++ " to " ++ dl''')
+>                                                 (languagePairLinks ol' dl')
+>         _                         -> output404 path
+>     _                        -> linksPage "Latest Links" latestLinks
 > dispatch "GET" path@["links",x] = do
 >   case maybeRead x of
 >     Nothing  -> output404 path
@@ -374,6 +390,27 @@ establish the link. (Previewing is done through the @GET@ as well.)
 
 > dispatch "GET"   ["link"] = newLink
 > dispatch "POST"  ["link"] = newLink
+
+> dispatch "GET"   ["pack"] = newLinkPack
+> dispatch "POST"  ["pack"] = newLinkPack
+
+> dispatch "POST"  ["pack","image"] = uploadFile "/pack/image"
+
+> dispatch method path@("pack":x:method') = do
+>   case maybeRead x of
+>     Nothing  -> output404 path
+>     Just n   -> case (method, method') of
+>                   ("GET"   ,[])          -> linkPackPage n
+>                   ("POST"  ,["delete"])  -> deleteLinkPack n
+>                   (_       ,_)           -> output404 path
+
+\subsection{Languages}
+
+Browsing through every link on the site doesn't work with a significant number
+of links. A languages page shows what's available and contains hyperlinks to
+language-specific browsing.
+
+> dispatch "GET"  ["languages"] = languagePairsPage
 
 \subsection{Link Review}
 
@@ -512,18 +549,24 @@ or curious.
 >       latest, my, articles ] ]
 >  where myLinks mn = do
 >          ls <- memberLinks mn 0 10
->          return $ maybe (noHtml) (\l -> thediv ! [theclass "sidebox"] << [
->                                           h3 << anchor ! [href ("/links/" ++ (show mn))] <<
->                                             "My Links",
->                                           unordList (map partialLinkHtml l) !
->                                             [theclass "links"] ]) ls
+>          case ls of
+>            Nothing   -> return noHtml
+>            Just ls'  -> do
+>              partialLinks <- mapM partialLinkHtml ls'
+>              return $ thediv ! [theclass "sidebox"] << [
+>                         h3 << anchor ! [href ("/links/" ++ (show mn))] <<
+>                           "My Links",
+>                         unordList partialLinks ! [theclass "links"] ]
 >        newLinks = do
 >          ls <- latestLinks 0 10
->          return $ maybe (noHtml) (\l -> thediv ! [theclass "sidebox"] << [
->                                           h3 << anchor ! [href "/links"] <<
->                                             "Latest Links",
->                                           unordList (map partialLinkHtml l) !
->                                             [theclass "links"] ]) ls
+>          case ls of
+>            Nothing   -> return noHtml
+>            Just ls'  -> do
+>              partialLinks <- mapM partialLinkHtml ls'
+>              return $ thediv ! [theclass "sidebox"] << [
+>                         h3 << anchor ! [href "/links"] <<
+>                           "Latest Links",
+>                         unordList partialLinks ! [theclass "links"] ]
 >        latestArticles = do
 >          ls <- getArticles
 >          return $ maybe (noHtml) (\l -> thediv ! [theclass "sidebox"] << [

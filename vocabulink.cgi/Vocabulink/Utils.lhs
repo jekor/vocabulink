@@ -23,7 +23,9 @@ oft-used functions for other modules.
 
 > module Vocabulink.Utils (         if', (?), safeHead, currentDay, currentYear,
 >                                   formatSimpleTime, basename, translate, (<$$>),
->                                   sendMail,
+>                                   sendMail, every2nd, every3rd,
+>                                   memcacheGet, memcacheSet, memcacheDelete,
+>                                   memcacheFlush,
 >  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
 >  {- Control.Applicative -}        pure, (<$>), (<*>),
 >  {- Control.Applicative.Error -}  Failing(..), maybeRead,
@@ -49,7 +51,7 @@ more.
 
 > import Control.Applicative (pure, (<$>), (<*>))
 > import Control.Applicative.Error (Failing(..), maybeRead)
-> import Control.Exception (try)
+> import Control.Exception (try, bracket)
 
 We make particularly extensive use of |liftM| and the Maybe monad.
 
@@ -67,6 +69,8 @@ formats.
 > import Data.Time.Format (formatTime)
 > import Data.Time.LocalTime (  getCurrentTimeZone, utcToLocalTime,
 >                               LocalTime(..), ZonedTime)
+> import qualified Network.Memcache.Protocol as Memcached
+> import qualified Network.Memcache as Memcache
 > import System.Cmd (system)
 > import System.Locale (defaultTimeLocale, rfc822DateFormat)
 > import System.Exit (ExitCode(..))
@@ -86,12 +90,7 @@ I think I originally saw this on the Haskell wiki.
 > if' True   x  _  = x
 > if' False  _  y  = y
 
-In case we want don't want our program to crash when taking the head of the
-empty list, we need to provide a default:
-
-> safeHead :: a -> [a] -> a
-> safeHead d []     = d
-> safeHead _ (x:_)  = x
+\subsection{Time}
 
 Return the current day. I'm not sure that this is useful on its own.
 
@@ -153,3 +152,67 @@ forwarding for us so that we don't have to deal with SMTP here.
 >   case res of
 >     Right ExitSuccess  -> return $ Just ()
 >     _                  -> return Nothing
+
+\subsection{Memcache}
+
+For now, we don't use memcache for anything more than page-level caching. As
+such, we only need to connect, issue a command, and then disconnect. In the
+future, if we use it more we could add a memcache server to the App monad.
+
+> memcacheServer :: IO Memcached.Server
+> memcacheServer = Memcached.connect "127.0.0.1" 11211
+
+> withMemcache :: (Memcached.Server -> IO a) -> IO a
+> withMemcache f = do
+>   bracket  (memcacheServer)
+>            (Memcached.disconnect)
+>            f
+
+> memcacheGet :: String -> IO (Maybe String)
+> memcacheGet key = withMemcache $ \mc -> decodeString <$$> Memcache.get mc key
+
+> memcacheSet :: String -> String -> IO (Bool)
+> memcacheSet key value = withMemcache $ \mc ->
+>   Memcache.set mc key (encodeString value)
+
+> memcacheDelete :: String -> IO (Bool)
+> memcacheDelete key = withMemcache $ \mc -> Memcache.delete mc key 0
+
+While out dataset and traffic is still small, the easiest thing to do when
+something is updated is to just flush the entire cache rather than try and
+figure out what exactly we need to invalidate. It's a brute force approach but
+it's better than no cache at all.
+
+> memcacheFlush :: IO ()
+> memcacheFlush = withMemcache $ \mc -> Memcache.flush mc
+
+\subsection{Lists}
+
+In case we want don't want our program to crash when taking the head of the
+empty list, we need to provide a default:
+
+> safeHead :: a -> [a] -> a
+> safeHead d []     = d
+> safeHead _ (x:_)  = x
+
+If we want to layout items from left to right in HTML columns, we need to break
+1 list down into smaller lists. |everyNth| is not a great name, but |cycleN| is
+equally confusing. These use a neat |foldr| trick I found on the Haskell wiki.
+
+every2nd [1,2,3] =>
+3 ([],[]) => ([3],[])
+2 ([3],[]) => ([2],[3])
+1 ([2],[3]) => ([1,3],[2])
+
+> every2nd :: [a] -> ([a], [a])
+> every2nd l = foldr (\a ~(x,y) -> (a:y,x)) ([],[]) l
+
+every3rd [1,2,3,4,5] =>
+5 ([],[],[]) => ([5],[],[])
+4 ([5],[],[]) => ([4],[5],[])
+3 ([4],[5],[]) => ([3],[4],[5])
+2 ([3],[4],[5]) => ([2,5],[3],[4])
+1 ([2,5],[3],[4]) => ([1,4],[2,5],[3])
+
+> every3rd :: [a] -> ([a], [a], [a])
+> every3rd l = foldr (\a ~(x,y,z) -> (a:z,x,y)) ([],[],[]) l

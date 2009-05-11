@@ -96,25 +96,35 @@ forums within the group).
 > renderForumGroup :: String -> App Html
 > renderForumGroup g = do
 >   memberName <- asks appMemberName
->   forums <- queryTuples'  "SELECT name, title, icon_filename FROM forum \
->                           \WHERE group_name = ? ORDER BY position ASC"
->                           [toSql g]
+>   forums <- queryTuples'
+>     "SELECT t.name, t.title, t.icon_filename, c2.time, m.username FROM \
+>      \(SELECT f.name, f.title, f.icon_filename, f.position, \
+>              \MAX(c.comment_no) AS latest_comment \
+>       \FROM forum f \
+>       \LEFT JOIN forum_topic ON (forum_name = name) \
+>       \LEFT JOIN comment c ON (comment_no = last_comment) \
+>       \WHERE group_name = ? \
+>       \GROUP BY f.name, f.title, f.icon_filename, f.position) AS t \
+>     \LEFT JOIN comment c2 ON (c2.comment_no = latest_comment) \
+>     \LEFT JOIN member m ON (m.member_no = c2.author) \
+>     \ORDER BY t.position ASC"
+>     [toSql g]
 >   case forums of
 >     Nothing  -> return $ paragraph << "Error retrieving forums"
 >     Just fs  -> do
 >       let fs' = map renderForum fs
 >           creator = case memberName of
->                       Just "jekor"  -> [button ! [theclass "reveal forum-creator"] <<
+>                       Just "jekor"  -> [button ! [theclass ("reveal forum-creator-" ++ g)] <<
 >                                           "New Forum" +++ forumCreator]
 >                       _             -> []
->           (left, right) = foldr (\a ~(x,y) -> (a:y,x)) ([],[]) (fs' ++ creator)
+>           (left, right) = every2nd $ fs' ++ creator
 >       return $ thediv ! [theclass "forum-group"] <<
 >         [  h2 << g,
 >            unordList left ! [theclass "first"],
 >            unordList right,
 >            paragraph ! [theclass "clear"] << noHtml ]
 >    where forumCreator =
->            form ! [  identifier "forum-creator",
+>            form ! [  identifier ("forum-creator-" ++ g),
 >                      thestyle "display: none",
 >                      action "/forum/new",
 >                      method "POST",
@@ -132,11 +142,18 @@ icon. This allows faster visual navigation to the forum of interest when first
 arriving at the top-level forums page.
 
 > renderForum :: [SqlValue] -> Html
-> renderForum [n, t, i]  =
+> renderForum [n, t, i, t', u]  =
+>   let latest = case t' of
+>                  SqlNull  -> noHtml
+>                  _        -> paragraph ! [theclass "metadata"] <<
+>                                [  stringToHtml $ formatSimpleTime $ fromSql t', br,
+>                                   stringToHtml $ fromSql u ] in
 >   anchor ! [href $ "/forum/" ++ (fromSql n)] << [
 >     image ! [  width "64", height "64",
 >                src ("http://s.vocabulink.com/icons/" ++ fromSql i)],
->     stringToHtml $ fromSql t ]
+>     h3 << (fromSql t :: String),
+>     latest,
+>     paragraph ! [thestyle "clear: both"] << noHtml ]
 > renderForum _       = stringToHtml "Error retrieving forum."
 
 Creating a forum group is a rare administrative action. For now, we're not
@@ -150,6 +167,7 @@ moderators or someone else I'll be motivated to make this nicer.
 >                         \VALUES (?, COALESCE((SELECT MAX(position) \
 >                                              \FROM forum_group), 0) + 1)"
 >                         [toSql s]
+>   liftIO memcacheFlush
 >   redirect =<< referrerOrVocabulink
 
 For now, we just upload to the icons directory in our static directory.
@@ -174,6 +192,7 @@ For now, we just upload to the icons directory in our static directory.
 >                                               \WHERE group_name = ?), 0) + 1, ?)"
 >                             [  toSql $ urlify t, toSql t, toSql g,
 >                                toSql g, toSql $ basename f]
+>       liftIO memcacheFlush
 >       redirect =<< referrerOrVocabulink
 >     _ -> error "Please fill in the form completely. \
 >                \Make sure to include an icon."
@@ -303,7 +322,7 @@ This creates the topic in the database given the title and root comment body.
 >                            [toSql fn, toSql t, toSql n, toSql n]
 >           case r of
 >             Nothing  -> liftIO $ rollback c' >> throwDyn ()
->             Just _   -> return n
+>             Just _   -> (liftIO memcacheFlush) >> return n
 
 The following HTML is pretty messy. I now know why threaded comments are rare:
 they're difficult to implement! It's not just the database threading that's
@@ -438,6 +457,9 @@ comment in a thread is possible with SQL, but it can be expensive. So when
 adding a comment to a thread we update the number of comments in the thread and
 the last comment time.
 
+If the comment is posted successfully, we need to remove the topic page from
+the cache so that it gets regenerated on the next request.
+
 > replyToForumComment :: App CGIResult
 > replyToForumComment = do
 >   memberName <- asks appMemberName
@@ -475,6 +497,7 @@ the last comment time.
 >             Just c   -> do
 >               c' <- asks appDB
 >               liftIO $ commit c'
+>               liftIO memcacheFlush
 >               comment <- displayForumComment topicNum c
 >               outputJSON [  ("html", showHtmlFragment comment),
 >                             ("status", "accepted") ]

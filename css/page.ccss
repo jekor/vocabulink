@@ -35,7 +35,7 @@ html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockq
 :focus:
   outline: 0
 
-h1, h2, h3, h4, h5, h6, p, ol, ul, dl, table:
+h1, h2, h3, h4, h5, h6, p, ol, ul, dl, table, a:
   font-family: Verdana, sans-serif
 
 a:
@@ -278,6 +278,16 @@ ul.hyperlinks:
   li:
     display: inline
 
+.link-pack:
+  width: 240px
+  h3:
+    text-align: center
+    margin-bottom: 0.25em
+  img:
+    width: 240px
+    height: 336px
+    border: 1px solid $bar_and_box_border;
+
 p.copyright:
   margin: 0
   text-align: center
@@ -381,3 +391,8 @@ blockquote:
 button, input:
   line-height: 1.3em
   vertical-align: middle
+
+.three-column:
+  .column:
+    width: 33%
+    float: left

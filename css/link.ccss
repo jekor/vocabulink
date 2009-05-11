@@ -48,7 +48,9 @@
 
 .preview:
   border: 1px solid $bar_and_box_background
-  margin-bottom: 1.3em * 3
+  margin-bottom: 1.3em
+  .link-pack:
+    margin: 1.3em auto
 
 // review
 
@@ -96,7 +98,7 @@ fieldset#link-word textarea:
     margin-left: 1.5em
 
 .link-ops:
-  width: 25%
+  width: 22.5%
   float: left
   padding-top: 1.3em
   form:
@@ -106,10 +108,16 @@ fieldset#link-word textarea:
       margin->
         left: auto
         right: auto
-  p:
+  p, a:
     text-align: center
+  a:
+    display: block
 
 #recall-buttons:
   text-align: center
   button:
     padding: 0.5em 0.75em
+
+a.language-pair:
+  display: block
+  text-align: center

@@ -25,7 +25,9 @@ them.
 >                           memberLinks, latestLinks, linkPage, deleteLink,
 >                           linksPage, linksContainingPage, newLink,
 >                           partialLinkHtml, partialLinkFromValues,
->                           drawLinkSVG, drawLinkSVG' ) where
+>                           drawLinkSVG, drawLinkSVG', languagePairsPage,
+>                           languagePairLinks, languageNameFromAbbreviation,
+>                           newLinkPack, linkPackPage, deleteLinkPack ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -34,8 +36,14 @@ them.
 > import Vocabulink.Review.Html
 > import Vocabulink.Utils
 
+> import Control.Exception (Exception, try)
 > import Data.List (partition)
-> import qualified Text.XHtml.Strict.Formlets as F
+> import System.Cmd (system)
+> import System.Exit (ExitCode(..))
+> import System.FilePath.Posix (addExtension, takeExtension)
+> import qualified Text.Formlets as Fl
+> import qualified Text.XHtml as H
+> import qualified Text.XHtml.Strict.Formlets as F (input, select, textarea, hidden)
 
 \subsection{Link Data Types}
 
@@ -51,6 +59,38 @@ type (for partially constructed links, which you'll see later).
 >                     linkDestination      :: String,
 >                     linkDestinationLang  :: String,
 >                     linkType             :: LinkType }
+
+The |linkOriginLang| and |linkDestinationLang| are the language abbrevations.
+To get the full name we need to look it up.
+
+> languageNameFromAbbreviation :: String -> App (Maybe String)
+> languageNameFromAbbreviation a = return . lookup a =<< languages
+
+Here are a couple shortcuts.
+
+> linkOriginLanguage, linkDestinationLanguage :: Link -> App String
+> linkOriginLanguage l = fromJust <$> languageNameFromAbbreviation (linkOriginLang l)
+> linkDestinationLanguage l = fromJust <$> languageNameFromAbbreviation (linkDestinationLang l)
+
+> languages :: App [(String, String)]
+> languages = do
+>   langs <- liftIO $ memcacheGet "languages"
+>   case langs of
+>     Just langs'  -> case maybeRead langs' of
+>                       Just langs''  -> return langs''
+>                       Nothing       -> languagesFromDB'
+>     Nothing      -> languagesFromDB'
+>  where  languagesFromDB' :: App [(String, String)]
+>         languagesFromDB' = do
+>           langs''' <- languagesFromDB
+>           liftIO $ memcacheSet "languages" (show langs''')
+>           return langs'''
+
+> languagesFromDB :: App [(String, String)]
+> languagesFromDB = map langToPair . fromJust <$>
+>   queryTuples'  "SELECT abbr, name FROM language ORDER BY name" []
+>     where  langToPair [a, n]  = (fromSql a, fromSql n)
+>            langToPair _       = error "Failed to retrieve languages from the database."
 
 We can associate 2 lexemes in many different ways. Because different linking
 methods require different information, they each need different representations
@@ -98,20 +138,27 @@ Links are created by members. Vocabulink does not own them. It merely has a
 license to use them (as part of the Terms of Use). So when displaying a link in
 full, we display a copyright notice with the member's username.
 
-> linkCopyright :: Link -> App String
+Of course, simple link types without nothing other than the origin and
+destination of the link do not contain copyrightable material.
+
+> linkCopyright :: Link -> App Html
 > linkCopyright l = do
->   t <- queryTuple'  "SELECT username, \
->                            \extract(year from created), \
->                            \extract(year from updated) \
->                     \FROM link, member \
->                     \WHERE member_no = author AND link_no = ?"
->                     [toSql $ linkNumber l]
->   return $ "© " ++ case t of
->                      Just [a,c,u]  ->  let c'  = show (fromSql c :: Integer)
->                                            u'  = show (fromSql u :: Integer)
->                                            r   = c' == u' ? c' $ c' ++ "–" ++ u' in
->                                        r ++ " " ++ (fromSql a)
->                      _             ->  "unknown"
+>   case linkType l of
+>     LinkWord _ _ -> do
+>       t <- queryTuple'  "SELECT username, \
+>                                \extract(year from created), \
+>                                \extract(year from updated) \
+>                         \FROM link, member \
+>                         \WHERE member_no = author AND link_no = ?"
+>                         [toSql $ linkNumber l]
+>       return $ paragraph ! [theclass "copyright"] << stringToHtml (
+>         "Copyright " ++ case t of
+>                           Just [a,c,u]  ->  let c'  = show (fromSql c :: Integer)
+>                                                 u'  = show (fromSql u :: Integer)
+>                                                 r   = c' == u' ? c' $ c' ++ "–" ++ u' in
+>                                             r ++ " " ++ (fromSql a)
+>                           _             ->  "unknown")
+>     _            -> return noHtml
 
 Fully loading a link from the database requires joining 2 relations. The join
 depends on the type of the link. But we don't always need the type-specific
@@ -198,7 +245,8 @@ Retrieving a partial link is simple.
 > getPartialLink linkNo = do
 >   t <- queryTuple'  "SELECT link_no, link_type, origin, destination, \
 >                            \origin_language, destination_language \
->                     \FROM link WHERE link_no = ?" [toSql linkNo]
+>                     \FROM link \
+>                     \WHERE link_no = ?" [toSql linkNo]
 >   return $ partialLinkFromValues =<< t
 
 We use a helper function to convert the raw SQL tuple to a partial link value.
@@ -287,7 +335,7 @@ using this.
 > drawLinkSVG = drawLinkSVG' "drawLink"
 
 > drawLinkSVG' :: String -> Link -> Html
-> drawLinkSVG' f link = script << primHtml (
+> drawLinkSVG' f link = script ! [thetype "text/javascript"] << primHtml (
 >   "connect(window, 'onload', partial(" ++ f ++ "," ++
 >   showLinkJSON link ++ "));") +++
 >   thediv ! [identifier "graph", thestyle "height: 100px"] << noHtml
@@ -326,13 +374,16 @@ of the link but displaying its type-level details as well.
 Sometimes we don't need to display all of a links details. This displays a
 partial link more compactly, such as for use in lists, etc.
 
-> partialLinkHtml :: PartialLink -> Html
-> partialLinkHtml (PartialLink l) =
->   anchor ! [  href ("/link/" ++ (show $ linkNumber l)),
->               thestyle $  "color: " ++ linkColor l ++
->                           "; background-color: " ++ linkBackgroundColor l ++
->                           "; border: 1px solid " ++ linkColor l ] <<
->     (linkOrigin l ++ " → " ++ linkDestination l)
+> partialLinkHtml :: PartialLink -> App Html
+> partialLinkHtml (PartialLink l) = do
+>   originLanguage <- linkOriginLanguage l
+>   destinationLanguage <- linkDestinationLanguage l
+>   return $ anchor ! [  href ("/link/" ++ (show $ linkNumber l)),
+>                        H.title (originLanguage ++ " → " ++ destinationLanguage),
+>                        thestyle $  "color: " ++ linkColor l ++
+>                                    "; background-color: " ++ linkBackgroundColor l ++
+>                                    "; border: 1px solid " ++ linkColor l ] <<
+>              (linkOrigin l ++ " → " ++ linkDestination l)
 
 Each link gets its own URI and page. Most of the extra code in the following is
 for handling the display of link operations (``review'', ``delete'', etc.),
@@ -352,12 +403,19 @@ dealing with retrieval exceptions, etc.
 >       copyright <- linkCopyright l'
 >       let orig  = linkOrigin l'
 >           dest  = linkDestination l'
+>       originLanguage <- linkOriginLanguage l'
+>       destinationLanguage <- linkDestinationLanguage l'
 >       stdPage (orig ++ " -> " ++ dest) [
 >         CSS "link", JS "MochiKit", JS "raphael", JS "link-graph"] []
 >         [  drawLinkSVG l',
->            thediv ! [theclass "link-ops"] << [review, ops],
+>            thediv ! [theclass "link-ops"] << [
+>              anchor ! [href (  "/links?ol=" ++ linkOriginLang l' ++
+>                                "&dl=" ++ linkDestinationLang l' )] <<
+>                (originLanguage ++ " → " ++ destinationLanguage),
+>              review,
+>              ops ],
 >            thediv ! [theclass "link-details"] << linkTypeHtml (linkType l'),
->            paragraph ! [theclass "copyright"] << copyright ]
+>            copyright ]
 
 Each link can be ``operated on''. It can be reviewed (added to the member's
 review set) and deleted (marked as deleted). In the future, I expect operations
@@ -390,9 +448,9 @@ away eventually.
 >     Nothing  -> error "Error while retrieving links."
 >     Just ps  -> do
 >       pagerControl <- pager pg n $ offset + (length ps)
+>       partialLinks <- mapM partialLinkHtml (take n ps)
 >       simplePage title [CSS "link"] [
->         unordList (map partialLinkHtml (take n ps)) !
->           [identifier "central-column", theclass "links"],
+>         unordList partialLinks ! [identifier "central-column", theclass "links"],
 >         pagerControl ]
 
 A more practical option for the long run is providing search. ``Containing''
@@ -456,7 +514,7 @@ it outputs and digest each local function separately.
 >                                     ("bgcolor",  linkBackgroundColor $ pLink o),
 >                                     ("number",   show $ linkNumber $ pLink o)]) xs)
 >        insertMid :: a -> [a] -> [a]
->        insertMid x xs = let (l,r) = foldr (\a ~(x',y') -> (a:y',x')) ([],[]) xs in
+>        insertMid x xs = let (l,r) = every2nd xs in
 >                         reverse l ++ [x] ++ r
 
 \subsection{Creating New Links}
@@ -514,9 +572,9 @@ Here's a form for creating a link. It gathers all of the required details
 > establish ts = do
 >   originPicker       <- languagePicker $ Left ()
 >   destinationPicker  <- languagePicker $ Right ()
->   return (mkLink  <$> lexemeInput "Origin"
+>   return (mkLink  <$> lexemeInput "Foreign"
 >                   <*> plug (+++ stringToHtml " ") originPicker
->                   <*> lexemeInput "Destination"
+>                   <*> lexemeInput "Native"
 >                   <*> destinationPicker
 >                   <*> linkTypeInput ts)
 
@@ -556,22 +614,20 @@ This takes an either parameter to signify whether you want origin language
 >                 Left _   -> "origin"
 >                 Right _  -> "destination"
 >   memberNo <- asks appMemberNo
->   langs <- (map pairUp) . fromJust <$> queryTuples'
->              ("SELECT " ++ side' ++ "_language, name \
+>   langs <- map langPair `liftM` fromJust <$> queryTuples'
+>              ("SELECT abbr, name \
 >               \FROM link, language \
 >               \WHERE language.abbr = link." ++ side' ++ "_language \
 >                 \AND link.author = ? \
->               \GROUP BY " ++ side' ++ "_language, name \
+>               \GROUP BY " ++ side' ++ "_language, abbr, name \
 >               \ORDER BY COUNT(" ++ side' ++ "_language) DESC")
 >              [toSql memberNo]
->   allLangs <- (map pairUp) . fromJust <$> queryTuples'
->                 "SELECT abbr, name FROM language ORDER BY abbr" []
+>   allLangs <- languages
 >   let choices = langs ++ [("","")] ++ allLangs
 >   return $ F.select choices (Just $ fst . head $ choices) `check` ensures
 >              [  ((/= "")  ,  side' ++ " language is required") ]
->  where pairUp :: [SqlValue] -> (String,String)
->        pairUp [x,y]  = (fromSql x, fromSql y)
->        pairUp _      = error "Invalid pair."
+>     where langPair [a, b]  = (fromSql a, fromSql b)
+>           langPair _       = error "Invalid language pair."
 
 We have a bit of a challenge with link types. We want the form to adjust
 dynamically using JavaScript when a member chooses one of the link types from a
@@ -652,7 +708,8 @@ most recent. This assumes the ordering of links is determined by link number.
 > latestLinks offset limit = do
 >   ts <- queryTuples'  "SELECT link_no, link_type, origin, destination, \
 >                              \origin_language, destination_language \
->                       \FROM link WHERE NOT deleted \
+>                       \FROM link \
+>                       \WHERE NOT deleted \
 >                       \ORDER BY link_no DESC \
 >                       \OFFSET ? LIMIT ?" [toSql offset, toSql limit]
 >   return $ (catMaybes . map partialLinkFromValues) `liftM` ts
@@ -671,3 +728,193 @@ sorted by link number as well.
 >                       [toSql memberNo, toSql offset, toSql limit]
 >   return $ (catMaybes . map partialLinkFromValues) `liftM` ts
 
+> languagePairLinks :: String -> String -> Int -> Int -> App (Maybe [PartialLink])
+> languagePairLinks oa da offset limit = do
+>   ts <- queryTuples'  "SELECT link_no, link_type, origin, destination, \
+>                              \origin_language, destination_language \
+>                       \FROM link \
+>                       \WHERE NOT deleted \
+>                         \AND origin_language = ? AND destination_language = ? \
+>                       \ORDER BY link_no DESC \
+>                       \OFFSET ? LIMIT ?"
+>                       [toSql oa, toSql da, toSql offset, toSql limit]
+>   return $ (catMaybes . map partialLinkFromValues) `liftM` ts
+
+Once we have a significant number of links, browsing through latest becomes
+unreasonable for finding links for just the language we're interested in. To
+aid in this, it helps to know which language pairs are in use and to know how
+many links exist for each so that we can arrange by popularity.
+
+Since we need both the language abbreviation and name (we use the abbreviation
+in URLs and the name for display to the client), we return these as triples:
+(language, language, count).
+
+> linkLanguages :: App [((String, String), (String, String), Integer)]
+> linkLanguages = do
+>   ts <- queryTuples'  "SELECT origin_language, orig.name, \
+>                              \destination_language, dest.name, \
+>                              \COUNT(*) FROM link \
+>                       \INNER JOIN language orig ON (orig.abbr = origin_language) \
+>                       \INNER JOIN language dest ON (dest.abbr = destination_language) \
+>                       \WHERE NOT deleted \
+>                       \GROUP BY origin_language, orig.name, \
+>                                \destination_language, dest.name \
+>                       \ORDER BY COUNT(*) DESC" []
+>   return $ case ts of
+>     Nothing   -> []
+>     Just ts'  -> map linkLanguages' ts'
+>       where linkLanguages' [oa, on, da, dn, c]  =
+>               ((fromSql oa, fromSql on), (fromSql da, fromSql dn), fromSql c)
+>             linkLanguages' _                    = error "Malformed tuple."
+
+Now we can use |linkLanguages| to create a page via which clients can browse
+the site.
+
+> languagePairsPage :: App CGIResult
+> languagePairsPage = do
+>   languages' <- linkLanguages
+>   let (col1, col2, col3) = every3rd $ map languagePairLink languages'
+>   simplePage "Links by Language Pair" [CSS "link"] [
+>     thediv ! [theclass "three-column"] << [
+>       thediv ! [theclass "column"] << unordList col1,
+>       thediv ! [theclass "column"] << unordList col2,
+>       thediv ! [theclass "column"] << unordList col3 ] ]
+
+Display a hyperlink for a language pair.
+
+> languagePairLink :: ((String, String), (String, String), Integer) -> Html
+> languagePairLink ((oa, on), (da, dn), c) =
+>   anchor ! [  theclass "language-pair",
+>               href ("/links?ol=" ++ oa ++ "&dl=" ++ da) ] <<
+>     (on ++ " → " ++ dn ++ " (" ++ show c ++ ")")
+
+> data LinkPack = LinkPack {  linkPackNumber       :: Integer,
+>                             linkPackName         :: String,
+>                             linkPackDescription  :: String,
+>                             linkPackImage        :: Maybe String,
+>                             linkPackCreator      :: Integer }
+
+> linkPackForm :: AppForm (LinkPack, Integer)
+> linkPackForm = plug (\xhtml -> table << xhtml) $ mkLinkPack
+>   <$>  F.hidden Nothing `check` ensure ((> 0) . length) "Missing first link number."
+>   <*>  plug (tabularInput "Pack Name") (F.input Nothing) `check`
+>          ensures [  ((> 0)   . length, "Pack Name must not be empty."),
+>                     ((< 50)  . length, "Pack Name must be 50 characters or shorter.") ]
+>   <*>  plug (tabularInput "Description") (F.textarea Nothing) `check`
+>          ensures [  ((> 0)    . length, "Description must not be empty."),
+>                     ((< 500)  . length, "Description must be 500 characters or shorter.") ]
+>   <*>  plug (tabularInput "Image") (nothingIfNull $ fileUpload "/pack/image" "Upload Image")
+>  where mkLinkPack ::  String -> String -> String -> Maybe String ->
+>                       (LinkPack, Integer)
+>        mkLinkPack l n d f = (  LinkPack {  linkPackNumber       = 0,
+>                                            linkPackName         = n,
+>                                            linkPackDescription  = d,
+>                                            linkPackImage        = f,
+>                                            linkPackCreator      = undefined },
+>                                read l )
+
+> newLinkPack :: App CGIResult
+> newLinkPack = withRequiredMemberNumber $ \memberNo -> do
+>   uri   <- requestURI
+>   meth  <- requestMethod
+>   preview <- getInput "preview"
+>   (result, xhtml) <- runForm' linkPackForm
+>   case preview of
+>     Just _  -> do
+>       let preview' = case result of
+>                        Failure failures  -> unordList failures
+>                        Success (linkPack, _)  -> thediv ! [theclass "preview"] <<
+>                                                    displayLinkPack linkPack
+>       simplePage "Create a Link Pack (preview)" deps
+>         [  preview',
+>            form ! [  thestyle "text-align: center",
+>                      action (uriPath uri), method "POST" ] <<
+>              [xhtml, actionBar] ]
+>     Nothing -> do
+>       case result of
+>         Success (linkPack, fl) -> do
+>           linkNo <- createLinkPack linkPack memberNo fl
+>           case linkNo of
+>             Just n   -> redirect $ "/pack/" ++ (show n)
+>             Nothing  -> error "Failed to establish link."
+>         Failure failures -> simplePage "Create a Link Pack" deps
+>           [  form ! [  thestyle "text-align: center",
+>                        action (uriPath uri), method "POST" ] <<
+>                [  meth == "GET" ? noHtml $ unordList failures,
+>                   xhtml, actionBar ] ]
+>  where deps = [  CSS "link", JS "MochiKit", JS "link", JS "ajaxupload" ]
+>        actionBar = thediv ! [thestyle "margin-left: auto; margin-right: auto; \
+>                                       \margin-top: 1.3em; width: 12em"] <<
+>                      [  submit "preview" "Preview" !
+>                           [thestyle "float: left; width: 5.5em"],
+>                         submit "" "Create" ! [thestyle "float: right; width: 5.5em"],
+>                         paragraph ! [thestyle "clear: both"] << noHtml ]
+
+> displayLinkPack :: LinkPack -> Html
+> displayLinkPack lp =
+>   thediv ! [theclass "link-pack"] << [
+>     h3 << linkPackName lp,
+>     anchor ! [href ("/pack/" ++ (show $ linkPackNumber lp))] <<
+>       image ! [  src (  "http://s.vocabulink.com/pack/image/" ++
+>                         case linkPackImage lp of
+>                           Just i   -> i
+>                           Nothing  -> "default.png" ),
+>                  alt (linkPackName lp) ] ]
+
+> createLinkPack :: LinkPack -> Integer -> Integer -> App (Maybe Integer)
+> createLinkPack lp memberNo firstLink = do
+>   r <- withTransaction' $ do
+>     c <- asks appDB
+>     packNo <- liftIO $ insertNo c
+>       "INSERT INTO link_pack (name, description, image_ext, creator) \
+>                      \VALUES (?, ?, ?, ?)"
+>       [  toSql (linkPackName lp), toSql (linkPackDescription lp),
+>          toSql (takeExtension <$> linkPackImage lp), toSql (memberNo) ]
+>       "link_pack_pack_no_seq"
+>     case packNo of
+>       Nothing  -> liftIO $ rollback c >> return Nothing
+>       Just n   -> do
+>         liftIO $ quickStmt c  "INSERT INTO link_pack_link (pack_no, link_no) \
+>                                                  \VALUES (?, ?)"
+>                               [toSql n, toSql firstLink]
+>         return packNo
+>   case r of
+>     Just (Just r')  -> case linkPackImage lp of
+>                          Nothing  -> return $ Just r'
+>                          Just i   -> moveImage i >> return (Just r')
+>       where  moveImage :: String -> App (Either Exception ExitCode)
+>              moveImage i' = do
+>                dir  <- (++ "/pack/image/") . fromJust <$> getOption "staticdir"
+>                let old  =  dir ++ i'
+>                    new  =  dir ++ addExtension (show r') (takeExtension i')
+>                    cmd  =  "mv " ++ old ++ " " ++ new
+>                liftIO $ try $ system cmd
+>     _               -> return Nothing
+
+> getLinkPack :: Integer -> App (Maybe LinkPack)
+> getLinkPack n = do
+>   t <- queryTuple'  "SELECT pack_no, name, description, image_ext, creator \
+>                     \FROM link_pack WHERE pack_no = ?" [toSql n]
+>   case t of
+>     Nothing  -> return Nothing
+>     Just t'  -> return $ linkPackFromValues t'
+
+> linkPackFromValues :: [SqlValue] -> Maybe LinkPack
+> linkPackFromValues [pn, n, d, i, c] =
+>   Just $ LinkPack {  linkPackNumber       = fromSql pn,
+>                      linkPackName         = fromSql n,
+>                      linkPackDescription  = fromSql d,
+>                      linkPackImage        = (fromSql pn ++) <$> fromSql i,
+>                      linkPackCreator      = fromSql c }
+> linkPackFromValues _ = Nothing
+
+> linkPackPage :: Integer -> App CGIResult
+> linkPackPage n = do
+>   linkPack <- getLinkPack n
+>   case linkPack of
+>     Nothing  -> output404 ["pack",show n]
+>     Just lp  -> simplePage ("Link Pack - " ++ linkPackName lp) [] [
+>       displayLinkPack lp ]
+
+> deleteLinkPack :: Integer -> App CGIResult
+> deleteLinkPack _ = error "Unimplemented."

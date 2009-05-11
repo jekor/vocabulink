@@ -2,71 +2,54 @@
 #date 2009-03-24 21:54:00 -0700
 #section main
 
-Vocabulink is devoted to helping you learn foreign languages as quickly and
-effortlessly as possible. We do this by focusing only on vocabulary. Contrary
-to what they teach you in school, nothing else is important. You can build
-fluency in the language of your choice with nothing but a basic vocabulary.
+Vocabulink is devoted to helping you learn foreign languages as quickly and effortlessly as possible. We do this by focusing only on vocabulary building.
 
 <literal>
 <blockquote class="right">
 <p>
-“Once you have a solid vocabulary, learning becomes a leisure activity.”
+“With a solid vocabulary, learning becomes a leisure activity.”
 </p>
 </blockquote>
 </literal>
 
-Once you have a base of vocabulary to build on, you just have to begin using
-the language in whatever way you want. Read a book or a website in the
-language. Talk to native speakers. Watch movies or listen to radio shows. Once
-you have a solid vocabulary, learning becomes a leisure activity. There's no
-need for textbooks: you'll figure out grammar as you go along (just like
-children do).
+Once you have a base of vocabulary to build on, you just have to begin using the language in whatever way you want. Read a book or a website in the language. Talk to native speakers. Watch movies or listen to radio shows. With a solid vocabulary, learning becomes a leisure activity.
 
-Building a vocabulary is the most important and most time-consuming part of
-learning a language. But the good news is that you can learn vocabulary faster
-and more easily than you imagined. We'll show you how, using 3 simple tools.
+Building a vocabulary is the most important and most time-consuming part of learning a language. But the good news is that you can learn vocabulary faster and more easily than you imagined. We'll show you how, using 3 simple principles.
 
-* Outrageous Stories that Link Foreign Words Directly into Your Brain
+* Use Outrageous Stories to Link Foreign Words Directly into Your Brain
 
 <literal>
 <blockquote class="left">
 <p>
-“It's like we tatoo the word directly onto your brain while you're distracted
+“It's like we tattoo the word directly onto your brain while you're distracted
 reading an entertaining story.”
 </p>
 </blockquote>
 </literal>
 
-Vocabulink uses stories to make new words stick. Each word's story shows you
-the meaning of the word, but it also makes sure that you don't forget it. It's
-like we tatoo the word directly onto your brain while you're distracted reading
-an entertaining story.
+Vocabulink uses stories to make new words stick. Each word's story shows you the meaning of the word, but it also makes sure that you don't forget it. It's like we tattoo the word directly onto your brain while you're distracted reading an entertaining story.
+
+These stories use a special type of mnemonic technique design specifically for learning languages. Mnemonics have been in use for thousands of years, at least as far back as when Ancient Greek orators used them to memorize speeches.
+
+Our memory is especially receptive to stories. We pass our history down from generation to generation through stories. We teach lessons to children with stories. Experienced speakers knows that stories are essential for getting a point across and making it stick with an audience.
+
+Vocabulink exploits this unique feature of the human brain to make learning more natural. It may seem silly at first, but it's extremely effective.
 
 * Study Only the Words that Count
 
-According to some estimates[1], there are nearly 1 million words in the English
-language. That seems very daunting until you realize that the word "the" makes
-up 7% of the total words we read[2]. Following "the", the word "of" accounts
-for 3.5%. The next word, "and", makes up another 2.8% or so. With only 3 words
-you can read something like 13% of written English! You only need 135 words to
-read 50%[3]. And 135 words can be learned in a week with the right stories.
+According to some estimates[2], there are nearly 1 million words in the English language. That seems very daunting until you realize that the word "the" makes up 7% of the total words we read[3]. Following "the", the word "of" accounts for 3.5%. The next word, "and", makes up another 2.8% or so. With only 3 words you can read something like 13% of written English! You only need 135 words to read 50%[3]. And 135 words can be learned in a week with the right stories.
 
-This uneven spread is similar in every language that statisticians have
-studied. In fact, it has a name: Zipf's law. We can take advantage of this law
-to build vocabulary scientifically. You can get up in running with a foreign
-language with a minimum of study.
+This uneven spread is similar in every language that statisticians have studied. In fact, it has a name: Zipf's law. We can take advantage of this law to build vocabulary scientifically. You can get up in running with a foreign language with a minimum of study by avoiding studying words that you're never going to use.
+
+It's be very easy to go after words that naturally lend themselves to mnemonics like: ひろ (pronounced "hero") or たこ (pronounced "taco"), but how often are you going to need to talk about ducks and octopuses? Instead, we focus on very common words like the ones we mentioned above.[4]
 
 * Keep the Words You've Learned Fresh and On the Tip of Your Brain
 
-Sometimes we forget words, even when we've used memorable stories. But it's a
-tedious waste of time to keep studying the words day after day.
+Sometimes we forget words, even when we've used memorable stories. But it's a tedious waste of time to keep studying the words day after day.
 
-We've taken some of the latest scientific research about how memory works and
-made it an integrated part of Vocabulink. It's called spaced repetition[4] and
-it makes sure that you spend as little time reviewing words as possible. You
-can think of it as your own personal language trainer, keeping detailed stats
-on what you've learned and drilling you only on the ones it knows you're about
-to forget.
+The traditional solution to this is flashcards. But there's a better way.
+
+We've taken some of the latest scientific research about how memory works and made it an integrated part of Vocabulink. It's called spaced repetition[5] and it makes sure that you spend as little time reviewing words as possible. You can think of it as your own personal language trainer, keeping detailed stats on what you've learned and drilling you only on the ones it thinks you're about to forget.
 
 * [[/member/signup][Sign Up]] for Free Now!
 
@@ -79,5 +62,7 @@ Footnotes:
 
 [3]  [[http://en.wikipedia.org/wiki/Zipf%27s_law][Zipf's Law]]
 
-[4]  [[http://www.supermemo.com/english/ol/background.htm][Spaced repetition in the practice of learning]]
+[4]  The most common words in a language are referred to as "particles". They also tend to be the most difficult to learn due to their abstract meaning. However, link-word mnemonics do work for them if you come up with the right story.
+
+[5]  [[http://www.supermemo.com/english/ol/background.htm][Spaced repetition in the practice of learning]]
 

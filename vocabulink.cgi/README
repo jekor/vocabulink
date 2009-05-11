@@ -12,6 +12,10 @@ How to Build
 Just run gmake. The program has not been built for Cabal as it's not intended
 to be a general purpose application or library.
 
+Note that I've only tested using GHC 6.8.3. GHC 6.10 won't work because of
+changes to Control.Exception. To build on GHC 6.10, you can try the patches
+provided by Henry Laxen. To apply the patches: patch -p1 < ghc.6.10.diff
+
 Contact
 =======
 Questions, comments, suggestions? Contact <jekor@jekor.com>.

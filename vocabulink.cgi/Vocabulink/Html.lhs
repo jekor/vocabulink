@@ -26,10 +26,10 @@ functions. An example of this is |linkList|.
 
 > module Vocabulink.Html (  Dependency(..), stdPage, simplePage,
 >                           linkList, breadcrumbs, options, tableRows, accesskey,
->                           helpButton, markdownToHtml,
+>                           readonly, helpButton, markdownToHtml,
 >                           AppForm, runForm, runForm', formLabel, formLabel',
 >                           checkbox', tabularInput, tabularSubmit,
->                           pager, currentPage,
+>                           pager, currentPage, fileUpload, uploadFile,
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
 >                           (<<), (+++), (!), showHtmlFragment,
 >                           identifier, theclass, thediv, thespan, style,
@@ -37,12 +37,12 @@ functions. An example of this is |linkList|.
 >                           image, unordList, form, action, method, enctype,
 >                           hidden, label, textfield, password, button, submit,
 >                           fieldset, legend, afile, textarea, select, widget,
->                           thestyle, src, width, height, value, name,
->                           cols, rows, colspan, caption,
+>                           thestyle, src, width, height, value, name, thetype,
+>                           cols, rows, colspan, caption, disabled, alt,
 >                           table, thead, tbody, tfoot, th, tr, td,
 >  {- Text.Formlets -}      runFormState, nothingIfNull,
 >                           check, ensure, ensures, checkM, ensureM,
->                           plug,
+>                           plug, File,
 >  {- Text.XHtml.Strict.Formlets -} XHtmlForm) where
 
 > import Vocabulink.App
@@ -50,7 +50,7 @@ functions. An example of this is |linkList|.
 > import Vocabulink.Review.Html
 > import Vocabulink.Utils
 
-> import Control.Arrow (second)
+> import qualified Data.ByteString.Lazy as BS
 > import Data.List (intersperse, find)
 > import Text.Regex (mkRegex, subRegex)
 > import Text.Regex.Posix ((=~))
@@ -59,12 +59,36 @@ functions. An example of this is |linkList|.
 > import Text.Pandoc (  readMarkdown, writeHtml, defaultParserState,
 >                       defaultWriterOptions )
 > import Text.Formlets as F
-> import Text.XHtml.Strict
+> import Text.Formlets (File)
+> import Text.XHtml.Strict hiding (content)
+> import qualified Text.XHtml.Strict.Formlets as XF (input)
 > import Text.XHtml.Strict.Formlets (XHtmlForm)
 
 Most pages depend on some external CSS and/or JavaScript files.
 
 > data Dependency = CSS String | JS String
+>                   deriving Eq
+
+We want to allow the client browser to cache CSS and JavaScript for as long as
+possible, but we want to bust the cache when we update them. We can get the
+best of both worlds by setting large expiration times and by using version
+numbers.
+
+To do this, we'll add a version number to each static file as a query string.
+nginx will ignore this and serve the same file, but the client browser
+\textit{should} ignore it.
+
+Any file not part of this list will be assumed to be version 1. It would be
+nice to get this working automatically via Darcs at some point.
+
+> dependencyVersions :: [(Dependency, Integer)]
+> dependencyVersions = [  (JS "raphael", 2),
+>                         (CSS "forum", 2),
+>                         (CSS "link", 3),
+>                         (CSS "page", 3) ]
+
+> dependencyVersion :: Dependency -> Integer
+> dependencyVersion = fromMaybe 1 . flip lookup dependencyVersions
 
 |stdPage| takes a title, a list of dependencies, and list of HTML objects to
 place into the body of the page. It automatically adds a standard header and
@@ -76,23 +100,45 @@ usability.
 If any JavaScript files are required, |stdPage| will automatically add a
 @<noscript>@ warning to the top of the page.
 
+stdPage also stores output to memcache for working with nginx's memcache
+module. It only stores a document in memcache when requested by a non-member
+(we don't want private details or customized views being cached). We also only
+want to cache GET requests. Also, so that we don't fill up the cache with
+previews and such, we don't cache anything with a query string.
+
+On the nginx side, we check to see if the incoming request is a GET, has no
+query string, and is does not have an auth cookie. Only if all 3 conditions are
+met do we serve the file from the cache.
+
+This is not a good long-term caching strategy. But it's nice and simple and
+gives us good control for the time being.
+
 > stdPage :: String -> [Dependency] -> [Html] -> [Html] -> App CGIResult
 > stdPage title' deps head' body' = do
 >   headerB  <- headerBar
 >   footerB  <- footerBar
 >   setHeader "Content-Type" "text/html; charset=utf-8"
->   output' $ renderHtml $ header <<
->     [  thetitle << title',
->        concatHtml (map includeDep ([CSS "page"] ++ deps)),
->        primHtml  "<!--[if IE]>\
->                  \<link rel=\"stylesheet\" type=\"text/css\" \
->                  \href=\"http://s.vocabulink.com/css/ie.css\" />\
->                  \<![endif]-->",
->        concatHtml head' ] +++
->     body << [  headerB,
->                jsNotice,
->                thediv ! [identifier "body"] << concatHtml body',
->                footerB ]
+>   let xhtml = renderHtml $ header <<
+>                  [  thetitle << title',
+>                     concatHtml (map includeDep ([CSS "page"] ++ deps)),
+>                     primHtml  "<!--[if IE]>\
+>                               \<link rel=\"stylesheet\" type=\"text/css\" \
+>                               \href=\"http://s.vocabulink.com/css/ie.css\" />\
+>                               \<![endif]-->",
+>                     concatHtml head' ] +++
+>                  body << [  headerB,
+>                             jsNotice,
+>                             thediv ! [identifier "body"] << concatHtml body',
+>                             footerB ]
+>   memberNo <- asks appMemberNo
+>   uri      <- requestURI
+>   method'  <- requestMethod   
+>   liftIO $ case (memberNo, method', uriQuery uri) of
+>     (Nothing, "GET", "")  -> do
+>       memcacheSet ("vocabulink.com:" ++ uriPath uri) xhtml
+>       return ()
+>     _                     -> return ()
+>   output' xhtml
 >  where jsNotice = case find (\e -> case e of
 >                                      JS _  -> True
 >                                      _     -> False) deps of
@@ -110,13 +156,16 @@ subdomain (for now, @s.vocabulink.com@) to the file. Do not include the file
 suffix (@.css@ or @.js@); it will be appended automatically. These are meant
 for inclusion in the @<head>@ of the page.
 
+|includeDep| also needs to check dependency versions for cache busting.
+
 > includeDep :: Dependency -> Html
-> includeDep (CSS css) =
->   thelink ! [href ("http://s.vocabulink.com/css/" ++ css ++ ".css"),
->              rel "stylesheet", thetype "text/css"] << noHtml
-> includeDep (JS js) =
->   script ! [src ("http://s.vocabulink.com/js/" ++ js ++ ".js"),
->             thetype "text/javascript"] << noHtml
+> includeDep d =
+>   let v = "?" ++ show (dependencyVersion d) in
+>   case d of
+>     CSS  css  -> thelink ! [  href ("http://s.vocabulink.com/css/" ++ css ++ ".css" ++ v),
+>                               rel "stylesheet", thetype "text/css"] << noHtml
+>     JS   js   -> script ! [  src ("http://s.vocabulink.com/js/" ++ js ++ ".js" ++ v),
+>                              thetype "text/javascript"] << noHtml
 
 The standard header bar shows the Vocabulink logo (currently just some text), a
 list of hyperlinks, a search box, and either a login/sign up button or a logout
@@ -141,9 +190,9 @@ Here are the hyperlinks we want in the header of every page.
 
 > topLinks :: Html
 > topLinks = linkList
->   [  anchor ! [href "/forums"] << "Forums",
->      anchor ! [href "/articles"] << "Articles",
->      anchor ! [href "/links"] << "Latest Links",
+>   [  anchor ! [href "/forums"] << "Forums", stringToHtml "|",
+>      anchor ! [href "/articles"] << "Articles", stringToHtml "|",
+>      anchor ! [href "/languages"] << "Browse Links", stringToHtml "|",
 >      anchor ! [href "/help"] << "Help" ]
 
 The footer bar is more simple. It just includes some hyperlinks to static
@@ -169,7 +218,7 @@ generation time (now).
 > copyrightNotice = do
 >   year <- liftIO currentYear
 >   return $ paragraph ! [theclass "copyright"] <<
->     [  stringToHtml "© 2008–",
+>     [  stringToHtml "Copyright 2008–",
 >        stringToHtml ((show year) ++ " "),
 >        anchor ! [href "http://jekor.com/"] << "Chris Forno" ]
 
@@ -243,10 +292,13 @@ This automatically adds ``odd'' and ``even'' CSS classes to each table row.
 > tableRows = map decorate . zip [1..]
 >   where decorate (a,b) = tr ! [theclass (odd (a :: Integer) ? "odd" $ "even")] << b
 
-Curiously, the accesskey attribute is missing from Text.XHtml.
+Some attributes are missing from Text.XHtml.
 
 > accesskey :: String -> HtmlAttr
 > accesskey = strAttr "accesskey"
+
+> readonly :: HtmlAttr
+> readonly = emptyAttr "readonly"
 
 It's nice to have little help buttons and such where necessary. Making them
 easier to create means that we're more likely to do so, which leads to a more
@@ -350,7 +402,8 @@ when implementing ``preview'' functionality for forms.
 
 > runForm' :: XHtmlForm (AppT IO) a -> App (Failing a, Html)
 > runForm' frm = do
->   env <- map (second Left) <$> getInputs
+>   names <- getInputNames
+>   env <- zip names . map fromJust <$> mapM getTextOrFileInput names
 >   let (res, markup, _) = runFormState env "" frm
 >   status  <- res
 >   xhtml   <- markup
@@ -420,3 +473,51 @@ if they're already there.
 >   "?" ++ q2
 >     where nRegex   = "n=[^&]+"
 >           pgRegex  = "pg=[^&]+"
+
+\subsection{File Uploads}
+
+Standard file inputs for forms don't quite fit our needs because they require
+the client to upload the file each time they submit the form. When there are
+errors or during an iterative preview process this could be an annoyance.
+
+Instead, we'll use some JavaScript to submit the file once in the background
+and store its filename in a standard input. This way, once the file has been
+uploaded the input will reflect the name of the file on the server side.
+
+> fileUpload :: String -> String -> AppForm String
+> fileUpload target l = plug (\xhtml -> concatHtml [
+>   script ! [thetype "text/javascript"] << primHtml (unlines [
+>     "connect(window, 'onload', function() {",
+>       "new AjaxUpload('file-upload', {action: '" ++ target ++ "',",
+>                                      "onSubmit: submitFile,",
+>                                      "onComplete: fileSubmitted});",
+>       "$('file-upload').disabled = false;});",
+>     "function submitFile() {setStyle($$('.upload-file')[0], {'background': \"url('http://s.vocabulink.com/img/wait-bar.gif') no-repeat center center\"}); $('file-upload').disabled = true;}",
+>     "function fileSubmitted(f,r) {",
+>       "var inputFile = $$('.upload-file')[0];",
+>       "if (r.substr(0," ++ (show $ length target) ++ ") == '" ++ target ++ "') {",
+>         "inputFile.value = r.substring(" ++ (show $ length target) ++ " + 1, r.length);",
+>         "inputFile.disabled = false;",
+>         "inputFile.readOnly = true;",
+>       "} else {",
+>         "alert('Error uploading file.');",
+>       "}",
+>       "setStyle(inputFile, {'background': 'none'});",
+>       "$('file-upload').disabled = false;}" ]),
+>   xhtml ! [theclass "upload-file", thestyle "width: 50%", readonly],
+>   button ! [  identifier "file-upload", disabled,
+>               thestyle "text-align: center" ] << l ])
+>     (XF.input Nothing)
+
+> uploadFile :: String -> App CGIResult
+> uploadFile path = do
+>   dir <- (++ path) . fromJust <$> getOption "staticdir"
+>   filename <- getInputFilename "userfile"
+>   case filename of
+>     Nothing  -> error "Missing filename."
+>     Just f   -> do
+>       content' <- fromJust <$> getInputFPS "userfile"
+>       let f'    = "/tmp." ++ urlify (basename f)
+>           file  = dir ++ f'
+>       liftIO $ BS.writeFile file content'
+>       output' $ path ++ f'

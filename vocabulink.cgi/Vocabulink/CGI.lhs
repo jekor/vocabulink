@@ -34,13 +34,14 @@ with |readInput|). This is a common pattern in other Vocabulink modules.
 >                          readInput, readRequiredInput, readInputDefault,
 >                          getInputs, handleErrors', referrerOrVocabulink,
 >                          urlify, outputUnauthorized, outputText, outputJSON,
->                          output',
+>                          output', getTextOrFileInput,
 >  {- Network.FastCGI -}   getInputFPS, getInputFilename,
 >                          MonadCGI, CGIResult, requestURI, requestMethod,
 >                          getVar, setHeader, output, redirect, remoteAddr,
 >                          outputError, outputMethodNotAllowed,
 >                          Cookie(..), getCookie, setCookie, deleteCookie,
->  {- Network.URI -}       uriPath,
+>                          getInputNames, getInputContentType, parseContentType,
+>  {- Network.URI -}       uriPath, uriQuery,
 >  {- Text.JSON -}         JSON, encode, toJSObject ) where
 
 > import Vocabulink.DB
@@ -49,7 +50,8 @@ with |readInput|). This is a common pattern in other Vocabulink modules.
 > import Control.Exception (Exception(..))
 > import Data.ByteString.Lazy.UTF8 (fromString)
 > import Data.Char (toLower, isAlphaNum)
-> import Network.URI (uriPath)
+> import Network.URI (uriPath, uriQuery)
+> import Text.Formlets as F
 > import Text.JSON (JSON, encode, toJSObject)
 
 We're going to hide some Network.CGI functions so that we can override them
@@ -162,6 +164,28 @@ input to a required type (as long as that type is Readable).
 > readRequiredInput p =
 >   readInputDefault (error $ "Parameter '" ++ p ++ "' is required.") p
 
+File inputs are a bit of a hassle to deal with.
+
+> getTextOrFileInput :: MonadCGI m => String -> m (Maybe (Either String File))
+> getTextOrFileInput name = do
+>   contentType' <- getInputContentType name
+>   case contentType' of
+>     Nothing  -> return Nothing
+>     Just ct  -> case ct of
+>                   "text/plain"  -> do
+>                     val <- fromJust `liftM` getInput name
+>                     return $ Just $ Left val
+>                   ct'           -> do
+>                     ct'' <- parseContentType ct'
+>                     content'   <- getInputFPS name
+>                     fileName'  <- getInputFilename name
+>                     return $ Just $ Right $ File {
+>                       content      = fromJust content',
+>                       fileName     = fromJust fileName',
+>                       contentType  = F.ContentType {  F.ctType = FCGI.ctType ct'',
+>                                                       F.ctSubtype = FCGI.ctSubtype ct'',
+>                                                       F.ctParameters = FCGI.ctParameters ct'' } }
+
 \subsection{Working with URLs}
 
 Certain dynamic parts of the site, such as forum titles, are displayed to the
@@ -180,4 +204,4 @@ new characters. It converts spaces to hyphens and only allows alphanumeric
 characters and hyphens in the resulting string.
 
 > urlify :: String -> String
-> urlify = map toLower . filter (\e -> isAlphaNum e || (e == '-')) . translate [(' ', '-')]
+> urlify = map toLower . filter (\e -> isAlphaNum e || (e == '-') || (e == '.')) . translate [(' ', '-')]

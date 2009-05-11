@@ -12,10 +12,10 @@ doc : vocabulink.pdf
 vocabulink.fcgi : $(lhss)
 	ghc -Wall -fglasgow-exts -threaded -package fastcgi --make -o $(fcgi) $^
 
-vocabulink.pdf : Vocabulink.tex
+vocabulink.pdf : vocabulink.tex
 	pdflatex $<
 
-Vocabulink.tex : $(lhss)
+vocabulink.tex : $(lhss)
 	lhs2TeX Vocabulink.lhs > $@
 
 install : vocabulink.fcgi
@@ -46,16 +46,15 @@ metrics : $(lhss)
 	@echo
 	@ls -l $^
 
-
 dist : $(DIST).tar.gz
 
-$(DIST).tar.gz: Vocabulink.pdf
+$(DIST).tar.gz: vocabulink.pdf
 #	`darcs dist` would be nice, but the darcs repository is the parent directory
 #	of this one and needs to be cleaned up a bit. For now, we'll have to do it
 #	ourselves.
-	echo README COPYING Makefile ../vocabulink.sql ../js/{form,forum,forum-comment,link,link-graph,page,review}.js ../css/*.ccss ../css/Makefile `find -name "*.lhs" -o -name "*.lhs-boot"` | xargs tar --transform 's,^(\./)?,$(DIST)/,x' -czvf $(DIST).tar.gz
+	echo README COPYING Makefile vocabulink.pdf ghc.6.10.diff ../vocabulink.sql ../js/{form,forum,forum-comment,link,link-graph,page,review}.js ../css/*.ccss ../css/Makefile `find -name "*.lhs" -o -name "*.lhs-boot"` | xargs tar --transform 's,^(\./)?,$(DIST)/,x' -czvf $(DIST).tar.gz
 
 publish : $(DIST).tar.gz
-	cp $(DIST).tar.gz Vocabulink.pdf ~/project/jekor.com/vocabulink/
+	cp $(DIST).tar.gz vocabulink.pdf ~/project/jekor.com/vocabulink/
 	rm -f ~/project/jekor.com/vocabulink/vocabulink.tar.gz
 	pushd ~/project/jekor.com/vocabulink && ln -s $(DIST).tar.gz vocabulink.tar.gz

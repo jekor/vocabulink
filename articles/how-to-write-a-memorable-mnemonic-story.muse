@@ -12,15 +12,13 @@ Focus on the essense of what "to walk" means to you or think of a way of linking
 
 It may seem that we've actually introduced even more ways to confuse your memory, but as long as the details of the story enhance the essence of the word, you'll have a much better chance remembering the target word (even if you remember all of the silly details first).
 
-If the mnemonic ever fails you, try adding more detail to the "right" side of the link.
-
 * What to Do if You're Stuck
 
 It might take a while before you can easily create memorable mnemonics. Don't worry. They will become easier with time.
 
 It's helpful to start writing as soon as you have a link word, even if you think it's not that great. You can always scrap or change your mnemonic at any time.
 
-You'll find that as you begin, with what you thought was a weak mnemonic, the very act of writing begins to activate other regions of your mind giving you more ideas for embellishment. It seems to be an unfailing trait of the mind, that it is very hard to drag ideas from it when staring at a blank page, but that the ideas begin to flow freely once the first word is laid down.
+You'll find that as you begin with what you thought was a weak mnemonic, the very act of writing begins to activate other regions of your mind giving you more ideas for embellishment. It seems to be an unfailing trait of the mind that it is very hard to drag ideas from it when staring at a blank page, but that the ideas begin to flow freely once the first word is laid down.
 
 * What to Avoid
 
@@ -28,9 +26,13 @@ Avoid introducing similar meanings in the story if possible. This may be unavoid
 
 Try using a less-recognizable form of a word if you need to use a comparison. For example, if you're trying to write a story for みず ➝ water, instead of using the word "rain" use "downpour", "drenching", or another word that emphasizes water more than weather.
 
-Avoid making up words when you're searching for a link word. It's especially tempting to do so when the word you're creating a mnemonic for sounds like a compound word. Avoid doing this because a made up word won't spring to mind as readily as a word you've used for years.
+Try to avoid making up words when you're searching for a link word. A made up word won't spring to mind as readily as a word you've used for years. It's OK to use multi-word phrases if those are the only words that will fit the foreign word. For example, for けいたい ("kay-tie", cell phone) an obvious candidate is "K-tie" <- a K-shaped tie for holding your cell phone. If you do have to use a compound link word like this, pay extra attention to making the story really bring the link words to life.
 
 Don't just take the first story that comes to mind! Ponder it for a while. See if you can work the definition or link word into the story in more ways or using more of the senses.
+
+* Choosing a Good Link Word is Only Half the Battle
+
+If you remember the link word and the story associated with it but can't remember what the story means, it does you no good. You need to make sure that the story clearly and unambiguously conveys the meaning of the foreign word. You have to be especially careful with abstract words such as particles and some adverbs.
 
 * Other Notes
 

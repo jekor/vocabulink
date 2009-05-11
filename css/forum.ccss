@@ -32,7 +32,9 @@
         top: 1.3em
         bottom: 1.3em
     img:
-      vertical-align: middle
+      float: left
+      clear: left
+      // vertical-align: middle
       margin-right: 0.5em
   h2:
     text-align: center
@@ -45,7 +47,13 @@
     display: block
     &:hover:
       text-decoration: none
-      background-color: #EEE
+      background-color: $bar_and_box_border
+  h3:
+    margin-bottom: 0.325em
+  .metadata:
+    margin: 0
+    color: black
+    font-size: 0.875em
 
 #body > form:
   margin-bottom: 1.3em
