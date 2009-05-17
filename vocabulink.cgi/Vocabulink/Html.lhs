@@ -24,12 +24,12 @@ formed (although we have no guarantee that it will be valid). But more
 importantly, it allows us to use abstraction to get higher-level HTML-based
 functions. An example of this is |linkList|.
 
-> module Vocabulink.Html (  Dependency(..), stdPage, simplePage,
->                           linkList, breadcrumbs, options, tableRows, accesskey,
->                           readonly, helpButton, markdownToHtml,
+> module Vocabulink.Html (  Dependency(..), stdPage, simplePage, clear,
+>                           linkList, breadcrumbs, options, menu, tableRows,
+>                           accesskey, readonly, helpButton, markdownToHtml,
 >                           AppForm, runForm, runForm', formLabel, formLabel',
 >                           checkbox', tabularInput, tabularSubmit,
->                           pager, currentPage, fileUpload, uploadFile,
+>                           pager, currentPage, fileUpload, uploadFile, forID,
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
 >                           (<<), (+++), (!), showHtmlFragment,
 >                           identifier, theclass, thediv, thespan, style,
@@ -60,7 +60,7 @@ functions. An example of this is |linkList|.
 >                       defaultWriterOptions )
 > import Text.Formlets as F
 > import Text.Formlets (File)
-> import Text.XHtml.Strict hiding (content)
+> import Text.XHtml.Strict hiding (content, menu)
 > import qualified Text.XHtml.Strict.Formlets as XF (input)
 > import Text.XHtml.Strict.Formlets (XHtmlForm)
 
@@ -184,7 +184,7 @@ notice about the number of links that the member has waiting for review.
 >        maybe loginBox logoutBox username,
 >        searchBox,
 >        review,
->        thediv ! [theclass "clear"] << noHtml ]
+>        clear ]
 
 Here are the hyperlinks we want in the header of every page.
 
@@ -286,11 +286,20 @@ Sometimes you just want a select list where the displayed options match their va
 > options :: [String] -> [Html]
 > options choices = [ option ! [value choice] << choice | choice <- choices ]
 
+> menu :: String -> [(String, String)] -> Html
+> menu n choices = select ! [name n] <<
+>   [ option ! [value $ fst choice] << snd choice | choice <- choices ]
+
 This automatically adds ``odd'' and ``even'' CSS classes to each table row.
 
 > tableRows :: [Html] -> [Html]
 > tableRows = map decorate . zip [1..]
 >   where decorate (a,b) = tr ! [theclass (odd (a :: Integer) ? "odd" $ "even")] << b
+
+\subsection{Tiny Helpers}
+
+> clear :: Html
+> clear = thediv ! [theclass "clear"] << noHtml
 
 Some attributes are missing from Text.XHtml.
 
@@ -299,6 +308,9 @@ Some attributes are missing from Text.XHtml.
 
 > readonly :: HtmlAttr
 > readonly = emptyAttr "readonly"
+
+> forID :: String -> HtmlAttr
+> forID = strAttr "for"
 
 It's nice to have little help buttons and such where necessary. Making them
 easier to create means that we're more likely to do so, which leads to a more

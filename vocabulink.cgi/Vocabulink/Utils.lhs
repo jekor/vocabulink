@@ -37,6 +37,8 @@ oft-used functions for other modules.
 >  {- Data.Time.Clock -}            UTCTime,
 >  {- Data.Time.Format -}           formatTime,
 >  {- Data.Time.LocalTime -}        ZonedTime,
+>  {- System.FilePath -}            (</>), takeExtension, addExtension,
+>                                   replaceExtension, takeBaseName,
 >  {- System.Locale -}              defaultTimeLocale, rfc822DateFormat) where
 
 Vocabulink deals with all strings as UTF8. Every part of the website
@@ -72,6 +74,8 @@ formats.
 > import qualified Network.Memcache.Protocol as Memcached
 > import qualified Network.Memcache as Memcache
 > import System.Cmd (system)
+> import System.FilePath (  (</>), takeExtension, addExtension, takeBaseName,
+>                           replaceExtension )
 > import System.Locale (defaultTimeLocale, rfc822DateFormat)
 > import System.Exit (ExitCode(..))
 

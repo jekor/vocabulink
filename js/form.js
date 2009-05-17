@@ -27,6 +27,7 @@ function connectButtons() {
 function connectButton(button) {
   var classes = getNodeAttribute(button, 'class').split(' ');
   connect(button, 'onclick', function() {
-      showElement($(classes[1]));
-      hideElement(button)});
+    showElement($(classes[1]));
+    hideElement(button);
+  });
 }

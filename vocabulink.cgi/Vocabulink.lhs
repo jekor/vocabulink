@@ -100,6 +100,7 @@ Each of these modules will be described in its own section.
 > import Vocabulink.Article
 > import Vocabulink.DB
 > import Vocabulink.CGI
+> import Vocabulink.Comment
 > import Vocabulink.Forum
 > import Vocabulink.Html hiding (method, options)
 > import Vocabulink.Link
@@ -335,12 +336,21 @@ For clarity, this dispatches:
 
 \begin{center}
 \begin{tabular}{lcl}
-@GET  /link/10@           & $\rightarrow$ & linkPage \\
+@GET  /link/new@          & $\rightarrow$ & form to create a new link \\
+@POST /link/new@          & $\rightarrow$ & create a new link \\
+@GET  /link/10@           & $\rightarrow$ & link page \\
 @GET  /link/something@    & $\rightarrow$ & not found \\
 @GET  /link/10/something@ & $\rightarrow$ & not found \\
-@POST /link/10/delete@    & $\rightarrow$ & deleteLink
+@POST /link/10/delete@    & $\rightarrow$ & delete link
 \end{tabular}
 \end{center}
+
+Creating a new link is a 2-step process. First, the member requests a page
+on which to enter information about the link. Then they @POST@ the details to
+establish the link. (Previewing is done through the @GET@ as well.)
+
+> dispatch "GET"   ["link","new"] = newLink
+> dispatch "POST"  ["link","new"] = newLink
 
 > dispatch method path@("link":x:method') = do
 >   case maybeRead x of
@@ -384,17 +394,18 @@ in the query string for the links page, it will do a search. E.g.
 >         Nothing  -> output404 path
 >         Just n'  -> linksPage ("Links by " ++ n') (memberLinks n)
 
-Creating a new link is a 2-step process. First, the member requests a page
-on which to enter information about the link. Then they @POST@ the details to
-establish the link. (Previewing is done through the @GET@ as well.)
+\subsection{Link Packs}
 
-> dispatch "GET"   ["link"] = newLink
-> dispatch "POST"  ["link"] = newLink
+The process of creating link packs is similar to that for creating links.
 
-> dispatch "GET"   ["pack"] = newLinkPack
-> dispatch "POST"  ["pack"] = newLinkPack
+> dispatch "GET"   ["packs"] = linkPacksPage
+
+> dispatch "GET"   ["pack","new"] = newLinkPack
+> dispatch "POST"  ["pack","new"] = newLinkPack
 
 > dispatch "POST"  ["pack","image"] = uploadFile "/pack/image"
+
+> dispatch "POST"  ["pack","link","new"] = addToLinkPack
 
 > dispatch method path@("pack":x:method') = do
 >   case maybeRead x of
@@ -505,8 +516,8 @@ including the forum topic text could lead to some very long URIs.
 
 ``reply'' and ``preview'' are used here as nouns.
 
-> dispatch "GET"   ["comment","reply"] = replyToForumComment
-> dispatch "POST"  ["comment","reply"] = replyToForumComment
+> dispatch "GET"   ["comment","reply"] = replyToComment
+> dispatch "POST"  ["comment","reply"] = replyToComment
 
 > dispatch "GET"   ["comment","preview"] = commentPreview
 
@@ -540,13 +551,14 @@ or curious.
 >   my <- maybe (return noHtml) (myLinks) memberNo
 >   latest <- newLinks
 >   articles <- latestArticles
+>   featured <- featuredPack
 >   let article = isJust memberNo ? "welcome-member" $ "welcome"
 >   article' <- getArticle article
 >   body <- maybe (return $ h1 << "Welcome to Vocabulink") articleBody article'
 >   stdPage "Welcome to Vocabulink" [JS "MochiKit", JS "page"] [] [
 >     thediv ! [identifier "main-content"] << body,
 >     thediv ! [identifier "sidebar"] << [
->       latest, my, articles ] ]
+>       featured, latest, my, articles ] ]
 >  where myLinks mn = do
 >          ls <- memberLinks mn 0 10
 >          case ls of
@@ -573,6 +585,12 @@ or curious.
 >                                           h3 << anchor ! [href "/articles"] <<
 >                                             "Latest Articles",
 >                                           unordList (map articleLinkHtml l)]) ls
+>        featuredPack = do
+>          lp <- getLinkPack 1
+>          return $ maybe (noHtml) (\l -> thediv ! [theclass "sidebox"] << [
+>                                           h3 << [  stringToHtml "Featured Link Pack:", br,
+>                                                    linkPackTextLink l ],
+>                                           displayCompactLinkPack l False ]) lp
 
 %include Vocabulink/Utils.lhs
 %include Vocabulink/CGI.lhs

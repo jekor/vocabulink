@@ -27,7 +27,11 @@ them.
 >                           partialLinkHtml, partialLinkFromValues,
 >                           drawLinkSVG, drawLinkSVG', languagePairsPage,
 >                           languagePairLinks, languageNameFromAbbreviation,
->                           newLinkPack, linkPackPage, deleteLinkPack ) where
+>                           LinkPack(..),
+>                           newLinkPack, linkPackPage, deleteLinkPack,
+>                           addToLinkPack, linkPacksPage, getLinkPack,
+>                           displayCompactLinkPack, linkPackTextLink,
+>                           linkPackIconLink ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -40,7 +44,6 @@ them.
 > import Data.List (partition)
 > import System.Cmd (system)
 > import System.Exit (ExitCode(..))
-> import System.FilePath.Posix (addExtension, takeExtension)
 > import qualified Text.Formlets as Fl
 > import qualified Text.XHtml as H
 > import qualified Text.XHtml.Strict.Formlets as F (input, select, textarea, hidden)
@@ -406,11 +409,11 @@ dealing with retrieval exceptions, etc.
 >       originLanguage <- linkOriginLanguage l'
 >       destinationLanguage <- linkDestinationLanguage l'
 >       stdPage (orig ++ " -> " ++ dest) [
->         CSS "link", JS "MochiKit", JS "raphael", JS "link-graph"] []
+>         CSS "link", JS "MochiKit", JS "raphael", JS "link-graph", JS "form"] []
 >         [  drawLinkSVG l',
 >            thediv ! [theclass "link-ops"] << [
 >              anchor ! [href (  "/links?ol=" ++ linkOriginLang l' ++
->                                "&dl=" ++ linkDestinationLang l' )] <<
+>                                "&dl=" ++ linkDestinationLang l' ) ] <<
 >                (originLanguage ++ " → " ++ destinationLanguage),
 >              review,
 >              ops ],
@@ -421,18 +424,51 @@ Each link can be ``operated on''. It can be reviewed (added to the member's
 review set) and deleted (marked as deleted). In the future, I expect operations
 such as ``tag'', ``rate'', etc.
 
+The |Bool| parameter indicates whether or not the currently logged-in member
+(if the client is logged in) is the owner of the link.
+
 > linkOperations :: Integer -> Bool -> App Html
 > linkOperations n True   = do
 >   deleted <- queryValue'  "SELECT deleted FROM link \
 >                           \WHERE link_no = ?" [toSql n]
->   return $ case deleted of
->     Just d  -> if fromSql d
->       then paragraph << "Deleted"
->       else form ! [action ("/link/" ++ (show n) ++ "/delete"), method "POST"] <<
->              submit "" "Delete"
->     _       -> stringToHtml
->                  "Can't determine whether or not link has been deleted."
+>   packForm <- addToLinkPackForm n
+>   return $ concatHtml [
+>     packForm,
+>     case deleted of
+>       Just d  -> if fromSql d
+>         then paragraph << "Deleted"
+>         else form ! [action ("/link/" ++ (show n) ++ "/delete"), method "POST"] <<
+>                submit "" "Delete"
+>       _       -> stringToHtml
+>                    "Can't determine whether or not link has been deleted." ]
 > linkOperations _ False  = return noHtml
+
+> addToLinkPackForm :: Integer -> App Html
+> addToLinkPackForm n = do
+>   memberNo <- asks appMemberNo
+>   case memberNo of
+>     Nothing  -> return noHtml
+>     Just mn  -> do
+>       -- Find all of the packs created by this member that don't already contain
+>       -- this link.
+>       packs <- queryTuples'
+>         "SELECT pack_no, name FROM link_pack \
+>         \WHERE creator = ? \
+>           \AND pack_no NOT IN (SELECT pack_no FROM link_pack_link \
+>                               \WHERE link_no = ?) \
+>         \ORDER BY pack_no DESC" [toSql mn, toSql n]
+>       case packs of
+>         Nothing  -> return noHtml
+>         Just ps  -> do
+>           let ps' = map (\x -> (fromSql $ head x, fromSql $ head $ tail x)) ps
+>           return $ concatHtml [
+>             button ! [theclass "reveal add-to-pack"] << "→ Pack",
+>             form ! [  action ("/pack/link/new"), method "POST",
+>                       identifier "add-to-pack", thestyle "display: none" ] << [
+>               hidden "link" $ show n,
+>               menu "pack" (ps' ++ [("new", "New Pack")]) !
+>                 [identifier "pack-select"], br,
+>               submit "" "→ Pack" ] ]
 
 \subsection{Finding Links}
 
@@ -494,8 +530,8 @@ it outputs and digest each local function separately.
 >   script << primHtml
 >     (  "connect(window, 'onload', partial(drawLinks," ++
 >        encode focus ++ "," ++
->        jsonNodes ("/link?input2=" ++ focus) origs ++ "," ++
->        jsonNodes ("/link?input0=" ++ focus) dests ++ "));" ),
+>        jsonNodes ("/link/new?input2=" ++ focus) origs ++ "," ++
+>        jsonNodes ("/link/new?input0=" ++ focus) dests ++ "));" ),
 >   thediv ! [identifier "graph"] << noHtml ]
 >  where partitioned   = partition ((== focus) . linkOrigin . pLink) links
 >        origs         = snd partitioned
@@ -794,15 +830,15 @@ Display a hyperlink for a language pair.
 >                             linkPackImage        :: Maybe String,
 >                             linkPackCreator      :: Integer }
 
-> linkPackForm :: AppForm (LinkPack, Integer)
-> linkPackForm = plug (\xhtml -> table << xhtml) $ mkLinkPack
->   <$>  F.hidden Nothing `check` ensure ((> 0) . length) "Missing first link number."
+> linkPackForm :: Integer -> AppForm (LinkPack, Integer)
+> linkPackForm fl = plug (\xhtml -> table << xhtml) $ mkLinkPack
+>   <$>  (F.hidden $ Just $ show fl) `check` ensure ((> 0) . length) "Missing first link number."
 >   <*>  plug (tabularInput "Pack Name") (F.input Nothing) `check`
 >          ensures [  ((> 0)   . length, "Pack Name must not be empty."),
 >                     ((< 50)  . length, "Pack Name must be 50 characters or shorter.") ]
 >   <*>  plug (tabularInput "Description") (F.textarea Nothing) `check`
->          ensures [  ((> 0)    . length, "Description must not be empty."),
->                     ((< 500)  . length, "Description must be 500 characters or shorter.") ]
+>          ensures [  ((> 0)     . length, "Description must not be empty."),
+>                     ((< 5000)  . length, "Description must be 500 characters or shorter.") ]
 >   <*>  plug (tabularInput "Image") (nothingIfNull $ fileUpload "/pack/image" "Upload Image")
 >  where mkLinkPack ::  String -> String -> String -> Maybe String ->
 >                       (LinkPack, Integer)
@@ -818,13 +854,15 @@ Display a hyperlink for a language pair.
 >   uri   <- requestURI
 >   meth  <- requestMethod
 >   preview <- getInput "preview"
->   (result, xhtml) <- runForm' linkPackForm
+>   firstLink <- readRequiredInput "link"
+>   (result, xhtml) <- runForm' $ linkPackForm firstLink
 >   case preview of
 >     Just _  -> do
 >       let preview' = case result of
 >                        Failure failures  -> unordList failures
->                        Success (linkPack, _)  -> thediv ! [theclass "preview"] <<
->                                                    displayLinkPack linkPack
+>                        Success (linkPack, _)  -> thediv ! [theclass "preview"] << [
+>                                                    h2 << linkPackName linkPack,
+>                                                    displayLinkPack linkPack ]
 >       simplePage "Create a Link Pack (preview)" deps
 >         [  preview',
 >            form ! [  thestyle "text-align: center",
@@ -853,13 +891,33 @@ Display a hyperlink for a language pair.
 > displayLinkPack :: LinkPack -> Html
 > displayLinkPack lp =
 >   thediv ! [theclass "link-pack"] << [
->     h3 << linkPackName lp,
->     anchor ! [href ("/pack/" ++ (show $ linkPackNumber lp))] <<
->       image ! [  src (  "http://s.vocabulink.com/pack/image/" ++
->                         case linkPackImage lp of
->                           Just i   -> i
->                           Nothing  -> "default.png" ),
->                  alt (linkPackName lp) ] ]
+>     linkPackIcon lp,
+>     markdownToHtml $ linkPackDescription lp, clear ]
+
+> displayCompactLinkPack :: LinkPack -> Bool -> Html
+> displayCompactLinkPack lp displayTitle =
+>   thediv ! [theclass "link-pack compact"] << [
+>     displayTitle ? h3 << linkPackTextLink lp $ noHtml,
+>     linkPackIconLink lp, clear ]
+
+> linkPackIcon :: LinkPack -> Html
+> linkPackIcon lp =
+>   image ! [  src (  "http://s.vocabulink.com/pack/image/" ++
+>                     case linkPackImage lp of
+>                       Just i   -> i
+>                       Nothing  -> "default.png" ),
+>              alt (linkPackName lp) ]
+
+> linkPackHyperlink :: LinkPack -> String
+> linkPackHyperlink lp = "/pack/" ++ (show $ linkPackNumber lp)
+
+> linkPackTextLink :: LinkPack -> Html
+> linkPackTextLink lp =
+>   anchor ! [href (linkPackHyperlink lp)] << linkPackName lp
+
+> linkPackIconLink :: LinkPack -> Html
+> linkPackIconLink lp =
+>   anchor ! [href (linkPackHyperlink lp)] << linkPackIcon lp
 
 > createLinkPack :: LinkPack -> Integer -> Integer -> App (Maybe Integer)
 > createLinkPack lp memberNo firstLink = do
@@ -908,13 +966,54 @@ Display a hyperlink for a language pair.
 >                      linkPackCreator      = fromSql c }
 > linkPackFromValues _ = Nothing
 
+> linkPackLinks :: Integer -> App (Maybe [PartialLink])
+> linkPackLinks n = do
+>   ts <- queryTuples'  "SELECT l.link_no, l.link_type, l.origin, l.destination, \
+>                              \l.origin_language, l.destination_language \
+>                       \FROM link_pack_link \
+>                       \INNER JOIN link l USING (link_no) \
+>                       \WHERE pack_no = ? AND NOT deleted \
+>                       \ORDER BY added DESC"
+>                       [toSql n]
+>   return $ (catMaybes . map partialLinkFromValues) `liftM` ts
+
 > linkPackPage :: Integer -> App CGIResult
 > linkPackPage n = do
 >   linkPack <- getLinkPack n
->   case linkPack of
->     Nothing  -> output404 ["pack",show n]
->     Just lp  -> simplePage ("Link Pack - " ++ linkPackName lp) [] [
->       displayLinkPack lp ]
+>   links <- linkPackLinks n
+>   case (linkPack, links) of
+>     (Just lp, Just ls)  -> do
+>       ls' <- mapM partialLinkHtml ls
+>       simplePage ("Link Pack: " ++ linkPackName lp) [CSS "link"] [
+>         thediv ! [theclass "two-column"] << [
+>           thediv ! [theclass "column"] << displayLinkPack lp,
+>           thediv ! [theclass "column"] << (unordList ls' ! [theclass "links pack-links"]) ] ]
+>     _                   -> output404 ["pack",show n]
 
 > deleteLinkPack :: Integer -> App CGIResult
 > deleteLinkPack _ = error "Unimplemented."
+
+> addToLinkPack :: App CGIResult
+> addToLinkPack = do
+>   pack  <- getRequiredInput "pack"
+>   link  <- getRequiredInput "link"
+>   case pack of
+>     "new"  ->  redirect $ "/pack/new?link=" ++ link
+>     _      ->  do
+>       let  packNo = read pack :: Integer
+>            linkNo = read link :: Integer
+>       quickStmt' "INSERT INTO link_pack_link (pack_no, link_no) \
+>                                      \VALUES (?, ?)" [toSql packNo, toSql linkNo]
+>       redirect $ "/pack/" ++ pack
+
+> latestLinkPacks :: App [Maybe LinkPack]
+> latestLinkPacks = maybe [] (map linkPackFromValues) <$>
+>   queryTuples'  "SELECT pack_no, name, description, image_ext, creator \
+>                 \FROM link_pack WHERE NOT deleted \
+>                 \ORDER BY pack_no DESC" []
+
+> linkPacksPage :: App CGIResult
+> linkPacksPage = do
+>   lps <- map (\x -> displayCompactLinkPack x True ! [thestyle "float: left"]) <$>
+>            catMaybes <$> latestLinkPacks
+>   simplePage "Latest Link Packs" [CSS "link"] lps

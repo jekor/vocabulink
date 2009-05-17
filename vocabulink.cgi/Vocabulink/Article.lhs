@@ -36,7 +36,6 @@ static page we currently display is an article.
 > import Data.Time.Format (parseTime)
 > import System.Directory (  getDirectoryContents, getPermissions, doesFileExist,
 >                            readable)
-> import System.FilePath (takeExtension, replaceExtension, takeBaseName)
 > import qualified System.IO.UTF8 as IO.UTF8
 > import System.Locale (defaultTimeLocale)
 > import qualified Text.ParserCombinators.Parsec as P
@@ -113,7 +112,7 @@ them. Then we return a list of Articles with undefined numbers and bodies.
 > publishedArticles = do
 >   dir <- articleDir
 >   ls <- liftIO $ getDirectoryContents dir
->   let fullPaths = map (\l -> dir ++ "/" ++ l) ls
+>   let fullPaths = map (\l -> dir </> l) ls
 >   paths <- liftIO $ (map takeBaseName) <$> filterM isPublished fullPaths
 >   catMaybes <$> mapM articleFromFile paths
 
@@ -151,7 +150,7 @@ this to succeed.
 > articleFromFile :: String -> App (Maybe Article)
 > articleFromFile path = do
 >   dir   <- articleDir
->   muse  <- liftIO $ IO.UTF8.readFile $ dir ++ "/" ++ path ++ ".muse"
+>   muse  <- liftIO $ IO.UTF8.readFile $ dir </> path ++ ".muse"
 >   case P.parse articleHeader "" muse of
 >     Left e     -> logApp "parse error" (show e) >> return Nothing
 >     Right hdr  -> return $ Just $ hdr {  articleFilename  = path }
@@ -222,7 +221,7 @@ there's no point in storing it in the article record.
 
 > articleBody :: Article -> App Html
 > articleBody article = do
->   path <- (++ "/" ++ (articleFilename article) ++ ".html") <$> articleDir
+>   path <- (</> (articleFilename article) ++ ".html") <$> articleDir
 >   liftIO $ primHtml <$> IO.UTF8.readFile path
 
 \subsection{Retrieving Articles}

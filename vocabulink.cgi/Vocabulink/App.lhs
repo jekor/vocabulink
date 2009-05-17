@@ -53,11 +53,15 @@ because of cyclic dependencies.
 > import Data.ConfigFile (ConfigParser, get)
 > import Data.Either.Utils (forceEither)
 > import Data.List (intercalate)
+> import Database.HaskellDB
+> import Database.HaskellDB.HDBC
+> import Database.HaskellDB.Sql.PostgreSQL (generator)
 > import Network.CGI.Monad (MonadCGI(..), tryCGI)
 > import Network.FastCGI (CGI, CGIT, outputNotFound)
 > import Network.URI (escapeURIString, isUnescapedInURI)
 
 > data AppEnv = AppEnv {  appDB          :: Connection,
+>                         appHDB         :: Database,
 >                         appCP          :: ConfigParser,
 >                         appMemberNo    :: Maybe Integer,
 >                         appMemberName  :: Maybe String,
@@ -110,6 +114,7 @@ yet.
 >                              return $ fromSql <$> e)
 >                           (authMemberNo <$> token)
 >   res <- runReaderT a $ AppEnv {  appDB          = c,
+>                                   appHDB         = mkDatabase generator c,
 >                                   appCP          = cp,
 >                                   appMemberNo    = authMemberNo `liftM` token,
 >                                   appMemberName  = authUsername `liftM` token,

@@ -1,8 +1,17 @@
 #title Welcome Back
 #date 2009-03-24 21:54:00 -0700
 
-* News
+<literal>
+<div id="twitter_div">
+<h2 class="sidebar-title">News</h2>
+<ul id="twitter_update_list"></ul>
+<a href="http://twitter.com/Vocabulink" id="twitter-link" style="display:block;text-align:right;">follow us on Twitter</a>
+</div>
+<script type="text/javascript" src="http://twitter.com/javascripts/blogger.js"></script>
+<script type="text/javascript" src="http://twitter.com/statuses/user_timeline/Vocabulink.json?callback=twitterCallback2&amp;count=7"></script>
+</literal>
 
+ - **2009-05-12**: Future updates are going to go through Twitter.
  - **2009-05-08**: Added support for viewing links with Internet Explorer 8.
  - **2009-05-07**: Added latest comment details to the main forum view. Note that due to CSS caching you might need to force-reload the page to get it to look right.
  - **2009-05-06**: Added an interface for browsing links by language pairs. Click [[/languages][Browse Links]] in the top navigation bar to see it in action.

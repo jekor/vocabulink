@@ -54,7 +54,7 @@ COMMENT ON COLUMN member_confirmation.email_sent IS 'email_sent is the time a co
 
 CREATE TABLE language (
        abbr CHARACTER VARYING (3) PRIMARY KEY,
-       name TEXT UNIQUE
+       name TEXT UNIQUE NOT NULL
 );
 COMMENT ON COLUMN language.abbr IS 'We use 2-letter language codes (ISO 639-1) when available and 3-letter codes for languages that don''t have a 2-letter code (the notable case of which is Lojban which any self-respecting language-learning site should support.';
 INSERT INTO language (abbr, name) VALUES
@@ -292,7 +292,7 @@ CREATE TABLE link_type_relationship (
 
 CREATE TABLE link_pack (
        pack_no SERIAL PRIMARY KEY,
-       name TEXT NOT NULL,
+       name TEXT NOT NULL UNIQUE,
        description TEXT NOT NULL,
        image_ext TEXT,
        creator INTEGER REFERENCES member (member_no),
@@ -302,9 +302,10 @@ CREATE TABLE link_pack (
 );
 
 CREATE TABLE link_pack_link (
-       pack_no INTEGER REFERENCES link_pack (pack_no),
+       pack_no INTEGER REFERENCES link_pack (pack_no) ON DELETE CASCADE,
        link_no INTEGER REFERENCES link (link_no),
-       added TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp
+       added TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       PRIMARY KEY (pack_no, link_no)
 );
 
 CREATE TABLE link_to_review (
@@ -382,9 +383,27 @@ CREATE TABLE comment (
        comment_no SERIAL PRIMARY KEY,
        author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
        time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-       comment TEXT NOT NULL,
+       body TEXT NOT NULL,
        parent_no INTEGER REFERENCES comment (comment_no)
 );
+
+CREATE TYPE displayable_comment AS (
+       comment_no INTEGER,
+       level INTEGER,
+       username TEXT,
+       email TEXT,
+       time TIMESTAMP (0) WITH TIME ZONE,
+       comment TEXT
+);
+
+CREATE FUNCTION comment_tree(TEXT) RETURNS SETOF displayable_comment AS $$
+  SELECT c.comment_no, t.level, m.username, m.email, c.time, c.comment
+  FROM comment c, member m,
+       connectby('comment', 'comment_no', 'parent_no', $1, 0)
+       AS t(comment_no int, parent_no int, level int)
+  WHERE c.comment_no = t.comment_no
+  AND m.member_no = c.author
+$$ LANGUAGE SQL;
 
 CREATE TABLE forum_topic (
        topic_no SERIAL PRIMARY KEY,
@@ -396,3 +415,8 @@ CREATE TABLE forum_topic (
 );
 COMMENT ON COLUMN forum_topic.last_comment IS 'While a pointer to the last comment isn''t theoretically necessary, it greatly simplifies retrieving information on forum topics in bulk.';
 COMMENT ON COLUMN forum_topic.num_replies IS 'Again, this is not strictly necessary, but it does make queries easier.';
+
+CREATE TABLE link_comments (
+       link_no INTEGER REFERENCES link (link_no),
+       root_comment INTEGER REFERENCES comment (comment_no)
+);

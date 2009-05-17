@@ -268,7 +268,7 @@ ul.links:
       display: block
       width: 100%
 
-#central-column.links li a:
+#central-column.links li a, .column .links li a:
   line-height: 2.6
 
 // And these are web links.
@@ -279,14 +279,25 @@ ul.hyperlinks:
     display: inline
 
 .link-pack:
-  width: 240px
-  h3:
-    text-align: center
-    margin-bottom: 0.25em
+  width: 33em
+  margin: 1.3em auto
   img:
     width: 240px
     height: 336px
+    float: left
     border: 1px solid $bar_and_box_border;
+    margin->
+      right: 1.3em
+      bottom: 0.667em
+
+.link-pack.compact:
+  width: 240px
+  margin: 1.3em
+  h3:
+    text-align: center
+    margin-bottom: 0.25em
+  .sidebox &:
+    margin: 0 auto
 
 p.copyright:
   margin: 0
@@ -391,6 +402,11 @@ blockquote:
 button, input:
   line-height: 1.3em
   vertical-align: middle
+
+.two-column:
+  .column:
+    width: 50%
+    float: left
 
 .three-column:
   .column:
