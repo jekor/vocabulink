@@ -19,6 +19,8 @@ connect(window, 'onload', setup);
 
 function setup() {
   map(connectButtons, $$('.reply'));
+  var toplevelComments = $$('.comment.toplevel');
+  map(roundElement, toplevelComments);
 }
 
 function connectButtons(elem) {
@@ -26,12 +28,6 @@ function connectButtons(elem) {
   connect(button, 'onclick', partial(previewReply, elem, button));
   var submit = findChildElements(elem, ['input[type=submit]'])[0];
   connect(submit, 'onclick', partial(sendReply, elem, button));
-}
-
-function postXHR(url, postVars) {
-  return doXHR(url, {'method': 'POST',
-                     'headers': {'Content-Type': 'application/x-www-form-urlencoded'},
-                     'sendContent': queryString(postVars)});
 }
 
 function overlay(elem) {

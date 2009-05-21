@@ -35,8 +35,10 @@ them.
 
 > import Vocabulink.App
 > import Vocabulink.CGI
+> import Vocabulink.Comment
 > import Vocabulink.DB
 > import Vocabulink.Html
+> import Vocabulink.Rating
 > import Vocabulink.Review.Html
 > import Vocabulink.Utils
 
@@ -399,26 +401,44 @@ dealing with retrieval exceptions, etc.
 >   case l of
 >     Nothing  -> output404 ["link", show linkNo]
 >     Just l'  -> do
->       review <- reviewIndicator linkNo
 >       owner <- queryValue'  "SELECT author = ? FROM link WHERE link_no = ?"
 >                             [toSql memberNo, toSql linkNo]
 >       ops <- linkOperations linkNo $ maybe False fromSql owner
+>       rating <- queryTuple'  "SELECT COUNT(rating), SUM(rating) / COUNT(rating) \
+>                              \FROM link_rating WHERE link_no = ?" [toSql linkNo]
+>       ratingEnabled <- if isJust memberNo
+>                           then  isNothing <$> queryValue'  "SELECT rating FROM link_rating \
+>                                                            \WHERE link_no = ? AND member_no = ?"
+>                                                            [toSql linkNo, toSql memberNo]
+>                           else  return False
 >       copyright <- linkCopyright l'
 >       let orig  = linkOrigin l'
 >           dest  = linkDestination l'
 >       originLanguage <- linkOriginLanguage l'
 >       destinationLanguage <- linkDestinationLanguage l'
+>       r <- queryValue'  "SELECT root_comment \
+>                         \FROM link_comments \
+>                         \WHERE link_no = ?" [toSql linkNo]
+>       comments <- case r of
+>                     Just root  -> renderComments $ fromSql root
+>                     Nothing    -> return noHtml
 >       stdPage (orig ++ " -> " ++ dest) [
->         CSS "link", JS "MochiKit", JS "raphael", JS "link-graph", JS "form"] []
+>         CSS "link", JS "MochiKit", JS "raphael", JS "link-graph",
+>         JS "form", JS "comment", CSS "comment" ] []
 >         [  drawLinkSVG l',
 >            thediv ! [theclass "link-ops"] << [
 >              anchor ! [href (  "/links?ol=" ++ linkOriginLang l' ++
 >                                "&dl=" ++ linkDestinationLang l' ) ] <<
 >                (originLanguage ++ " → " ++ destinationLanguage),
->              review,
+>              let (c', r') = case rating of
+>                             Just [c'', r'']  -> (fromSql c'', fromSql r'')
+>                             _                -> (0, Nothing) in
+>              ratingBar ("/link" </> (show linkNo) </> "rating") c' r' ratingEnabled,
+>              isNothing memberNo ? anchor ! [href "/member/login"] << "Login to Rate" $ noHtml,
 >              ops ],
 >            thediv ! [theclass "link-details"] << linkTypeHtml (linkType l'),
->            copyright ]
+>            copyright, clear, hr ! [thestyle "margin-top: 1.3em"],
+>            h3 << "Comments", comments ]
 
 Each link can be ``operated on''. It can be reviewed (added to the member's
 review set) and deleted (marked as deleted). In the future, I expect operations
@@ -429,10 +449,12 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 
 > linkOperations :: Integer -> Bool -> App Html
 > linkOperations n True   = do
+>   review <- reviewIndicator n
 >   deleted <- queryValue'  "SELECT deleted FROM link \
 >                           \WHERE link_no = ?" [toSql n]
 >   packForm <- addToLinkPackForm n
 >   return $ concatHtml [
+>     review,
 >     packForm,
 >     case deleted of
 >       Just d  -> if fromSql d
@@ -834,11 +856,9 @@ Display a hyperlink for a language pair.
 > linkPackForm fl = plug (\xhtml -> table << xhtml) $ mkLinkPack
 >   <$>  (F.hidden $ Just $ show fl) `check` ensure ((> 0) . length) "Missing first link number."
 >   <*>  plug (tabularInput "Pack Name") (F.input Nothing) `check`
->          ensures [  ((> 0)   . length, "Pack Name must not be empty."),
->                     ((< 50)  . length, "Pack Name must be 50 characters or shorter.") ]
+>          ensures (nonEmptyAndLessThan 50 "Pack Name")
 >   <*>  plug (tabularInput "Description") (F.textarea Nothing) `check`
->          ensures [  ((> 0)     . length, "Description must not be empty."),
->                     ((< 5000)  . length, "Description must be 500 characters or shorter.") ]
+>          ensures (nonEmptyAndLessThan 5000 "Pack Name")
 >   <*>  plug (tabularInput "Image") (nothingIfNull $ fileUpload "/pack/image" "Upload Image")
 >  where mkLinkPack ::  String -> String -> String -> Maybe String ->
 >                       (LinkPack, Integer)
@@ -984,10 +1004,18 @@ Display a hyperlink for a language pair.
 >   case (linkPack, links) of
 >     (Just lp, Just ls)  -> do
 >       ls' <- mapM partialLinkHtml ls
->       simplePage ("Link Pack: " ++ linkPackName lp) [CSS "link"] [
+>       r <- queryValue'  "SELECT root_comment \
+>                         \FROM link_pack_comments \
+>                         \WHERE pack_no = ?" [toSql $ linkPackNumber lp]
+>       comments <- case r of
+>                     Just root  -> renderComments $ fromSql root
+>                     Nothing    -> return noHtml
+>       simplePage ("Link Pack: " ++ linkPackName lp)
+>         [CSS "link", JS "MochiKit", JS "form", JS "comment", CSS "comment"] [
 >         thediv ! [theclass "two-column"] << [
 >           thediv ! [theclass "column"] << displayLinkPack lp,
->           thediv ! [theclass "column"] << (unordList ls' ! [theclass "links pack-links"]) ] ]
+>           thediv ! [theclass "column"] << (unordList ls' ! [theclass "links pack-links"]) ],
+>         hr ! [theclass "clear"], h3 << "Comments", comments ]
 >     _                   -> output404 ["pack",show n]
 
 > deleteLinkPack :: Integer -> App CGIResult

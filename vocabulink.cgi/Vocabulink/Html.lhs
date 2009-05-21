@@ -29,6 +29,7 @@ functions. An example of this is |linkList|.
 >                           accesskey, readonly, helpButton, markdownToHtml,
 >                           AppForm, runForm, runForm', formLabel, formLabel',
 >                           checkbox', tabularInput, tabularSubmit,
+>                           nonEmptyAndLessThan,
 >                           pager, currentPage, fileUpload, uploadFile, forID,
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
 >                           (<<), (+++), (!), showHtmlFragment,
@@ -39,7 +40,7 @@ functions. An example of this is |linkList|.
 >                           fieldset, legend, afile, textarea, select, widget,
 >                           thestyle, src, width, height, value, name, thetype,
 >                           cols, rows, colspan, caption, disabled, alt,
->                           table, thead, tbody, tfoot, th, tr, td,
+>                           table, thead, tbody, tfoot, th, tr, td, hr,
 >  {- Text.Formlets -}      runFormState, nothingIfNull,
 >                           check, ensure, ensures, checkM, ensureM,
 >                           plug, File,
@@ -83,9 +84,11 @@ nice to get this working automatically via Darcs at some point.
 
 > dependencyVersions :: [(Dependency, Integer)]
 > dependencyVersions = [  (JS "raphael", 2),
->                         (CSS "forum", 2),
->                         (CSS "link", 3),
->                         (CSS "page", 3) ]
+>                         (JS "comment", 2),
+>                         (CSS "forum", 4),
+>                         (CSS "link", 4),
+>                         (CSS "page", 4),
+>                         (CSS "article", 2) ]
 
 > dependencyVersion :: Dependency -> Integer
 > dependencyVersion = fromMaybe 1 . flip lookup dependencyVersions
@@ -118,9 +121,11 @@ gives us good control for the time being.
 >   headerB  <- headerBar
 >   footerB  <- footerBar
 >   setHeader "Content-Type" "text/html; charset=utf-8"
->   let xhtml = renderHtml $ header <<
+>   memberNo <- asks appMemberNo
+>   let  deps' = (CSS "page":deps) ++ (isJust memberNo ? [JS "member"] $ [])
+>        xhtml = renderHtml $ header <<
 >                  [  thetitle << title',
->                     concatHtml (map includeDep ([CSS "page"] ++ deps)),
+>                     concatHtml $ map includeDep deps',
 >                     primHtml  "<!--[if IE]>\
 >                               \<link rel=\"stylesheet\" type=\"text/css\" \
 >                               \href=\"http://s.vocabulink.com/css/ie.css\" />\
@@ -130,7 +135,6 @@ gives us good control for the time being.
 >                             jsNotice,
 >                             thediv ! [identifier "body"] << concatHtml body',
 >                             footerB ]
->   memberNo <- asks appMemberNo
 >   uri      <- requestURI
 >   method'  <- requestMethod   
 >   liftIO $ case (memberNo, method', uriQuery uri) of
@@ -379,6 +383,11 @@ for this one.
 > checkbox' :: Monad m => String -> XHtmlForm m (Maybe String)
 > checkbox' l = optionalInput box where
 >   box name' =  input ! [thetype "checkbox", name name'] +++ l
+
+> nonEmptyAndLessThan :: Int -> String -> [(String -> Bool, String)]
+> nonEmptyAndLessThan i t =
+>   [  ((> 0)  . length, t ++ " must not be empty."),
+>      ((< i)  . length, t ++ " must be " ++ (show i) ++ "characters or shorter") ]
 
 We use |runForm| for most of the heavy lifting. It takes a form and a submit
 button label, runs the form, and returns either the form to display (with

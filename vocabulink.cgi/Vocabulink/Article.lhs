@@ -28,6 +28,7 @@ static page we currently display is an article.
 
 > import Vocabulink.App
 > import Vocabulink.CGI
+> import Vocabulink.Comment
 > import Vocabulink.DB
 > import Vocabulink.Html
 > import Vocabulink.Utils hiding ((<$$>))
@@ -275,9 +276,17 @@ articles presumably don't have links to them.
 >   case article of
 >     Nothing  -> output404 ["article", path]
 >     Just a   -> do
+>       r <- queryValue'  "SELECT root_comment \
+>                         \FROM article_comments \
+>                         \WHERE filename = ?" [toSql path]
+>       comments <- case r of
+>                     Just root  -> renderComments $ fromSql root
+>                     Nothing    -> return noHtml
 >       body <- articleBody a
->       stdPage (articleTitle a) [CSS "article"] []
->         [thediv ! [theclass "article"] << body]
+>       stdPage (articleTitle a)
+>         [CSS "article", JS "MochiKit", JS "form", JS "comment", CSS "comment"] []
+>         [  thediv ! [theclass "article"] << body,
+>            hr ! [theclass "clear"], h3 << "Comments", comments ]
 
 This page is for displaying a listing of published articles.
 

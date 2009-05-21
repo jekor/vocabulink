@@ -360,6 +360,22 @@ CREATE RULE "replace article" AS
                                    section = NEW.section
                 WHERE filename = NEW.filename);
 
+CREATE TABLE article_comments (
+  filename TEXT REFERENCES article (filename),
+  root_comment INTEGER REFERENCES comment (comment_no),
+  PRIMARY KEY (filename, root_comment)
+);
+
+CREATE FUNCTION create_article_root_comment() RETURNS trigger AS $$
+BEGIN
+  INSERT INTO article_comments (filename, root_comment)
+                        VALUES (NEW.filename, create_virtual_root_comment());
+  RETURN NEW;
+END; $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER add_root_comment AFTER INSERT ON article FOR EACH ROW
+EXECUTE PROCEDURE create_link_pack_root_comment();
+
 -- Forums
 
 CREATE TABLE forum_group (
@@ -383,9 +399,17 @@ CREATE TABLE comment (
        comment_no SERIAL PRIMARY KEY,
        author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
        time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-       body TEXT NOT NULL,
+       body TEXT,
        parent_no INTEGER REFERENCES comment (comment_no)
 );
+
+-- Some objects don't have a meaningful root comment. Instead, commenters
+-- comment on the object itself. For those, we need a virtual root comment
+-- since the comment structure is a tree.
+CREATE FUNCTION create_virtual_root_comment() RETURNS BIGINT AS $$
+  INSERT INTO comment (author) VALUES (0);
+  SELECT currval('comment_comment_no_seq');
+$$ LANGUAGE SQL;
 
 CREATE TYPE displayable_comment AS (
        comment_no INTEGER,
@@ -397,12 +421,12 @@ CREATE TYPE displayable_comment AS (
 );
 
 CREATE FUNCTION comment_tree(TEXT) RETURNS SETOF displayable_comment AS $$
-  SELECT c.comment_no, t.level, m.username, m.email, c.time, c.comment
+  SELECT c.comment_no, t.level, m.username, m.email, c.time, c.body
   FROM comment c, member m,
        connectby('comment', 'comment_no', 'parent_no', $1, 0)
        AS t(comment_no int, parent_no int, level int)
   WHERE c.comment_no = t.comment_no
-  AND m.member_no = c.author
+    AND m.member_no = c.author AND c.body IS NOT NULL
 $$ LANGUAGE SQL;
 
 CREATE TABLE forum_topic (
@@ -416,7 +440,65 @@ CREATE TABLE forum_topic (
 COMMENT ON COLUMN forum_topic.last_comment IS 'While a pointer to the last comment isn''t theoretically necessary, it greatly simplifies retrieving information on forum topics in bulk.';
 COMMENT ON COLUMN forum_topic.num_replies IS 'Again, this is not strictly necessary, but it does make queries easier.';
 
+CREATE FUNCTION comment_root(INTEGER) RETURNS INTEGER AS $$
+DECLARE
+  r comment%rowtype;
+BEGIN
+  SELECT * INTO r FROM comment WHERE comment_no = $1;
+  IF r.parent_no IS NOT NULL THEN
+    RETURN comment_root(r.parent_no);
+  ELSE
+    RETURN r.comment_no;
+  END IF;
+END; $$ LANGUAGE plpgsql;
+
+-- When someone replies to a comment that's part of a forum topic, we need to
+-- update the forum topic table with some data for faster selects later.
+CREATE FUNCTION update_forum_topic() RETURNS trigger AS $$
+BEGIN
+  UPDATE forum_topic SET last_comment = NEW.comment_no, num_replies = num_replies + 1
+  WHERE root_comment = comment_root(NEW.comment_no);
+  RETURN NEW;
+END; $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_root AFTER INSERT ON comment FOR EACH ROW
+EXECUTE PROCEDURE update_forum_topic();
+
 CREATE TABLE link_comments (
        link_no INTEGER REFERENCES link (link_no),
-       root_comment INTEGER REFERENCES comment (comment_no)
+       root_comment INTEGER REFERENCES comment (comment_no),
+       PRIMARY KEY (link_no, root_comment)
+);
+
+CREATE FUNCTION create_link_root_comment() RETURNS trigger AS $$
+BEGIN
+  INSERT INTO link_comments (link_no, root_comment)
+                     VALUES (NEW.link_no, create_virtual_root_comment());
+  RETURN NEW;
+END; $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER add_root_comment AFTER INSERT ON link FOR EACH ROW
+EXECUTE PROCEDURE create_link_root_comment();
+
+CREATE TABLE link_pack_comments (
+  pack_no INTEGER REFERENCES link_pack (pack_no),
+  root_comment INTEGER REFERENCES comment (comment_no),
+  PRIMARY KEY (pack_no, root_comment)
+);
+
+CREATE FUNCTION create_link_pack_root_comment() RETURNS trigger AS $$
+BEGIN
+  INSERT INTO link_pack_comments (pack_no, root_comment)
+                          VALUES (NEW.pack_no, create_virtual_root_comment());
+  RETURN NEW;
+END; $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER add_root_comment AFTER INSERT ON link_pack FOR EACH ROW
+EXECUTE PROCEDURE create_link_pack_root_comment();
+
+CREATE TABLE link_rating (
+  link_no INTEGER REFERENCES link (link_no),
+  member_no INTEGER REFERENCES member (member_no),
+  rating REAL NOT NULL,
+  PRIMARY KEY (link_no, member_no)
 );

@@ -412,3 +412,26 @@ button, input:
   .column:
     width: 33%
     float: left
+
+.rating:
+  .stars-base:
+    width: 100px
+    height: 20px
+    margin->
+      left: auto
+      right: auto
+    background: url($images + "img/stars.png") repeat-x
+    position: relative
+    padding: 0
+    .stars:
+      height: 20px
+      position: absolute
+      margin: 0
+      background-image: url($images + "img/stars.png")
+      background-repeat: repeat-x
+  p:
+    margin-top: 0
+
+.rating.enabled:
+  .stars-base:
+    cursor: pointer

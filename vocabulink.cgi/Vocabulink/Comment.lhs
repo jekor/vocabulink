@@ -18,8 +18,9 @@
 \section{Comments}
 
 > module Vocabulink.Comment (  commentBox, commentForm, displayCommentBody,
->                              storeComment, commentPreview, displayComment,
->                              replyToComment ) where
+>                              storeComment, commentPreview,
+>                              renderComment, renderComments,
+>                              rootReplyForm, replyToComment, getComments ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -52,24 +53,19 @@ of root comments), it sould be passed as Nothing.
 The comment form displays the member's gravatar as a visual hint to what the
 comment will eventually look like when posted.
 
-> commentForm :: String -> Maybe String -> Maybe String ->
->                AppForm (String, Maybe Integer)
-> commentForm _ email parent = plug (\xhtml -> concatHtml [
+> commentForm :: String -> Maybe String -> AppForm (String, Maybe Integer)
+> commentForm email parent = plug (\xhtml -> concatHtml [
 >   image ! [  width "60", height "60", theclass "avatar",
->              src $ gravatarWith (maybe "" (map toLower) email)
->                                 Nothing (size 60) (Just "wavatar") ],
+>              src $ gravatarWith  (map toLower email)
+>                                  Nothing (size 60) (Just "wavatar") ],
 >   thediv ! [theclass "speech soft"] << xhtml,
 >   thediv ! [theclass "signature"] << [
 >     helpButton  "http://daringfireball.net/projects/markdown/basics"
 >                 (Just "Formatting Help"),
->     isJust parent  ?  button << "Preview" +++ stringToHtml " " +++
->                       submit "" "Send Reply"
->                    $  submit "" "Create" ] ])
->     ((\a b -> (a, maybeRead =<< b))  <$> (F.textarea Nothing `check` ensures
->                 [  ((> 0)       . length,  "Comment must not be empty."),
->                    ((<= 10000)  . length,  "Comment must be 10,000 characters \
->                                            \or shorter.") ])
->           <*> (nothingIfNull $ F.hidden parent))
+>     button << "Preview" +++ stringToHtml " " +++ submit "" "Post Comment" ] ])
+>     ((\a b -> (a, maybeRead b))  <$> (F.textarea Nothing `check` ensures
+>                                         (nonEmptyAndLessThan 10000 "Comment"))
+>           <*> (F.hidden parent))
 
 Each comment uses (Pandoc-extended) Markdown syntax.
 
@@ -79,18 +75,17 @@ Each comment uses (Pandoc-extended) Markdown syntax.
 Storing a comment establishes and returns its unique comment number.
 
 > storeComment :: Integer -> String -> Maybe Integer -> App (Maybe Integer)
-> storeComment memberNo body parent = do
->   c <- asks appDB
->   liftIO $ insertNo c  "INSERT INTO comment (author, comment, parent_no) \
->                        \VALUES (?, ?, ?)" [toSql memberNo, toSql body, toSql parent]
->                        "comment_comment_no_seq"
+> storeComment memberNo body parent =
+>   quickInsertNo'  "INSERT INTO comment (author, body, parent_no) \
+>                   \VALUES (?, ?, ?)" [toSql memberNo, toSql body, toSql parent]
+>                   "comment_comment_no_seq"
 
 > getComments :: Integer -> App (Maybe [Comment])
 > getComments root = do
 >   comments <- queryTuples' "SELECT * FROM comment_tree(?)" [toSql root]
 >   case comments of
 >     Nothing  -> error "Error retrieving comments."
->     Just cs  -> return Nothing
+>     Just cs  -> return $ Just $ catMaybes $ map commentFromValues cs
 
 > commentFromValues :: [SqlValue] -> Maybe Comment
 > commentFromValues [n, l, u, e, t, b]  =
@@ -102,20 +97,10 @@ Storing a comment establishes and returns its unique comment number.
 >                     commentBody      = fromSql b }
 > commentFromValues _                   = Nothing
 
--- > map $(fromValues Comment 6) <$> queryTuples' "SELECT * FROM comment_tree(?)" [root]
-
--- > fromValues :: ( -> a) -> Int -> [SqlValue] -> Maybe a
--- > fromValues f n l =
--- >   if length l == n
--- >     then Just $ foldl (\f' y -> f' $ fromSql y) f l
--- >     else Nothing
-
--- > (((((Comment $ fromSql n) $ fromSql l) $ fromSql u) $ fromSql e) $ fromSql t) $ fromSql b
-
 Previewing comments is a truely asynchronous process (the first one
 implemented). It makes for complicated JavaScript but a smoother interface.
 
-We need to make sure that this doesn't go out of sync with displayComment.
+We need to make sure that this doesn't go out of sync with renderComment.
 
 Also, does this lead to XSS vulnerabilities?
 
@@ -137,43 +122,65 @@ cost of inflated HTML pages.
 There is a more efficient way to do this that involves more JavaScript, but for
 now we keep it simple.
 
-> displayComment :: Integer -> [SqlValue] -> App Html
-> displayComment i [n, l, u, e, t, c]  = do
->   memberName <- asks appMemberName
->   email <- asks appMemberEmail
->   let n'  :: Integer  = fromSql n
->       l'  :: Integer  = fromSql l
->       u'  :: String   = fromSql u
->       e'  :: String   = e == SqlNull ? "" $ fromSql e
->       t'  :: UTCTime  = fromSql t
->       c'  :: String   = fromSql c
->       id'             = "reply-" ++ (show n')
+> renderComment :: Comment -> App Html
+> renderComment c = do
+>   memberName  <- asks appMemberName
+>   email       <- asks appMemberEmail
 >   reply <- case (memberName, email) of
->              (Just mn, Just _)  -> do
->                (_, xhtml) <- runForm' $ commentForm mn email (Just $ show n')
+>              (Just _, Just email')  -> do
+>                (_, xhtml) <- runForm' $ commentForm email' (Just $ show $ commentNo c)
+>                let id' = "reply-" ++ (show $ commentNo c)
 >                return $ concatHtml [
 >                  button ! [  theclass $ "reveal " ++ id' ] << "Reply",
->                  paragraph ! [thestyle "clear: both"] << noHtml,
+>                  clear,
 >                  thediv ! [  thestyle "display: none",
 >                              identifier id',
 >                              theclass "reply" ] << [
 >                    thediv ! [theclass "comment editable"] <<
->                       form ! [method "POST"] << [  hidden "topic" (show i),
->                                                    xhtml ] ] ]
->              (Just _, Nothing)  -> return $ anchor ! [href "/member/confirmation"] <<
->                                               "Confirm Your Email to Reply"
->              _                  -> return $ anchor ! [href "/member/login"] <<
->                                               "Login to Reply"
+>                       form ! [method "POST"] << [xhtml] ] ]
+>              (Just _, Nothing)      -> return $ anchor ! [href "/member/confirmation"] <<
+>                                                   "Confirm Your Email to Reply"
+>              _                      -> return $ anchor ! [href "/member/login"] <<
+>                                                   "Login to Reply"
 >   return $ thediv ! [  theclass "comment toplevel",
->                        thestyle $ "margin-left:" ++ (show $ l'*2) ++ "em" ] << [
->     paragraph ! [theclass "timestamp"] << formatSimpleTime t',
+>                        thestyle $ "margin-left:" ++ (show $ (commentLevel c)*2) ++ "em" ] << [
+>     paragraph ! [theclass "timestamp"] << (formatSimpleTime $ commentTime c),
 >     image ! [  width "60", height "60", theclass "avatar",
->                src $  gravatarWith (map toLower e')
+>                src $  gravatarWith (map toLower $ commentEmail c)
 >                                    Nothing (size 60) (Just "wavatar") ],
->     thediv ! [theclass "speech"] << displayCommentBody c',
->     thediv ! [theclass "signature"] << ("—" ++ u'),
+>     thediv ! [theclass "speech"] << (displayCommentBody $ commentBody c),
+>     thediv ! [theclass "signature"] << ("—" ++ commentUsername c),
 >     thediv ! [theclass "reply-options"] << reply ]
-> displayComment _ _             = return $ paragraph << "Error retrieving comment."
+
+> renderComments :: Integer -> App Html
+> renderComments root = do
+>   comments <- getComments root
+>   case comments of
+>     Nothing  -> return $ paragraph << "Unable to retrieve comments."
+>     Just cs  -> do
+>       commentBoxes  <- mapM renderComment cs
+>       rootReply     <- rootReplyForm root
+>       return $ thediv ! [theclass "comments"] << (commentBoxes +++ rootReply)
+
+> rootReplyForm :: Integer -> App Html
+> rootReplyForm root = do
+>   memberName  <- asks appMemberName
+>   email       <- asks appMemberEmail
+>   case (memberName, email) of
+>     (Just _, Just email')  -> do
+>       (_, xhtml) <- runForm' $ commentForm email' (Just $ show root)
+>       return $ thediv ! [  theclass "comment toplevel",
+>                            thestyle "margin-left: 2em" ] << [
+>                  thediv ! [theclass "reply-options"] << [
+>                    thediv ! [theclass "reply"] << [
+>                      thediv ! [theclass "comment editable"] <<
+>                        form ! [method "POST"] << [xhtml] ] ] ]
+>     (Just _, Nothing)      -> return $ anchor ! [  href "/member/confirmation",
+>                                                    thestyle "margin-left: 2em" ] <<
+>                                          "Confirm Your Email to Comment"
+>     _                      -> return $ anchor ! [  href "/member/login",
+>                                                    thestyle "margin-left: 2em" ] <<
+>                                          "Login to Comment"
 
 Replying to a comment is also a complex matter (are you noticing a trend
 here?). The complexity is mainly because we need to update information in a
@@ -189,41 +196,33 @@ the cache so that it gets regenerated on the next request.
 > replyToComment = do
 >   memberName <- asks appMemberName
 >   email <- asks appMemberEmail
->   topicNum <- fromJust . maybeRead <$> getRequiredInput "topic"
 >   case (memberName, email) of
->     (Just mn, Just _)  -> do
->       parent <- getInput "parent"
->       res <- runForm (commentForm mn email parent) $ Right noHtml
+>     (Just _, Just email')  -> do
+>       res <- runForm (commentForm email' Nothing) $ Right noHtml
 >       case res of
->         Left xhtml           -> outputJSON [  ("html", showHtmlFragment $ thediv !
->                                                          [theclass "comment editable"] << xhtml),
->                                               ("status", "incomplete") ]
+>         Left xhtml -> outputJSON [  ("html", showHtmlFragment $ thediv !
+>                                                [theclass "comment editable"] << xhtml),
+>                                     ("status", "incomplete") ]
 >         Right (body,parent')  -> do
 >           memberNo <- fromJust <$> asks appMemberNo
->           res' <- withTransaction' $ do
->             commentNo' <- storeComment memberNo body parent'
->             run'  "UPDATE forum_topic \
->                   \SET last_comment = ?, \
->                       \num_replies = num_replies + 1 \
->                   \WHERE topic_no = ?"
->                   [toSql commentNo', toSql topicNum]
->             res'' <- queryTuple'  "SELECT c.comment_no, 0 as level, \
->                                          \m.username, m.email, \
->                                          \c.time, c.comment \
->                                   \FROM comment c, member m \
->                                   \WHERE m.member_no = c.author \
->                                     \AND comment_no = ?"
->                                   [toSql commentNo']
->             liftIO . commit =<< asks appDB
->             return $ fromJust res''
->           case res' of
->             Nothing  -> outputJSON [  ("html", "Error posting comment."),
->                                       ("status", "error") ]
->             Just c   -> do
->               c' <- asks appDB
->               liftIO $ commit c'
->               liftIO memcacheFlush
->               comment <- displayComment topicNum c
->               outputJSON [  ("html", showHtmlFragment comment),
->                             ("status", "accepted") ]
+>           commentNo' <- storeComment memberNo body parent'
+>           case commentNo' of
+>             Nothing  -> error "Failed to store comment."
+>             Just n   -> do
+>               res' <- queryTuple'  "SELECT c.comment_no, 0 as level, \
+>                                           \m.username, m.email, \
+>                                           \c.time, c.body \
+>                                    \FROM comment c, member m \
+>                                    \WHERE m.member_no = c.author \
+>                                      \AND c.comment_no = ?"
+>                                    [toSql n]
+>               case res' of
+>                 Nothing  -> outputJSON [  ("html", "Error posting comment."),
+>                                           ("status", "error") ]
+>                 Just c'  -> do
+>                   let c = fromJust $ commentFromValues c'
+>                   liftIO memcacheFlush
+>                   comment <- renderComment c
+>                   outputJSON [  ("html", showHtmlFragment comment),
+>                                 ("status", "accepted") ]
 >     _                  -> outputUnauthorized

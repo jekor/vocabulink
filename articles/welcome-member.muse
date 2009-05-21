@@ -7,8 +7,6 @@
 <ul id="twitter_update_list"></ul>
 <a href="http://twitter.com/Vocabulink" id="twitter-link" style="display:block;text-align:right;">follow us on Twitter</a>
 </div>
-<script type="text/javascript" src="http://twitter.com/javascripts/blogger.js"></script>
-<script type="text/javascript" src="http://twitter.com/statuses/user_timeline/Vocabulink.json?callback=twitterCallback2&amp;count=7"></script>
 </literal>
 
  - **2009-05-12**: Future updates are going to go through Twitter.
@@ -16,8 +14,6 @@
  - **2009-05-07**: Added latest comment details to the main forum view. Note that due to CSS caching you might need to force-reload the page to get it to look right.
  - **2009-05-06**: Added an interface for browsing links by language pairs. Click [[/languages][Browse Links]] in the top navigation bar to see it in action.
  - **2009-05-06**: Added Esperanto, French, German, and Spanish forums. Want more? Just ask.
- - **2009-05-05**: Links now have tooltips to show you which languages are being linked. Just hover over a link to see them.
- - **2009-05-05**: When creating a new link, the 2 sides are now labeled "Foreign" and "Native" (rather than "Origin" and "Destination"). This is because studying links makes the most sense when you guess the meaning of the foreign word rather than try to guess the foreign word for a native word/concept. If you're interested in the reasoning behind this, ask over at the [[/forums][forums]].
 
 * Getting Started
 

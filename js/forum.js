@@ -23,7 +23,5 @@ function setup() {
 
 function roundDivs() {
   roundClass('div', 'forum-group');
-  var toplevelComments = $$('.comment.toplevel');
-  map(roundElement, toplevelComments);
   roundElement('topics');
 }

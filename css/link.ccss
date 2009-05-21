@@ -102,12 +102,14 @@ fieldset#link-word textarea:
   float: left
   padding-top: 1.3em
   form:
-    margin: 1em
+    margin: 1.3em
   input, select, button:
     display: block
     margin->
       left: auto
       right: auto
+  > div:
+    margin: 1.3em auto
   p, a:
     text-align: center
   a:
@@ -132,3 +134,7 @@ a.language-pair:
 
 .pack-links:
   width: 33em
+
+.comments:
+  margin-top: 1.3em
+  margin-left: -2em

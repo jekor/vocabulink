@@ -46,3 +46,7 @@
   code:
     font-family: Courier New, monospace
     font-weight: bold
+
+.comments:
+  margin-left: -2em
+  margin-top: 1.3em

@@ -272,13 +272,12 @@ a way to preview the text of the first comment to the topic.
 
 > newTopicPage :: String -> App CGIResult
 > newTopicPage n = withRequiredMemberNumber $ \_ -> do
->   email <- asks appMemberEmail
->   memberName <- fromJust <$> asks appMemberName
->   res <- runForm (forumTopicForm memberName email) $ Right noHtml
+>   res <- runForm forumTopicForm $ Right noHtml
 >   case res of
->     Left xhtml -> simplePage "New Forum Topic" forumDeps
+>     Left xhtml -> simplePage "New Forum Topic"
+>       (forumDeps ++ [JS "comment", CSS "comment"])
 >       [thediv ! [theclass "comments"] << xhtml]
->     Right (title, (body, _)) -> do
+>     Right (title, body) -> do
 >       r <- createTopic (title, body) n
 >       case r of
 >         Nothing  -> simplePage "Error Creating Forum Topic" forumDeps []
@@ -287,15 +286,18 @@ a way to preview the text of the first comment to the topic.
 The form for creating the topic is very simple. All we need is a title and the
 body of the first comment (topics can't be created without a root comment).
 
-> forumTopicForm ::  String -> Maybe String ->
->                    AppForm (String, (String, Maybe Integer))
-> forumTopicForm memberName email =
->   commentBox ((,)  <$> plug (thediv <<) ("Topic Title" `formLabel`
->                           (  plug (\xhtml -> thediv ! [theclass "title"] << xhtml) $
->                              F.input Nothing) `check` ensures
->     [  ((> 0)     . length, "Title must not be empty."),
->        ((<=  80)  . length, "Title must be 80 characters or shorter.") ])
->                    <*> commentForm memberName email Nothing)
+> forumTopicForm :: AppForm (String, String)
+> forumTopicForm =
+>   commentBox $ plug (+++  submit "" "Create" !
+>                             [thestyle "float: right; margin-right: 0.5em"] +++
+>                           clear)
+>     ((,)  <$> ("Topic Title" `formLabel`
+>                  (plug (\xhtml -> thediv ! [theclass "title"] << xhtml) $
+>                     F.input Nothing) `check` ensures (nonEmptyAndLessThan 80 "Title"))
+>           <*> plug (\xhtml -> xhtml ! [thestyle "margin: 0.667em auto; \
+>                                                 \display: block; \
+>                                                 \width: 95%; height: 10em"])
+>                  (F.textarea Nothing `check` ensures (nonEmptyAndLessThan 10000 "Comment")))
 
 This creates the topic in the database given the title and root comment body.
 
@@ -329,16 +331,12 @@ probably need paging.
 >                     \WHERE f.name = t.forum_name \
 >                       \AND t.topic_no = ?" [toSql i]
 >   case r of
->     Just [root,title,fTitle] -> do
->       comments <- queryTuples' "SELECT * FROM comment_tree(?)" [root]
->       case comments of
->         Nothing  -> error "Error retrieving comments."
->         Just cs  -> do
->           commentsHtml <- mapM (displayComment i) cs
->           stdPage (fromSql title) (forumDeps ++ [JS "forum-comment"]) [] [
->             breadcrumbs [
->               anchor ! [href "../../forums"] << "Forums",
->               anchor ! [href $ "../" ++ fn] << (fromSql fTitle :: String),
->               stringToHtml $ fromSql title ],
->             thediv ! [theclass "comments"] << commentsHtml ]
->     _          -> output404 ["forum",fn,show i]
+>     Just [root,title,fTitle]  -> do
+>       comments <- renderComments $ fromSql root
+>       stdPage (fromSql title) (forumDeps ++ [JS "comment", CSS "comment"]) [] [
+>         breadcrumbs [
+>           anchor ! [href "../../forums"] << "Forums",
+>           anchor ! [href $ "../" ++ fn] << (fromSql fTitle :: String),
+>           stringToHtml $ fromSql title ],
+>         comments ]
+>     _                         -> output404 ["forum",fn,show i]

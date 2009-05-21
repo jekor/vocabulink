@@ -105,6 +105,7 @@ Each of these modules will be described in its own section.
 > import Vocabulink.Html hiding (method, options)
 > import Vocabulink.Link
 > import Vocabulink.Member
+> import Vocabulink.Rating
 > import Vocabulink.Review
 > import Vocabulink.Utils
 
@@ -358,6 +359,8 @@ establish the link. (Previewing is done through the @GET@ as well.)
 >     Just n   -> case (method, method') of
 >                   ("GET"   ,[])          -> linkPage n
 >                   ("POST"  ,["delete"])  -> deleteLink n
+>                   -- The next is not technically a method.
+>                   ("POST"  ,["rating"])  -> rateLink n
 >                   (_       ,_)           -> output404 path
 
 \subsection{Searching}
@@ -558,7 +561,11 @@ or curious.
 >   stdPage "Welcome to Vocabulink" [JS "MochiKit", JS "page"] [] [
 >     thediv ! [identifier "main-content"] << body,
 >     thediv ! [identifier "sidebar"] << [
->       featured, latest, my, articles ] ]
+>       featured, latest, my, articles ],
+>     if isJust memberNo
+>       then primHtml  "<script type=\"text/javascript\" src=\"http://twitter.com/javascripts/blogger.js\"></script> \
+>                  \<script type=\"text/javascript\" src=\"http://twitter.com/statuses/user_timeline/Vocabulink.json?callback=twitterCallback2&amp;count=7\"></script>"
+>       else noHtml ]
 >  where myLinks mn = do
 >          ls <- memberLinks mn 0 10
 >          case ls of

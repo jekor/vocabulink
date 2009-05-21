@@ -1,0 +1,96 @@
+// Copyright 2008, 2009 Chris Forno
+//
+// This file is part of Vocabulink.
+//
+// Vocabulink is free software: you can redistribute it and/or modify it under
+// the terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option) any
+// later version.
+//
+// Vocabulink is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+// A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
+
+.comment:
+  &.toplevel:
+    width: 40em
+  background-color: #EEE
+  margin-bottom: 1.3em
+  > *:
+    margin->
+      bottom: 0.25em
+  .timestamp, .signature:
+    text-align: right
+    margin->
+      bottom: 0.25em
+      right: 0.5em
+  .timestamp:
+    margin-top: 0
+  .signature:
+    margin-top: 0.25em
+  img.avatar:
+    display: block
+    float: left
+    margin->
+      left: 0.5em
+      right: 0.5em
+  .speech:
+    overflow: hidden
+    margin-right: 0.5em
+    border: 1px solid $bar_and_box_background
+    background-color: white
+    padding: 0.25em
+    text-align: left
+    // the "soft" class is a bit of a hack
+    &.soft:
+      background-color: inherit
+      border: none
+      margin-right: 0
+    textarea:
+      overflow: auto
+      width: 100%
+      height: 10em
+  form:
+    display: inline
+  .reply-options:
+    margin->
+      right: 0.5em
+      top: 0.5em
+    text-align: right
+
+.comment.editable, .reply.editable:
+  margin-bottom: 0
+  .speech:
+    margin-right: 0
+    min-height: 60px
+  label:
+    float: left
+    margin->
+      left: 0.5em
+      right: 0.25em
+  .title:
+    overflow: hidden
+    margin-right: 0.5em
+    input:
+      width: 100%
+  .signature:
+    margin-right: 0
+
+.speech:
+  p:first-child, ul:first-child, ol:first-child:
+    margin-top: 0
+  p:last-child, ul:last-child, ol:last-child:
+    margin-bottom: 0
+  ul:
+    list-style-type: disc
+    margin-left: 1em
+  ol:
+    list-style-type: decimal
+    margin-left: 1.5em
+
+.reply:
+  margin-top: 1.3em
