@@ -24,18 +24,13 @@ for the client of our program, even when given incomplete or incorrect inputs.
 But, since we're dealing with each of many requests in their own threads, it's
 not the end of the world if we generate an error or don't catch an exception.
 
-To keep other modules from having to know exactly which CGI method we're using
-(who knows, we may want to switch to SCGI later), we export some FastCGI
-functions. This allows other modules to just import Vocabulink.CGI and gives
-us the option of overriding its functions in the future (which we do already
-with |readInput|). This is a common pattern in other Vocabulink modules.
-
 > module Vocabulink.CGI (  getInput, getRequiredInput, getInputDefault,
 >                          readInput, readRequiredInput, readInputDefault,
 >                          getInputs, handleErrors', referrerOrVocabulink,
 >                          urlify, outputUnauthorized, outputText, outputJSON,
 >                          output', getTextOrFileInput,
->  {- Network.FastCGI -}   getInputFPS, getInputFilename,
+>                          tryCGI',
+>  {- Network.CGI -}       getInputFPS, getInputFilename,
 >                          MonadCGI, CGIResult, requestURI, requestMethod,
 >                          getVar, setHeader, output, redirect, remoteAddr,
 >                          outputError, outputMethodNotAllowed,
@@ -47,9 +42,12 @@ with |readInput|). This is a common pattern in other Vocabulink modules.
 > import Vocabulink.DB
 > import Vocabulink.Utils
 
-> import Control.Exception (Exception(..))
+> import Control.Exception (Exception, try)
+> import Control.Monad.Reader (ReaderT(..))
+> import Control.Monad.Writer (WriterT(..))
 > import Data.ByteString.Lazy.UTF8 (fromString)
 > import Data.Char (toLower, isAlphaNum)
+> import Data.Monoid (mempty)
 > import Network.URI (uriPath, uriQuery)
 > import Text.Formlets as F
 > import Text.JSON (JSON, encode, toJSObject)
@@ -57,9 +55,10 @@ with |readInput|). This is a common pattern in other Vocabulink modules.
 We're going to hide some Network.CGI functions so that we can override them
 with versions that automatically handle UTF-8-encoded input.
 
-> import Network.FastCGI hiding (getInput, readInput, getInputs)
+> import Network.CGI hiding (getInput, readInput, getInputs)
+> import Network.CGI.Monad (CGIT(..))
 > import Network.CGI.Protocol (CGIResult(..))
-> import qualified Network.FastCGI as FCGI
+> import qualified Network.CGI as CGI
 
 It's quite probable that we're going to trigger an unexpected exception
 somewhere in the program. This is especially likely because we're interfacing
@@ -71,9 +70,9 @@ went wrong.
  we'll close the database handle and return the CGI result.
 
 > handleErrors' :: IConnection conn => conn -> CGI CGIResult -> CGI CGIResult
-> handleErrors' c a =  catchCGI (do  r <- a
->                                    liftIO $ disconnect c
->                                    return r)
+> handleErrors' c a =  catchCGI' (do  r <- a
+>                                     liftIO $ disconnect c
+>                                     return r)
 >                      (outputException' c)
 
 Network.CGI provides |outputException| as a basic default error handler. This
@@ -87,9 +86,9 @@ handle. This is the perfect place to close it, as it'll be the last thing we do
 in the CGI monad (and the thread).
 
 > outputException' ::  (MonadCGI m, MonadIO m, IConnection conn) =>
->                      conn -> Exception -> m CGIResult
-> outputException' c e = do
->   s <- liftIO $ logException c e
+>                      conn -> SomeException -> m CGIResult
+> outputException' c ex = do
+>   s <- liftIO $ logException c ex
 >   liftIO $ disconnect c
 >   outputInternalServerError [s]
 
@@ -129,12 +128,12 @@ enhanced versions of Network.CGI's |getInput| and |readInput| along with a few
 helpers.
 
 > getInput :: MonadCGI m => String -> m (Maybe String)
-> getInput = liftM (>>= Just . decodeString) . FCGI.getInput
+> getInput = liftM (>>= Just . decodeString) . CGI.getInput
 
 We need to do the same for getInputs. (It's used by |runForm| at the least.)
 
 > getInputs :: MonadCGI m => m [(String, String)]
-> getInputs = map decode `liftM` FCGI.getInputs
+> getInputs = map decode `liftM` CGI.getInputs
 >     where decode (x, y) = (decodeString x, decodeString y)
 
 Often we'll want an input from the client but are happy to fall back to a
@@ -182,9 +181,9 @@ File inputs are a bit of a hassle to deal with.
 >                     return $ Just $ Right $ File {
 >                       content      = fromJust content',
 >                       fileName     = fromJust fileName',
->                       contentType  = F.ContentType {  F.ctType = FCGI.ctType ct'',
->                                                       F.ctSubtype = FCGI.ctSubtype ct'',
->                                                       F.ctParameters = FCGI.ctParameters ct'' } }
+>                       contentType  = F.ContentType {  F.ctType = CGI.ctType ct'',
+>                                                       F.ctSubtype = CGI.ctSubtype ct'',
+>                                                       F.ctParameters = CGI.ctParameters ct'' } }
 
 \subsection{Working with URLs}
 
@@ -205,3 +204,13 @@ characters and hyphens in the resulting string.
 
 > urlify :: String -> String
 > urlify = map toLower . filter (\e -> isAlphaNum e || (e == '-') || (e == '.')) . translate [(' ', '-')]
+
+\subsection{New Extensible Exceptions}
+
+> catchCGI' :: Exception e => CGI a -> (e -> CGI a) -> CGI a
+> catchCGI' c h = tryCGI' c >>= either h return
+
+> tryCGI' :: Exception e => CGI a -> CGI (Either e a)
+> tryCGI' (CGIT c) = CGIT (ReaderT (\r -> WriterT (f (runWriterT (runReaderT c r)))))
+>     where
+>       f = liftM (either (\ex -> (Left ex,mempty)) (\(a,w) -> (Right a,w))) . try

@@ -82,7 +82,8 @@ for creating new groups.
 The dependencies for forum pages are all the same.
 
 > forumDeps :: [Dependency]
-> forumDeps = [CSS "forum", JS "MochiKit", JS "forum", JS "form"]
+> forumDeps = [  CSS "forum", JS "MochiKit", JS "forum", JS "form",
+>                CSS "comment", JS "comment" ]
 
 Displaying an individual group of forums is a little bit tougher than it would
 seem (we have to also support the administrative interface for creating new
@@ -161,7 +162,6 @@ moderators or someone else I'll be motivated to make this nicer.
 >                         \VALUES (?, COALESCE((SELECT MAX(position) \
 >                                              \FROM forum_group), 0) + 1)"
 >                         [toSql s]
->   liftIO memcacheFlush
 >   redirect =<< referrerOrVocabulink
 
 For now, we just upload to the icons directory in our static directory.
@@ -186,7 +186,6 @@ For now, we just upload to the icons directory in our static directory.
 >                                               \WHERE group_name = ?), 0) + 1, ?)"
 >                             [  toSql $ urlify t, toSql t, toSql g,
 >                                toSql g, toSql $ basename f]
->       liftIO memcacheFlush
 >       redirect =<< referrerOrVocabulink
 >     _ -> error "Please fill in the form completely. \
 >                \Make sure to include an icon."
@@ -209,6 +208,7 @@ and the time of the latest topic.
 >     Nothing  -> output404 ["forum", forum]
 >     Just t   -> do
 >       let tc = concatHtml $ [
+>                  td << noHtml,
 >                  td ! [theclass "topic"] <<
 >                    form ! [action (forum ++ "/new"), method "GET"]
 >                      << submit "" "New Topic",
@@ -219,6 +219,7 @@ and the time of the latest topic.
 >                           stringToHtml $ fromSql t ],
 >            thediv ! [identifier "topics"] << table << [
 >              thead << tr << [
+>                th ! [theclass "votes"]    << "",
 >                th ! [theclass "topic"]    << "Topic",
 >                th ! [theclass "replies"]  << "Replies",
 >                th ! [theclass "author"]   << "Author",
@@ -235,28 +236,47 @@ bit more difficult and a task for later.
 
 > forumTopicRows :: String -> App [Html]
 > forumTopicRows t = do
+>   memberNo <- asks appMemberNo
 >   topics <- queryTuples'
 >     "SELECT t.topic_no, t.title, t.num_replies, \
->            \m1.username, c2.time, m2.username \
->     \FROM forum_topic t, comment c1, comment c2, member m1, member m2 \
->     \WHERE c1.comment_no = t.root_comment \
->       \AND c2.comment_no = t.last_comment \
->       \AND m1.member_no = c1.author \
->       \AND m2.member_no = c2.author \
->       \AND forum_name = ? \
->     \ORDER BY t.topic_no DESC" [toSql t]
+>            \m1.username, c2.time, m2.username, \
+>            \c1.comment_no, c1.upvotes - c1.downvotes, cv.vote = 'up' \
+>     \FROM forum_topic t \
+>     \INNER JOIN comment c1 ON (c1.comment_no = t.root_comment) \
+>     \INNER JOIN comment c2 ON (c2.comment_no = t.last_comment) \
+>     \INNER JOIN member  m1 ON (m1.member_no  = c1.author) \
+>     \INNER JOIN member  m2 ON (m2.member_no  = c2.author) \
+>     \LEFT JOIN comment_vote cv ON (cv.comment = c1.comment_no AND cv.member = ?) \
+>     \WHERE forum_name = ? \
+>     \ORDER BY t.topic_no DESC" [toSql memberNo, toSql t]
 >   case topics of
 >     Nothing  -> return [td << "Error retrieving topics."]
 >     Just ts  -> return $ map topicRow ts
 >       where  topicRow :: [SqlValue] -> Html
->              topicRow [tn, tt, nr, ta, lt, la] = 
+>              topicRow [tn, tt, nr, ta, lt, la, cn, v, uv] = 
 >                let tn'  :: Integer  = fromSql tn
 >                    tt'  :: String   = fromSql tt
 >                    nr'  :: Integer  = fromSql nr
 >                    ta'  :: String   = fromSql ta
 >                    lt'  :: UTCTime  = fromSql lt
->                    la'  :: String   = fromSql la in
->                  concatHtml [
+>                    la'  :: String   = fromSql la
+>                    cn'  :: Integer  = fromSql cn
+>                    v'   :: Integer  = fromSql v
+>                    uv'  :: Maybe Bool  = fromSql uv
+>                    enabled = isJust memberNo && isNothing uv' in
+>                concatHtml [
+>                  td ! [theclass $ "votes" ++ (enabled ? " enabled" $ "")] << [
+>                    anchor !  ([  href $ "/comment" </> show cn',
+>                                  theclass "vote-arrow up" ] ++
+>                               case uv' of
+>                                 Just True   -> [thestyle "background-position: 4px -24px"]
+>                                 _           -> []) << noHtml,
+>                    thespan << show v',
+>                    anchor !  ([  href $ "/comment" </> show cn',
+>                                  theclass "vote-arrow down" ] ++
+>                               case uv' of
+>                                 Just False  -> [thestyle "background-position: 4px -37px"]
+>                                 _           -> []) << noHtml ],
 >                  td ! [theclass "topic"] <<
 >                    anchor ! [href (t ++ "/" ++ (show tn'))] << tt',
 >                  td ! [theclass "replies"] << show nr',
@@ -274,8 +294,7 @@ a way to preview the text of the first comment to the topic.
 > newTopicPage n = withRequiredMemberNumber $ \_ -> do
 >   res <- runForm forumTopicForm $ Right noHtml
 >   case res of
->     Left xhtml -> simplePage "New Forum Topic"
->       (forumDeps ++ [JS "comment", CSS "comment"])
+>     Left xhtml -> simplePage "New Forum Topic" forumDeps
 >       [thediv ! [theclass "comments"] << xhtml]
 >     Right (title, body) -> do
 >       r <- createTopic (title, body) n
@@ -297,7 +316,7 @@ body of the first comment (topics can't be created without a root comment).
 >           <*> plug (\xhtml -> xhtml ! [thestyle "margin: 0.667em auto; \
 >                                                 \display: block; \
 >                                                 \width: 95%; height: 10em"])
->                  (F.textarea Nothing `check` ensures (nonEmptyAndLessThan 10000 "Comment")))
+>                  (F.textarea Nothing Nothing Nothing `check` ensures (nonEmptyAndLessThan 10000 "Comment")))
 
 This creates the topic in the database given the title and root comment body.
 
@@ -310,15 +329,15 @@ This creates the topic in the database given the title and root comment body.
 >       c' <- asks appDB
 >       commentNo' <- storeComment memberNo c Nothing
 >       case commentNo' of
->         Nothing  -> liftIO $ rollback c' >> throwDyn ()
+>         Nothing  -> liftIO $ rollback c' >> error "DB error"
 >         Just n   -> do
 >           r <- quickStmt'  "INSERT INTO forum_topic \
 >                            \(forum_name, title, root_comment, last_comment) \
 >                            \VALUES (?, ?, ?, ?)"
 >                            [toSql fn, toSql t, toSql n, toSql n]
 >           case r of
->             Nothing  -> liftIO $ rollback c' >> throwDyn ()
->             Just _   -> (liftIO memcacheFlush) >> return n
+>             Nothing  -> liftIO $ rollback c' >> error "DB error"
+>             Just _   -> return n
 
 We're finally getting to the core of the forum: individual topic pages. The
 forum topic page displays the entire comment thread. Eventually it will
@@ -333,7 +352,7 @@ probably need paging.
 >   case r of
 >     Just [root,title,fTitle]  -> do
 >       comments <- renderComments $ fromSql root
->       stdPage (fromSql title) (forumDeps ++ [JS "comment", CSS "comment"]) [] [
+>       stdPage (fromSql title) forumDeps [] [
 >         breadcrumbs [
 >           anchor ! [href "../../forums"] << "Forums",
 >           anchor ! [href $ "../" ++ fn] << (fromSql fTitle :: String),

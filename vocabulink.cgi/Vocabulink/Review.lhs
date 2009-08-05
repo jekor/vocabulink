@@ -91,7 +91,7 @@ All database updates during this process are wrapped in a transaction.
 >     Just p   -> withTransaction' $ do
 >       seconds <- SM2.reviewInterval memberNo linkNo p recall
 >       case seconds of
->         Nothing  -> throwDyn ()
+>         Nothing  -> error "Failed to retrieve review interval."
 >         Just s   -> do
 >           run'  "INSERT INTO link_review (member_no, link_no, recall, \
 >                                          \recall_time, target_time) \

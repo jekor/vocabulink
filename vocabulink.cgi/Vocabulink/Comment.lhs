@@ -20,7 +20,8 @@
 > module Vocabulink.Comment (  commentBox, commentForm, displayCommentBody,
 >                              storeComment, commentPreview,
 >                              renderComment, renderComments,
->                              rootReplyForm, replyToComment, getComments ) where
+>                              rootReplyForm, replyToComment, getComments,
+>                              voteOnComment ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -63,7 +64,7 @@ comment will eventually look like when posted.
 >     helpButton  "http://daringfireball.net/projects/markdown/basics"
 >                 (Just "Formatting Help"),
 >     button << "Preview" +++ stringToHtml " " +++ submit "" "Post Comment" ] ])
->     ((\a b -> (a, maybeRead b))  <$> (F.textarea Nothing `check` ensures
+>     ((\a b -> (a, maybeRead b))  <$> (F.textarea Nothing Nothing Nothing `check` ensures
 >                                         (nonEmptyAndLessThan 10000 "Comment"))
 >           <*> (F.hidden parent))
 
@@ -221,8 +222,17 @@ the cache so that it gets regenerated on the next request.
 >                                           ("status", "error") ]
 >                 Just c'  -> do
 >                   let c = fromJust $ commentFromValues c'
->                   liftIO memcacheFlush
 >                   comment <- renderComment c
 >                   outputJSON [  ("html", showHtmlFragment comment),
 >                                 ("status", "accepted") ]
 >     _                  -> outputUnauthorized
+
+> voteOnComment :: Integer -> App CGIResult
+> voteOnComment n = withRequiredMemberNumber $ \memberNo -> do
+>   vote <- getRequiredInput "vote"
+>   res <- quickStmt'  "INSERT INTO comment_vote (comment, member, vote) \
+>                                        \VALUES (?, ?, ?)"
+>                      [toSql n, toSql memberNo, toSql vote]
+>   case res of
+>     Nothing  -> error "Failed to record vote."
+>     _        -> output' ""

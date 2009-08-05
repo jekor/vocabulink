@@ -24,11 +24,10 @@ oft-used functions for other modules.
 > module Vocabulink.Utils (         if', (?), safeHead, currentDay, currentYear,
 >                                   formatSimpleTime, basename, translate, (<$$>),
 >                                   sendMail, every2nd, every3rd,
->                                   memcacheGet, memcacheSet, memcacheDelete,
->                                   memcacheFlush,
 >  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
 >  {- Control.Applicative -}        pure, (<$>), (<*>),
 >  {- Control.Applicative.Error -}  Failing(..), maybeRead,
+>  {- Control.Exception -}          SomeException,
 >  {- Control.Monad -}              liftM,
 >  {- Control.Monad.Trans -}        liftIO, MonadIO,
 >  {- Data.Char -}                  toLower,
@@ -54,7 +53,8 @@ more.
 
 > import Control.Applicative (pure, (<$>), (<*>))
 > import Control.Applicative.Error (Failing(..), maybeRead)
-> import Control.Exception (try, bracket)
+
+> import Control.Exception (SomeException)
 
 We make particularly extensive use of |liftM| and the Maybe monad.
 
@@ -72,11 +72,10 @@ formats.
 > import Data.Time.Format (formatTime)
 > import Data.Time.LocalTime (  getCurrentTimeZone, utcToLocalTime,
 >                               LocalTime(..), ZonedTime)
-> import qualified Network.Memcache.Protocol as Memcached
-> import qualified Network.Memcache as Memcache
 > import System.Cmd (system)
 > import System.FilePath (  (</>), takeExtension, addExtension, takeBaseName,
 >                           replaceExtension )
+> import System.IO.Error (try)
 > import System.Locale (defaultTimeLocale, rfc822DateFormat)
 > import System.Exit (ExitCode(..))
 
@@ -157,39 +156,6 @@ forwarding for us so that we don't have to deal with SMTP here.
 >   case res of
 >     Right ExitSuccess  -> return $ Just ()
 >     _                  -> return Nothing
-
-\subsection{Memcache}
-
-For now, we don't use memcache for anything more than page-level caching. As
-such, we only need to connect, issue a command, and then disconnect. In the
-future, if we use it more we could add a memcache server to the App monad.
-
-> memcacheServer :: IO Memcached.Server
-> memcacheServer = Memcached.connect "127.0.0.1" 11211
-
-> withMemcache :: (Memcached.Server -> IO a) -> IO a
-> withMemcache f = do
->   bracket  (memcacheServer)
->            (Memcached.disconnect)
->            f
-
-> memcacheGet :: String -> IO (Maybe String)
-> memcacheGet key = withMemcache $ \mc -> decodeString <$$> Memcache.get mc key
-
-> memcacheSet :: String -> String -> IO (Bool)
-> memcacheSet key value = withMemcache $ \mc ->
->   Memcache.set mc key (encodeString value)
-
-> memcacheDelete :: String -> IO (Bool)
-> memcacheDelete key = withMemcache $ \mc -> Memcache.delete mc key 0
-
-While out dataset and traffic is still small, the easiest thing to do when
-something is updated is to just flush the entire cache rather than try and
-figure out what exactly we need to invalidate. It's a brute force approach but
-it's better than no cache at all.
-
-> memcacheFlush :: IO ()
-> memcacheFlush = withMemcache $ \mc -> Memcache.flush mc
 
 \subsection{Lists}
 

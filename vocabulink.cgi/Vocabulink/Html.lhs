@@ -84,8 +84,8 @@ nice to get this working automatically via Darcs at some point.
 
 > dependencyVersions :: [(Dependency, Integer)]
 > dependencyVersions = [  (JS "raphael", 2),
->                         (JS "comment", 2),
->                         (CSS "forum", 4),
+>                         (JS "comment", 3),
+>                         (CSS "forum", 5),
 >                         (CSS "link", 4),
 >                         (CSS "page", 4),
 >                         (CSS "article", 2) ]
@@ -102,19 +102,6 @@ usability.
 
 If any JavaScript files are required, |stdPage| will automatically add a
 @<noscript>@ warning to the top of the page.
-
-stdPage also stores output to memcache for working with nginx's memcache
-module. It only stores a document in memcache when requested by a non-member
-(we don't want private details or customized views being cached). We also only
-want to cache GET requests. Also, so that we don't fill up the cache with
-previews and such, we don't cache anything with a query string.
-
-On the nginx side, we check to see if the incoming request is a GET, has no
-query string, and is does not have an auth cookie. Only if all 3 conditions are
-met do we serve the file from the cache.
-
-This is not a good long-term caching strategy. But it's nice and simple and
-gives us good control for the time being.
 
 > stdPage :: String -> [Dependency] -> [Html] -> [Html] -> App CGIResult
 > stdPage title' deps head' body' = do
@@ -135,13 +122,6 @@ gives us good control for the time being.
 >                             jsNotice,
 >                             thediv ! [identifier "body"] << concatHtml body',
 >                             footerB ]
->   uri      <- requestURI
->   method'  <- requestMethod   
->   liftIO $ case (memberNo, method', uriQuery uri) of
->     (Nothing, "GET", "")  -> do
->       memcacheSet ("vocabulink.com:" ++ uriPath uri) xhtml
->       return ()
->     _                     -> return ()
 >   output' xhtml
 >  where jsNotice = case find (\e -> case e of
 >                                      JS _  -> True

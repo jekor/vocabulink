@@ -44,7 +44,7 @@ because of cyclic dependencies.
 > import Vocabulink.Utils
 
 > import Control.Applicative
-> import Control.Exception (Exception, try)
+> import Control.Exception (try)
 > import Control.Monad (ap)
 > import Control.Monad.Error (runErrorT)
 > import Control.Monad.Reader (ReaderT(..), MonadReader, asks)
@@ -53,8 +53,8 @@ because of cyclic dependencies.
 > import Data.ConfigFile (ConfigParser, get)
 > import Data.Either.Utils (forceEither)
 > import Data.List (intercalate)
-> import Network.CGI.Monad (MonadCGI(..), tryCGI)
-> import Network.FastCGI (CGI, CGIT, outputNotFound)
+> import Network.CGI.Monad (MonadCGI(..))
+> import Network.CGI (CGI, CGIT, outputNotFound)
 > import Network.URI (escapeURIString, isUnescapedInURI)
 
 > data AppEnv = AppEnv {  appDB          :: Connection,
@@ -101,8 +101,8 @@ yet.
 
 > runApp :: Connection -> ConfigParser -> App CGIResult -> CGI CGIResult
 > runApp c cp (AppT a) = do
->   let salt = forceEither $ get cp "DEFAULT" "authtokensalt"
->   token <- verifiedAuthToken salt
+>   let key = forceEither $ get cp "DEFAULT" "authtokenkey"
+>   token <- verifiedAuthToken key
 >   email <- liftIO $ maybe (return Nothing)
 >                           (\n -> do
 >                              e <- queryValue c  "SELECT email FROM member \
@@ -244,7 +244,7 @@ the exception and returns Nothing).
 >     Right x  -> do  liftIO $ commit c
 >                     return $ Just x
 >     Left e   -> do  logApp "exception" $ show e
->                     liftIO $ try (rollback c) -- Discard any exception here
+>                     liftIO $ (try (rollback c) :: IO (Either SomeException ())) -- Discard any exception here
 >                     return Nothing
 
 > run' :: String -> [SqlValue] -> App (Integer)
@@ -258,8 +258,8 @@ the exception and returns Nothing).
 monad. To do so, we unwrap the Reader monad and use |tryCGI| (which unwraps
 another Reader and Writer).
 
-> tryApp :: App a -> App (Either Exception a)
-> tryApp (AppT c) = AppT (ReaderT (\r -> tryCGI (runReaderT c r)))
+> tryApp :: App a -> App (Either SomeException a)
+> tryApp (AppT c) = AppT (ReaderT (\r -> tryCGI' (runReaderT c r)))
 
 \subsubsection{Configuration}
 

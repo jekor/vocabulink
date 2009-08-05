@@ -42,13 +42,13 @@ them.
 > import Vocabulink.Review.Html
 > import Vocabulink.Utils
 
-> import Control.Exception (Exception, try)
+> import Control.Exception (try)
 > import Data.List (partition)
 > import System.Cmd (system)
 > import System.Exit (ExitCode(..))
 > import qualified Text.Formlets as Fl
 > import qualified Text.XHtml as H
-> import qualified Text.XHtml.Strict.Formlets as F (input, select, textarea, hidden)
+> import qualified Text.XHtml.Strict.Formlets as F (input, selectRaw, textarea, hidden)
 
 \subsection{Link Data Types}
 
@@ -78,18 +78,7 @@ Here are a couple shortcuts.
 > linkDestinationLanguage l = fromJust <$> languageNameFromAbbreviation (linkDestinationLang l)
 
 > languages :: App [(String, String)]
-> languages = do
->   langs <- liftIO $ memcacheGet "languages"
->   case langs of
->     Just langs'  -> case maybeRead langs' of
->                       Just langs''  -> return langs''
->                       Nothing       -> languagesFromDB'
->     Nothing      -> languagesFromDB'
->  where  languagesFromDB' :: App [(String, String)]
->         languagesFromDB' = do
->           langs''' <- languagesFromDB
->           liftIO $ memcacheSet "languages" (show langs''')
->           return langs'''
+> languages = languagesFromDB
 
 > languagesFromDB :: App [(String, String)]
 > languagesFromDB = map langToPair . fromJust <$>
@@ -682,7 +671,7 @@ This takes an either parameter to signify whether you want origin language
 >              [toSql memberNo]
 >   allLangs <- languages
 >   let choices = langs ++ [("","")] ++ allLangs
->   return $ F.select choices (Just $ fst . head $ choices) `check` ensures
+>   return $ F.selectRaw [] choices (Just $ fst . head $ choices) `check` ensures
 >              [  ((/= "")  ,  side' ++ " language is required") ]
 >     where langPair [a, b]  = (fromSql a, fromSql b)
 >           langPair _       = error "Invalid language pair."
@@ -722,7 +711,7 @@ Hopefully by then I will know more than I do now.
 >                                <*> fieldset' "relationship" linkTypeRelationship)
 >                    `check` ensure complete
 >                      "Please fill in all the link type fields."
->   where linkSelect = F.select $ zip ts ts
+>   where linkSelect = F.selectRaw [] $ zip ts ts
 >         complete Association         = True
 >         complete Cognate             = True
 >         complete (LinkWord w s)      = (w /= "") && (s /= "")
@@ -739,7 +728,7 @@ Hopefully by then I will know more than I do now.
 
 > linkTypeLinkWord :: AppForm LinkType
 > linkTypeLinkWord = LinkWord  <$> "Link Word" `formLabel'` F.input Nothing
->   <*> F.textarea (Just "Write a story linking the 2 words here.")
+>   <*> F.textarea Nothing Nothing (Just "Write a story linking the 2 words here.")
 
 > linkTypeRelationship :: AppForm LinkType
 > linkTypeRelationship = Relationship <$>
@@ -857,7 +846,7 @@ Display a hyperlink for a language pair.
 >   <$>  (F.hidden $ Just $ show fl) `check` ensure ((> 0) . length) "Missing first link number."
 >   <*>  plug (tabularInput "Pack Name") (F.input Nothing) `check`
 >          ensures (nonEmptyAndLessThan 50 "Pack Name")
->   <*>  plug (tabularInput "Description") (F.textarea Nothing) `check`
+>   <*>  plug (tabularInput "Description") (F.textarea Nothing Nothing Nothing) `check`
 >          ensures (nonEmptyAndLessThan 5000 "Pack Name")
 >   <*>  plug (tabularInput "Image") (nothingIfNull $ fileUpload "/pack/image" "Upload Image")
 >  where mkLinkPack ::  String -> String -> String -> Maybe String ->
@@ -960,7 +949,7 @@ Display a hyperlink for a language pair.
 >     Just (Just r')  -> case linkPackImage lp of
 >                          Nothing  -> return $ Just r'
 >                          Just i   -> moveImage i >> return (Just r')
->       where  moveImage :: String -> App (Either Exception ExitCode)
+>       where  moveImage :: String -> App (Either SomeException ExitCode)
 >              moveImage i' = do
 >                dir  <- (++ "/pack/image/") . fromJust <$> getOption "staticdir"
 >                let old  =  dir ++ i'

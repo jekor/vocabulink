@@ -38,7 +38,7 @@
 
 \section{Introduction}
 
-This is Vocabulink, the FastCGI process that handles all web requests for\\*
+This is Vocabulink, the SCGI process that handles all web requests for\\*
 \url{http://www.vocabulink.com/}.
 
 Vocabulink is essentially a multi-user application that operates via the web.
@@ -72,7 +72,7 @@ along with Vocabulink. If not, see \url{http://www.gnu.org/licenses/}.
 \subsection{Architecture}
 
 Requests arrive via a webserver.\footnote{I'm currently using nginx on
-www.vocabulink.com, but it should work with any server that supports FastCGI.}
+www.vocabulink.com, but it should work with any server that supports SCGI.}
 They are passed to the vocabulink.fcgi process (this program) on TCP port 10033
 of the local loopback interface.
 
@@ -109,6 +109,8 @@ Each of these modules will be described in its own section.
 > import Vocabulink.Review
 > import Vocabulink.Utils
 
+> import Network (PortID(..))
+
 \section{Other Modules}
 
 Vocabulink makes use of a half dozen or so Haskell libraries not included with
@@ -139,21 +141,12 @@ tokens for use in member authentication tokens.
 a data-driven application. HDBC takes most of the work out of converting
 between types when exchanging data with the database.
 
-\item[Network.FastCGI] The FastCGI library provides a simple interface that's
-mostly compatible with the Network.CGI library. I've modified the library
-slightly so that it outputs using UTF-8 by default.\footnote{I haven't released
-my changes to Network.FastCGI as I suspect there might be a better way to make
-UTF-8 output more general (if it doesn't exist already). But I'd be happy to
-share the changes if you're interested.}
+\item[Network.SCGI] The SCGI library provides a simple interface that's
+mostly compatible with the Network.CGI library.
 
 \item[Network.Gravatar] The gravatar library is a simple and convenient way to
 generate links to gravatar images. It was a bit of a pleasant surprise, and a
 sign of Haskell's maturity, to find it.
-
-\item[Network.Memcache] Interacting with memcached is very simple because it
-uses a simple text protocol. However, a library already exists, so we take
-advantage of it. As with Network.FastCGI, I slightly modified this one to use
-UTF-8 output by default and to support the flush command.
 
 \item[Network.URI] Various parts of the code may need to construct or
 deconstruct URLs. Using this library should be safer than using various
@@ -185,14 +178,14 @@ Muse Mode).
 > import Data.ConfigFile (readfile, emptyCP, ConfigParser, CPError, options)
 > import Data.List (find, intercalate, intersect)
 > import Data.List.Split (splitOn)
-> import Network.FastCGI (runFastCGIConcurrent')
+> import Network.SCGI (runSCGIConcurrent')
 > import Network.URI (URI(..), unEscapeString)
 
 \section{Entry and Dispatch}
 
-When the program starts, it immediately begin listening for connections.
-|runFastCGIConcurrent'| spawns up to 2,048 threads. This matches the number
-that nginx, running in front of vocabulink.cgi, is configured for.
+When the program starts, it immediately begin listening for connections on port
+10033. |runSCGIConcurrent'| spawns up to 2,048 threads. This matches the number
+that cherokee, running in front of vocabulink.cgi, is configured for.
 |handleErrors'| and |runApp| will be explained later. They basically catch
 unhandled database errors and pack information into the App monad.
 
@@ -208,7 +201,7 @@ environment.
 > main = do  cp' <- getConfig
 >            case cp' of
 >              Left e    -> print e
->              Right cp  -> runFastCGIConcurrent' forkIO 2048 (do
+>              Right cp  -> runSCGIConcurrent' forkIO 2048 (PortNumber 10033) (do
 >                c <- liftIO connect
 >                handleErrors' c (runApp c cp handleRequest))
 
@@ -223,7 +216,7 @@ They are guaranteed to exist later and can safely be read with |forceEither $
 get|.
 
 > requiredConfigVars :: [String]
-> requiredConfigVars = [  "authtokensalt", "articledir", "staticdir",
+> requiredConfigVars = [  "authtokenkey", "articledir", "staticdir",
 >                         "supportaddress" ]
 
 This retrieves the config file and makes sure that it contains all of the
@@ -523,6 +516,11 @@ including the forum topic text could lead to some very long URIs.
 > dispatch "POST"  ["comment","reply"] = replyToComment
 
 > dispatch "GET"   ["comment","preview"] = commentPreview
+
+> dispatch "POST"  path@["comment",x,"votes"] =
+>   case maybeRead x of
+>     Nothing  -> output404 path
+>     Just n   -> voteOnComment n
 
 \subsection{Everything Else}
 

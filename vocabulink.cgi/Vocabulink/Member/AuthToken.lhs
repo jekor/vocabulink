@@ -80,14 +80,14 @@ This creates an AuthToken with the default expiration time, automatically
 calculating the digest.
 
 > authToken :: Integer -> String -> String -> String -> IO (AuthToken)
-> authToken memberNo username ip salt = do
+> authToken memberNo username ip key = do
 >   now <- currentDay
 >   let expires = addDays cookieShelfLife now
 >   digest <- tokenDigest (AuthToken {  authExpiry     = expires,
 >                                       authMemberNo   = memberNo,
 >                                       authUsername   = username,
 >                                       authIPAddress  = ip,
->                                       authDigest     = "" }) salt
+>                                       authDigest     = "" }) key
 >   return AuthToken {  authExpiry     = expires,
 >                       authMemberNo   = memberNo,
 >                       authUsername   = username,
@@ -101,7 +101,7 @@ storing old keys long enough to use them for any valid login session. Without
 this, authentication is less secure.
 
 > tokenDigest :: AuthToken -> String -> IO (String)
-> tokenDigest a salt = hmac sha1 (pack salt) (pack token)
+> tokenDigest a key = hmac sha1 (pack key) (pack token)
 >   where token =  showGregorian (authExpiry a) ++
 >                  show (authMemberNo a) ++
 >                  encodeString (authUsername a) ++
@@ -112,8 +112,8 @@ token and send it to the client.
 
 > setAuthCookie :: Integer -> String -> String -> App ()
 > setAuthCookie memberNo username ip = do
->   salt <- fromJust <$> getOption "authtokensalt"
->   authTok <- liftIO $ authToken memberNo username ip salt
+>   key <- fromJust <$> getOption "authtokenkey"
+>   authTok <- liftIO $ authToken memberNo username ip key
 >   now <- liftIO getClockTime
 >   expires <- liftIO $ toCalendarTime
 >                (addToClockTime (TimeDiff {  tdYear     = 0,
@@ -149,14 +149,14 @@ cookie hasn't expired, and check the requestor's IP address against the one in
 the token.
 
 > verifiedAuthToken :: (MonadCGI m, MonadIO m) => String -> m (Maybe AuthToken)
-> verifiedAuthToken salt = do
+> verifiedAuthToken key = do
 >   cookie <- getCookie "auth"
 >   ip <- remoteAddr
 >   case parseAuthToken =<< cookie of
 >     Nothing  -> return Nothing
 >     Just a   -> do
 >       now <- liftIO currentDay
->       digest <- liftIO $ tokenDigest a salt
+>       digest <- liftIO $ tokenDigest a key
 >       if digest == authDigest a && diffDays (authExpiry a) now > 0 &&
 >          ip == (authIPAddress a)
 >          then return $ Just a

@@ -1,16 +1,16 @@
 # Vocabulink CGI
 
-fcgi := vocabulink.fcgi
+cgi := vocabulink.cgi
 lhss := $(shell find . -name "*.lhs" -print)
 date := $(shell date +%Y-%m-%d)
 DIST := vocabulink--$(date)
 
-all : $(fcgi)
+all : $(cgi)
 
 doc : vocabulink.pdf
 
-vocabulink.fcgi : $(lhss)
-	ghc -Wall -fglasgow-exts -threaded -package fastcgi --make -o $(fcgi) $^
+vocabulink.cgi : $(lhss)
+	ghc -Wall -fglasgow-exts -threaded --make -o $(cgi) $^
 
 vocabulink.pdf : vocabulink.tex
 	pdflatex $<
@@ -18,11 +18,9 @@ vocabulink.pdf : vocabulink.tex
 vocabulink.tex : $(lhss)
 	lhs2TeX Vocabulink.lhs > $@
 
-install : vocabulink.fcgi
-	install -o root -g root $(fcgi) /usr/local/bin
-# The following is now handled by an init script.
-#	-killall $(fcgi)
-#	spawn-fcgi -f "/usr/local/bin/$(fcgi) 2>> /tmp/vocabulink.error.log" -p 10033 -u lighttpd -g lighttpd
+install : $(cgi)
+	-killall $(cgi)
+	./$(cgi) &
 
 tags : $(lhss)
 	hasktags -e $^
@@ -52,7 +50,7 @@ $(DIST).tar.gz: vocabulink.pdf
 #	`darcs dist` would be nice, but the darcs repository is the parent directory
 #	of this one and needs to be cleaned up a bit. For now, we'll have to do it
 #	ourselves.
-	echo README COPYING Makefile vocabulink.pdf ghc.6.10.diff ../vocabulink.sql ../js/{form,forum,forum-comment,link,link-graph,page,review}.js ../css/*.ccss ../css/Makefile `find -name "*.lhs" -o -name "*.lhs-boot"` | xargs tar --transform 's,^(\./)?,$(DIST)/,x' -czvf $(DIST).tar.gz
+	echo README COPYING Makefile vocabulink.pdf ../vocabulink.sql ../js/{form,forum,forum-comment,link,link-graph,page,review}.js ../css/*.ccss ../css/Makefile `find -name "*.lhs" -o -name "*.lhs-boot"` | xargs tar --transform 's,^(\./)?,$(DIST)/,x' -czvf $(DIST).tar.gz
 
 publish : $(DIST).tar.gz
 	cp $(DIST).tar.gz vocabulink.pdf ~/project/jekor.com/vocabulink/

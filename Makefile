@@ -14,7 +14,7 @@ backup-database :
 	pg_dump --host localhost --username vocabulink --create vocabulink | gzip > vocabulink--$(date).sql.gz
 
 sync :
-	rsync -avzk --exclude 'graphics' --exclude 's/icons' --exclude 's/pack/image/' --delete . efektiva:vocabulink/
+	rsync -avzk --exclude 'graphics' --exclude 's/icons' --exclude 's/pack/image/' --delete . chris@efektiva:vocabulink/
 
 $(SUBDIRS) :
 	@-$(MAKE) -C $@

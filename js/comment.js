@@ -19,8 +19,8 @@ connect(window, 'onload', setup);
 
 function setup() {
   map(connectButtons, $$('.reply'));
-  var toplevelComments = $$('.comment.toplevel');
-  map(roundElement, toplevelComments);
+  map(roundElement, $$('.comment.toplevel'));
+  map(function (a) {connect(a, 'onclick', vote)}, $$('.vote-arrow'));
 }
 
 function connectButtons(elem) {
@@ -111,5 +111,34 @@ function insertReplyForm(replyBox, response) {
     }
   } else {
     alert('Unable to load response form.');
+  }
+}
+
+function vote(e) {
+  e.stop();
+  var parent = getFirstParentByTagAndClassName(this);
+  if (!hasElementClass(parent, 'enabled'))
+    return;
+  var voteCount = getFirstElementByTagAndClassName('span', null, parent);
+  var count = parseInt(scrapeText(voteCount));
+  var url = getNodeAttribute(this, 'href');
+  var fail = function () {
+    swapDOM(voteCount, SPAN(null, 'FAIL!'));
+  }
+  if (hasElementClass(this, 'up')) {
+    var d = postXHR(url + "/votes", {'vote': 'up'});
+    d.addCallbacks((function(a) {
+      swapDOM(voteCount, SPAN(null, count + 1));
+      setStyle(a, {'background-position': '4px -24px'});
+      removeElementClass(parent, 'enabled');})(this), fail);
+  }
+  else if (hasElementClass(this, 'down')) {
+    var d = postXHR(url + "/votes", {'vote': 'down'});
+    d.addCallbacks((function(a) {
+      swapDOM(voteCount, SPAN(null, count - 1));
+      setStyle(a, {'background-position': '4px -37px'});
+      removeElementClass(parent, 'enabled');})(this), fail);
+  } else {
+    fail();
   }
 }

@@ -316,7 +316,7 @@ method.
 >   return $ plug (\xhtml -> table << [
 >                    xhtml, tfoot << tabularSubmit "Get Support" ])
 >              ((,,)  <$>  emailInput
->                     <*>  (plug (tabularInput "Problem") $ F.textarea Nothing) `check` ensures
+>                     <*>  (plug (tabularInput "Problem") $ F.textarea Nothing Nothing Nothing) `check` ensures
 >                             [((/= ""),  "It would help us to know \
 >                                         \what the problem you're experiencing is ;).")]
 >                     <*>  F.hidden (Just redirect''))

@@ -13,7 +13,6 @@
  - **2009-05-08**: Added support for viewing links with Internet Explorer 8.
  - **2009-05-07**: Added latest comment details to the main forum view. Note that due to CSS caching you might need to force-reload the page to get it to look right.
  - **2009-05-06**: Added an interface for browsing links by language pairs. Click [[/languages][Browse Links]] in the top navigation bar to see it in action.
- - **2009-05-06**: Added Esperanto, French, German, and Spanish forums. Want more? Just ask.
 
 * Getting Started
 

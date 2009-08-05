@@ -29,8 +29,7 @@ dealing with ever-changing state.
 >                                  catchSqlD, catchSqlE, logMsg, logException,
 >                                  connect,
 >  {- Database.HDBC -}             SqlValue(..), toSql, fromSql, iToSql,
->                                  withTransaction, throwDyn,
->                                  quickQuery, quickQuery',
+>                                  withTransaction, quickQuery, quickQuery',
 >                                  IConnection(..), execute, catchSql,
 >  {- Database.HDBC.PostgreSQL -}  Connection) where
 
@@ -39,10 +38,9 @@ need to utilize the database in some way.
 
 > import Vocabulink.Utils
 
-> import Control.Exception (Exception(..), IOException, bracket, throwDyn)
+> import Control.Exception (bracket)
 > import Database.HDBC
 > import Database.HDBC.PostgreSQL (connectPostgreSQL, Connection)
-> import System.IO.Error (isUserError, ioeGetErrorString)
 
 Here's how we establish a connection to the database. I'd like to have the
 database password stored in the configuration file, but it would make the code
@@ -162,22 +160,15 @@ Exceptions come in different shapes and sizes, and we'd like to have log
 information about them when we encounter them. Or, we might want to ignore
 certain exceptions.
 
-> logException :: IConnection conn => conn -> Exception -> IO (String)
-> logException c e =
->   case sqlExceptions e of
->     Nothing  -> case e of
->                   (ErrorCall msg)   -> logMsg c "exception" msg
->                   (IOException ie)  -> logMsg c "IO exception" $
->                                          readableIOException ie
->                   e'                -> logMsg c "exception" (show e')
->     Just se  -> do  logSqlError c se
->                     return "Database Error"
+-- > logException :: (IConnection conn, Exception e) => conn -> e -> IO (String)
+-- > logException c e =
+-- >   case cast e of
+-- >     Just (SqlError _ _ m)  -> do  logMsg c "SQL error" m
+-- >                                   return "Database Error"
+-- >     _                      -> logMsg c "exception" (show e)
 
-When we encounter an IO exception, we'd like to pull the information out of it
-so that we can make sense of it when going through the logs.
-
-> readableIOException :: IOException -> String
-> readableIOException ioe = isUserError ioe ? ioeGetErrorString ioe $ show ioe
+> logException :: (IConnection conn) => conn -> SomeException -> IO (String)
+> logException c e = logMsg c "exception" (show e)
 
 |logSqlError| is used by |logException|, |catchSqlD|, and |catchSqlE|. It's
 special because it's potentially the most common type of exception we'll

@@ -79,9 +79,10 @@
             padding->
               top: 0.15em
               bottom: 0.15em
-    .topic:
-      padding-left: 1em
-    .replies, .author, .last:
+    .votes:
+      width: 4em
+      line-height: 1em
+    .votes, .replies, .author, .last:
       text-align: center
 
 fieldset:
@@ -100,3 +101,24 @@ fieldset:
     margin->
       left: auto
       right: auto
+
+a.vote-arrow:
+  display: block
+  width: 28px
+  height: 14px
+  margin->
+    left: auto
+    right: auto
+  background-image: url($images + "img/updown.png")
+  background-repeat: no-repeat
+  &:focus:
+    outline: 0
+  &.up:
+    background-position: 4px 2px
+  &.down:
+    background-position: 4px (-11px)
+    margin-top: 2px
+  &.up:hover:
+    background-position: 4px (-24px)
+  &.down:hover:
+    background-position: 4px (-37px)
