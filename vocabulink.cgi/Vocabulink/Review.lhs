@@ -102,7 +102,7 @@ All database updates during this process are wrapped in a transaction.
 >                    toSql recallTime, toSql memberNo, toSql linkNo]
 >           run' ("UPDATE link_to_review \
 >                 \SET target_time = current_timestamp + interval \
->                 \'" ++ (show s) ++ " seconds" ++ "' \
+>                 \'" ++ show s ++ " seconds" ++ "' \
 >                 \WHERE member_no = ? AND link_no = ?")
 >                [toSql memberNo, toSql linkNo]
 >           return ()
@@ -148,7 +148,7 @@ the client to |nextReview| which begins the process all over again.
 >               [  CSS "link", JS "MochiKit", JS "review",
 >                  JS "raphael", JS "link-graph"] []
 >         [  drawLinkSVG' "drawReview" l',
->            form ! [action ("/review/" ++ (show linkNo)), method "POST"] <<
+>            form ! [action ("/review/" ++ show linkNo), method "POST"] <<
 >              [  hidden "recall-time" "",
 >                 hidden "hidden-lexeme" dest,
 >                 fieldset ! [identifier "recall-buttons", thestyle "display: none"] <<
@@ -162,7 +162,7 @@ You may get unpleasant results when passing a |total| that doesn't cleanly
 divide |i|.
 
 > recallButton :: Integer -> Integer -> Html
-> recallButton total i = let q :: Double = (fromIntegral i) / (fromIntegral total) in
+> recallButton total i = let q :: Double = fromIntegral i / fromIntegral total in
 >                        button ! [name "recall", value (show q)] << show i
 
 When a member has no more links to review for now, let's display a page letting
@@ -179,7 +179,7 @@ Here's a critical chance to:
 But for now, the page is pretty plain.
 
 > noLinksToReviewPage :: App CGIResult
-> noLinksToReviewPage = do
+> noLinksToReviewPage =
 >   simplePage "No Links to Review" [CSS "link"] [
 >     thediv ! [identifier "central-column"] << [
 >       paragraph << "Take a break! \

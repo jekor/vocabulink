@@ -133,7 +133,7 @@ If any JavaScript files are required, |stdPage| will automatically add a
 Often we just need a simple page where the title and header are the same.
 
 > simplePage :: String -> [Dependency] -> [Html] -> App CGIResult
-> simplePage t deps h = stdPage t deps [] $ [ h1 << t ] ++ h
+> simplePage t deps h = stdPage t deps [] $ (h1 << t) : h
 
 Each dependency is expressed as the path from the root of the static files
 subdomain (for now, @s.vocabulink.com@) to the file. Do not include the file
@@ -144,7 +144,7 @@ for inclusion in the @<head>@ of the page.
 
 > includeDep :: Dependency -> Html
 > includeDep d =
->   let v = "?" ++ show (dependencyVersion d) in
+>   let v = '?' : show (dependencyVersion d) in
 >   case d of
 >     CSS  css  -> thelink ! [  href ("http://s.vocabulink.com/css/" ++ css ++ ".css" ++ v),
 >                               rel "stylesheet", thetype "text/css"] << noHtml
@@ -203,7 +203,7 @@ generation time (now).
 >   year <- liftIO currentYear
 >   return $ paragraph ! [theclass "copyright"] <<
 >     [  stringToHtml "Copyright 2008–",
->        stringToHtml ((show year) ++ " "),
+>        stringToHtml (show year ++ " "),
 >        anchor ! [href "http://jekor.com/"] << "Chris Forno" ]
 
 We use Google Analytics for tracking site usage. It requires the JavaScript tag
@@ -306,7 +306,7 @@ Currently this uses an icon from the FamFamFam ``Mini'' set\\*
 > helpButton :: String -> Maybe String -> Html
 > helpButton url label' = anchor ! [href url, theclass "button"] << [
 >                           image ! [src "http://s.vocabulink.com/icon_info.gif"],
->                           maybe noHtml (\x -> stringToHtml $ " " ++ x) label' ]
+>                           maybe noHtml (\x -> stringToHtml $ ' ' : x) label' ]
 
 \subsection{Other Markup}
 
@@ -314,8 +314,7 @@ A modified version of Markdown (Pandoc Markdown) is used in comments and link
 bodies.
 
 > markdownToHtml :: String -> Html
-> markdownToHtml = (writeHtml defaultWriterOptions) .
->                    readMarkdown defaultParserState
+> markdownToHtml = writeHtml defaultWriterOptions . readMarkdown defaultParserState
 
 \subsection{Form Builders}
 
@@ -367,7 +366,7 @@ for this one.
 > nonEmptyAndLessThan :: Int -> String -> [(String -> Bool, String)]
 > nonEmptyAndLessThan i t =
 >   [  ((> 0)  . length, t ++ " must not be empty."),
->      ((< i)  . length, t ++ " must be " ++ (show i) ++ "characters or shorter") ]
+>      ((< i)  . length, t ++ " must be " ++ show i ++ "characters or shorter") ]
 
 We use |runForm| for most of the heavy lifting. It takes a form and a submit
 button label, runs the form, and returns either the form to display (with
@@ -471,7 +470,7 @@ if they're already there.
 >                                q   ++ ("&n=" ++ show n)
 >       q2  = q1  =~ pgRegex  ?  subRegex (mkRegex pgRegex)  q1  ("pg=" ++ show pg) $
 >                                q1  ++ ("&pg=" ++ show pg) in
->   "?" ++ q2
+>   '?' : q2
 >     where nRegex   = "n=[^&]+"
 >           pgRegex  = "pg=[^&]+"
 
@@ -496,8 +495,8 @@ uploaded the input will reflect the name of the file on the server side.
 >     "function submitFile() {setStyle($$('.upload-file')[0], {'background': \"url('http://s.vocabulink.com/img/wait-bar.gif') no-repeat center center\"}); $('file-upload').disabled = true;}",
 >     "function fileSubmitted(f,r) {",
 >       "var inputFile = $$('.upload-file')[0];",
->       "if (r.substr(0," ++ (show $ length target) ++ ") == '" ++ target ++ "') {",
->         "inputFile.value = r.substring(" ++ (show $ length target) ++ " + 1, r.length);",
+>       "if (r.substr(0," ++ show (length target) ++ ") == '" ++ target ++ "') {",
+>         "inputFile.value = r.substring(" ++ show (length target) ++ " + 1, r.length);",
 >         "inputFile.disabled = false;",
 >         "inputFile.readOnly = true;",
 >       "} else {",

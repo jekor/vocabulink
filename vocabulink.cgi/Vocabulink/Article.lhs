@@ -89,7 +89,7 @@ Filesystem'' button that POSTs here.
 >                             \VALUES ((SELECT member_no FROM member \
 >                                      \WHERE username = ?), ?, ?, ?, ?, ?)"
 >   liftIO $ withTransaction c (\_ ->
->     mapM_ (\a -> execute insert (rec a)) articles)
+>     mapM_ (execute insert . rec) articles)
 >   redirect =<< referrerOrVocabulink
 >    where rec a = [  toSql $ articleAuthor       a,
 >                     toSql $ articlePublishTime  a,
@@ -114,7 +114,7 @@ them. Then we return a list of Articles with undefined numbers and bodies.
 >   dir <- articleDir
 >   ls <- liftIO $ getDirectoryContents dir
 >   let fullPaths = map (\l -> dir </> l) ls
->   paths <- liftIO $ (map takeBaseName) <$> filterM isPublished fullPaths
+>   paths <- liftIO $ map takeBaseName <$> filterM isPublished fullPaths
 >   catMaybes <$> mapM articleFromFile paths
 
 We consider an article (file) published if it:
@@ -126,7 +126,7 @@ We consider an article (file) published if it:
 \end{enumerate}
 
 > isPublished :: FilePath -> IO Bool
-> isPublished f = do
+> isPublished f =
 >   if takeExtension f == ".muse"
 >      then do
 >        r1 <- isReadable f
@@ -189,7 +189,7 @@ we're notified of errors (publishing articles is not (yet) member-facing).
 
 > articleHeader :: P.Parser Article
 > articleHeader = permute
->   (mkArticle  <$$>  (museDirective "title")
+>   (mkArticle  <$$>  museDirective "title"
 >               <|?>  (Nothing, museDir "author" >> authorP)
 >               <||>  (museDir "date" >> dateTimeP)
 >               <|?>  (Nothing, museDir "update" >> dateTimeP)
@@ -208,7 +208,7 @@ A muse directive looks sort of like a C preprocessor directive.
 > museDirective dir = museDir dir >> P.manyTill P.anyChar P.newline
 
 > museDir :: String -> P.Parser ()
-> museDir dir = P.try (P.string ("#" ++ dir)) >> P.spaces
+> museDir dir = P.try (P.string ('#' : dir)) >> P.spaces
 
 > authorP :: P.Parser (Maybe String)
 > authorP = Just <$> P.manyTill P.anyChar P.newline
@@ -222,7 +222,7 @@ there's no point in storing it in the article record.
 
 > articleBody :: Article -> App Html
 > articleBody article = do
->   path <- (</> (articleFilename article) ++ ".html") <$> articleDir
+>   path <- (</> articleFilename article ++ ".html") <$> articleDir
 >   liftIO $ primHtml <$> IO.UTF8.readFile path
 
 \subsection{Retrieving Articles}
@@ -231,7 +231,7 @@ To retrieve an article with need its (relative) filename (or path, or whatever
 you want to call it).
 
 > getArticle :: String -> App (Maybe Article)
-> getArticle filename = do
+> getArticle filename =
 >   (>>= articleFromTuple) <$>
 >     queryTuple' "SELECT filename, author, publish_time, \
 >                        \section, update_time, title \
@@ -240,7 +240,7 @@ you want to call it).
 As with links, we use a helper function to convert a raw SQL tuple.
 
 > articleFromTuple :: [SqlValue] -> Maybe Article
-> articleFromTuple [f,a,p,u,s,t]  = Just $
+> articleFromTuple [f,a,p,u,s,t]  = Just
 >   Article {  articleFilename     = fromSql f,
 >              articleAuthor       = fromSql a,
 >              articlePublishTime  = fromSql p,
@@ -262,7 +262,7 @@ published articles in the database that are in the ``main'' section.
 >                      \ORDER BY publish_time DESC" []
 >   case rs of
 >     Nothing   -> return Nothing
->     Just rs'  -> return $ Just $ catMaybes $ map articleFromTuple rs'
+>     Just rs'  -> return $ Just $ mapMaybe articleFromTuple rs'
 
 \subsection{Article Pages}
 

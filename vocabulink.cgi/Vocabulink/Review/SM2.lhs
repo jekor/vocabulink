@@ -68,7 +68,7 @@ repeated immediatey.
 The algorithm works with days, but we keep track of seconds.
 
 > daysFromSeconds :: Integer -> Double
-> daysFromSeconds s = (fromIntegral s) / (24 * 60 * 60)
+> daysFromSeconds s = fromIntegral s / (24 * 60 * 60)
 
 > secondsFromDays :: Double -> Integer
 > secondsFromDays d = round $ d * 24 * 60 * 60

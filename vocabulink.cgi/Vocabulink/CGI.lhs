@@ -140,7 +140,7 @@ Often we'll want an input from the client but are happy to fall back to a
 default value.
 
 > getInputDefault :: MonadCGI m => String -> String -> m String
-> getInputDefault d p = getInput p >>= return . fromMaybe d
+> getInputDefault d = liftM (fromMaybe d) . getInput
 
 As a convenience, |getRequiredInput| will throw an error on a missing input.
 It allows us to write simpler code, but eventually most calls to this should be
@@ -157,7 +157,7 @@ input to a required type (as long as that type is Readable).
 > readInput = liftM (>>= maybeRead) . getInput
 
 > readInputDefault :: (Read a, MonadCGI m) => a -> String -> m a
-> readInputDefault d p = readInput p >>= return . fromMaybe d
+> readInputDefault d = liftM (fromMaybe d) . readInput
 
 > readRequiredInput :: (Read a, MonadCGI m) => String -> m a
 > readRequiredInput p =
@@ -178,7 +178,7 @@ File inputs are a bit of a hassle to deal with.
 >                     ct'' <- parseContentType ct'
 >                     content'   <- getInputFPS name
 >                     fileName'  <- getInputFilename name
->                     return $ Just $ Right $ File {
+>                     return $ Just $ Right File {
 >                       content      = fromJust content',
 >                       fileName     = fromJust fileName',
 >                       contentType  = F.ContentType {  F.ctType = CGI.ctType ct'',
@@ -211,6 +211,6 @@ characters and hyphens in the resulting string.
 > catchCGI' c h = tryCGI' c >>= either h return
 
 > tryCGI' :: Exception e => CGI a -> CGI (Either e a)
-> tryCGI' (CGIT c) = CGIT (ReaderT (\r -> WriterT (f (runWriterT (runReaderT c r)))))
+> tryCGI' (CGIT c) = CGIT (ReaderT (WriterT . f . runWriterT . runReaderT c ))
 >     where
->       f = liftM (either (\ex -> (Left ex,mempty)) (\(a,w) -> (Right a,w))) . try
+>       f = liftM (either (\ex -> (Left ex,mempty)) (first Right)) . try

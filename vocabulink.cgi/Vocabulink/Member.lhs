@@ -91,7 +91,7 @@ put this step into password verification so that we don't need 2 queries.
 >   return $ maybe Nothing fromSql n
 
 > getMemberName :: Integer -> App (Maybe String)
-> getMemberName number = do
+> getMemberName number =
 >   maybe Nothing fromSql <$> queryValue' "SELECT username FROM member \
 >                                         \WHERE member_no = ?" [toSql number]
 
@@ -121,7 +121,7 @@ They must also agree to the Terms of Use.
 >                 (reg  <$> uniqueUser
 >                       <*> uniqueEmailAddress
 >                       <*> passConfirmed
->                       <*> termsOfUse `check` ensure (isJust)
+>                       <*> termsOfUse `check` ensure isJust
 >                             "You must agree to the Terms of Use.")
 >   where reg u e p _ = Registration u e p
 
@@ -133,7 +133,7 @@ able to express themselves with their username. This may turn out to be a major
 pain to deal with for things like URIs, but there's 1 way to find out...
 
 > username :: AppForm String
-> username = (plug (tabularInput "Username") $ F.input Nothing) `check` ensures
+> username = plug (tabularInput "Username") (F.input Nothing) `check` ensures
 >   [  ((>= 3)   . length  , "Your username must be 3 characters or longer."),
 >      ((<= 32)  . length  , "Your username must be 32 characters or shorter.") ]
 
@@ -150,7 +150,7 @@ trying to register with isn't already in use.
 Our password input is as permissive as our username input.
 
 > passwd :: String -> AppForm String
-> passwd l = (plug (tabularInput l) $ F.password Nothing) `check` ensures
+> passwd l = plug (tabularInput l) (F.password Nothing) `check` ensures
 >   [  ((>=  6)   . length  , "Your password must be 6 characters or longer."),
 >      ((<=  72)  . length  , "Your password must be 72 characters or shorter.") ]
 
@@ -182,7 +182,7 @@ the address is already in use. We need to check both the @member@ and
 well.
 
 > emailAddress :: AppForm String
-> emailAddress = (plug (tabularInput "Email address") $ F.input Nothing) `check`
+> emailAddress = plug (tabularInput "Email address") (F.input Nothing) `check`
 >   ensures
 >     [  ((/= ""), "Enter an email address."),
 >        ((<= 320) . length, "Your email address must be \
@@ -244,7 +244,7 @@ email address confirmed.
 >                     "Welcome to Vocabulink.",
 >                     "",
 >                     "Click http://www.vocabulink.com/member/confirmation/" ++
->                     (fromSql h) ++ " to confirm your email address." ]
+>                     fromSql h ++ " to confirm your email address." ]
 >       res <- liftIO $ sendMail (regEmail r) "Welcome to Vocabulink" email
 >       maybe (return Nothing) (\_ -> quickStmt'
 >         "UPDATE member_confirmation \
@@ -264,9 +264,8 @@ hopefully useful page.
 >       match <- queryValue'  "SELECT ? = hash FROM member_confirmation \
 >                             \WHERE member_no = ?" [toSql hash, toSql n]
 >       let match' = maybe False fromSql match
->       case match' of
->         False  -> confirmEmailPage
->         True   -> do
+>       if match'
+>         then do
 >           res <- withTransaction' $ do
 >             runStmt'  "UPDATE member SET email = \
 >                          \(SELECT email FROM member_confirmation \
@@ -277,6 +276,7 @@ hopefully useful page.
 >           case res of
 >             Nothing  -> confirmEmailPage
 >             Just _   -> redirect =<< referrerOrVocabulink
+>         else confirmEmailPage
 
 This is the page we redirect unconfirmed members to when they try to interact
 with the site in a way that requires a confirmed email address.
@@ -309,16 +309,16 @@ method.
 >   email <- asks appMemberEmail
 >   let  redirect'' = fromMaybe ref redirect'
 >        emailInput = case email of
->                       Nothing  -> plug (tabularInput "Email Address") $ F.input Nothing `check`
+>                       Nothing  -> plug (tabularInput "Email Address") (F.input Nothing) `check`
 >                                     ensures
 >                                       [((/= ""), "We need an email address to contact you at.")]
 >                       Just _   -> F.hidden email
 >   return $ plug (\xhtml -> table << [
 >                    xhtml, tfoot << tabularSubmit "Get Support" ])
 >              ((,,)  <$>  emailInput
->                     <*>  (plug (tabularInput "Problem") $ F.textarea Nothing Nothing Nothing) `check` ensures
->                             [((/= ""),  "It would help us to know \
->                                         \what the problem you're experiencing is ;).")]
+>                     <*>  plug (tabularInput "Problem") (F.textarea Nothing Nothing Nothing) `check` ensures
+>                            [((/= ""),  "It would help us to know \
+>                                        \what the problem you're experiencing is ;).")]
 >                     <*>  F.hidden (Just redirect''))
 
 Get a fresh support form (don't attempt to run it).

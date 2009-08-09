@@ -40,7 +40,7 @@ full star into the rating system.
 >        starWidth = case rating of
 >                      Just r'  -> round $ (0.2 + 0.8 * r') * fromIntegral barWidth :: Integer
 >                      Nothing  -> 0
->        starColor = min ((floor $ r * fromIntegral numColors) + 1) 5
+>        starColor = min (floor (r * fromIntegral numColors) + 1) 5
 >        starPosition = -1 * spriteHeight * (numColors + 1) + starColor * spriteHeight in
 >   thediv ! [theclass $ "rating" ++ (allowRating ? " enabled" $ "")] << [
 >     thediv ! [theclass "stars-base"] <<

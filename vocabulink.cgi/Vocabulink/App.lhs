@@ -70,7 +70,7 @@ The App monad is a combination of the CGI and Reader monads.
 
 ...whose CGI monad uses the IO monad.
 
-> type App a = AppT IO a
+> type App = AppT IO
 
 We need to make the App monad an Applicative Functor so that it will work with
 formlets.
@@ -88,8 +88,8 @@ of just an environment getter and a function for adding headers. We reuse the
 existing methods.
 
 > instance MonadCGI (AppT IO) where
->   cgiAddHeader n v = AppT $ lift $ cgiAddHeader n v
->   cgiGet x = AppT $ lift $ cgiGet x
+>   cgiAddHeader n = AppT . lift . cgiAddHeader n
+>   cgiGet = AppT . lift . cgiGet
 
 |runApp| does the job of creating the Reader environment and returning the
 CGIResult from within the App monad to the CGI monad. The environment includes
@@ -109,12 +109,11 @@ yet.
 >                                                 \WHERE member_no = ?" [toSql n]
 >                              return $ fromSql <$> e)
 >                           (authMemberNo <$> token)
->   res <- runReaderT a $ AppEnv {  appDB          = c,
->                                   appCP          = cp,
->                                   appMemberNo    = authMemberNo `liftM` token,
->                                   appMemberName  = authUsername `liftM` token,
->                                   appMemberEmail = email }
->   return res
+>   runReaderT a AppEnv {  appDB          = c,
+>                          appCP          = cp,
+>                          appMemberNo    = authMemberNo `liftM` token,
+>                          appMemberName  = authUsername `liftM` token,
+>                          appMemberEmail = email }
 
 At some point it's going to be essential to have all errors and notices logged
 in 1 location. For now, the profusion of monads and exception handlers makes
@@ -197,22 +196,22 @@ somesuch, but it works for now.
 > queryTuple' :: String -> [SqlValue] -> App (Maybe [SqlValue])
 > queryTuple' sql vs = do
 >   c <- asks appDB
->   liftIO $ (queryTuple c sql vs >>= return . Just) `catchSqlD` Nothing
+>   liftIO $ liftM Just (queryTuple c sql vs) `catchSqlD` Nothing
 
 > queryTuples' :: String -> [SqlValue] -> App (Maybe [[SqlValue]])
 > queryTuples' sql vs = do
 >   c <- asks appDB
->   liftIO $ (quickQuery' c sql vs >>= return . Just) `catchSqlD` Nothing
+>   liftIO $ liftM Just (quickQuery' c sql vs) `catchSqlD` Nothing
 
 > queryValue' :: String -> [SqlValue] -> App (Maybe SqlValue)
 > queryValue' sql vs = do
 >   c <- asks appDB
->   liftIO $ (queryValue c sql vs) `catchSqlD` Nothing
+>   liftIO $ queryValue c sql vs `catchSqlD` Nothing
 
 > queryAttribute' :: String -> [SqlValue] -> App (Maybe [SqlValue])
 > queryAttribute' sql vs = do
 >   c <- asks appDB
->   liftIO $ (queryAttribute c sql vs >>= return . Just) `catchSqlD` Nothing
+>   liftIO $ liftM Just (queryAttribute c sql vs) `catchSqlD` Nothing
 
 > quickInsertNo' :: String -> [SqlValue] -> String -> App (Maybe Integer)
 > quickInsertNo' sql vs seqname = do
@@ -222,7 +221,7 @@ somesuch, but it works for now.
 > runStmt' :: String -> [SqlValue] -> App (Maybe Integer)
 > runStmt' sql vs = do
 >   c <- asks appDB
->   liftIO $ (run c sql vs >>= return . Just) `catchSqlD` Nothing
+>   liftIO $ liftM Just (run c sql vs) `catchSqlD` Nothing
 
 It may seem strange to return Maybe (), but we want to know if the database
 change succeeded.
@@ -230,7 +229,7 @@ change succeeded.
 > quickStmt' :: String -> [SqlValue] -> App (Maybe ())
 > quickStmt' sql vs = do
 >   c <- asks appDB
->   liftIO $ (quickStmt c sql vs >>= return . Just) `catchSqlD` Nothing
+>   liftIO $ liftM Just (quickStmt c sql vs) `catchSqlD` Nothing
 
 Working with transactions outside of the App monad can be done, but we might as
 well make a version that fits with the rest of the style of the program (logs
@@ -244,7 +243,7 @@ the exception and returns Nothing).
 >     Right x  -> do  liftIO $ commit c
 >                     return $ Just x
 >     Left e   -> do  logApp "exception" $ show e
->                     liftIO $ (try (rollback c) :: IO (Either SomeException ())) -- Discard any exception here
+>                     liftIO (try (rollback c) :: IO (Either SomeException ())) -- Discard any exception here
 >                     return Nothing
 
 > run' :: String -> [SqlValue] -> App (Integer)
@@ -259,7 +258,7 @@ monad. To do so, we unwrap the Reader monad and use |tryCGI| (which unwraps
 another Reader and Writer).
 
 > tryApp :: App a -> App (Either SomeException a)
-> tryApp (AppT c) = AppT (ReaderT (\r -> tryCGI' (runReaderT c r)))
+> tryApp (AppT c) = AppT (ReaderT (tryCGI' . runReaderT c))
 
 \subsubsection{Configuration}
 

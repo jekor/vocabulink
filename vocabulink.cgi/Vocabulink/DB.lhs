@@ -123,7 +123,7 @@ The most common cause for triggering a database exception is through malformed
 SQL, so we probably find most of these during early testing.
 
 > catchSqlE :: IO a -> String -> IO a
-> catchSqlE sql msg = catchSqlD sql (error msg)
+> catchSqlE sql = catchSqlD sql . error
 
 Instead of erroring out, it might make more sense to return a default value.
 When we don't want the entire request crashing, this is a better alternative to
@@ -137,8 +137,8 @@ Establishing an extra connection shouldn't be too much extra trouble: we've
 already encountered an error condition, how much worse can it get?
 
 > catchSqlD :: IO a -> a -> IO a
-> catchSqlD sql d = sql `catchSql` (\e -> bracket (connect)
->                                                 (disconnect)
+> catchSqlD sql d = sql `catchSql` (\e -> bracket connect
+>                                                 disconnect
 >                                                 (\c -> do  logSqlError c e
 >                                                            return d))
 
@@ -168,11 +168,11 @@ certain exceptions.
 -- >     _                      -> logMsg c "exception" (show e)
 
 > logException :: (IConnection conn) => conn -> SomeException -> IO (String)
-> logException c e = logMsg c "exception" (show e)
+> logException c = logMsg c "exception" . show
 
 |logSqlError| is used by |logException|, |catchSqlD|, and |catchSqlE|. It's
 special because it's potentially the most common type of exception we'll
 encounter, and the one we most want to hear about.
 
 > logSqlError :: IConnection conn => conn -> SqlError -> IO (String)
-> logSqlError c se = logMsg c "SQL error" (init (seErrorMsg se))
+> logSqlError c = logMsg c "SQL error" . init . seErrorMsg

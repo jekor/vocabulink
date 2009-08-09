@@ -136,7 +136,7 @@ Of course, simple link types without nothing other than the origin and
 destination of the link do not contain copyrightable material.
 
 > linkCopyright :: Link -> App Html
-> linkCopyright l = do
+> linkCopyright l =
 >   case linkType l of
 >     LinkWord _ _ -> do
 >       t <- queryTuple'  "SELECT username, \
@@ -150,7 +150,7 @@ destination of the link do not contain copyrightable material.
 >                           Just [a,c,u]  ->  let c'  = show (fromSql c :: Integer)
 >                                                 u'  = show (fromSql u :: Integer)
 >                                                 r   = c' == u' ? c' $ c' ++ "–" ++ u' in
->                                             r ++ " " ++ (fromSql a)
+>                                             r ++ " " ++ fromSql a
 >                           _             ->  "unknown")
 >     _            -> return noHtml
 
@@ -248,13 +248,13 @@ Note that we leave the link's |linkType| undefined.
 
 > partialLinkFromValues :: [SqlValue] -> Maybe PartialLink
 > partialLinkFromValues [n, t, o, d, ol, dl] = Just $
->   PartialLink $ Link {  linkNumber           = fromSql n,
->                         linkTypeName         = fromSql t,
->                         linkOrigin           = fromSql o,
->                         linkDestination      = fromSql d,
->                         linkOriginLang       = fromSql ol,
->                         linkDestinationLang  = fromSql dl,
->                         linkType             = undefined }
+>   PartialLink Link {  linkNumber           = fromSql n,
+>                       linkTypeName         = fromSql t,
+>                       linkOrigin           = fromSql o,
+>                       linkDestination      = fromSql d,
+>                       linkOriginLang       = fromSql ol,
+>                       linkDestinationLang  = fromSql dl,
+>                       linkType             = undefined }
 > partialLinkFromValues _  = Nothing
 
 Once we have a partial link, it's a simple matter to turn it into a full link.
@@ -291,9 +291,7 @@ We just need to retrieve its type-level details from the database.
 We now have everything we need to retrieve a full link in 1 step.
 
 > getLink :: Integer -> App (Maybe Link)
-> getLink linkNo = do
->   l <- getPartialLink linkNo
->   maybe (return Nothing) getLinkFromPartial l
+> getLink linkNo = getPartialLink linkNo >>= maybe (return Nothing) getLinkFromPartial
 
 We already know what types of links exist, but we want only the active link
 types (some, like Relationship, are experimental) sorted by how common they
@@ -372,7 +370,7 @@ partial link more compactly, such as for use in lists, etc.
 > partialLinkHtml (PartialLink l) = do
 >   originLanguage <- linkOriginLanguage l
 >   destinationLanguage <- linkDestinationLanguage l
->   return $ anchor ! [  href ("/link/" ++ (show $ linkNumber l)),
+>   return $ anchor ! [  href ("/link/" ++ show (linkNumber l)),
 >                        H.title (originLanguage ++ " → " ++ destinationLanguage),
 >                        thestyle $  "color: " ++ linkColor l ++
 >                                    "; background-color: " ++ linkBackgroundColor l ++
@@ -422,7 +420,7 @@ dealing with retrieval exceptions, etc.
 >              let (c', r') = case rating of
 >                             Just [c'', r'']  -> (fromSql c'', fromSql r'')
 >                             _                -> (0, Nothing) in
->              ratingBar ("/link" </> (show linkNo) </> "rating") c' r' ratingEnabled,
+>              ratingBar ("/link" </> show linkNo </> "rating") c' r' ratingEnabled,
 >              isNothing memberNo ? anchor ! [href "/member/login"] << "Login to Rate" $ noHtml,
 >              ops ],
 >            thediv ! [theclass "link-details"] << linkTypeHtml (linkType l'),
@@ -448,7 +446,7 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 >     case deleted of
 >       Just d  -> if fromSql d
 >         then paragraph << "Deleted"
->         else form ! [action ("/link/" ++ (show n) ++ "/delete"), method "POST"] <<
+>         else form ! [action ("/link/" ++ show n ++ "/delete"), method "POST"] <<
 >                submit "" "Delete"
 >       _       -> stringToHtml
 >                    "Can't determine whether or not link has been deleted." ]
@@ -474,7 +472,7 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 >           let ps' = map (\x -> (fromSql $ head x, fromSql $ head $ tail x)) ps
 >           return $ concatHtml [
 >             button ! [theclass "reveal add-to-pack"] << "→ Pack",
->             form ! [  action ("/pack/link/new"), method "POST",
+>             form ! [  action "/pack/link/new", method "POST",
 >                       identifier "add-to-pack", thestyle "display: none" ] << [
 >               hidden "link" $ show n,
 >               menu "pack" (ps' ++ [("new", "New Pack")]) !
@@ -494,7 +492,7 @@ away eventually.
 >   case ts of
 >     Nothing  -> error "Error while retrieving links."
 >     Just ps  -> do
->       pagerControl <- pager pg n $ offset + (length ps)
+>       pagerControl <- pager pg n $ offset + length ps
 >       partialLinks <- mapM partialLinkHtml (take n ps)
 >       simplePage title [CSS "link"] [
 >         unordList partialLinks ! [identifier "central-column", theclass "links"],
@@ -519,12 +517,12 @@ going to require configuring full text search or a separate search daemon.
 >                       [toSql focus, toSql focus]
 >   case ts of
 >     Nothing  -> error "Error while retrieving links."
->     Just ls  -> simplePage (  "Found " ++ (show $ length ls) ++
+>     Just ls  -> simplePage (  "Found " ++ show (length ls) ++
 >                               " link" ++ (length ls == 1 ? "" $ "s") ++ 
 >                               " containing \"" ++ focus ++ "\"")
 >                   [  CSS "link",
 >                      JS "MochiKit", JS "raphael", JS "link-graph"]
->                   (linkFocusBox focus (catMaybes $ map partialLinkFromValues ls))
+>                   (linkFocusBox focus (mapMaybe partialLinkFromValues ls))
 
 When the links containing a search term have been found, we need a way to
 display them. We do so by drawing a ``link graph'': a circular array of links.
@@ -547,19 +545,19 @@ it outputs and digest each local function separately.
 >  where partitioned   = partition ((== focus) . linkOrigin . pLink) links
 >        origs         = snd partitioned
 >        dests         = fst partitioned
->        jsonNodes url xs  = encode $ insertMid
+>        jsonNodes url = encode . insertMid
 >          (toJSObject [  ("orig",   "new link"),
 >                         ("dest",   "new link"),
 >                         ("color",  "#000000"),
 >                         ("bgcolor", "#DFDFDF"),
 >                         ("style",  "dotted"),
->                         ("url",    url) ])
->          (map (\o ->  let o' = pLink o in
->                       toJSObject [  ("orig",     linkOrigin o'),
->                                     ("dest",     linkDestination o'),
->                                     ("color",    linkColor $ pLink o),
->                                     ("bgcolor",  linkBackgroundColor $ pLink o),
->                                     ("number",   show $ linkNumber $ pLink o)]) xs)
+>                         ("url",    url) ]) .
+>          map (\o ->  let o' = pLink o in
+>                      toJSObject [  ("orig",     linkOrigin o'),
+>                                    ("dest",     linkDestination o'),
+>                                    ("color",    linkColor $ pLink o),
+>                                    ("bgcolor",  linkBackgroundColor $ pLink o),
+>                                    ("number",   show $ linkNumber $ pLink o)])
 >        insertMid :: a -> [a] -> [a]
 >        insertMid x xs = let (l,r) = every2nd xs in
 >                         reverse l ++ [x] ++ r
@@ -591,7 +589,7 @@ result, and dispatching the creation of the link on successful form validation.
 >            form ! [  thestyle "text-align: center",
 >                      action (uriPath uri), method "POST"] <<
 >              [xhtml, actionBar] ]
->     Nothing -> do
+>     Nothing ->
 >       case status of
 >         Failure failures  -> simplePage "Create a Link" deps
 >           [  form ! [  thestyle "text-align: center",
@@ -601,7 +599,7 @@ result, and dispatching the creation of the link on successful form validation.
 >         Success link -> do
 >           linkNo <- establishLink link memberNo
 >           case linkNo of
->             Just n   -> redirect $ "/link/" ++ (show n)
+>             Just n   -> redirect $ "/link/" ++ show n
 >             Nothing  -> error "Failed to establish link."
 >  where deps = [  CSS "link", JS "MochiKit", JS "link",
 >                  JS "raphael", JS "link-graph"]
@@ -759,7 +757,7 @@ most recent. This assumes the ordering of links is determined by link number.
 >                       \WHERE NOT deleted \
 >                       \ORDER BY link_no DESC \
 >                       \OFFSET ? LIMIT ?" [toSql offset, toSql limit]
->   return $ (catMaybes . map partialLinkFromValues) `liftM` ts
+>   return $ mapMaybe partialLinkFromValues `liftM` ts
 
 Another way we retrieve links is by author (member). These just happen to be
 sorted by link number as well.
@@ -773,7 +771,7 @@ sorted by link number as well.
 >                       \ORDER BY link_no DESC \
 >                       \OFFSET ? LIMIT ?"
 >                       [toSql memberNo, toSql offset, toSql limit]
->   return $ (catMaybes . map partialLinkFromValues) `liftM` ts
+>   return $ mapMaybe partialLinkFromValues `liftM` ts
 
 > languagePairLinks :: String -> String -> Int -> Int -> App (Maybe [PartialLink])
 > languagePairLinks oa da offset limit = do
@@ -785,7 +783,7 @@ sorted by link number as well.
 >                       \ORDER BY link_no DESC \
 >                       \OFFSET ? LIMIT ?"
 >                       [toSql oa, toSql da, toSql offset, toSql limit]
->   return $ (catMaybes . map partialLinkFromValues) `liftM` ts
+>   return $ mapMaybe partialLinkFromValues `liftM` ts
 
 Once we have a significant number of links, browsing through latest becomes
 unreasonable for finding links for just the language we're interested in. To
@@ -843,7 +841,7 @@ Display a hyperlink for a language pair.
 
 > linkPackForm :: Integer -> AppForm (LinkPack, Integer)
 > linkPackForm fl = plug (\xhtml -> table << xhtml) $ mkLinkPack
->   <$>  (F.hidden $ Just $ show fl) `check` ensure ((> 0) . length) "Missing first link number."
+>   <$>  F.hidden (Just $ show fl) `check` ensure ((> 0) . length) "Missing first link number."
 >   <*>  plug (tabularInput "Pack Name") (F.input Nothing) `check`
 >          ensures (nonEmptyAndLessThan 50 "Pack Name")
 >   <*>  plug (tabularInput "Description") (F.textarea Nothing Nothing Nothing) `check`
@@ -877,12 +875,12 @@ Display a hyperlink for a language pair.
 >            form ! [  thestyle "text-align: center",
 >                      action (uriPath uri), method "POST" ] <<
 >              [xhtml, actionBar] ]
->     Nothing -> do
+>     Nothing ->
 >       case result of
 >         Success (linkPack, fl) -> do
 >           linkNo <- createLinkPack linkPack memberNo fl
 >           case linkNo of
->             Just n   -> redirect $ "/pack/" ++ (show n)
+>             Just n   -> redirect $ "/pack/" ++ show n
 >             Nothing  -> error "Failed to establish link."
 >         Failure failures -> simplePage "Create a Link Pack" deps
 >           [  form ! [  thestyle "text-align: center",
@@ -918,7 +916,7 @@ Display a hyperlink for a language pair.
 >              alt (linkPackName lp) ]
 
 > linkPackHyperlink :: LinkPack -> String
-> linkPackHyperlink lp = "/pack/" ++ (show $ linkPackNumber lp)
+> linkPackHyperlink lp = "/pack/" ++ show (linkPackNumber lp)
 
 > linkPackTextLink :: LinkPack -> Html
 > linkPackTextLink lp =
@@ -936,7 +934,7 @@ Display a hyperlink for a language pair.
 >       "INSERT INTO link_pack (name, description, image_ext, creator) \
 >                      \VALUES (?, ?, ?, ?)"
 >       [  toSql (linkPackName lp), toSql (linkPackDescription lp),
->          toSql (takeExtension <$> linkPackImage lp), toSql (memberNo) ]
+>          toSql (takeExtension <$> linkPackImage lp), toSql memberNo ]
 >       "link_pack_pack_no_seq"
 >     case packNo of
 >       Nothing  -> liftIO $ rollback c >> return Nothing
@@ -968,11 +966,11 @@ Display a hyperlink for a language pair.
 
 > linkPackFromValues :: [SqlValue] -> Maybe LinkPack
 > linkPackFromValues [pn, n, d, i, c] =
->   Just $ LinkPack {  linkPackNumber       = fromSql pn,
->                      linkPackName         = fromSql n,
->                      linkPackDescription  = fromSql d,
->                      linkPackImage        = (fromSql pn ++) <$> fromSql i,
->                      linkPackCreator      = fromSql c }
+>   Just LinkPack {  linkPackNumber       = fromSql pn,
+>                    linkPackName         = fromSql n,
+>                    linkPackDescription  = fromSql d,
+>                    linkPackImage        = (fromSql pn ++) <$> fromSql i,
+>                    linkPackCreator      = fromSql c }
 > linkPackFromValues _ = Nothing
 
 > linkPackLinks :: Integer -> App (Maybe [PartialLink])
@@ -984,7 +982,7 @@ Display a hyperlink for a language pair.
 >                       \WHERE pack_no = ? AND NOT deleted \
 >                       \ORDER BY added DESC"
 >                       [toSql n]
->   return $ (catMaybes . map partialLinkFromValues) `liftM` ts
+>   return $ mapMaybe partialLinkFromValues `liftM` ts
 
 > linkPackPage :: Integer -> App CGIResult
 > linkPackPage n = do

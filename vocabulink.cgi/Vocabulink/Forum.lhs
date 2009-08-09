@@ -144,7 +144,7 @@ arriving at the top-level forums page.
 >                  _        -> paragraph ! [theclass "metadata"] <<
 >                                [  stringToHtml $ formatSimpleTime $ fromSql t', br,
 >                                   stringToHtml $ fromSql u ] in
->   anchor ! [href $ "/forum/" ++ (fromSql n)] << [
+>   anchor ! [href $ "/forum/" ++ fromSql n] << [
 >     image ! [  width "64", height "64",
 >                src ("http://s.vocabulink.com/icons/" ++ fromSql i)],
 >     h3 << (fromSql t :: String),
@@ -207,7 +207,7 @@ and the time of the latest topic.
 >   case title of
 >     Nothing  -> output404 ["forum", forum]
 >     Just t   -> do
->       let tc = concatHtml $ [
+>       let tc = concatHtml [
 >                  td << noHtml,
 >                  td ! [theclass "topic"] <<
 >                    form ! [action (forum ++ "/new"), method "GET"]
@@ -278,7 +278,7 @@ bit more difficult and a task for later.
 >                                 Just False  -> [thestyle "background-position: 4px -37px"]
 >                                 _           -> []) << noHtml ],
 >                  td ! [theclass "topic"] <<
->                    anchor ! [href (t ++ "/" ++ (show tn'))] << tt',
+>                    anchor ! [href (t ++ "/" ++ show tn')] << tt',
 >                  td ! [theclass "replies"] << show nr',
 >                  td ! [theclass "author"] << ta',
 >                  td ! [theclass "last"] << [
@@ -311,8 +311,8 @@ body of the first comment (topics can't be created without a root comment).
 >                             [thestyle "float: right; margin-right: 0.5em"] +++
 >                           clear)
 >     ((,)  <$> ("Topic Title" `formLabel`
->                  (plug (\xhtml -> thediv ! [theclass "title"] << xhtml) $
->                     F.input Nothing) `check` ensures (nonEmptyAndLessThan 80 "Title"))
+>                  plug (\xhtml -> thediv ! [theclass "title"] << xhtml)
+>                    (F.input Nothing) `check` ensures (nonEmptyAndLessThan 80 "Title"))
 >           <*> plug (\xhtml -> xhtml ! [thestyle "margin: 0.667em auto; \
 >                                                 \display: block; \
 >                                                 \width: 95%; height: 10em"])

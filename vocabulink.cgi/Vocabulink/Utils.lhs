@@ -27,12 +27,13 @@ oft-used functions for other modules.
 >  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
 >  {- Control.Applicative -}        pure, (<$>), (<*>),
 >  {- Control.Applicative.Error -}  Failing(..), maybeRead,
+>  {- Control.Arrow -}              first, second,
 >  {- Control.Exception -}          SomeException,
 >  {- Control.Monad -}              liftM,
 >  {- Control.Monad.Trans -}        liftIO, MonadIO,
 >  {- Data.Char -}                  toLower,
 >  {- Data.Maybe -}                 maybe, fromMaybe, fromJust, isJust, isNothing,
->                                   catMaybes,
+>                                   mapMaybe, catMaybes,
 >  {- Data.Time.Calendar -}         Day,
 >  {- Data.Time.Clock -}            UTCTime,
 >  {- Data.Time.Format -}           formatTime,
@@ -54,6 +55,8 @@ more.
 > import Control.Applicative (pure, (<$>), (<*>))
 > import Control.Applicative.Error (Failing(..), maybeRead)
 
+> import Control.Arrow (first, second)
+
 > import Control.Exception (SomeException)
 
 We make particularly extensive use of |liftM| and the Maybe monad.
@@ -61,7 +64,7 @@ We make particularly extensive use of |liftM| and the Maybe monad.
 > import Control.Monad (liftM)
 > import Control.Monad.Trans (liftIO, MonadIO)
 > import Data.Char (toLower)
-> import Data.Maybe (maybe, fromMaybe, fromJust, isJust, isNothing, catMaybes)
+> import Data.Maybe (maybe, fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
 
 Time is notoriously difficult to deal with in Haskell. It gets especially
 tricky when working with the database and libraries that expect different
@@ -128,7 +131,7 @@ This is like the Unix tr utility. It takes a list of search/replacements and
 then performs them on the list.
 
 > translate :: (Eq a) => [(a, a)] -> [a] -> [a]
-> translate sr = map (\s -> maybe s id $ lookup s sr)
+> translate sr = map (\s -> fromMaybe s $ lookup s sr)
 
 Often it's handy to be able to lift an operation into 2 monads with little
 verbosity. Parsec may have claimed this operator name before me, but |<$$>|
@@ -147,7 +150,7 @@ forwarding for us so that we don't have to deal with SMTP here.
 >                          "Subject: " ++ subject,
 >                          "",
 >                          body ]
->   res <- try $ system $
+>   res <- try $ system
 >            (  "export MAILUSER=vocabulink; \
 >               \export MAILHOST=vocabulink.com; \
 >               \export MAILNAME=Vocabulink; \
@@ -176,7 +179,7 @@ every2nd [1,2,3] =>
 1 ([2],[3]) => ([1,3],[2])
 
 > every2nd :: [a] -> ([a], [a])
-> every2nd l = foldr (\a ~(x,y) -> (a:y,x)) ([],[]) l
+> every2nd = foldr (\a ~(x,y) -> (a:y,x)) ([],[])
 
 every3rd [1,2,3,4,5] =>
 5 ([],[],[]) => ([5],[],[])
@@ -186,4 +189,4 @@ every3rd [1,2,3,4,5] =>
 1 ([2,5],[3],[4]) => ([1,4],[2,5],[3])
 
 > every3rd :: [a] -> ([a], [a], [a])
-> every3rd l = foldr (\a ~(x,y,z) -> (a:z,x,y)) ([],[],[]) l
+> every3rd = foldr (\a ~(x,y,z) -> (a:z,x,y)) ([],[],[])

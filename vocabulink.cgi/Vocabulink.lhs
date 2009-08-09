@@ -273,7 +273,7 @@ a 404?}
 >     ["",""]  -> frontPage -- "/"
 >     ("":xs)  -> case find (== "") xs of
 >                   Nothing  -> dispatch method xs
->                   Just _   -> redirect $ "/" ++ (intercalate "/" $ filter (/= "") xs)
+>                   Just _   -> redirect $ '/' : intercalate "/" (filter (/= "") xs)
 >     _        -> output404 path
 
 Here is where we dispatch each request to a function. We can match the request
@@ -346,7 +346,7 @@ establish the link. (Previewing is done through the @GET@ as well.)
 > dispatch "GET"   ["link","new"] = newLink
 > dispatch "POST"  ["link","new"] = newLink
 
-> dispatch method path@("link":x:method') = do
+> dispatch method path@("link":x:method') =
 >   case maybeRead x of
 >     Nothing  -> output404 path
 >     Just n   -> case (method, method') of
@@ -381,7 +381,7 @@ in the query string for the links page, it will do a search. E.g.
 >                                                 (languagePairLinks ol' dl')
 >         _                         -> output404 path
 >     _                        -> linksPage "Latest Links" latestLinks
-> dispatch "GET" path@["links",x] = do
+> dispatch "GET" path@["links",x] =
 >   case maybeRead x of
 >     Nothing  -> output404 path
 >     Just n   -> do
@@ -403,7 +403,7 @@ The process of creating link packs is similar to that for creating links.
 
 > dispatch "POST"  ["pack","link","new"] = addToLinkPack
 
-> dispatch method path@("pack":x:method') = do
+> dispatch method path@("pack":x:method') =
 >   case maybeRead x of
 >     Nothing  -> output404 path
 >     Just n   -> case (method, method') of
@@ -443,7 +443,7 @@ add a link for review             & $\rightarrow$ & @POST /review/n/add@
 >   withRequiredMemberNumber $ \memberNo ->
 >     case (method,rpath) of
 >       ("GET"   ,["next"])   -> nextReview memberNo
->       ("POST"  ,(x:xs))     -> do
+>       ("POST"  ,(x:xs))     ->
 >          case maybeRead x of
 >            Nothing  -> outputError 400
 >                        "Links are identified by numbers only." []
@@ -549,7 +549,7 @@ or curious.
 > frontPage :: App CGIResult
 > frontPage = do
 >   memberNo <- asks appMemberNo
->   my <- maybe (return noHtml) (myLinks) memberNo
+>   my <- maybe (return noHtml) myLinks memberNo
 >   latest <- newLinks
 >   articles <- latestArticles
 >   featured <- featuredPack
@@ -571,7 +571,7 @@ or curious.
 >            Just ls'  -> do
 >              partialLinks <- mapM partialLinkHtml ls'
 >              return $ thediv ! [theclass "sidebox"] << [
->                         h3 << anchor ! [href ("/links/" ++ (show mn))] <<
+>                         h3 << anchor ! [href ("/links/" ++ show mn)] <<
 >                           "My Links",
 >                         unordList partialLinks ! [theclass "links"] ]
 >        newLinks = do
@@ -586,16 +586,16 @@ or curious.
 >                         unordList partialLinks ! [theclass "links"] ]
 >        latestArticles = do
 >          ls <- getArticles
->          return $ maybe (noHtml) (\l -> thediv ! [theclass "sidebox"] << [
->                                           h3 << anchor ! [href "/articles"] <<
->                                             "Latest Articles",
->                                           unordList (map articleLinkHtml l)]) ls
+>          return $ maybe noHtml (\l -> thediv ! [theclass "sidebox"] << [
+>                                         h3 << anchor ! [href "/articles"] <<
+>                                           "Latest Articles",
+>                                         unordList (map articleLinkHtml l)]) ls
 >        featuredPack = do
 >          lp <- getLinkPack 1
->          return $ maybe (noHtml) (\l -> thediv ! [theclass "sidebox"] << [
->                                           h3 << [  stringToHtml "Featured Link Pack:", br,
->                                                    linkPackTextLink l ],
->                                           displayCompactLinkPack l False ]) lp
+>          return $ maybe noHtml (\l -> thediv ! [theclass "sidebox"] << [
+>                                         h3 << [  stringToHtml "Featured Link Pack:", br,
+>                                                  linkPackTextLink l ],
+>                                         displayCompactLinkPack l False ]) lp
 
 %include Vocabulink/Utils.lhs
 %include Vocabulink/CGI.lhs

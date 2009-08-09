@@ -44,7 +44,7 @@ while they are browsing another part of the site, we want them to be notified.
 >                             thestyle "color: black" ] <<
 >                   "No links to review"
 >     Just n'  -> anchor ! [href "/review/next", theclass "review-box"] <<
->                   [  strong << (show n'),
+>                   [  strong << show n',
 >                      stringToHtml (n' > 1 ? " links" $ " link"),
 >                      stringToHtml " to review" ]
 >     Nothing  -> stringToHtml "Error finding links for review."
@@ -75,7 +75,7 @@ both based on the link number and the currently logged in member.
 >                       "Unable to determine review status."
 >         Just r'  -> return $ r' ? paragraph ! [theclass "review-box reviewing"] <<
 >                       "Reviewing" $
->                         form ! [  action ("/review/" ++ (show linkNo) ++ "/add"),
+>                         form ! [  action ("/review/" ++ show linkNo ++ "/add"),
 >                                   method "POST", theclass "review-box review"] <<
 >                           [ submit "review" "Review" ]
 

@@ -83,11 +83,11 @@ calculating the digest.
 > authToken memberNo username ip key = do
 >   now <- currentDay
 >   let expires = addDays cookieShelfLife now
->   digest <- tokenDigest (AuthToken {  authExpiry     = expires,
->                                       authMemberNo   = memberNo,
->                                       authUsername   = username,
->                                       authIPAddress  = ip,
->                                       authDigest     = "" }) key
+>   digest <- tokenDigest AuthToken {  authExpiry     = expires,
+>                                      authMemberNo   = memberNo,
+>                                      authUsername   = username,
+>                                      authIPAddress  = ip,
+>                                      authDigest     = "" } key
 >   return AuthToken {  authExpiry     = expires,
 >                       authMemberNo   = memberNo,
 >                       authUsername   = username,
@@ -116,13 +116,13 @@ token and send it to the client.
 >   authTok <- liftIO $ authToken memberNo username ip key
 >   now <- liftIO getClockTime
 >   expires <- liftIO $ toCalendarTime
->                (addToClockTime (TimeDiff {  tdYear     = 0,
->                                             tdMonth    = 0,
->                                             tdDay      = fromIntegral cookieShelfLife,
->                                             tdHour     = 0,
->                                             tdMin      = 0,
->                                             tdSec      = 0,
->                                             tdPicosec  = 0 }) now)
+>                (addToClockTime TimeDiff {  tdYear     = 0,
+>                                            tdMonth    = 0,
+>                                            tdDay      = fromIntegral cookieShelfLife,
+>                                            tdHour     = 0,
+>                                            tdMin      = 0,
+>                                            tdSec      = 0,
+>                                            tdPicosec  = 0 } now)
 >   setCookie Cookie {  cookieName     = "auth",
 >                       cookieValue    = show authTok,
 >                       cookieExpires  = Just expires,
@@ -158,7 +158,7 @@ the token.
 >       now <- liftIO currentDay
 >       digest <- liftIO $ tokenDigest a key
 >       if digest == authDigest a && diffDays (authExpiry a) now > 0 &&
->          ip == (authIPAddress a)
+>          ip == authIPAddress a
 >          then return $ Just a
 >          else return Nothing
 

@@ -66,7 +66,7 @@ comment will eventually look like when posted.
 >     button << "Preview" +++ stringToHtml " " +++ submit "" "Post Comment" ] ])
 >     ((\a b -> (a, maybeRead b))  <$> (F.textarea Nothing Nothing Nothing `check` ensures
 >                                         (nonEmptyAndLessThan 10000 "Comment"))
->           <*> (F.hidden parent))
+>           <*> F.hidden parent)
 
 Each comment uses (Pandoc-extended) Markdown syntax.
 
@@ -86,16 +86,16 @@ Storing a comment establishes and returns its unique comment number.
 >   comments <- queryTuples' "SELECT * FROM comment_tree(?)" [toSql root]
 >   case comments of
 >     Nothing  -> error "Error retrieving comments."
->     Just cs  -> return $ Just $ catMaybes $ map commentFromValues cs
+>     Just cs  -> return $ Just $ mapMaybe commentFromValues cs
 
 > commentFromValues :: [SqlValue] -> Maybe Comment
 > commentFromValues [n, l, u, e, t, b]  =
->   Just $ Comment {  commentNo        = fromSql n,
->                     commentLevel     = fromSql l,
->                     commentUsername  = fromSql u,
->                     commentEmail     = fromSql e,
->                     commentTime      = fromSql t,
->                     commentBody      = fromSql b }
+>   Just Comment {  commentNo        = fromSql n,
+>                   commentLevel     = fromSql l,
+>                   commentUsername  = fromSql u,
+>                   commentEmail     = fromSql e,
+>                   commentTime      = fromSql t,
+>                   commentBody      = fromSql b }
 > commentFromValues _                   = Nothing
 
 Previewing comments is a truely asynchronous process (the first one
@@ -130,7 +130,7 @@ now we keep it simple.
 >   reply <- case (memberName, email) of
 >              (Just _, Just email')  -> do
 >                (_, xhtml) <- runForm' $ commentForm email' (Just $ show $ commentNo c)
->                let id' = "reply-" ++ (show $ commentNo c)
+>                let id' = "reply-" ++ show (commentNo c)
 >                return $ concatHtml [
 >                  button ! [  theclass $ "reveal " ++ id' ] << "Reply",
 >                  clear,
@@ -144,12 +144,12 @@ now we keep it simple.
 >              _                      -> return $ anchor ! [href "/member/login"] <<
 >                                                   "Login to Reply"
 >   return $ thediv ! [  theclass "comment toplevel",
->                        thestyle $ "margin-left:" ++ (show $ (commentLevel c)*2) ++ "em" ] << [
->     paragraph ! [theclass "timestamp"] << (formatSimpleTime $ commentTime c),
+>                        thestyle $ "margin-left:" ++ show (commentLevel c * 2) ++ "em" ] << [
+>     paragraph ! [theclass "timestamp"] << formatSimpleTime (commentTime c),
 >     image ! [  width "60", height "60", theclass "avatar",
 >                src $  gravatarWith (map toLower $ commentEmail c)
 >                                    Nothing (size 60) (Just "wavatar") ],
->     thediv ! [theclass "speech"] << (displayCommentBody $ commentBody c),
+>     thediv ! [theclass "speech"] << displayCommentBody (commentBody c),
 >     thediv ! [theclass "signature"] << ("—" ++ commentUsername c),
 >     thediv ! [theclass "reply-options"] << reply ]
 
