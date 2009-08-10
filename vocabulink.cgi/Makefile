@@ -28,9 +28,6 @@ tags : $(lhss)
 clean :
 	find . -iregex ".*\.\(o\|hi\|o-boot\|hi-boot\)" -print0 | xargs -0 rm
 
-test :
-	ghci -fglasgow-exts Vocabulink.lhs
-
 metrics : $(lhss)
 	@echo -e -n "\tSLOC: "
 	@lhs2TeX --code Vocabulink.lhs | wc --lines | tr -d "\n"

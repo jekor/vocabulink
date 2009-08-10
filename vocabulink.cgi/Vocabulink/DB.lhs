@@ -160,12 +160,12 @@ Exceptions come in different shapes and sizes, and we'd like to have log
 information about them when we encounter them. Or, we might want to ignore
 certain exceptions.
 
--- > logException :: (IConnection conn, Exception e) => conn -> e -> IO (String)
--- > logException c e =
--- >   case cast e of
--- >     Just (SqlError _ _ m)  -> do  logMsg c "SQL error" m
--- >                                   return "Database Error"
--- >     _                      -> logMsg c "exception" (show e)
+% > logException :: (IConnection conn, Exception e) => conn -> e -> IO (String)
+% > logException c e =
+% >   case cast e of
+% >     Just (SqlError _ _ m)  -> do  logMsg c "SQL error" m
+% >                                   return "Database Error"
+% >     _                      -> logMsg c "exception" (show e)
 
 > logException :: (IConnection conn) => conn -> SomeException -> IO (String)
 > logException c = logMsg c "exception" . show

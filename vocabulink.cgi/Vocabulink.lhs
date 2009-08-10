@@ -19,7 +19,7 @@
 %include polycode.fmt
 \usepackage[T1]{fontenc}
 \usepackage{ucs}
-\usepackage[utf8]{inputenc}
+\usepackage[utf8x]{inputenc}
 \usepackage{hyperref}
 \usepackage[pdftex]{graphicx}
 \usepackage[x11names, rgb]{xcolor}
@@ -31,7 +31,7 @@
 
 \title{Vocabulink}
 \author{Chris Forno (jekor)}
-\date{May 3rd, 2009}
+\date{August 9th, 2009}
 
 \begin{document}
 \maketitle
