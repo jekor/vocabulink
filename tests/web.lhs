@@ -49,14 +49,19 @@ To compile the tests, you'll need to install the following Haskell packages:
 \item base64-string
 \end{itemize}
 
-First, we need to be able to communicate with a Selenium RC server.
+First, we need to be able to communicate with a Selenium RC server. I'm using a
+modified version of Test.Selenium.
 
 > import Test.Selenium.Server
 > import Test.Selenium.Syntax
+> import Test.Selenium.HUnit
 
 > import Codec.Binary.Base64.String as B64
+> import Codec.Binary.UTF8.String
+> import Control.Monad
 > import Data.Maybe
 > import Network.URI
+> import System.Random
 
 All test sessions currently use Firefox as my test machine only has Free
 Software installed. My test machine is also my development machine.
@@ -68,19 +73,33 @@ Software installed. My test machine is also my development machine.
 > main = do
 >   username <- randomUsername
 >   password <- randomPassword
->   res <- withSelenium session $ do
->     signUp username (testEmailAddress username) password
->   case res of
->     Right t  -> if t
->                   then putStrLn "Test Passed"
->                   else putStrLn "Test Failed"
->     Left s   -> putStrLn s
+>   withSelenium session $ do
+>     runSeleniumTestsTT [  ("Front Page", frontPage),
+>                           ("Latest Links", latestLinks),
+>                           ("Sign Up", signUp username (testEmailAddress username) password) ]
+>   return ()
+
+First, we want to make sure that the front page of the site is functioning. We
+could almost take this for granted, but we won't.
+
+> frontPage :: Selenium ()
+> frontPage = do
+>   open "/"
+>   assert (TextPresent "Welcome to Vocabulink")
+
+See if the latest links page is displaying links. There should always be 10 for
+non-authenticated clients.
+
+> latestLinks :: Selenium ()
+> latestLinks = do
+>   open "/links"
+>   assert' (XPathCount "//ul[@class='links']/li/a") "10"
 
 Sign up for membership. Most other tests depend on this one completing successfully.
 
-> signUp :: String -> String -> String -> Selenium Bool
+> signUp :: String -> String -> String -> Selenium ()
 > signUp username email password = do
->   open "http://www.vocabulink.lan/"
+>   open "/"
 >   clickAndWait (Link "Sign Up")
 >   typeText (IdOrName "input0") username
 >   typeText (IdOrName "input1") email
@@ -88,7 +107,7 @@ Sign up for membership. Most other tests depend on this one completing successfu
 >   typeText (IdOrName "input3") password
 >   check (IdOrName "input4")
 >   clickAndWait (XPath "//input[@value='Sign Up']")
->   isTextPresent "Welcome Back"
+>   assert (TextPresent "Welcome Back")
 
 We can't guarantee that tests will run with a clean database each time. We
 could query the database for an available test username, but I'd like to keep
@@ -97,7 +116,9 @@ random username. This has a slight chance of collision but also the benefit of
 exercising allowable username characters.
 
 > randomUsername :: IO String
-> randomUsername = return "test0r" -- placeholder
+> randomUsername = do
+>   usernameLength <- randomRIO (3, 32)
+>   replicateM usernameLength randomIO
 
 Vocabulink enforces email address uniqueness. We'll need a different email
 address for each username, but we need the email to go somewhere. Luckily,
@@ -105,10 +126,16 @@ gmail allows us to add arbitrary suffixes after ``+'' at the end of the
 address. However, email addresses have a more restricted character set than
 Vocabulink usernames, so we'll need to encode them.
 
+Codec.Binary.Base64.String doesn't seem to like unicode characters. We'll
+convert the username to 8-bit characters before attempting to base-64 encode
+it.
+
 > testEmailAddress :: String -> String
-> testEmailAddress username = "chris.forno+" ++ B64.encode username ++ "@gmail.com"
+> testEmailAddress username = "chris.forno+" ++ B64.encode (encodeString username) ++ "@gmail.com"
 
 > randomPassword :: IO String
-> randomPassword = return "passw0rd" -- placeholder
+> randomPassword = do
+>   passwordLength <- randomRIO (6, 72)
+>   replicateM passwordLength randomIO
 
 \end{document}
