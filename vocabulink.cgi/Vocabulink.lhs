@@ -48,10 +48,9 @@ designed with the assumption that it may be only 1 of many processes servicing
 requests and that it doesn't have exclusive access to resources such as a
 database.
 
-The program is built with GHC 6.8.3 using options @-Wall -fglasgow-exts
--threaded@ and with @-package fastcgi@. I keep the build free from warnings at
-all times (which sometimes leads to a few oddities in the source). It has been
-tested on GNU/Linux.
+The program is built with GHC 6.10.4 using options @-Wall -fglasgow-exts
+-threaded@. I keep the build free from warnings at all times (which sometimes
+leads to a few oddities in the source). It has been tested on GNU/Linux.
 
 \subsection{Copyright Notice}
 
@@ -141,8 +140,8 @@ tokens for use in member authentication tokens.
 a data-driven application. HDBC takes most of the work out of converting
 between types when exchanging data with the database.
 
-\item[Network.SCGI] The SCGI library provides a simple interface that's
-mostly compatible with the Network.CGI library.
+\item[Network.SCGI] The SCGI library provides a simple interface that's mostly
+compatible with the Network.CGI library.
 
 \item[Network.Gravatar] The gravatar library is a simple and convenient way to
 generate links to gravatar images. It was a bit of a pleasant surprise, and a
@@ -169,6 +168,17 @@ the Markdown formatting syntax. The text is stored in Markdown syntax in the
 database to avoid lossiness and is rendered by Pandoc upon retrieval. Note that
 Pandoc is not responsible for formatting articles though (those are handled by
 Muse Mode).
+
+\item[Text.XHtml] I'm using a modified version of the xhtml library. The xhtml
+library takes a defensive position and converts all non-ASCII characters
+(greater than 7 bits) and converts them into entity codes. We don't want this
+conversion, and instead want to transmit the characters as UTF-8. Additionally,
+there was a small problem with |showHtml| and the empty string which I've put a
+hack in place for until I find a better solution. Vocabulink should function
+properly without this modified library, except for possibly in the case of
+empty form fields. The patch is included in the source archive as
+@xhtml-unicode.patch@ (@patch -p1 < xhtml-unicode.patch@ in the xhtml library
+directory).
 
 \end{description}
 

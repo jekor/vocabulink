@@ -1,0 +1,23 @@
+diff -rupN xhtml-3000.2.0.1/Text/XHtml/Internals.hs xhtml-3000.2.0.1-unicode/Text/XHtml/Internals.hs
+--- xhtml-3000.2.0.1/Text/XHtml/Internals.hs	2008-09-17 07:19:47.000000000 -0700
++++ xhtml-3000.2.0.1-unicode/Text/XHtml/Internals.hs	2009-08-13 21:54:13.613610533 -0700
+@@ -176,8 +176,7 @@ stringToHtmlString = concatMap fixChar
+       fixChar '>' = "&gt;"
+       fixChar '&' = "&amp;"
+       fixChar '"' = "&quot;"
+-      fixChar c | ord c < 0x80 = [c]
+-      fixChar c = "&#" ++ show (ord c) ++ ";"
++      fixChar c   = [c]
+ 
+ 
+ -- | This is not processed for special chars. 
+@@ -250,6 +249,9 @@ prettyHtmlFragment = 
+ 
+ -- | Show a single HTML element, without adding whitespace.
+ showHtml' :: HtmlElement -> ShowS
++-- For some reason, if this uses the empty string (which seems to happen with
++-- formlets), it will crash the entire program. So we use a character. This may introduce really strange behavior in our program later. I don't know.
++showHtml' (HtmlString []) = showChar ' '
+ showHtml' (HtmlString str) = (++) str
+ showHtml'(HtmlTag { markupTag = name,
+                     markupContent = html,
