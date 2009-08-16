@@ -718,11 +718,11 @@ Hopefully by then I will know more than I do now.
 >           (fieldset ! [identifier ident, thestyle "display: none"] <<)
 
 > linkTypeS :: String -> LinkType -> LinkType -> LinkType -> LinkType -> LinkType
-> linkTypeS "association"   l _ _ _ = l
-> linkTypeS "cognate"       _ l _ _ = l
-> linkTypeS "link word"     _ _ l _ = l
-> linkTypeS "relationship"  _ _ _ l = l
-> linkTypeS _ _ _ _ _ = error "Unknown link type."
+> linkTypeS "association"   l _ _ _  = l
+> linkTypeS "cognate"       _ l _ _  = l
+> linkTypeS "link word"     _ _ l _  = l
+> linkTypeS "relationship"  _ _ _ l  = l
+> linkTypeS _               _ _ _ _  = error "Unknown link type."
 
 > linkTypeLinkWord :: AppForm LinkType
 > linkTypeLinkWord = LinkWord  <$> "Link Word" `formLabel'` F.input Nothing

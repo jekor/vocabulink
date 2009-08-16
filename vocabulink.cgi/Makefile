@@ -10,7 +10,7 @@ all : $(cgi)
 doc : vocabulink.pdf
 
 vocabulink.cgi : $(lhss)
-	ghc -Wall -fglasgow-exts -threaded --make -o $(cgi) $^
+	cabal install
 
 vocabulink.pdf : vocabulink.tex
 	pdflatex $<
@@ -47,7 +47,7 @@ $(DIST).tar.gz: vocabulink.pdf
 #	`darcs dist` would be nice, but the darcs repository is the parent directory
 #	of this one and needs to be cleaned up a bit. For now, we'll have to do it
 #	ourselves.
-	echo README COPYING Makefile vocabulink.pdf ../vocabulink.sql ../js/{form,forum,forum-comment,link,link-graph,page,review}.js ../css/*.ccss ../css/Makefile `find -name "*.lhs" -o -name "*.lhs-boot"` | xargs tar --transform 's,^(\./)?,$(DIST)/,x' -czvf $(DIST).tar.gz
+	echo README COPYING Makefile vocabulink.cabal vocabulink.pdf ../vocabulink.sql ../js/{comment,form,forum,link,link-graph,member,page,review}.js ../css/*.ccss ../css/Makefile ../etc/vocabulink.conf.example ../xhtml-unicode.patch ../tests/{Makefile,web.lhs,web.pdf} `find -name "*.lhs" -o -name "*.lhs-boot"` | xargs tar --transform 's,^(\./)?,$(DIST)/,x' -czvf $(DIST).tar.gz
 
 publish : $(DIST).tar.gz
 	cp $(DIST).tar.gz vocabulink.pdf ~/project/jekor.com/vocabulink/

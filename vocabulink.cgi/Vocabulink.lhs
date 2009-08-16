@@ -31,26 +31,21 @@
 
 \title{Vocabulink}
 \author{Chris Forno (jekor)}
-\date{August 9th, 2009}
+\date{August 16th, 2009}
 
 \begin{document}
 \maketitle
 
 \section{Introduction}
 
-This is Vocabulink, the SCGI process that handles all web requests for\\*
-\url{http://www.vocabulink.com/}.
+This is Vocabulink, the SCGI program that handles all web requests for\\*
+\url{http://www.vocabulink.com/}. The site helps people learn languages through
+fiction. It provides a mnemonics database, spaced repition (review) tools, and
+a forum for learners to collaborate.
 
-Vocabulink is essentially a multi-user application that operates via the web.
-It's structured like a standalone application inasmuch as it handles multiple
-requests in a multi-threaded process. Yet, it operates as a CGI program. It's
-designed with the assumption that it may be only 1 of many processes servicing
-requests and that it doesn't have exclusive access to resources such as a
-database.
-
-The program is built with GHC 6.10.4 using options @-Wall -fglasgow-exts
--threaded@. I keep the build free from warnings at all times (which sometimes
-leads to a few oddities in the source). It has been tested on GNU/Linux.
+The program has been tested with GHC 6.10.4 on GNU/Linux. I keep the build free
+from warnings at all times (which sometimes leads to a few oddities in the
+source).
 
 \subsection{Copyright Notice}
 
@@ -68,19 +63,32 @@ PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with Vocabulink. If not, see \url{http://www.gnu.org/licenses/}.
 
+\subsection{Building}
+
+To build Vocabulink:
+
+\begin{enumerate}
+\item runhaskell Setup.lhs configure
+\item runhaskell Setup.lhs build
+\item runhaskell Setup.lhs install (optional)
+\end{enumerate}
+
 \subsection{Architecture}
 
-Requests arrive via a webserver.\footnote{I'm currently using nginx on
-www.vocabulink.com, but it should work with any server that supports SCGI.}
-They are passed to the vocabulink.fcgi process (this program) on TCP port 10033
-of the local loopback interface.
+Requests arrive via a webserver.\footnote{I'm currently using cherokee, but it
+should work with any server that supports SCGI.} They are passed to the
+vocabulink.cgi process (this program) on TCP port 10033 of the local loopback
+interface.
 
 Upon receiving a request (connection), we immediately fork a new thread. In
 this thread, we establish a connection to a PostgreSQL server (for each
-request). We then examine the thread for an authentication cookie. If it exists
-and is valid, we consider the request to have originated from an authenticated
-member. We pack both the database handle and the authenticated member
-information into our ``App'' monad (\autoref{App}).
+request). We then examine the request for an authentication cookie. If it
+exists and is valid, we consider the request to have originated from an
+authenticated member. We pack both the database handle and the authenticated
+member information into our ``App'' monad (\autoref{App}) and then pass control
+to a function based on the request method and URI.
+
+\subsection{Running}
 
 > module Main where
 
@@ -112,9 +120,9 @@ Each of these modules will be described in its own section.
 
 \section{Other Modules}
 
-Vocabulink makes use of a half dozen or so Haskell libraries not included with
-GHC. Even though we don't use them all in this module, I'll describe them here
-so that they'll be more familiar as they're introduced.
+Vocabulink makes use of a couple dozen or so Haskell libraries. Even though we
+don't use them all in this module, I'll describe some of the less common ones
+here so that they'll be more familiar as they're introduced.
 
 \begin{description}
 
@@ -134,27 +142,28 @@ also allows us to publish the source to the program without exposing sensitive
 information.
 
 \item[Data.Digest.OpenSSL.HMAC] The nano-hmac library is used for generating
-tokens for use in member authentication tokens.
+tokens for use in member authentication cookies.
 
 \item[Database.HDBC] We make heavy use of PostgreSQL via HDBC, as Vocabulink is
 a data-driven application. HDBC takes most of the work out of converting
 between types when exchanging data with the database.
 
-\item[Network.SCGI] The SCGI library provides a simple interface that's mostly
-compatible with the Network.CGI library.
+\item[Network.SCGI] The SCGI library takes care of the work of accepting and
+responding to requests from the webserver.
 
 \item[Network.Gravatar] The gravatar library is a simple and convenient way to
 generate links to gravatar images. It was a bit of a pleasant surprise, and a
 sign of Haskell's maturity, to find it.
 
 \item[Network.URI] Various parts of the code may need to construct or
-deconstruct URLs. Using this library should be safer than using various
+deconstruct URIs. Using this library should be safer than using various
 string-mangling techniques throughout the code.
 
 \item[Text.Formlets] Formlets are one of the unique advantages that we get from
-working in a functional language. The Formlets library isn't perfect yet,
-namely with the way field names are automatically generated, but it's useful
-regardless.
+working in a functional language. They allow us to abstract and combine
+components used in forms throughout the site. The Formlets library isn't
+perfect yet, namely with the way field names are automatically generated, but
+it's useful regardless.
 
 \item[Text.JSON] We make use of the JSON encoding to sending data to web
 browsers for AJAX-style interaction.
@@ -193,9 +202,9 @@ directory).
 
 \section{Entry and Dispatch}
 
-When the program starts, it immediately begin listening for connections on port
-10033. |runSCGIConcurrent'| spawns up to 2,048 threads. This matches the number
-that cherokee, running in front of vocabulink.cgi, is configured for.
+When the program starts, it immediately begin listening for connections.
+|runSCGIConcurrent'| spawns up to 2,048 threads. This matches the number that
+cherokee, running in front of vocabulink.cgi, is configured for.
 |handleErrors'| and |runApp| will be explained later. They basically catch
 unhandled database errors and pack information into the App monad.
 
@@ -208,12 +217,10 @@ eventually be passed to the App monad where it'll be packed into a reader
 environment.
 
 > main :: IO ()
-> main = do  cp' <- getConfig
->            case cp' of
->              Left e    -> print e
->              Right cp  -> runSCGIConcurrent' forkIO 2048 (PortNumber 10033) (do
->                c <- liftIO connect
->                handleErrors' c (runApp c cp handleRequest))
+> main = do  cp <- liftM forceEither getConfig
+>            runSCGIConcurrent' forkIO 2048 (PortNumber 10033) (do
+>              c <- liftIO connect
+>              handleErrors' c (runApp c cp handleRequest))
 
 The path to the configuration file is the one bit of configuration that's the
 same in all environments.
@@ -311,17 +318,17 @@ Other articles are dynamic and can be created without recompilation. We just
 have to rescan the filesystem for them. They also live in the @/article@
 namespace (specifically at @/article/title@).
 
-> dispatch "GET" ["article",x] = articlePage x
+> dispatch "GET"   ["article",x]  = articlePage x
 
 We have 1 page for getting a listing of all published articles.
 
-> dispatch "GET"   ["articles"] = articlesPage
+> dispatch "GET"   ["articles"]   = articlesPage
 
 And this is a method used by the web-based administrative interface to reload
 the articles from the filesystem. (Articles are transmitted to the server via
 rsync using the filesystem, not through the web.)
 
-> dispatch "POST"  ["articles"] = refreshArticles
+> dispatch "POST"  ["articles"]   = refreshArticles
 
 \subsection{Link Pages}
 
@@ -571,8 +578,7 @@ or curious.
 >     thediv ! [identifier "sidebar"] << [
 >       featured, latest, my, articles ],
 >     if isJust memberNo
->       then primHtml  "<script type=\"text/javascript\" src=\"http://twitter.com/javascripts/blogger.js\"></script> \
->                  \<script type=\"text/javascript\" src=\"http://twitter.com/statuses/user_timeline/Vocabulink.json?callback=twitterCallback2&amp;count=7\"></script>"
+>       then primHtml twitterScript
 >       else noHtml ]
 >  where myLinks mn = do
 >          ls <- memberLinks mn 0 10
@@ -606,6 +612,14 @@ or curious.
 >                                         h3 << [  stringToHtml "Featured Link Pack:", br,
 >                                                  linkPackTextLink l ],
 >                                         displayCompactLinkPack l False ]) lp
+
+> twitterScript :: String
+> twitterScript =
+>   "<script type=\"text/javascript\" \
+>    \src=\"http://twitter.com/javascripts/blogger.js\"></script> \
+>   \<script type=\"text/javascript\" \
+>    \src=\"http://twitter.com/statuses/user_timeline/Vocabulink.json?\
+>          \callback=twitterCallback2&amp;count=7\"></script>"
 
 %include Vocabulink/Utils.lhs
 %include Vocabulink/CGI.lhs

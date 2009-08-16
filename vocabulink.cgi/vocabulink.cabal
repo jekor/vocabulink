@@ -1,0 +1,70 @@
+Name:          Vocabulink
+Version:       2009.8.16
+Cabal-Version: >= 1.2
+License:       OtherLicense
+License-File:  COPYING
+Copyright:     2008, 2009 Chris Forno
+Author:        Chris Forno (jekor)
+Maintainer:    jekor@jekor.com
+Stability:     stable
+Bug-Reports:   jekor@jekor.com
+Homepage:      http://www.vocabulink.com/source
+Package-URL:   http://jekor.com/vocabulink/vocabulink--2009-08-14.tar.gz
+Category:      Education
+Synopsis:      a web application for learning languages through fiction (mnemonics)
+Description:   This is Vocabulink, the SCGI program that handles all web
+               requests for http://www.vocabulink.com/. The site helps people
+               learn languages through fiction. It provides a mnemonics
+               database, spaced repition (review) tools, and a forum for
+               learners to collaborate.
+Tested-With:   GHC == 6.10.4
+Build-Type:    Custom
+
+Executable vocabulink.cgi
+  Main-Is:       Vocabulink.lhs
+  Build-Depends: applicative-extras,
+                 base >= 4,
+                 bytestring,
+                 cgi,
+                 ConfigFile,
+                 directory,
+                 filepath,
+                 formlets >= 0.5,
+                 gravatar,
+                 HDBC >= 2,
+                 HDBC-postgresql >= 2,
+                 json,
+                 MissingH,
+                 mtl,
+                 nano-hmac,
+                 network,
+                 old-locale,
+                 old-time,
+                 pandoc,
+                 parsec,
+                 process,
+                 regex-compat,
+                 regex-posix,
+                 scgi >= 0.3.1,
+                 split,
+                 time,
+                 utf8-string,
+                 xhtml
+  Other-Modules: Vocabulink.App,
+                 Vocabulink.Article,
+                 Vocabulink.CGI,
+                 Vocabulink.Comment,
+                 Vocabulink.DB,
+                 Vocabulink.Forum,
+                 Vocabulink.Html,
+                 Vocabulink.Link,
+                 Vocabulink.Member,
+                 Vocabulink.Member.AuthToken,
+                 Vocabulink.Rating,
+                 Vocabulink.Review,
+                 Vocabulink.Review.Html,
+                 Vocabulink.Review.SM2,
+                 Vocabulink.Utils
+  Extensions:    TypeSynonymInstances,
+                 GeneralizedNewtypeDeriving
+  GHC-Options:   -Wall

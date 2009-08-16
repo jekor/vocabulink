@@ -31,7 +31,7 @@
 
 \title{Vocabulink Web Test}
 \author{Chris Forno (jekor)}
-\date{May 3rd, 2009}
+\date{August 16th, 2009}
 
 \begin{document}
 \maketitle

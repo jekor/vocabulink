@@ -254,15 +254,15 @@ bit more difficult and a task for later.
 >     Just ts  -> return $ map topicRow ts
 >       where  topicRow :: [SqlValue] -> Html
 >              topicRow [tn, tt, nr, ta, lt, la, cn, v, uv] = 
->                let tn'  :: Integer  = fromSql tn
->                    tt'  :: String   = fromSql tt
->                    nr'  :: Integer  = fromSql nr
->                    ta'  :: String   = fromSql ta
->                    lt'  :: UTCTime  = fromSql lt
->                    la'  :: String   = fromSql la
->                    cn'  :: Integer  = fromSql cn
->                    v'   :: Integer  = fromSql v
->                    uv'  :: Maybe Bool  = fromSql uv
+>                let tn'  = (fromSql tn)  :: Integer
+>                    tt'  = (fromSql tt)  :: Integer
+>                    nr'  = (fromSql nr)  :: Integer
+>                    ta'  = (fromSql ta)  :: String
+>                    lt'  = (fromSql lt)  :: UTCTime
+>                    la'  = (fromSql la)  :: String
+>                    cn'  = (fromSql cn)  :: Integer
+>                    v'   = (fromSql v)   :: Integer
+>                    uv'  = (fromSql uv)  :: Maybe Bool
 >                    enabled = isJust memberNo && isNothing uv' in
 >                concatHtml [
 >                  td ! [theclass $ "votes" ++ (enabled ? " enabled" $ "")] << [
@@ -278,7 +278,7 @@ bit more difficult and a task for later.
 >                                 Just False  -> [thestyle "background-position: 4px -37px"]
 >                                 _           -> []) << noHtml ],
 >                  td ! [theclass "topic"] <<
->                    anchor ! [href (t ++ "/" ++ show tn')] << tt',
+>                    anchor ! [href (t ++ "/" ++ show tn')] << show tt',
 >                  td ! [theclass "replies"] << show nr',
 >                  td ! [theclass "author"] << ta',
 >                  td ! [theclass "last"] << [

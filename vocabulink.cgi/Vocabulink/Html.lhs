@@ -300,8 +300,8 @@ It's nice to have little help buttons and such where necessary. Making them
 easier to create means that we're more likely to do so, which leads to a more
 helpful user interface.
 
-Currently this uses an icon from the FamFamFam ``Mini'' set\\*
-(\url{http://www.famfamfam.com/lab/icons/mini/}).
+Currently this uses an icon from the
+\href{http://www.famfamfam.com/lab/icons/mini/}{FamFamFam ``Mini''} set.
 
 > helpButton :: String -> Maybe String -> Html
 > helpButton url label' = anchor ! [href url, theclass "button"] << [
@@ -356,7 +356,7 @@ Here's an alterate version of the above which also adds a paragraph.
 > formLabel' text = plug (\xhtml -> paragraph << (label << (text ++ ": ") +++ xhtml))
 
 Curiously, the formlets library is missing a checkbox implementation. Thanks to
-Chris Done (http://chrisdone.com/blog/html/2008-12-14-haskell-formlets-composable-web-form-construction-and-validation.html)
+\href{http://chrisdone.com/blog/html/2008-12-14-haskell-formlets-composable-web-form-construction-and-validation.html}{Chris Done}
 for this one.
 
 > checkbox' :: Monad m => String -> XHtmlForm m (Maybe String)
@@ -492,7 +492,11 @@ uploaded the input will reflect the name of the file on the server side.
 >                                      "onSubmit: submitFile,",
 >                                      "onComplete: fileSubmitted});",
 >       "$('file-upload').disabled = false;});",
->     "function submitFile() {setStyle($$('.upload-file')[0], {'background': \"url('http://s.vocabulink.com/img/wait-bar.gif') no-repeat center center\"}); $('file-upload').disabled = true;}",
+>     "function submitFile() {setStyle($$('.upload-file')[0], \
+>         \{'background': \"url('http://s.vocabulink.com/img/wait-bar.gif') \
+>                         \no-repeat center center\"}); \
+>       \$('file-upload').disabled = true;",
+>     "}",
 >     "function fileSubmitted(f,r) {",
 >       "var inputFile = $$('.upload-file')[0];",
 >       "if (r.substr(0," ++ show (length target) ++ ") == '" ++ target ++ "') {",

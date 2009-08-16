@@ -41,7 +41,7 @@ repeated immediatey.
 > reviewInterval :: Integer -> Integer -> Integer -> Double -> App (Maybe Integer)
 > reviewInterval memberNo linkNo previous recall = do
 >   let p = daysFromSeconds previous
->       q :: Integer = round $ recall * 5 -- The algorithm expects 0-5, not 0-1.
+>       q = round $ recall * 5 -- The algorithm expects 0-5, not 0-1.
 >   stats <- queryTuples'  "SELECT n, EF FROM link_sm2 \
 >                          \WHERE member_no = ? AND link_no = ?"
 >                          [toSql memberNo, toSql linkNo]
@@ -53,8 +53,8 @@ repeated immediatey.
 >                                     createSM2 memberNo linkNo n ef
 >                                     return $ Just $
 >                                       secondsFromDays (interval p n ef)
->     Just [[n', ef']]  -> let  ef = fromSql ef'
->                               n :: Integer = fromSql n' in
+>     Just [[n', ef']]  -> let  ef  = fromSql ef'
+>                               n   = fromSql n' in
 >                          if q < 3 -- We need to restart the learning process.
 >                            then do  updateSM2 memberNo linkNo 1 ef
 >                                     return $ Just 0
@@ -93,7 +93,7 @@ for now we'll stick to a separate EF for each member.
 
 > easinessFactor' :: Double -> Integer -> Double
 > easinessFactor' ef q = max 1.3 $ ef + (0.1 - x * (0.08 + x * 0.02))
->     where x :: Double = fromIntegral $ 5 - q
+>     where x = fromIntegral (5 - q)
 
 For the SM-2 algorithm to work, we need to keep track of a couple variables for
 each link. This establishes the variable record in the database the first time

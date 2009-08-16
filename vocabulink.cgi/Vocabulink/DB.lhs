@@ -153,7 +153,6 @@ timestamp. If the message type is not found, it defaults to ``unknown''.
 >   quickStmt c  "INSERT INTO log (type, message) \
 >                \VALUES ((SELECT name FROM log_type WHERE name = ?), ?)"
 >                [toSql t, toSql s]
->     `catchSqlD` ()
 >   return s
 
 Exceptions come in different shapes and sizes, and we'd like to have log

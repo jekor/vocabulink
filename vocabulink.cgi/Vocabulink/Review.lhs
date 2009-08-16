@@ -162,7 +162,7 @@ You may get unpleasant results when passing a |total| that doesn't cleanly
 divide |i|.
 
 > recallButton :: Integer -> Integer -> Html
-> recallButton total i = let q :: Double = fromIntegral i / fromIntegral total in
+> recallButton total i = let q = (fromIntegral i / fromIntegral total) :: Double in
 >                        button ! [name "recall", value (show q)] << show i
 
 When a member has no more links to review for now, let's display a page letting

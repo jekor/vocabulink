@@ -51,7 +51,6 @@ because of cyclic dependencies.
 > import Control.Monad.Trans (lift)
 
 > import Data.ConfigFile (ConfigParser, get)
-> import Data.Either.Utils (forceEither)
 > import Data.List (intercalate)
 > import Network.CGI.Monad (MonadCGI(..))
 > import Network.CGI (CGI, CGIT, outputNotFound)
@@ -75,11 +74,11 @@ The App monad is a combination of the CGI and Reader monads.
 We need to make the App monad an Applicative Functor so that it will work with
 formlets.
 
-> instance Applicative (AppT IO) where
+> instance Applicative App where
 >   pure = return
 >   (<*>) = ap
 
-> instance Functor (AppT IO) where
+> instance Functor App where
 >   fmap = liftM
 
 To make the App monad an instance of MonadCGI, we need to define basic CGI
@@ -87,7 +86,7 @@ functions. CGI is relatively simple and its functionality can be defined on top
 of just an environment getter and a function for adding headers. We reuse the
 existing methods.
 
-> instance MonadCGI (AppT IO) where
+> instance MonadCGI App where
 >   cgiAddHeader n = AppT . lift . cgiAddHeader n
 >   cgiGet = AppT . lift . cgiGet
 

@@ -32,6 +32,7 @@ oft-used functions for other modules.
 >  {- Control.Monad -}              liftM,
 >  {- Control.Monad.Trans -}        liftIO, MonadIO,
 >  {- Data.Char -}                  toLower,
+>  {- Data.Either.Utils -}          forceEither,
 >  {- Data.Maybe -}                 maybe, fromMaybe, fromJust, isJust, isNothing,
 >                                   mapMaybe, catMaybes,
 >  {- Data.Time.Calendar -}         Day,
@@ -64,6 +65,7 @@ We make particularly extensive use of |liftM| and the Maybe monad.
 > import Control.Monad (liftM)
 > import Control.Monad.Trans (liftIO, MonadIO)
 > import Data.Char (toLower)
+> import Data.Either.Utils (forceEither) -- MissingH
 > import Data.Maybe (maybe, fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
 
 Time is notoriously difficult to deal with in Haskell. It gets especially
