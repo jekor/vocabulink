@@ -256,8 +256,7 @@ later.
 > handleRequest = do
 >   uri     <- requestURI
 >   method  <- requestMethod
->   let path = pathList uri
->   dispatch' method path
+>   dispatch' method (pathList uri)
 
 We extract the path part of the URI, ``unescape it'' (convert % codes back to
 characters), decode it (convert \mbox{UTF-8} characters to Unicode Chars), and finally

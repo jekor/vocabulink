@@ -41,6 +41,7 @@ functions. An example of this is |linkList|.
 >                           thestyle, src, width, height, value, name, thetype,
 >                           cols, rows, colspan, caption, disabled, alt,
 >                           table, thead, tbody, tfoot, th, tr, td, hr,
+>                           emphasize, strong,
 >  {- Text.Formlets -}      runFormState, nothingIfNull,
 >                           check, ensure, ensures, checkM, ensureM,
 >                           plug, File,

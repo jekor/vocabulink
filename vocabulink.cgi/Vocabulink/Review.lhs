@@ -31,6 +31,7 @@ For now, we have only 1 review algorithm (SuperMemo 2).
 > import Vocabulink.DB
 > import Vocabulink.Html
 > import Vocabulink.Link
+> import Vocabulink.Utils
 
 \subsection{Review Scheduling}
 
@@ -176,14 +177,29 @@ Here's a critical chance to:
 \item Point the member to other places of interest on the site.
 \end{itemize}
 
-But for now, the page is pretty plain.
+But for now, the page is pretty plain. We congratulate the member and let them
+know when their next review is scheduled.
 
 > noLinksToReviewPage :: App CGIResult
-> noLinksToReviewPage =
+> noLinksToReviewPage = withRequiredMemberNumber $ \memberNo -> do
+>   t <- nextReviewTime memberNo
 >   simplePage "No Links to Review" [CSS "link"] [
 >     thediv ! [identifier "central-column"] << [
 >       paragraph << "Take a break! \
->                    \You don't have any links to review right now." ] ]
+>                    \You don't have any links to review right now.",
+>       case t of
+>         Just t'  -> paragraph << [
+>                       stringToHtml "Your next review is due at ",
+>                       strong << (formatSimpleTime t'),
+>                       stringToHtml ". Return within 24 hours of that time for best results." ]
+>         Nothing  -> noHtml ] ]
+
+The next review time can be in the future or in the past.
+
+> nextReviewTime :: Integer -> App (Maybe UTCTime)
+> nextReviewTime memberNo =
+>   fromSql <$$> queryValue'  "SELECT MIN(target_time) FROM link_to_review \
+>                             \WHERE member_no = ?" [toSql memberNo]
 
 In order to determine the next review interval, the review scheduling algorithm
 may need to know how long the last review period was (in fact, any algorithm
