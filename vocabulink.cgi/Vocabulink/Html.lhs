@@ -87,7 +87,7 @@ nice to get this working automatically via Darcs at some point.
 > dependencyVersions = [  (JS "raphael", 2),
 >                         (JS "comment", 3),
 >                         (CSS "forum", 5),
->                         (CSS "link", 4),
+>                         (CSS "link", 5),
 >                         (CSS "page", 4),
 >                         (CSS "article", 2) ]
 

@@ -101,11 +101,11 @@ Sign up for membership. Most other tests depend on this one completing successfu
 > signUp username email password = do
 >   open "/"
 >   clickAndWait (Link "Sign Up")
->   typeText (IdOrName "input0") username
->   typeText (IdOrName "input1") email
->   typeText (IdOrName "input2") password
->   typeText (IdOrName "input3") password
->   check (IdOrName "input4")
+>   typeText (IdOrName "fval0") username
+>   typeText (IdOrName "fval1") email
+>   typeText (IdOrName "fval2") password
+>   typeText (IdOrName "fval3") password
+>   check (IdOrName "fval4")
 >   clickAndWait (XPath "//input[@value='Sign Up']")
 >   assert (TextPresent "Welcome Back")
 

@@ -539,8 +539,8 @@ it outputs and digest each local function separately.
 >   script << primHtml
 >     (  "connect(window, 'onload', partial(drawLinks," ++
 >        encode focus ++ "," ++
->        jsonNodes ("/link/new?input2=" ++ focus) origs ++ "," ++
->        jsonNodes ("/link/new?input0=" ++ focus) dests ++ "));" ),
+>        jsonNodes ("/link/new?fval2=" ++ focus) origs ++ "," ++
+>        jsonNodes ("/link/new?fval0=" ++ focus) dests ++ "));" ),
 >   thediv ! [identifier "graph"] << noHtml ]
 >  where partitioned   = partition ((== focus) . linkOrigin . pLink) links
 >        origs         = snd partitioned
