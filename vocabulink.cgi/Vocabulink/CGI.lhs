@@ -128,13 +128,13 @@ enhanced versions of Network.CGI's |getInput| and |readInput| along with a few
 helpers.
 
 > getInput :: MonadCGI m => String -> m (Maybe String)
-> getInput = liftM (>>= Just . decodeString) . CGI.getInput
+> getInput = liftM (>>= Just . convertLineEndings . decodeString) . CGI.getInput
 
 We need to do the same for getInputs. (It's used by |runForm| at the least.)
 
 > getInputs :: MonadCGI m => m [(String, String)]
 > getInputs = map decode `liftM` CGI.getInputs
->     where decode (x, y) = (decodeString x, decodeString y)
+>     where decode (x, y) = (decodeString x, convertLineEndings $ decodeString y)
 
 Often we'll want an input from the client but are happy to fall back to a
 default value.

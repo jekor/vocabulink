@@ -23,8 +23,8 @@ oft-used functions for other modules.
 
 > module Vocabulink.Utils (         if', (?), safeHead, currentDay, currentYear,
 >                                   formatSimpleTime, basename, translate, (<$$>),
->                                   sendMail, every2nd, every3rd,
->  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
+>                                   sendMail, every2nd, every3rd, splitLines,
+>  {- Codec.Binary.UTF8.String -}   encodeString, decodeString, convertLineEndings,
 >  {- Control.Applicative -}        pure, (<$>), (<*>),
 >  {- Control.Applicative.Error -}  Failing(..), maybeRead,
 >  {- Control.Arrow -}              first, second,
@@ -66,6 +66,7 @@ We make particularly extensive use of |liftM| and the Maybe monad.
 > import Control.Monad.Trans (liftIO, MonadIO)
 > import Data.Char (toLower)
 > import Data.Either.Utils (forceEither) -- MissingH
+> import Data.List.Utils (join) -- MissingH
 > import Data.Maybe (maybe, fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
 
 Time is notoriously difficult to deal with in Haskell. It gets especially
@@ -192,3 +193,26 @@ every3rd [1,2,3,4,5] =>
 
 > every3rd :: [a] -> ([a], [a], [a])
 > every3rd = foldr (\a ~(x,y,z) -> (a:z,x,y)) ([],[],[])
+
+We might get data from various sources that use different end-of-line
+terminators. But we want to always work with just newlines.
+
+We use |join| instead of |unlines| because |unlines| adds a trailing newline.
+
+> convertLineEndings :: String -> String
+> convertLineEndings = (join "\n") . splitLines
+
+This comes from Real World Haskell.
+
+> splitLines :: String -> [String]
+> splitLines []  = []
+> splitLines cs  =
+>   let (pre, suf) = break isLineTerminator cs in
+>   pre : case suf of
+>           ('\r':'\n':rest)  -> splitLines rest
+>           ('\r':rest)       -> splitLines rest
+>           ('\n':rest)       -> splitLines rest
+>           _                 -> []
+
+> isLineTerminator :: Char -> Bool
+> isLineTerminator c = c == '\r' || c == '\n'
