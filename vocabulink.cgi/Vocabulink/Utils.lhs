@@ -200,7 +200,7 @@ terminators. But we want to always work with just newlines.
 We use |join| instead of |unlines| because |unlines| adds a trailing newline.
 
 > convertLineEndings :: String -> String
-> convertLineEndings = (join "\n") . splitLines
+> convertLineEndings = join "\n" . splitLines
 
 This comes from Real World Haskell.
 
