@@ -36,7 +36,7 @@ oft-used functions for other modules.
 >  {- Data.Maybe -}                 maybe, fromMaybe, fromJust, isJust, isNothing,
 >                                   mapMaybe, catMaybes,
 >  {- Data.Time.Calendar -}         Day,
->  {- Data.Time.Clock -}            UTCTime,
+>  {- Data.Time.Clock -}            UTCTime, getCurrentTime, diffUTCTime,
 >  {- Data.Time.Format -}           formatTime,
 >  {- Data.Time.LocalTime -}        ZonedTime,
 >  {- System.FilePath -}            (</>), takeExtension, addExtension,
@@ -74,7 +74,7 @@ tricky when working with the database and libraries that expect different
 formats.
 
 > import Data.Time.Calendar (Day, toGregorian)
-> import Data.Time.Clock (getCurrentTime, UTCTime)
+> import Data.Time.Clock (UTCTime, getCurrentTime, diffUTCTime)
 > import Data.Time.Format (formatTime)
 > import Data.Time.LocalTime (  getCurrentTimeZone, utcToLocalTime,
 >                               LocalTime(..), ZonedTime)

@@ -10,7 +10,7 @@ all : $(cgi)
 doc : vocabulink.pdf
 
 vocabulink.cgi : $(lhss)
-	cabal install
+	runhaskell Setup.lhs build
 
 vocabulink.pdf : vocabulink.tex
 	pdflatex $<
@@ -18,12 +18,15 @@ vocabulink.pdf : vocabulink.tex
 vocabulink.tex : $(lhss)
 	lhs2TeX Vocabulink.lhs > $@
 
-install : $(cgi)
+install : dist/build/$(cgi)/$(cgi)
+	runhaskell Setup.lhs install
 	-killall $(cgi)
-	./$(cgi) &
 
 tags : $(lhss)
 	hasktags -e $^
+
+lint : $(lhss)
+	hlint $^
 
 clean :
 	find . -iregex ".*\.\(o\|hi\|o-boot\|hi-boot\)" -print0 | xargs -0 rm

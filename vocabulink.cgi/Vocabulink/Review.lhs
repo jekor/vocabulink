@@ -183,16 +183,54 @@ know when their next review is scheduled.
 > noLinksToReviewPage :: App CGIResult
 > noLinksToReviewPage = withRequiredMemberNumber $ \memberNo -> do
 >   t <- nextReviewTime memberNo
->   simplePage "No Links to Review" [CSS "link"] [
+>   now <- liftIO getCurrentTime
+>   simplePage "No Links to Review" [CSS "link", JS "MochiKit"] [
 >     thediv ! [identifier "central-column"] << [
->       paragraph << "Take a break! \
->                    \You don't have any links to review right now.",
+>       paragraph ! [thestyle "text-align: center"] << "Take a break! \
+>         \You don't have any links to review right now.",
 >       case t of
->         Just t'  -> paragraph << [
->                       stringToHtml "Your next review is due at ",
->                       strong << (formatSimpleTime t'),
->                       stringToHtml ". Return within 24 hours of that time for best results." ]
+>         Just t'  -> paragraph ! [thestyle "text-align: center"] << [
+>                       stringToHtml "Your next review is due in ",
+>                       jsTimer $ round $ diffUTCTime t' now,
+>                       stringToHtml "." ]
 >         Nothing  -> noHtml ] ]
+
+Our Javascript timer is only intended for use on the "no links left to review
+page". It'll need to be made more general if you need it for anything else.
+
+> jsTimer :: Integer -> Html
+> jsTimer seconds = concatHtml [
+>   script ! [thetype "text/javascript"] << primHtml (unlines [
+>     "function updateCountdown() {",
+>     "    if (typeof updateCountdown.seconds == 'undefined') {",
+>     "    updateCountdown.seconds = " ++ show seconds ++ ";",
+>     "    updateCountdown.elem = $('countdown');",
+>     "  }",
+>     "  updateCountdown.seconds -= 1;",
+>     "  updateCountdown.elem.innerHTML = formatSeconds(updateCountdown.seconds);",
+>     "}",
+>     "function formatSeconds(seconds) {",
+>     "  units = {day: 86400, hour: 3600, minute: 60, second: 1};",
+>     "  counts = {day: 0, hour: 0, minute: 0, second: 0};",
+>     "  output = '';",
+>     "  for (var unit in units) {",
+>     "    if (seconds > units[unit]) {",
+>     "      counts[unit] = seconds / units[unit];",
+>     "      seconds %= units[unit];",
+>     "    }",
+>     "  }",
+>     "  printing = false;",
+>     "  for (var unit in counts) {",
+>     "    count = Math.floor(counts[unit]);",
+>     "    if (count > 0) printing = true;",
+>     "    if (printing) {",
+>     "      output += ' ' + count + ' ' + unit + (count == 1 ? '' : 's');",
+>     "    }",
+>     "  }",
+>     "  return output;",
+>     "}",
+>     "connect(window, 'onload', function() {setInterval(updateCountdown, 1000);});" ]),
+>   thespan ! [identifier "countdown"] << (show seconds ++ " seconds") ]
 
 The next review time can be in the future or in the past.
 
