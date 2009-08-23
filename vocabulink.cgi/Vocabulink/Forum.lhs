@@ -255,7 +255,7 @@ bit more difficult and a task for later.
 >       where  topicRow :: [SqlValue] -> Html
 >              topicRow [tn, tt, nr, ta, lt, la, cn, v, uv] = 
 >                let tn'  = fromSql tn  :: Integer
->                    tt'  = fromSql tt  :: Integer
+>                    tt'  = fromSql tt  :: String
 >                    nr'  = fromSql nr  :: Integer
 >                    ta'  = fromSql ta  :: String
 >                    lt'  = fromSql lt  :: UTCTime
