@@ -85,9 +85,14 @@ nice to get this working automatically via Darcs at some point.
 
 > dependencyVersions :: [(Dependency, Integer)]
 > dependencyVersions = [  (JS "raphael", 2),
->                         (JS "comment", 3),
->                         (JS "link", 2),
+>                         (JS "comment", 4),
+>                         (JS "link", 3),
 >                         (JS "member", 2),
+>                         (JS "form", 2),
+>                         (JS "forum", 2),
+>                         (JS "link", 2),
+>                         (JS "link-graph", 2),
+>                         (JS "review", 2),
 >                         (CSS "forum", 5),
 >                         (CSS "link", 4),
 >                         (CSS "page", 4),
