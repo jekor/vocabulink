@@ -146,8 +146,7 @@ the client to |nextReview| which begins the process all over again.
 >       let source  = linkOrigin l'
 >           dest    = linkDestination l'
 >       stdPage ("Review: " ++ source ++ " -- ?")
->               [  CSS "link", JS "MochiKit", JS "review",
->                  JS "raphael", JS "link-graph"] []
+>               [CSS "link", JS "review", JS "raphael", JS "link-graph"] []
 >         [  drawLinkSVG' "drawReview" l',
 >            form ! [action ("/review/" ++ show linkNo), method "POST"] <<
 >              [  hidden "recall-time" "",
@@ -184,7 +183,7 @@ know when their next review is scheduled.
 > noLinksToReviewPage = withRequiredMemberNumber $ \memberNo -> do
 >   t <- nextReviewTime memberNo
 >   now <- liftIO getCurrentTime
->   simplePage "No Links to Review" [CSS "link", JS "MochiKit"] [
+>   simplePage "No Links to Review" [CSS "link"] [
 >     thediv ! [identifier "central-column"] << [
 >       paragraph ! [thestyle "text-align: center"] << "Take a break! \
 >         \You don't have any links to review right now.",
@@ -204,15 +203,15 @@ page". It'll need to be made more general if you need it for anything else.
 >     "function updateCountdown() {",
 >     "  if (typeof updateCountdown.seconds == 'undefined') {",
 >     "    updateCountdown.seconds = " ++ show seconds ++ ";",
->     "    updateCountdown.elem = $('countdown');",
+>     "    updateCountdown.elem = $('#countdown');",
 >     "    updateCountdown.timer = setInterval(updateCountdown, 1000);",
 >     "  }",
 >     "  updateCountdown.seconds -= 1;",
 >     "  if (updateCountdown.seconds < 1) {",
->     "    updateCountdown.elem.innerHTML = 'now';",
+>     "    $(updateCountdown.elem).text('now');",
 >     "    clearInterval(updateCounter.timer);",
 >     "  } else {",
->     "    updateCountdown.elem.innerHTML = 'in ' + formatSeconds(updateCountdown.seconds);",
+>     "    $(updateCountdown.elem).text('in ' + formatSeconds(updateCountdown.seconds));",
 >     "  }",
 >     "}",
 >     "function formatSeconds(seconds) {",
@@ -235,7 +234,7 @@ page". It'll need to be made more general if you need it for anything else.
 >     "  }",
 >     "  return output;",
 >     "}",
->     "connect(window, 'onload', updateCountdown);" ]),
+>     "$(document).ready(updateCountdown);" ]),
 >   thespan ! [identifier "countdown"] << ("in " ++ show seconds ++ " seconds") ]
 
 The next review time can be in the future or in the past.

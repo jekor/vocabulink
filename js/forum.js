@@ -15,13 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-connect(window, 'onload', setup);
-
-function setup() {
-  roundDivs();
-}
-
-function roundDivs() {
-  roundClass('div', 'forum-group');
-  roundElement('topics');
-}
+$(document).ready(function() {
+  $('div.forum-group').corner();
+  $('#topics').corner();
+});

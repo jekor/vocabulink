@@ -82,8 +82,7 @@ for creating new groups.
 The dependencies for forum pages are all the same.
 
 > forumDeps :: [Dependency]
-> forumDeps = [  CSS "forum", JS "MochiKit", JS "forum", JS "form",
->                CSS "comment", JS "comment" ]
+> forumDeps = [CSS "forum", JS "forum", JS "form", CSS "comment", JS "comment"]
 
 Displaying an individual group of forums is a little bit tougher than it would
 seem (we have to also support the administrative interface for creating new
@@ -278,7 +277,7 @@ bit more difficult and a task for later.
 >                                 Just False  -> [thestyle "background-position: 4px -37px"]
 >                                 _           -> []) << noHtml ],
 >                  td ! [theclass "topic"] <<
->                    anchor ! [href (t ++ "/" ++ show tn')] << show tt',
+>                    anchor ! [href (t ++ "/" ++ show tn')] << tt',
 >                  td ! [theclass "replies"] << show nr',
 >                  td ! [theclass "author"] << ta',
 >                  td ! [theclass "last"] << [

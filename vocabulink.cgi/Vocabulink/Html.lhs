@@ -87,6 +87,7 @@ nice to get this working automatically via Darcs at some point.
 > dependencyVersions = [  (JS "raphael", 2),
 >                         (JS "comment", 3),
 >                         (JS "link", 2),
+>                         (JS "member", 2),
 >                         (CSS "forum", 5),
 >                         (CSS "link", 4),
 >                         (CSS "page", 4),
@@ -111,16 +112,23 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >   footerB  <- footerBar
 >   setHeader "Content-Type" "text/html; charset=utf-8"
 >   memberNo <- asks appMemberNo
->   let  deps' = (CSS "page":deps) ++ (isJust memberNo ? [JS "member"] $ [])
+>   let  deps' = (CSS "page":JS "functional.min":JS "jquery.corner":deps) ++ (isJust memberNo ? [JS "member"] $ [])
+>        (cssDeps, jsDeps) = partition (\x -> case x of
+>                                               (CSS _) -> True
+>                                               (JS  _) -> False) deps'
 >        xhtml = renderHtml $ header <<
 >                  [  thetitle << title',
->                     concatHtml $ map includeDep deps',
+>                     concatHtml $ map includeDep cssDeps,
 >                     primHtml  "<!--[if IE]>\
 >                               \<link rel=\"stylesheet\" type=\"text/css\" \
 >                               \href=\"http://s.vocabulink.com/css/ie.css\" />\
 >                               \<![endif]-->",
 >                     concatHtml head' ] +++
->                  body << [  headerB,
+>                  body << [  script ! [  thetype "text/javascript",
+>                                         src "http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js" ] << noHtml,
+>                             concatHtml $ map includeDep jsDeps,
+>                             script ! [  thetype "text/javascript"] << "Functional.install(); $(document).ready(function() {$('div.sidebox').corner();});",
+>                             headerB,
 >                             jsNotice,
 >                             thediv ! [identifier "body"] << concatHtml body',
 >                             footerB ]

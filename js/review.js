@@ -24,30 +24,27 @@ function drawReview(link) {
     g.graph.remove();
     drawLink(link);
     getReviewStats(startTime);
-  }
+  };
   g.node.click(reveal);
-  connect(document, 'onkeyup', function(e) {
-      var k = e.key();
-      if (k.string == 'KEY_SPACEBAR') {
-        stop();
-        reveal(startTime);
-      }
-      var zero = 48; // key code for the '0' key
-      var pad_zero = 96; // We also want to support the number pad.
-      if (revealed && ((k.code >= zero && k.code <= zero + 5) ||
-                       (k.code >= pad_zero && k.code <= pad_zero + 5))) {
-        stop();
-        var buttons = $$('#recall-buttons button');
-        var button_num = k.code - (k.code < pad_zero ? zero : pad_zero);
-        buttons[button_num].click();
-      }
+  $(document).bind('keyup', function(e) {
+    if (e.keyCode == 32) { // spacebar
+      e.preventDefault();
+      reveal(startTime);
+    }
+    var zero     = 48; // key code for the '0' key
+    var pad_zero = 96; // We also want to support the number pad.
+    if (revealed && ((e.keyCode >= zero && e.keyCode <= zero + 5) ||
+                      e.keyCode >= pad_zero && e.keyCode <= pad_zero + 5)) {
+      e.preventDefault();
+      var button_num = e.keyCode - (e.keyCode < pad_zero ? zero : pad_zero);
+      $('#recall-buttons button')[button_num].click();
+    }
   });
 }
 
 function getReviewStats(startTime) {
   var stopTime = new Date();
   var recallTime = stopTime.getTime() - startTime.getTime();
-  setNodeAttribute($('recall-time'), 'value', recallTime);
-  showElement($('recall-buttons'));
-  stop();
+  $('#recall-time').val(recallTime);
+  $('#recall-buttons').show();
 }

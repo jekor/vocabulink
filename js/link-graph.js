@@ -46,9 +46,9 @@ function graphNode(g, label, p, labelColor, outlineColor, hoverColor, style) {
           'labelcolor': labelColor,
           'outline': outlineColor,
           'hovercolor': hoverColor,
-          'mouseover': function(f) {t.mouseover(f); e.mouseover(f);},
-          'mouseout': function(f) {t.mouseout(f); e.mouseout(f);},
-          'click': function(f) {t.click(f); e.click(f);}};
+          'mouseover': function(f) { t.mouseover(f); e.mouseover(f); },
+          'mouseout': function(f) { t.mouseout(f); e.mouseout(f); },
+          'click': function(f) { t.click(f); e.click(f); }};
 }
 
 // In order to place nodes in a visually-pleasing and space-optimal way, we can
@@ -88,7 +88,9 @@ function normalize(g, p) {
 // Given a list of node labels ("ss"), this creates nodes along the right arc
 // (default) or the left arc (when reverse is set to true).
 function arcNodes(g, ss, reverse) {
-  return map(function(p,s) {
+  return map(function(x) {
+               var p = x[0];
+               var s = x[1];
                var point = normalize(g, p);
                if (reverse)
                  point.x = g.width/2 - (point.x - g.width/2);
@@ -98,8 +100,7 @@ function arcNodes(g, ss, reverse) {
                  l.attr({'stroke-dasharray': '.'});
                l.moveTo(g.width/2, g.height/2).lineTo(point.x, point.y).toBack();
                return {'node': n, 'line': l}; },
-             ellipticalArc(g.width*0.667, g.height*0.9, Math.PI, 3/2*Math.PI, ss.length),
-             ss);
+             zip(ellipticalArc(g.width*0.667, g.height*0.9, Math.PI, 3/2*Math.PI, ss.length), ss));
 }
 
 // This sets up the link interface given a focal lexeme as well as arrays of
@@ -108,47 +109,52 @@ function arcNodes(g, ss, reverse) {
 //
 // For now the arguments are strings.
 function drawLinks(focus, origs, dests) {
-  var graph = $('graph');
-  var vdims = getViewportDimensions();
+  var graph = $('#graph');
+  var vdims = {'w': $(window).width(),
+               'h': $(window).height()};
   vdims.h = Math.max(vdims.h - 275, 400);
-  var gdims = getElementDimensions(graph);
-  var graph = Raphael('graph', gdims.w, vdims.h);
-  var g = {'graph': graph, 'width': gdims.w, 'height': vdims.h};
+  var gdims = {'w': graph.width(),
+               'h': graph.height()};
+  var g = {'graph': Raphael('graph', gdims.w, vdims.h),
+           'width': gdims.w, 'height': vdims.h};
   g.focus = graphNode(g, focus, {'x': g.width/2, 'y': g.height/2}, '#000', '#000', '#DFDFDF');
   var destsNodes = zip(dests, arcNodes(g, dests));
   var origsNodes = zip(origs, arcNodes(g, origs, true));
-  forEach(chain(destsNodes, origsNodes), function(ns) {
-    var link = ns[0];
-    var node = ns[1];
-    var mouseIn  = function() {
-      node.node.ellipse.animate({'fill': node.node.hovercolor}, 250);
-      g.focus.ellipse.animate({'fill': g.focus.hovercolor}, 250);
-      node.line.animate({'stroke-width': 4}, 250);
-      document.body.style.cursor = 'pointer';
-    };
-    var mouseOut = function() {
-      node.node.ellipse.animate({'fill': '#FFF'}, 250);
-      g.focus.ellipse.animate({'fill': '#FFF'}, 250);
-      node.line.animate({'stroke-width': 3}, 250);
-      document.body.style.cursor = 'auto';
-    };
-    var action = function() {
-      if (link.url !== undefined)
-        document.location = link.url;
-      else if (link.number !== undefined)
-        document.location = "/link/" + link.number;
-    };
-    node.node.mouseover(mouseIn);
-    node.node.mouseout(mouseOut);
-    node.node.click(action);
-  });
+  map(drawLinkHelper.curry(g), $.merge(destsNodes, origsNodes));
+}
+
+function drawLinkHelper(g, ns) {
+  var link = ns[0];
+  var node = ns[1];
+  var mouseIn  = function() {
+    node.node.ellipse.animate({'fill': node.node.hovercolor}, 250);
+    g.focus.ellipse.animate({'fill': g.focus.hovercolor}, 250);
+    node.line.animate({'stroke-width': 4}, 250);
+    document.body.style.cursor = 'pointer';
+  };
+  var mouseOut = function() {
+    node.node.ellipse.animate({'fill': '#FFF'}, 250);
+    g.focus.ellipse.animate({'fill': '#FFF'}, 250);
+    node.line.animate({'stroke-width': 3}, 250);
+    document.body.style.cursor = 'auto';
+  };
+  var action = function() {
+    if (link.url !== undefined)
+      document.location = link.url;
+    else if (link.number !== undefined)
+    document.location = "/link/" + link.number;
+  };
+  node.node.mouseover(mouseIn);
+  node.node.mouseout(mouseOut);
+  node.node.click(action);  
 }
 
 function createGraph() {
-  var graph = $('graph');
-  var gdims = getElementDimensions(graph);
-  var graph = Raphael('graph', gdims.w, gdims.h);
-  var g = {'graph': graph, 'width': gdims.w, 'height': gdims.h};
+  var graph = $('#graph');
+  var gdims = {'w': graph.width(),
+               'h': graph.height()};
+  var g = {'graph': Raphael('graph', gdims.w, gdims.h),
+           'width': gdims.w, 'height': gdims.h};
   return g;
 }
 
@@ -172,12 +178,12 @@ function drawLink(link) {
     document.body.style.cursor = 'auto';
   };
   var action = function(s) {document.location = "/links?contains=" + s;};
-  origNode.mouseover(partial(mouseIn, origNode));
-  origNode.mouseout(partial(mouseOut, origNode));
-  origNode.click(partial(action, link.orig));
-  destNode.mouseover(partial(mouseIn, destNode));
-  destNode.mouseout(partial(mouseOut, destNode));
-  destNode.click(partial(action, link.dest));
+  origNode.mouseover(mouseIn.curry(origNode));
+  origNode.mouseout(mouseOut.curry(origNode));
+  origNode.click(action.curry(link.orig));
+  destNode.mouseover(mouseIn.curry(destNode));
+  destNode.mouseout(mouseOut.curry(destNode));
+  destNode.click(action.curry(link.dest));
 }
 
 // This draws a link with the destination obscured (for reviews).
@@ -201,10 +207,10 @@ function drawLinkReview(link, callback) {
     node.ellipse.animate({'fill': '#FFF'}, 250);
     document.body.style.cursor = 'auto';
   };
-  origNode.mouseover(partial(mouseIn, origNode));
-  origNode.mouseout(partial(mouseOut, origNode));
-  destNode.mouseover(partial(mouseIn, destNode));
-  destNode.mouseout(partial(mouseOut, destNode));
+  origNode.mouseover(mouseIn.curry(origNode));
+  origNode.mouseout(mouseOut.curry(origNode));
+  destNode.mouseover(mouseIn.curry(destNode));
+  destNode.mouseout(mouseOut.curry(destNode));
   return {'graph': g.graph, 'node': destNode};
   // var reveal = function() {g.graph.remove(); drawLink(link);};
   // destNode.click(callback);

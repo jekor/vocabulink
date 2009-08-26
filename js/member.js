@@ -17,48 +17,33 @@
 
 // This is for site-wide dynamic interaction with members.
 
-connect(window, 'onload', setup);
+$(document).ready(function() {
+  $('.rating.enabled').each(setupRating);
+});
 
-function postXHR(url, postVars) {
-  return doXHR(url, {'method': 'POST',
-                     'headers': {'Content-Type': 'application/x-www-form-urlencoded'},
-                     'sendContent': queryString(postVars)});
-}
-
-function setup() {
-  setupRatings();
-}
-
-function setupRatings() {
-  var ratings = $$('.rating.enabled');
-  map(setupRating, ratings);
-}
-
-function setupRating(rating) {
-  var starsBase = getFirstElementByTagAndClassName(null, 'stars-base', rating);
-  var stars = getFirstElementByTagAndClassName(null, 'stars', starsBase);
-  var originalWidth = getStyle(stars, 'width');
-  var originalPosition = getStyle(stars, 'background-position');
+function setupRating() {
+  var starsBase = $(this).find('.stars-base:first');
+  var stars = starsBase.find('.stars:first');
+  var originalWidth = stars.css('width');
+  var originalPosition = stars.css('background-position');
   var details = {'width': 100, 'numStars': 5, 'numColors': 5, 'spriteHeight': 22};
-  connect(starsBase, 'onmouseenter', partial(beginRating, stars, details));
-  connect(starsBase, 'onmouseleave', partial(endRating, stars, originalWidth, originalPosition));
+  starsBase.mouseenter(beginRating.curry(stars, starsBase, details));
+  starsBase.mouseleave(endRating.curry(stars, originalWidth, originalPosition));
 }
 
-function beginRating(stars, details, e) {
-  var position = getElementPosition(this);
-  var x = Math.round(position.x);
-  connect(this, 'onmousemove', partial(trackRating, x, stars, details));
-  connect(this, 'onclick', partial(recordRating, x, details));
+function beginRating(stars, starsBase, details, e) {
+  var x = Math.round($(e.target).offset().left);
+  $(this).mousemove(trackRating.curry(x, stars, details));
+  $(this).click(recordRating.curry(x, starsBase, details));
 }
 
 function endRating(stars, originalWidth, originalPosition, e) {
-  disconnectAll(this, 'onmousemove', 'onclick');
-  setStyle(stars, {'width': originalWidth,
-                   'background-position': originalPosition});
+  $(this).unbind('mousemove click');
+  stars.css('width', originalWidth).css('background-position', originalPosition);
 }
 
 function trackRating(x, stars, details, e) {
-  var percentage = (e.mouse().page.x - x) / details.width;
+  var percentage = (e.pageX - x) / details.width;
   var pixels = Math.ceil(percentage * details.numStars) *
                (details.width / details.numStars);
   // Calculating the color is a bit of a challenge. This is because we have 4
@@ -68,33 +53,27 @@ function trackRating(x, stars, details, e) {
   var color = Math.ceil(percentage * details.numStars);
   var position = (-1 * details.spriteHeight * (details.numColors)) +
                  (color - 1) * details.spriteHeight;
-  setStyle(stars, {'width': pixels + 'px',
-                   'background-position': 'left ' + position + 'px'});
+  stars.css('width', pixels + 'px').css('background-position', 'left ' + position + 'px');  
 }
 
-function recordRating(x, details, e) {
-  var percentage = (e.mouse().page.x - x) / details.width;
+function recordRating(x, starsBase, details, e) {
+  starsBase.unbind();
+  var percentage = (e.pageX - x) / details.width;
   // Again, the 5-star system is a little tricky. If we count a 1-star vote as
   // 20%, that would mean that the member liked it at least somewhat. But a
   // 1-star vote is the lowest you can vote, and hence is logically 0%. So what
   // we'll do is divide up the percentage among the rest of the 4 stars.
   // 1 star = 0%, 2 stars = 25%, 3 stars = 50%, and so on.
   var rating = (Math.ceil(percentage * details.numStars) - 1) / 4;
-  var url = getNodeAttribute(getFirstElementByTagAndClassName('form', null, this), 'action');
-  disconnectAll(this);
-  var p = getFirstElementByTagAndClassName('p', null, getFirstParentByTagAndClassName(this));
-  var statusP = swapDOM(p, P(null, 'Rating...'));
-  var d = postXHR(url, {'rating': rating});
-  d.addCallbacks(function(r) {ratingSuccess(statusP);},
-                 function(r) {ratingFailure(statusP);});
-}
-
-function ratingSuccess(statusP) {
-  swapDOM(statusP, P(null, 'Thanks!'));
-  log('success');
-}
-
-function ratingFailure(statusP) {
-  swapDOM(statusP, P(null, 'Failed to rate!'));
-  log('failure');
+  // var url = $(e.target).find('form:first').attr('action');
+  var url = $(e.target).attr('action');
+  $(e.target).unbind();
+  var p = starsBase.parent().find('p:first');
+  p.text("Rating...");
+  $.ajax({'type': 'POST', 'url': url,
+          'data': {'rating': rating},
+          'success': function() {
+            p.text("Thanks!");
+          },
+          'error':   function() { p.text("Failed to rate!"); }});
 }

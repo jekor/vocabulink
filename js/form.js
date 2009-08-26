@@ -17,17 +17,12 @@
 
 // Allow for in-page editing and administrative tasks.
 
-connect(window, 'onload', connectButtons);
+$(document).ready(function() { $('button.reveal').each(connectButton); });
 
-function connectButtons() {
-  var revealers = getElementsByTagAndClassName('button', 'reveal');
-  map(connectButton, revealers);
-}
-
-function connectButton(button) {
-  var classes = getNodeAttribute(button, 'class').split(' ');
-  connect(button, 'onclick', function() {
-    showElement($(classes[1]));
-    hideElement(button);
+function connectButton() {
+  var classes = $(this).attr('class').split(' ');
+  $(this).click(function() {
+    $('#' + classes[1]).show();
+    $(this).hide();
   });
 }

@@ -327,10 +327,9 @@ using this.
 > drawLinkSVG = drawLinkSVG' "drawLink"
 
 > drawLinkSVG' :: String -> Link -> Html
-> drawLinkSVG' f link = script ! [thetype "text/javascript"] << primHtml (
->   "connect(window, 'onload', partial(" ++ f ++ "," ++
->   showLinkJSON link ++ "));") +++
->   thediv ! [identifier "graph", thestyle "height: 100px"] << noHtml
+> drawLinkSVG' f link = thediv ! [identifier "graph", thestyle "height: 100px"] << noHtml +++
+>   script ! [thetype "text/javascript"] << primHtml (
+>     "$(document).ready(" ++ f ++ ".curry(" ++ showLinkJSON link ++ "));")
 
 It seems that the JSON library author does not want us making new instances of
 the |JSON| class. Oh well, I didn't want to write |readJSON| anyway.
@@ -410,7 +409,7 @@ dealing with retrieval exceptions, etc.
 >                     Just root  -> renderComments $ fromSql root
 >                     Nothing    -> return noHtml
 >       stdPage (orig ++ " -> " ++ dest) [
->         CSS "link", JS "MochiKit", JS "raphael", JS "link-graph",
+>         CSS "link", JS "raphael", JS "link-graph",
 >         JS "form", JS "comment", CSS "comment" ] []
 >         [  drawLinkSVG l',
 >            thediv ! [theclass "link-ops"] << [
@@ -435,7 +434,7 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 (if the client is logged in) is the owner of the link.
 
 > linkOperations :: Integer -> Bool -> App Html
-> linkOperations n True   = do
+> linkOperations n owner = do
 >   review <- reviewIndicator n
 >   deleted <- queryValue'  "SELECT deleted FROM link \
 >                           \WHERE link_no = ?" [toSql n]
@@ -443,14 +442,14 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 >   return $ concatHtml [
 >     review,
 >     packForm,
->     case deleted of
->       Just d  -> if fromSql d
->         then paragraph << "Deleted"
->         else form ! [action ("/link/" ++ show n ++ "/delete"), method "POST"] <<
->                submit "" "Delete"
->       _       -> stringToHtml
->                    "Can't determine whether or not link has been deleted." ]
-> linkOperations _ False  = return noHtml
+>     case (owner, deleted) of
+>       (True, Just d)  -> if fromSql d
+>                            then paragraph << "Deleted"
+>                            else form ! [action ("/link/" ++ show n ++ "/delete"), method "POST"] <<
+>                                   submit "" "Delete"
+>       (True, _)       -> stringToHtml
+>                            "Can't determine whether or not link has been deleted."
+>       (False, _)      -> noHtml ]
 
 > addToLinkPackForm :: Integer -> App Html
 > addToLinkPackForm n = do
@@ -520,8 +519,7 @@ going to require configuring full text search or a separate search daemon.
 >     Just ls  -> simplePage (  "Found " ++ show (length ls) ++
 >                               " link" ++ (length ls == 1 ? "" $ "s") ++ 
 >                               " containing \"" ++ focus ++ "\"")
->                   [  CSS "link",
->                      JS "MochiKit", JS "raphael", JS "link-graph"]
+>                   [CSS "link", JS "raphael", JS "link-graph"]
 >                   (linkFocusBox focus (mapMaybe partialLinkFromValues ls))
 
 When the links containing a search term have been found, we need a way to
@@ -536,12 +534,12 @@ it outputs and digest each local function separately.
 
 > linkFocusBox :: String -> [PartialLink] -> [Html]
 > linkFocusBox focus links = [
+>   thediv ! [identifier "graph"] << noHtml,
 >   script << primHtml
->     (  "connect(window, 'onload', partial(drawLinks," ++
+>     (  "$(document).ready(drawLinks.curry(" ++
 >        encode focus ++ "," ++
 >        jsonNodes ("/link/new?fval2=" ++ focus) origs ++ "," ++
->        jsonNodes ("/link/new?fval0=" ++ focus) dests ++ "));" ),
->   thediv ! [identifier "graph"] << noHtml ]
+>        jsonNodes ("/link/new?fval0=" ++ focus) dests ++ "));" ) ]
 >  where partitioned   = partition ((== focus) . linkOrigin . pLink) links
 >        origs         = snd partitioned
 >        dests         = fst partitioned
@@ -601,8 +599,7 @@ result, and dispatching the creation of the link on successful form validation.
 >           case linkNo of
 >             Just n   -> redirect $ "/link/" ++ show n
 >             Nothing  -> error "Failed to establish link."
->  where deps = [  CSS "link", JS "MochiKit", JS "link",
->                  JS "raphael", JS "link-graph"]
+>  where deps = [CSS "link", JS "link", JS "raphael", JS "link-graph"]
 >        actionBar = thediv ! [thestyle "margin-left: auto; margin-right: auto; \
 >                                       \width: 12em"] <<
 >                      [  submit "preview" "Preview" !
@@ -887,7 +884,7 @@ Display a hyperlink for a language pair.
 >                        action (uriPath uri), method "POST" ] <<
 >                [  meth == "GET" ? noHtml $ unordList failures,
 >                   xhtml, actionBar ] ]
->  where deps = [  CSS "link", JS "MochiKit", JS "link", JS "ajaxupload" ]
+>  where deps = [CSS "link", JS "link", JS "ajaxupload"]
 >        actionBar = thediv ! [thestyle "margin-left: auto; margin-right: auto; \
 >                                       \margin-top: 1.3em; width: 12em"] <<
 >                      [  submit "preview" "Preview" !
@@ -998,7 +995,7 @@ Display a hyperlink for a language pair.
 >                     Just root  -> renderComments $ fromSql root
 >                     Nothing    -> return noHtml
 >       simplePage ("Link Pack: " ++ linkPackName lp)
->         [CSS "link", JS "MochiKit", JS "form", JS "comment", CSS "comment"] [
+>         [CSS "link", JS "form", JS "comment", CSS "comment"] [
 >         thediv ! [theclass "two-column"] << [
 >           thediv ! [theclass "column"] << displayLinkPack lp,
 >           thediv ! [theclass "column"] << (unordList ls' ! [theclass "links pack-links"]) ],

@@ -15,97 +15,102 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-connect(window, 'onload', setup);
+$(document).ready(function() {
+  $('.reply').each(connectButtons);
+  $('.comment.toplevel').corner();
+  $('.vote-arrow').click(vote);
+});
 
-function setup() {
-  map(connectButtons, $$('.reply'));
-  map(roundElement, $$('.comment.toplevel'));
-  map(function (a) {connect(a, 'onclick', vote)}, $$('.vote-arrow'));
-}
-
-function connectButtons(elem) {
-  var button = getFirstElementByTagAndClassName('button', null, elem);
-  connect(button, 'onclick', partial(previewReply, elem, button));
-  var submit = findChildElements(elem, ['input[type=submit]'])[0];
-  connect(submit, 'onclick', partial(sendReply, elem, button));
+function connectButtons() {
+  var button = $(this).find('button:first');
+  var submit = $(this).find('input[type=submit]:first');
+  button.click(previewReply.curry($(this), button));
+  submit.click(sendReply.curry($(this), button));
 }
 
 function overlay(elem) {
-  var over = DIV();
-  setStyle(over, {'background-color': 'black', 'opacity': 0.5,
-                  'width': '100%', 'height': '100%', 'top': '0', 'left': '0',
-                  'position': 'absolute',
-                  'background-image': "url('http://s.vocabulink.com/wait.gif')",
-                  'background-repeat': 'no-repeat',
-                  'background-position': 'center center'});
-  makePositioned(elem);
-  appendChildNodes(elem, over);
-  return function() {removeElement(over); undoPositioned(elem);};
+  elem.css('position', 'relative');
+  var over = $('<div style="background-color: black; opacity: 0.5; width: 100%; height: 100%; top: 0; left: 0; position: absolute; background-image: url(\'http://s.vocabulink.com/wait.gif\'); background-repeat: no-repeat; background-position: center center;"></div>').insertAfter(elem);
+  return function() { over.remove(); elem.css('position', 'inherit'); };
 }
 
 function previewReply(replyBox, button, e) {
-  e.stop();
-  setNodeAttribute(button, 'disabled', null);
-  var remove = overlay(getFirstElementByTagAndClassName('div', 'speech', replyBox));
-  var speech = getFirstElementByTagAndClassName('div', 'speech', replyBox);
-  var t = getFirstElementByTagAndClassName('textarea', null, speech);
-  var d = loadJSONDoc('/comment/preview', {'comment': t.value});
-  d.addCallbacks(function(r) {previewSuccess(speech, button, r); remove();},
-                 function(r) {previewFailure(speech, button, r); remove();});
+  e.preventDefault();
+  button.attr('disabled', null);
+  var speech = replyBox.find('div.speech:first');
+  var remove = overlay(speech);
+  var t = speech.find('textarea:first');
+  $.ajax({'type': 'GET', 'url': '/comment/preview',
+          'data': {'comment': t.val()},
+          'dataType': 'json',
+          'success': function(data) {
+            previewSuccess(speech, button, data);
+            remove();
+          },
+          'error':   function(data) {
+            previewFailure(speech, button, data);
+            remove();
+          }});
 }
 
 function sendReply(replyBox, button, e) {
-  e.stop();
-  setNodeAttribute(button, 'disabled', null);
-  var remove = overlay(getFirstElementByTagAndClassName('div', 'speech', replyBox));
-  var d = postXHR('/comment/reply', formContents(replyBox));
-  d.addCallbacks(function(r) {replySuccess(replyBox, r); remove()},
-                 function(r) {replyFailure(replyBox, r); remove()});
+  e.preventDefault();
+  button.attr('disabled', null);
+  var speech = replyBox.find('div.speech:first');
+  var remove = overlay(speech);
+  $.ajax({'type': 'POST', 'url': '/comment/reply',
+          'data': replyBox.find('form').serialize(),
+          'dataType': 'json',
+          'success': function(data) {
+            replySuccess(replyBox, data);
+            remove();
+          },
+          'error':   function(data) {
+            replySuccess(replyBox, data);
+            remove();
+          }});
 }
 
-function previewSuccess(speech, button, response) {
-  if (response.status == 'OK' && response.html !== undefined) {
-    var editButton = BUTTON('Edit');
-    hideElement(button);
-    button.removeAttribute('disabled');
-    insertSiblingNodesAfter(button, editButton);
-    speechPreview = DIV({'class': 'speech'});
-    hideElement(speech);
-    insertSiblingNodesAfter(speech, speechPreview);
-    speechPreview.innerHTML = response.html;
-    connect(editButton, 'onclick', function(e) {
-      e.stop();
-      button.innerHtml = 'Preview';
-      removeElement(speechPreview);
-      showElement(speech);
-      removeElement(editButton);
-      // We can't use showElement, because it assumes display: block.
-      setDisplayForElement('inline', button);
+function previewSuccess(speech, button, data) {
+  if (data.status == 'OK' && data.html !== undefined) {
+    button.hide();
+    button.removeAttr('disabled');
+    var editButton = $('<button>Edit</button>').insertAfter(button);
+    speech.hide();
+    var speechPreview = $('<div class="speech">' + data.html + '</div>').insertAfter(speech);
+    editButton.click(function(e) {
+      e.preventDefault();
+      button.text = 'Preview';
+      speechPreview.remove();
+      speech.show();
+      editButton.remove();
+      // We can't use show(), because it assumes display: block.
+      button.css('display', 'inline');
     });
   }
 }
 
-function previewFailure(speech, response) {
+function previewFailure(speech, data) {
   alert('Error generating preview.');
 }
 
-function replySuccess(replyBox, response) {
-  insertReplyForm(replyBox, evalJSONRequest(response));
+function replySuccess(replyBox, data) {
+  insertReplyForm(replyBox, data);
 }
 
-function replyFailure(replyBox, response) {
+function replyFailure(replyBox, data) {
   alert('Error posting reply.');
 }
 
-function insertReplyForm(replyBox, response) {
-  if (response.html !== undefined) {
-    replyBox.innerHTML = response.html;
-    if (response.status === 'incomplete') {
-      var button = findChildElements(replyBox, ['input[type=submit]'])[0];
-      connect(button, 'onclick', partial(sendReply, replyBox, button));
-    } else if (response.status === 'accepted') {
-      var newBox = getFirstElementByTagAndClassName('div', 'reply', replyBox);
-      var button = getFirstElementByTagAndClassName('button', null, replyBox);
+function insertReplyForm(replyBox, data) {
+  if (data.html !== undefined) {
+    replyBox.html(data.html);
+    if (data.status === 'incomplete') {
+      var button = replyBox.find('input[type=submit]:first');
+      button.click(sendReply.curry(replyBox, button));
+    } else if (data.status === 'accepted') {
+      var newBox = replyBox.find('div.reply:first');
+      var button = replyBox.find('button:first');
       connectButton(button);
       connectReply(newBox);
     }
@@ -115,30 +120,32 @@ function insertReplyForm(replyBox, response) {
 }
 
 function vote(e) {
-  e.stop();
-  var parent = getFirstParentByTagAndClassName(this);
-  if (!hasElementClass(parent, 'enabled'))
+  e.preventDefault();
+  var arrow = $(this);
+  var parent = arrow.parent();
+  if (!parent.hasClass('enabled'))
     return;
-  var voteCount = getFirstElementByTagAndClassName('span', null, parent);
-  var count = parseInt(scrapeText(voteCount));
-  var url = getNodeAttribute(this, 'href');
-  var fail = function () {
-    swapDOM(voteCount, SPAN(null, 'FAIL!'));
-  }
-  if (hasElementClass(this, 'up')) {
-    var d = postXHR(url + "/votes", {'vote': 'up'});
-    d.addCallbacks((function(a) {
-      swapDOM(voteCount, SPAN(null, count + 1));
-      setStyle(a, {'background-position': '4px -24px'});
-      removeElementClass(parent, 'enabled');})(this), fail);
-  }
-  else if (hasElementClass(this, 'down')) {
-    var d = postXHR(url + "/votes", {'vote': 'down'});
-    d.addCallbacks((function(a) {
-      swapDOM(voteCount, SPAN(null, count - 1));
-      setStyle(a, {'background-position': '4px -37px'});
-      removeElementClass(parent, 'enabled');})(this), fail);
-  } else {
-    fail();
+  var voteCount = parent.find('span:first');
+  var count = parseInt(voteCount.text());
+  var url = arrow.attr('href') + '/votes';
+  var fail = function() { voteCount.text('FAIL!'); };
+  if (arrow.hasClass('up')) {
+    $.ajax({'type': 'POST', 'url': url,
+            'data': {'vote': 'up'},
+            'success': function() {
+              voteCount.text(count + 1);
+              arrow.css('background-position', '4px -24px');
+              parent.removeClass('enabled');
+            },
+            'error': fail});
+  } else if (arrow.hasClass('down')) {
+    $.ajax({'type': 'POST', 'url': url,
+            'data': {'vote': 'down'},
+            'success': function() {
+              voteCount.text(count - 1);
+              arrow.css('background-position', '4px -37px');
+              parent.removeClass('enabled');
+            },
+            'error': fail});    
   }
 }

@@ -15,16 +15,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-connect(window, 'onload', setupSignals);
+$(document).ready(setupSignals);
 
 function setupSignals() {
-    var linkTypeSelector = $$('select[name=fval4]')[0];
-    connect(linkTypeSelector, 'onchange', partial(showLinkEditor, linkTypeSelector));
-    signal(linkTypeSelector, 'onchange');
+  var linkTypeSelector = $('select[name=fval4]:first');
+  linkTypeSelector.change(showLinkEditor);
+  linkTypeSelector.change();
 }
 
-function showLinkEditor(linkTypeSelector) {
-    var linkType = linkTypeSelector.options[linkTypeSelector.selectedIndex].text.replace(/ /g, '-');
-    map(hideElement, $$('fieldset'));
-    showElement($(linkType));
+function showLinkEditor() {
+  var linkType = this.options[this.selectedIndex].text.replace(/ /g, '-');
+  $('fieldset').hide();
+  $('#' + linkType).show();
 }

@@ -284,7 +284,7 @@ articles presumably don't have links to them.
 >                     Nothing    -> return noHtml
 >       body <- articleBody a
 >       stdPage (articleTitle a)
->         [CSS "article", JS "MochiKit", JS "form", JS "comment", CSS "comment"] []
+>         [CSS "article", JS "form", JS "comment", CSS "comment"] []
 >         [  thediv ! [theclass "article"] << body,
 >            hr ! [theclass "clear"], h3 << "Comments", comments ]
 

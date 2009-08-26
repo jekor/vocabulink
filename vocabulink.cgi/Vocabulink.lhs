@@ -572,7 +572,7 @@ or curious.
 >   let article = isJust memberNo ? "welcome-member" $ "welcome"
 >   article' <- getArticle article
 >   body <- maybe (return $ h1 << "Welcome to Vocabulink") articleBody article'
->   stdPage "Welcome to Vocabulink" [JS "MochiKit", JS "page"] [] [
+>   stdPage "Welcome to Vocabulink" [] [] [
 >     thediv ! [identifier "main-content"] << body,
 >     thediv ! [identifier "sidebar"] << [
 >       featured, latest, my, articles ],
