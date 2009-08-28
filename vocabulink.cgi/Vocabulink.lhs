@@ -585,7 +585,7 @@ or curious.
 >            Nothing   -> return noHtml
 >            Just ls'  -> do
 >              partialLinks <- mapM partialLinkHtml ls'
->              return $ thediv ! [theclass "sidebox"] << [
+>              return $ thediv ! [theclass "sidebox rounded"] << [
 >                         h3 << anchor ! [href ("/links/" ++ show mn)] <<
 >                           "My Links",
 >                         unordList partialLinks ! [theclass "links"] ]
@@ -595,19 +595,19 @@ or curious.
 >            Nothing   -> return noHtml
 >            Just ls'  -> do
 >              partialLinks <- mapM partialLinkHtml ls'
->              return $ thediv ! [theclass "sidebox"] << [
+>              return $ thediv ! [theclass "sidebox rounded"] << [
 >                         h3 << anchor ! [href "/links"] <<
 >                           "Latest Links",
 >                         unordList partialLinks ! [theclass "links"] ]
 >        latestArticles = do
 >          ls <- getArticles
->          return $ maybe noHtml (\l -> thediv ! [theclass "sidebox"] << [
+>          return $ maybe noHtml (\l -> thediv ! [theclass "sidebox rounded"] << [
 >                                         h3 << anchor ! [href "/articles"] <<
 >                                           "Latest Articles",
 >                                         unordList (map articleLinkHtml l)]) ls
 >        featuredPack = do
 >          lp <- getLinkPack 1
->          return $ maybe noHtml (\l -> thediv ! [theclass "sidebox"] << [
+>          return $ maybe noHtml (\l -> thediv ! [theclass "sidebox rounded"] << [
 >                                         h3 << [  stringToHtml "Featured Link Pack:", br,
 >                                                  linkPackTextLink l ],
 >                                         displayCompactLinkPack l False ]) lp

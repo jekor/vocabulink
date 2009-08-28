@@ -435,3 +435,7 @@ button, input:
 .rating.enabled:
   .stars-base:
     cursor: pointer
+
+// Boxes with rounded corners don't get enough breathing room.
+.rounded:
+  padding-bottom: 0.3em

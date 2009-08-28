@@ -17,7 +17,6 @@
 
 $(document).ready(function() {
   $('.reply').each(connectButtons);
-  $('.comment.toplevel').corner();
   $('.vote-arrow').click(vote);
 });
 

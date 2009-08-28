@@ -74,7 +74,7 @@ for creating new groups.
 >              then button ! [theclass "reveal forum-group-creator"] <<
 >                     "New Forum Group" +++
 >                   thediv ! [  identifier "forum-group-creator",
->                               theclass "forum-group",
+>                               theclass "forum-group rounded",
 >                               thestyle "display: none" ] << xhtml
 >              else noHtml ]
 >     _                        -> outputError 403 "Access Denied" []
@@ -82,7 +82,7 @@ for creating new groups.
 The dependencies for forum pages are all the same.
 
 > forumDeps :: [Dependency]
-> forumDeps = [CSS "forum", JS "forum", JS "form", CSS "comment", JS "comment"]
+> forumDeps = [CSS "forum", JS "form", CSS "comment", JS "comment"]
 
 Displaying an individual group of forums is a little bit tougher than it would
 seem (we have to also support the administrative interface for creating new
@@ -113,7 +113,7 @@ forums within the group).
 >                                           "New Forum" +++ forumCreator]
 >                       _             -> []
 >           (left, right) = every2nd $ fs' ++ creator
->       return $ thediv ! [theclass "forum-group"] <<
+>       return $ thediv ! [theclass "forum-group rounded"] <<
 >         [  h2 << g,
 >            unordList left ! [theclass "first"],
 >            unordList right,
@@ -216,7 +216,7 @@ and the time of the latest topic.
 >       stdPage ("Forum - " ++ forum) forumDeps []
 >         [  breadcrumbs [  anchor ! [href "../forums"] << "Forums",
 >                           stringToHtml $ fromSql t ],
->            thediv ! [identifier "topics"] << table << [
+>            thediv ! [identifier "topics", theclass "rounded"] << table << [
 >              thead << tr << [
 >                th ! [theclass "votes"]    << "",
 >                th ! [theclass "topic"]    << "Topic",

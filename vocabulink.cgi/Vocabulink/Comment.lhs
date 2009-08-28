@@ -44,7 +44,7 @@ they're difficult to implement! It's not just the database threading that's
 difficult but the display as well.
 
 > commentBox :: Monad m => XHtmlForm m a -> XHtmlForm m a
-> commentBox = plug (\xhtml -> thediv ! [theclass "comment toplevel editable"] <<
+> commentBox = plug (\xhtml -> thediv ! [theclass "comment toplevel editable rounded"] <<
 >                                xhtml)
 
 Creating the form for a comment requires knowing the comment's parent (as a
@@ -143,7 +143,7 @@ now we keep it simple.
 >                                                   "Confirm Your Email to Reply"
 >              _                      -> return $ anchor ! [href "/member/login"] <<
 >                                                   "Login to Reply"
->   return $ thediv ! [  theclass "comment toplevel",
+>   return $ thediv ! [  theclass "comment toplevel rounded",
 >                        thestyle $ "margin-left:" ++ show (commentLevel c * 2) ++ "em" ] << [
 >     paragraph ! [theclass "timestamp"] << formatSimpleTime (commentTime c),
 >     image ! [  width "60", height "60", theclass "avatar",
@@ -170,7 +170,7 @@ now we keep it simple.
 >   case (memberName, email) of
 >     (Just _, Just email')  -> do
 >       (_, xhtml) <- runForm' $ commentForm email' (Just $ show root)
->       return $ thediv ! [  theclass "comment toplevel",
+>       return $ thediv ! [  theclass "comment toplevel rounded",
 >                            thestyle "margin-left: 2em" ] << [
 >                  thediv ! [theclass "reply-options"] << [
 >                    thediv ! [theclass "reply"] << [
