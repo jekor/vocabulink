@@ -99,7 +99,11 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >                  body << [  script ! [  thetype "text/javascript",
 >                                         src "http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js" ] << noHtml,
 >                             concatHtml jsDeps',
->                             script ! [  thetype "text/javascript"] << "$(document).ready(function() {$('.rounded').corner();});",
+>                             script ! [  thetype "text/javascript"] <<
+>                               "$(document).ready(function() { \
+>                               \$('.rounded').corner(); \
+>                               \Functional.install(); \
+>                               \});",
 >                             headerB,
 >                             jsNotice,
 >                             thediv ! [identifier "body"] << concatHtml body',
@@ -122,8 +126,7 @@ subdomain (for now, @s.vocabulink.com@) to the file. Do not include the file
 suffix (@.css@ or @.js@); it will be appended automatically. These are meant
 for inclusion in the @<head>@ of the page.
 
-|includeDep| also needs to check dependency versions for cache busting. Note
- that the minified JavaScript versions are always used.
+|includeDep| also needs to check dependency versions for cache busting.
 
 > includeDep :: Dependency -> App Html
 > includeDep d = do
@@ -135,7 +138,7 @@ for inclusion in the @<head>@ of the page.
 >       case d of
 >         CSS  css  -> thelink ! [  href ("http://s.vocabulink.com/css/" ++ css ++ ".css?" ++ v),
 >                                   rel "stylesheet", thetype "text/css"] << noHtml
->         JS   js   -> script ! [  src ("http://s.vocabulink.com/js/" ++ js ++ ".min.js?" ++ v),
+>         JS   js   -> script ! [  src ("http://s.vocabulink.com/js/" ++ js ++ ".js?" ++ v),
 >                                  thetype "text/javascript"] << noHtml
 
 The standard header bar shows the Vocabulink logo (currently just some text), a

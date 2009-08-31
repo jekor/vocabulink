@@ -18,8 +18,7 @@
 \section{Comments}
 
 > module Vocabulink.Comment (  commentBox, commentForm, displayCommentBody,
->                              storeComment, commentPreview,
->                              renderComment, renderComments,
+>                              storeComment, renderComment, renderComments,
 >                              rootReplyForm, replyToComment, getComments,
 >                              voteOnComment ) where
 
@@ -95,23 +94,6 @@ Storing a comment establishes and returns its unique comment number.
 >                   commentTime      = fromSql t,
 >                   commentBody      = fromSql b }
 > commentFromValues _                   = Nothing
-
-Previewing comments is a truely asynchronous process (the first one
-implemented). It makes for complicated JavaScript but a smoother interface.
-
-We need to make sure that this doesn't go out of sync with renderComment.
-
-Also, does this lead to XSS vulnerabilities?
-
-> commentPreview :: App CGIResult
-> commentPreview = do
->   memberName <- asks appMemberName
->   case memberName of
->     Nothing  -> outputUnauthorized
->     Just _   -> do
->       comment <- getRequiredInput "comment"
->       outputJSON [  ("html", showHtmlFragment $ displayCommentBody comment),
->                     ("status", "OK") ]
 
 Displaying forum comments is complicated by the fact that we insert hidden
 comment forms along with each comment if the page is going to a confirmed

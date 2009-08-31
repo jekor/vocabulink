@@ -583,8 +583,6 @@ including the forum topic text could lead to some very long URIs.
 > dispatch "GET"   ["comment","reply"] = replyToComment
 > dispatch "POST"  ["comment","reply"] = replyToComment
 
-> dispatch "GET"   ["comment","preview"] = commentPreview
-
 > dispatch "POST"  path@["comment",x,"votes"] =
 >   case maybeRead x of
 >     Nothing  -> output404 path

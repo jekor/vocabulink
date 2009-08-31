@@ -28,6 +28,7 @@
 	$.fn.markItUp = function(settings, extraSettings) {
 		var options, ctrlKey, shiftKey, altKey;
 		ctrlKey = shiftKey = altKey = false;
+    var converter = new Showdown.converter();
 
 		options = {	id:						'',
 					nameSpace:				'',
@@ -61,7 +62,7 @@
 
 		return this.each(function() {
 			var $$, textarea, levels, scrollPosition, caretPosition, caretOffset,
-				clicked, hash, header, footer, previewWindow, template, iFrame, abort;
+				clicked, hash, header, footer, previewDiv, template, abort;
 			$$ = $(this);
 			textarea = this;
 			levels = [];
@@ -332,7 +333,7 @@
 				prepare(options.afterInsert);
 
 				// refresh preview if opened
-				if (previewWindow && options.previewAutoRefresh) {
+        if (previewDiv && options.previewAutoRefresh) {
 					refreshPreview(); 
 				}
 																									
@@ -411,72 +412,27 @@
 
 			// open preview window
 			function preview() {
-				if (!previewWindow || previewWindow.closed) {
-					if (options.previewInWindow) {
-						previewWindow = window.open('', 'preview', options.previewInWindow);
-					} else {
-						iFrame = $('<iframe class="markItUpPreviewFrame"></iframe>');
-						if (options.previewPosition == 'after') {
-							iFrame.insertAfter(footer);
-						} else {
-							iFrame.insertBefore(header);
-						}	
-						previewWindow = iFrame[iFrame.length-1].contentWindow || frame[iFrame.length-1];
-					}
+        if (!previewDiv) {
+          previewDiv = $('<div class="speech"></div>');
+          if (options.previewPosition == 'after') {
+            previewDiv.insertAfter(footer);
+          } else {
+            previewDiv.insertBefore(footer);
+          }
 				} else if (altKey === true) {
-					if (iFrame) {
-						iFrame.remove();
-					}
-					previewWindow.close();
-					previewWindow = iFrame = false;
-				}
-				if (!options.previewAutoRefresh) {
-					refreshPreview(); 
-				}
+          previewDiv.remove();
+				} else {
+          refreshPreview();
+        }
 			}
 
 			// refresh Preview window
 			function refreshPreview() {
-				if (previewWindow.document) {			
-					try {
-						sp = previewWindow.document.documentElement.scrollTop
-					} catch(e) {
-						sp = 0;
-					}					
-					previewWindow.document.open();
-					previewWindow.document.write(renderPreview());
-					previewWindow.document.close();
-					previewWindow.document.documentElement.scrollTop = sp;
-				}
-				if (options.previewInWindow) {
-					previewWindow.focus();
-				}
+        previewDiv.html(renderPreview());
 			}
 
 			function renderPreview() {				
-				if (options.previewParserPath !== '') {
-					$.ajax( {
-						type: 'POST',
-						async: false,
-						url: options.previewParserPath,
-						data: options.previewParserVar+'='+encodeURIComponent($$.val()),
-						success: function(data) {
-							phtml = localize(data, 1); 
-						}
-					} );
-				} else {
-					if (!template) {
-						$.ajax( {
-							async: false,
-							url: options.previewTemplatePath,
-							success: function(data) {
-								template = localize(data, 1); 
-							}
-						} );
-					}
-					phtml = template.replace(/<!-- content -->/g, $$.val());
-				}
-				return phtml;
+        return converter.makeHtml($$.val());
 			}
 			
 			// set keys pressed

@@ -38,7 +38,7 @@ security problems.)
 \end{enumerate}
 
 > module Vocabulink.Forum (  forumsPage, forumPage, createForum,
->                            newTopicPage, forumTopicPage, commentPreview ) where
+>                            newTopicPage, forumTopicPage ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI

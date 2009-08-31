@@ -32,6 +32,7 @@
     margin-top: 0
   .signature:
     margin-top: 0.25em
+    font-family: Verdana, sans-serif
   img.avatar:
     display: block
     float: left
