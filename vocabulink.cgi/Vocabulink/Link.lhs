@@ -320,8 +320,7 @@ appear in most contexts.
 Drawing links is a rather complicated process due to the limitations of HTML.
 Fortunately there is Raphaël (http://raphaeljs.com/reference.html) which makes
 some pretty fancy link drawing possible via JavaScript. You'll need to make
-sure to include both |JS "raphael"| and |JS "link-graph"| as dependencies when
-using this.
+sure to include |JS "lib.link"| as a dependency when using this.
 
 > drawLinkSVG :: Link -> Html
 > drawLinkSVG = drawLinkSVG' "drawLink"
@@ -389,7 +388,8 @@ dealing with retrieval exceptions, etc.
 >     Just l'  -> do
 >       owner <- queryValue'  "SELECT author = ? FROM link WHERE link_no = ?"
 >                             [toSql memberNo, toSql linkNo]
->       ops <- linkOperations linkNo $ maybe False fromSql owner
+>       let owner' = maybe False fromSql owner
+>       ops <- linkOperations linkNo owner'
 >       rating <- queryTuple'  "SELECT COUNT(rating), SUM(rating) / COUNT(rating) \
 >                              \FROM link_rating WHERE link_no = ?" [toSql linkNo]
 >       ratingEnabled <- if isJust memberNo
@@ -408,9 +408,7 @@ dealing with retrieval exceptions, etc.
 >       comments <- case r of
 >                     Just root  -> renderComments $ fromSql root
 >                     Nothing    -> return noHtml
->       stdPage (orig ++ " -> " ++ dest) [
->         CSS "link", JS "raphael", JS "link-graph",
->         JS "form", JS "comment", CSS "comment" ] []
+>       stdPage (orig ++ " -> " ++ dest) [CSS "link", JS "lib.link"] []
 >         [  drawLinkSVG l',
 >            thediv ! [theclass "link-ops"] << [
 >              anchor ! [href (  "/links?ol=" ++ linkOriginLang l' ++
@@ -422,7 +420,8 @@ dealing with retrieval exceptions, etc.
 >              ratingBar ("/link" </> show linkNo </> "rating") c' r' ratingEnabled,
 >              isNothing memberNo ? anchor ! [href "/member/login"] << "Login to Rate" $ noHtml,
 >              ops ],
->            thediv ! [theclass "link-details"] << linkTypeHtml (linkType l'),
+>            thediv ! [theclass "link-details"] <<
+>              thediv ! [identifier "link-details"] << linkTypeHtml (linkType l'),
 >            copyright, clear, hr ! [thestyle "margin-top: 1.3em"],
 >            h3 << "Comments", comments ]
 
@@ -519,7 +518,7 @@ going to require configuring full text search or a separate search daemon.
 >     Just ls  -> simplePage (  "Found " ++ show (length ls) ++
 >                               " link" ++ (length ls == 1 ? "" $ "s") ++ 
 >                               " containing \"" ++ focus ++ "\"")
->                   [CSS "link", JS "raphael", JS "link-graph"]
+>                   [CSS "link", JS "lib.link"]
 >                   (linkFocusBox focus (mapMaybe partialLinkFromValues ls))
 
 When the links containing a search term have been found, we need a way to
@@ -599,7 +598,7 @@ result, and dispatching the creation of the link on successful form validation.
 >           case linkNo of
 >             Just n   -> redirect $ "/link/" ++ show n
 >             Nothing  -> error "Failed to establish link."
->  where deps = [CSS "link", JS "link", JS "raphael", JS "link-graph"]
+>  where deps = [CSS "link", JS "lib.link"]
 >        actionBar = thediv ! [thestyle "margin-left: auto; margin-right: auto; \
 >                                       \width: 12em"] <<
 >                      [  submit "preview" "Preview" !
@@ -723,7 +722,10 @@ Hopefully by then I will know more than I do now.
 
 > linkTypeLinkWord :: AppForm LinkType
 > linkTypeLinkWord = LinkWord  <$> "Link Word" `formLabel'` F.input Nothing
->   <*> F.textarea Nothing Nothing (Just "Write a story linking the 2 words here.")
+>   <*> linkTypeLinkWordStory "Write a story linking the 2 words here."
+
+> linkTypeLinkWordStory :: String -> AppForm String
+> linkTypeLinkWordStory s = F.textarea Nothing Nothing (Just s)
 
 > linkTypeRelationship :: AppForm LinkType
 > linkTypeRelationship = Relationship <$>
@@ -884,7 +886,7 @@ Display a hyperlink for a language pair.
 >                        action (uriPath uri), method "POST" ] <<
 >                [  meth == "GET" ? noHtml $ unordList failures,
 >                   xhtml, actionBar ] ]
->  where deps = [CSS "link", JS "link", JS "ajaxupload"]
+>  where deps = [CSS "link", JS "lib.link"]
 >        actionBar = thediv ! [thestyle "margin-left: auto; margin-right: auto; \
 >                                       \margin-top: 1.3em; width: 12em"] <<
 >                      [  submit "preview" "Preview" !
@@ -994,8 +996,7 @@ Display a hyperlink for a language pair.
 >       comments <- case r of
 >                     Just root  -> renderComments $ fromSql root
 >                     Nothing    -> return noHtml
->       simplePage ("Link Pack: " ++ linkPackName lp)
->         [CSS "link", JS "form", JS "comment", CSS "comment"] [
+>       simplePage ("Link Pack: " ++ linkPackName lp) [CSS "link"] [
 >         thediv ! [theclass "two-column"] << [
 >           thediv ! [theclass "column"] << displayLinkPack lp,
 >           thediv ! [theclass "column"] << (unordList ls' ! [theclass "links pack-links"]) ],

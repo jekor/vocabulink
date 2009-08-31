@@ -27,6 +27,7 @@ The App monad is now also used for passing around member information and a few
 other conveniences.
 
 > module Vocabulink.App (      App, AppEnv(..), AppT, runApp, logApp, getOption,
+>                              Dependency(..), dependencyVersion,
 >                              withMemberNumber, withRequiredMemberNumber,
 >                              output404, reversibleRedirect,
 >                              queryTuple', queryValue', queryAttribute',
@@ -51,13 +52,13 @@ because of cyclic dependencies.
 > import Control.Monad.Trans (lift)
 
 > import Data.ConfigFile (ConfigParser, get)
-> import Data.List (intercalate)
 > import Network.CGI.Monad (MonadCGI(..))
 > import Network.CGI (CGI, CGIT, outputNotFound)
 > import Network.URI (escapeURIString, isUnescapedInURI)
 
 > data AppEnv = AppEnv {  appDB          :: Connection,
 >                         appCP          :: ConfigParser,
+>                         appStaticDeps  :: [(Dependency, EpochTime)],
 >                         appMemberNo    :: Maybe Integer,
 >                         appMemberName  :: Maybe String,
 >                         appMemberEmail :: Maybe String }
@@ -98,8 +99,8 @@ request came from a logged in member).
 We can't use the convenience of |getOption| here as we're not in the App monad
 yet.
 
-> runApp :: Connection -> ConfigParser -> App CGIResult -> CGI CGIResult
-> runApp c cp (AppT a) = do
+> runApp :: Connection -> ConfigParser -> [(Dependency, EpochTime)] -> App CGIResult -> CGI CGIResult
+> runApp c cp sd (AppT a) = do
 >   let key = forceEither $ get cp "DEFAULT" "authtokenkey"
 >   token <- verifiedAuthToken key
 >   email <- liftIO $ maybe (return Nothing)
@@ -110,6 +111,7 @@ yet.
 >                           (authMemberNo <$> token)
 >   runReaderT a AppEnv {  appDB          = c,
 >                          appCP          = cp,
+>                          appStaticDeps  = sd,
 >                          appMemberNo    = authMemberNo `liftM` token,
 >                          appMemberName  = authUsername `liftM` token,
 >                          appMemberEmail = email }
@@ -128,6 +130,25 @@ name which are enumerated in the database.
 
 Here are some functions that abstract away even having to ask for values from
 the Reader environment in the App monad.
+
+\subsubsection{Static File Dependencies}
+
+Most pages depend on some external CSS and/or JavaScript files.
+
+We want to allow the client browser to cache CSS and JavaScript for as long as
+possible, but we want to bust the cache when we update them. We can get the
+best of both worlds by setting large expiration times and by using version
+numbers.
+
+To do this, we'll add a version number to each static file as a query string.
+The web server will ignore this and serve the same file, but the client browser
+should see it as a new file.
+
+> data Dependency = CSS String | JS String
+>                   deriving (Eq, Show)
+
+> dependencyVersion :: Dependency -> App (Maybe String)
+> dependencyVersion d = (liftM show . lookup d) `liftM` asks appStaticDeps
 
 \subsubsection{Identity}
 

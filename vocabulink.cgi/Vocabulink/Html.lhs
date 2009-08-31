@@ -66,40 +66,6 @@ functions. An example of this is |linkList|.
 > import qualified Text.XHtml.Strict.Formlets as XF (input)
 > import Text.XHtml.Strict.Formlets (XHtmlForm)
 
-Most pages depend on some external CSS and/or JavaScript files.
-
-> data Dependency = CSS String | JS String
->                   deriving Eq
-
-We want to allow the client browser to cache CSS and JavaScript for as long as
-possible, but we want to bust the cache when we update them. We can get the
-best of both worlds by setting large expiration times and by using version
-numbers.
-
-To do this, we'll add a version number to each static file as a query string.
-nginx will ignore this and serve the same file, but the client browser
-\textit{should} ignore it.
-
-Any file not part of this list will be assumed to be version 1. It would be
-nice to get this working automatically via Darcs at some point.
-
-> dependencyVersions :: [(Dependency, Integer)]
-> dependencyVersions = [  (JS "raphael", 2),
->                         (JS "comment", 4),
->                         (JS "link", 3),
->                         (JS "member", 2),
->                         (JS "form", 2),
->                         (JS "link", 2),
->                         (JS "link-graph", 2),
->                         (JS "review", 2),
->                         (CSS "forum", 5),
->                         (CSS "link", 4),
->                         (CSS "page", 4),
->                         (CSS "article", 2) ]
-
-> dependencyVersion :: Dependency -> Integer
-> dependencyVersion = fromMaybe 1 . flip lookup dependencyVersions
-
 |stdPage| takes a title, a list of dependencies, and list of HTML objects to
 place into the body of the page. It automatically adds a standard header and
 footer. It also includes @page.css@ and conditionally includes an Internet
@@ -116,13 +82,15 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >   footerB  <- footerBar
 >   setHeader "Content-Type" "text/html; charset=utf-8"
 >   memberNo <- asks appMemberNo
->   let  deps' = (CSS "page":JS "functional.min":JS "jquery.corner":deps) ++ (isJust memberNo ? [JS "member"] $ [])
+>   let  deps' = deps ++ [CSS "common", JS "lib.common"] ++ (isJust memberNo ? [CSS "member", JS "lib.member"] $ [])
 >        (cssDeps, jsDeps) = partition (\x -> case x of
 >                                               (CSS _) -> True
 >                                               (JS  _) -> False) deps'
->        xhtml = renderHtml $ header <<
+>   cssDeps'  <- mapM includeDep cssDeps
+>   jsDeps'   <- mapM includeDep jsDeps
+>   let  xhtml = renderHtml $ header <<
 >                  [  thetitle << title',
->                     concatHtml $ map includeDep cssDeps,
+>                     concatHtml cssDeps',
 >                     primHtml  "<!--[if IE]>\
 >                               \<link rel=\"stylesheet\" type=\"text/css\" \
 >                               \href=\"http://s.vocabulink.com/css/ie.css\" />\
@@ -130,8 +98,8 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >                     concatHtml head' ] +++
 >                  body << [  script ! [  thetype "text/javascript",
 >                                         src "http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js" ] << noHtml,
->                             concatHtml $ map includeDep jsDeps,
->                             script ! [  thetype "text/javascript"] << "Functional.install(); $(document).ready(function() {$('.rounded').corner();});",
+>                             concatHtml jsDeps',
+>                             script ! [  thetype "text/javascript"] << "$(document).ready(function() {$('.rounded').corner();});",
 >                             headerB,
 >                             jsNotice,
 >                             thediv ! [identifier "body"] << concatHtml body',
@@ -154,16 +122,21 @@ subdomain (for now, @s.vocabulink.com@) to the file. Do not include the file
 suffix (@.css@ or @.js@); it will be appended automatically. These are meant
 for inclusion in the @<head>@ of the page.
 
-|includeDep| also needs to check dependency versions for cache busting.
+|includeDep| also needs to check dependency versions for cache busting. Note
+ that the minified JavaScript versions are always used.
 
-> includeDep :: Dependency -> Html
-> includeDep d =
->   let v = '?' : show (dependencyVersion d) in
->   case d of
->     CSS  css  -> thelink ! [  href ("http://s.vocabulink.com/css/" ++ css ++ ".css" ++ v),
->                               rel "stylesheet", thetype "text/css"] << noHtml
->     JS   js   -> script ! [  src ("http://s.vocabulink.com/js/" ++ js ++ ".js" ++ v),
->                              thetype "text/javascript"] << noHtml
+> includeDep :: Dependency -> App Html
+> includeDep d = do
+>   version <- dependencyVersion d
+>   return $ case version of
+>     Nothing  -> script ! [thetype "text/javascript"] << primHtml
+>                   ("alert('Dependency \"" ++ show d ++ "\" not found.');")
+>     Just v   ->
+>       case d of
+>         CSS  css  -> thelink ! [  href ("http://s.vocabulink.com/css/" ++ css ++ ".css?" ++ v),
+>                                   rel "stylesheet", thetype "text/css"] << noHtml
+>         JS   js   -> script ! [  src ("http://s.vocabulink.com/js/" ++ js ++ ".min.js?" ++ v),
+>                                  thetype "text/javascript"] << noHtml
 
 The standard header bar shows the Vocabulink logo (currently just some text), a
 list of hyperlinks, a search box, and either a login/sign up button or a logout

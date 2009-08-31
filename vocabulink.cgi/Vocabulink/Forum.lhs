@@ -82,7 +82,7 @@ for creating new groups.
 The dependencies for forum pages are all the same.
 
 > forumDeps :: [Dependency]
-> forumDeps = [CSS "forum", JS "form", CSS "comment", JS "comment"]
+> forumDeps = [CSS "forum"]
 
 Displaying an individual group of forums is a little bit tougher than it would
 seem (we have to also support the administrative interface for creating new

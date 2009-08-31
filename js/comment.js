@@ -18,12 +18,20 @@
 $(document).ready(function() {
   $('.reply').each(connectButtons);
   $('.vote-arrow').click(vote);
+  $('.speech textarea').markItUp(mySettings);
+  // $('.speech textarea').one('focus', function() {$(this).markItUp(mySettings);});
 });
 
 function connectButtons() {
   var button = $(this).find('button:first');
   var submit = $(this).find('input[type=submit]:first');
-  button.click(previewReply.curry($(this), button));
+  button.click(function(e) {
+    e.preventDefault();
+    // The MarkItUp button does not respond to clicks but instead listens for
+    // the mouseup event.
+    button.parent().parent().find('.markItUpButton.preview').mouseup();
+  });
+  // button.click(previewReply.curry($(this), button));
   submit.click(sendReply.curry($(this), button));
 }
 
@@ -109,9 +117,10 @@ function insertReplyForm(replyBox, data) {
       button.click(sendReply.curry(replyBox, button));
     } else if (data.status === 'accepted') {
       var newBox = replyBox.find('div.reply:first');
-      var button = replyBox.find('button:first');
-      connectButton(button);
-      connectReply(newBox);
+      var button = replyBox.find('button.reveal:first');
+      button.hide();
+      // connectButton(button);
+      // connectReply(newBox);
     }
   } else {
     alert('Unable to load response form.');

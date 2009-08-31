@@ -48,6 +48,7 @@ Executable vocabulink.cgi
                  scgi >= 0.3.1,
                  split,
                  time,
+                 unix,
                  utf8-string,
                  xhtml
   Other-Modules: Vocabulink.App,

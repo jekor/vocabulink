@@ -194,11 +194,12 @@ directory).
 > import Control.Concurrent (forkIO)
 > import Control.Monad (join)
 > import Control.Monad.Error (runErrorT)
-> import Data.ConfigFile (readfile, emptyCP, ConfigParser, CPError, options)
+> import Data.ConfigFile (readfile, emptyCP, ConfigParser, get, CPError, options)
 > import Data.List (find, intercalate, intersect)
 > import Data.List.Split (splitOn)
 > import Network.SCGI (runSCGIConcurrent')
 > import Network.URI (URI(..), unEscapeString)
+> import System.Directory (getDirectoryContents)
 
 \section{Entry and Dispatch}
 
@@ -218,9 +219,10 @@ environment.
 
 > main :: IO ()
 > main = do  cp <- liftM forceEither getConfig
+>            sd <- staticDeps cp
 >            runSCGIConcurrent' forkIO 2048 (PortNumber 10033) (do
 >              c <- liftIO connect
->              handleErrors' c (runApp c cp handleRequest))
+>              handleErrors' c (runApp c cp sd handleRequest))
 
 The path to the configuration file is the one bit of configuration that's the
 same in all environments.
@@ -248,6 +250,56 @@ later.
 >   if requiredConfigVars `intersect` opts == requiredConfigVars
 >      then return cp
 >      else error "Missing configuration options."
+
+Vocabulink makes use of a number of CSS and JavaScript files. We want the
+client browser to cache these for as long as possible, but we need some method
+of busting the cache. To do this, we'll append a timestamp to the end of these
+files when serving their URL to the client. This will make them look like a new
+file, but the webserver will strip the version number and serve the file
+without the timestamp.
+
+There are at least 3 ways to achieve this:
+
+\begin{enumeration}
+
+\item Keep a list of files and versions up-to-date in the source code. This is how
+Vocabulink originally did things, but it's error-prone.
+
+\item Check the timestamp of a file before adding it to the page. This would be
+the safest method, but it requires hitting the file system multiple times each
+time we serve a page.
+
+\item Check the timestamp of all JS/CSS files at program start and pack them
+into the App's Reader monad. This has means we only need to access the
+filesystem when the CGI program is restarted, each request can be serviced
+without additional disk I/O. It also allows us to forget about manually
+updating the source code. One disadvantage is that we must remember to restart
+the program any time we've made JavaScript or CSS changes. This is the approach
+we'll use.
+
+\end{enumeration}
+
+We do not use this technique for versioning images. Images also have high cache
+expiry rates set by the webserver, but images are also referenced in CSS files
+which we don't have a easy way of updating. Instead, we currently rename images
+in the rare event that they change.
+
+With |staticDeps|, we'll check the static directories for the modification
+times of all JS and CSS files. We don't need to walk any directories
+recursively; JS and CSS are in 2 flat directories.
+
+> staticDeps :: ConfigParser -> IO ([(Dependency, EpochTime)])
+> staticDeps cp = do
+>   let dir = forceEither $ get cp "DEFAULT" "staticdir"
+>   jsDeps   <- map (first (JS   . takeBaseName)) `liftM` modificationTimes (dir </> "js")   ".js"
+>   cssDeps  <- map (first (CSS  . takeBaseName)) `liftM` modificationTimes (dir </> "css")  ".css"
+>   return $ jsDeps ++ cssDeps
+
+> modificationTimes :: FilePath -> String -> IO [(FilePath, EpochTime)]
+> modificationTimes dir ext = do
+>   files <- filter ((== ext) . takeExtension) `liftM` getDirectoryContents dir
+>   modTimes <- mapM (liftM modificationTime . getFileStatus . (dir </>)) files
+>   return $ zip files modTimes
 
 |handleRequest| ``digests'' the requested URI before passing it to the
  dispatcher.

@@ -33,7 +33,7 @@ oft-used functions for other modules.
 >  {- Control.Monad.Trans -}        liftIO, MonadIO,
 >  {- Data.Char -}                  toLower,
 >  {- Data.Either.Utils -}          forceEither,
->  {- Data.List -}                  partition,
+>  {- Data.List -}                  intercalate, partition,
 >  {- Data.Maybe -}                 maybe, fromMaybe, fromJust, isJust, isNothing,
 >                                   mapMaybe, catMaybes,
 >  {- Data.Time.Calendar -}         Day,
@@ -41,8 +41,10 @@ oft-used functions for other modules.
 >  {- Data.Time.Format -}           formatTime,
 >  {- Data.Time.LocalTime -}        ZonedTime,
 >  {- System.FilePath -}            (</>), takeExtension, addExtension,
->                                   replaceExtension, takeBaseName,
->  {- System.Locale -}              defaultTimeLocale, rfc822DateFormat) where
+>                                   replaceExtension, takeBaseName, takeFileName,
+>  {- System.Locale -}              defaultTimeLocale, rfc822DateFormat,
+>  {- System.Posix.Files -}         getFileStatus, modificationTime,
+>  {- System.Posix.Types -}         EpochTime) where
 
 Vocabulink deals with all strings as UTF8. Every part of the website
 potentially makes use of foreign writing systems. Occasionally I also like
@@ -67,7 +69,7 @@ We make particularly extensive use of |liftM| and the Maybe monad.
 > import Control.Monad.Trans (liftIO, MonadIO)
 > import Data.Char (toLower)
 > import Data.Either.Utils (forceEither) -- MissingH
-> import Data.List (partition)
+> import Data.List (intercalate, partition)
 > import Data.List.Utils (join) -- MissingH
 > import Data.Maybe (maybe, fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
 
@@ -81,11 +83,13 @@ formats.
 > import Data.Time.LocalTime (  getCurrentTimeZone, utcToLocalTime,
 >                               LocalTime(..), ZonedTime)
 > import System.Cmd (system)
-> import System.FilePath (  (</>), takeExtension, addExtension, takeBaseName,
->                           replaceExtension )
+> import System.Exit (ExitCode(..))
+> import System.FilePath (  (</>), takeExtension, addExtension, replaceExtension,
+>                           takeBaseName, takeFileName )
 > import System.IO.Error (try)
 > import System.Locale (defaultTimeLocale, rfc822DateFormat)
-> import System.Exit (ExitCode(..))
+> import System.Posix.Files (getFileStatus, modificationTime)
+> import System.Posix.Types (EpochTime)
 
 It's often useful to have the compactness of the traditional tertiary operator
 rather than an if then else. The |(?)| operator can be used like:

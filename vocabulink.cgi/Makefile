@@ -19,6 +19,7 @@ vocabulink.tex : $(lhss)
 	lhs2TeX Vocabulink.lhs > $@
 
 install : dist/build/$(cgi)/$(cgi)
+	cp ~/.cabal/bin/vocabulink.cgi ~/.cabal/bin/vocabulink.cgi.backup
 	runhaskell Setup.lhs install
 	-killall $(cgi)
 

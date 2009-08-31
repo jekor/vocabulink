@@ -61,8 +61,6 @@ comment will eventually look like when posted.
 >                                  Nothing (size 60) (Just "wavatar") ],
 >   thediv ! [theclass "speech soft"] << xhtml,
 >   thediv ! [theclass "signature"] << [
->     helpButton  "http://daringfireball.net/projects/markdown/basics"
->                 (Just "Formatting Help"),
 >     button << "Preview" +++ stringToHtml " " +++ submit "" "Post Comment" ] ])
 >     ((\a b -> (a, maybeRead b))  <$> (F.textarea Nothing Nothing Nothing `check` ensures
 >                                         (nonEmptyAndLessThan 10000 "Comment"))

@@ -283,8 +283,7 @@ articles presumably don't have links to them.
 >                     Just root  -> renderComments $ fromSql root
 >                     Nothing    -> return noHtml
 >       body <- articleBody a
->       stdPage (articleTitle a)
->         [CSS "article", JS "form", JS "comment", CSS "comment"] []
+>       stdPage (articleTitle a) [CSS "article"] []
 >         [  thediv ! [theclass "article"] << body,
 >            hr ! [theclass "clear"], h3 << "Comments", comments ]
 

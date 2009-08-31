@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-// This is for site-wide dynamic interaction with members.
+// This is for star-ratings. It currently only happens on link pages.
 
 $(document).ready(function() {
   $('.rating.enabled').each(setupRating);
