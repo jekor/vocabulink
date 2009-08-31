@@ -291,10 +291,15 @@ a way to preview the text of the first comment to the topic.
 
 > newTopicPage :: String -> App CGIResult
 > newTopicPage n = withRequiredMemberNumber $ \_ -> do
->   res <- runForm forumTopicForm $ Right noHtml
+>   email <- asks appMemberEmail
+>   res <- runForm (forumTopicForm (fromJust email)) (Right noHtml)
 >   case res of
 >     Left xhtml -> simplePage "New Forum Topic" forumDeps
->       [thediv ! [theclass "comments"] << xhtml]
+>       [thediv ! [theclass "comments"] <<
+>          thediv ! [theclass "comment toplevel rounded"] <<
+>            thediv ! [theclass "reply-options"] <<
+>                thediv ! [theclass "comment editable"] <<
+>                  form ! [method "POST"] << xhtml]
 >     Right (title, body) -> do
 >       r <- createTopic (title, body) n
 >       case r of
@@ -304,18 +309,13 @@ a way to preview the text of the first comment to the topic.
 The form for creating the topic is very simple. All we need is a title and the
 body of the first comment (topics can't be created without a root comment).
 
-> forumTopicForm :: AppForm (String, String)
-> forumTopicForm =
->   commentBox $ plug (+++  submit "" "Create" !
->                             [thestyle "float: right; margin-right: 0.5em"] +++
->                           clear)
->     ((,)  <$> ("Topic Title" `formLabel`
->                  plug (\xhtml -> thediv ! [theclass "title"] << xhtml)
->                    (F.input Nothing) `check` ensures (nonEmptyAndLessThan 80 "Title"))
->           <*> plug (\xhtml -> xhtml ! [thestyle "margin: 0.667em auto; \
->                                                 \display: block; \
->                                                 \width: 95%; height: 10em"])
->                  (F.textarea Nothing Nothing Nothing `check` ensures (nonEmptyAndLessThan 10000 "Comment")))
+> forumTopicForm :: String -> AppForm (String, String)
+> forumTopicForm email =
+>  ((\x y -> (x, fst y))
+>    <$> ("Topic Title" `formLabel`
+>           plug (\xhtml -> thediv ! [theclass "title"] << xhtml)
+>             (F.input Nothing) `check` ensures (nonEmptyAndLessThan 80 "Title"))
+>    <*> commentForm email Nothing)
 
 This creates the topic in the database given the title and root comment body.
 

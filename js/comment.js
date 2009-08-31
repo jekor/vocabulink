@@ -16,22 +16,25 @@
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
 $(document).ready(function() {
+  $('.comment.editable').each(function() {
+    $(this).find('button:first').click(function(e) {
+      e.preventDefault();
+      // The MarkItUp button does not respond to clicks but instead listens for
+      // the mouseup event.
+      $(this).parent().parent().find('.markItUpButton.preview').mouseup();
+    });
+  });
   $('.reply').each(connectButtons);
   $('.vote-arrow').click(vote);
   $('.speech textarea').markItUp(mySettings);
   // $('.speech textarea').one('focus', function() {$(this).markItUp(mySettings);});
 });
 
+// There is a bit of duplication of effort here since topic creation and
+// comment posting share some, but not all logic.
 function connectButtons() {
   var button = $(this).find('button:first');
   var submit = $(this).find('input[type=submit]:first');
-  button.click(function(e) {
-    e.preventDefault();
-    // The MarkItUp button does not respond to clicks but instead listens for
-    // the mouseup event.
-    button.parent().parent().find('.markItUpButton.preview').mouseup();
-  });
-  // button.click(previewReply.curry($(this), button));
   submit.click(sendReply.curry($(this), button));
 }
 

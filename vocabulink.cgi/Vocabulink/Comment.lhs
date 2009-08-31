@@ -17,7 +17,7 @@
 
 \section{Comments}
 
-> module Vocabulink.Comment (  commentBox, commentForm, displayCommentBody,
+> module Vocabulink.Comment (  commentForm, displayCommentBody,
 >                              storeComment, renderComment, renderComments,
 >                              rootReplyForm, replyToComment, getComments,
 >                              voteOnComment ) where
@@ -41,10 +41,6 @@
 The following HTML is pretty messy. I now know why threaded comments are rare:
 they're difficult to implement! It's not just the database threading that's
 difficult but the display as well.
-
-> commentBox :: Monad m => XHtmlForm m a -> XHtmlForm m a
-> commentBox = plug (\xhtml -> thediv ! [theclass "comment toplevel editable rounded"] <<
->                                xhtml)
 
 Creating the form for a comment requires knowing the comment's parent (as a
 comment number). If this comment is not a reply to another comment (in the case
