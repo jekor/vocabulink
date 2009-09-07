@@ -379,6 +379,9 @@ Each link gets its own URI and page. Most of the extra code in the following is
 for handling the display of link operations (``review'', ``delete'', etc.),
 dealing with retrieval exceptions, etc.
 
+For the link's owner, we'll send along the source of the link in a hidden
+textarea for in-page editing.
+
 > linkPage :: Integer -> App CGIResult
 > linkPage linkNo = do
 >   memberNo <- asks appMemberNo
@@ -420,8 +423,11 @@ dealing with retrieval exceptions, etc.
 >              ratingBar ("/link" </> show linkNo </> "rating") c' r' ratingEnabled,
 >              isNothing memberNo ? anchor ! [href "/member/login"] << "Login to Rate" $ noHtml,
 >              ops ],
->            thediv ! [theclass "link-details"] <<
->              thediv ! [identifier "link-details"] << linkTypeHtml (linkType l'),
+>            thediv ! [theclass "link-details"] << [
+>              case (owner', linkType l') of
+>                (True, LinkWord _ story)  -> textarea ! [thestyle "display: none"] << story
+>                _                         -> noHtml,
+>              thediv ! [identifier "link-details"] << linkTypeHtml (linkType l') ],
 >            copyright, clear, hr ! [thestyle "margin-top: 1.3em"],
 >            h3 << "Comments", comments ]
 
@@ -441,6 +447,9 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 >   return $ concatHtml [
 >     review,
 >     packForm,
+>     if owner
+>       then button ! [identifier "link-edit"] << "Edit"
+>       else noHtml,
 >     case (owner, deleted) of
 >       (True, Just d)  -> if fromSql d
 >                            then paragraph << "Deleted"

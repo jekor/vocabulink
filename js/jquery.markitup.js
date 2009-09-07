@@ -62,7 +62,7 @@
 
 		return this.each(function() {
 			var $$, textarea, levels, scrollPosition, caretPosition, caretOffset,
-				clicked, hash, header, footer, previewDiv, template, abort;
+				clicked, hash, header, footer, previewDiv, previewComment, template, abort;
 			$$ = $(this);
 			textarea = this;
 			levels = [];
@@ -93,7 +93,6 @@
 				if (options.nameSpace) {
 					nameSpace = 'class="'+options.nameSpace+'"';
 				}
-				$$.wrap('<div '+nameSpace+'></div>');
 				$$.wrap('<div '+id+' class="markItUp"></div>');
 				$$.wrap('<div class="markItUpContainer"></div>');
 				$$.addClass("markItUpEditor");
@@ -104,6 +103,9 @@
 
 				// add the footer after the textarea
 				footer = $('<div class="markItUpFooter"></div>').insertAfter($$);
+
+        // Add another wrapper for a border.
+        $$.wrap('<div class="markItUpWrapper"></div>');
 
 				// add the resize handle after textarea
 				if (options.resizeHandle === true && $.browser.safari !== true) {
@@ -413,7 +415,8 @@
 			// open preview window
 			function preview() {
         if (!previewDiv) {
-          previewDiv = $('<div class="speech"></div>');
+          previewDiv = $('<div class="preview"></div>');
+          previewComment = $('<div class="comment"></div>').appendTo(previewDiv);
           if (options.previewPosition == 'after') {
             previewDiv.insertAfter(footer);
           } else {
@@ -428,7 +431,7 @@
 
 			// refresh Preview window
 			function refreshPreview() {
-        previewDiv.html(renderPreview());
+        previewComment.html(renderPreview());
 			}
 
 			function renderPreview() {				

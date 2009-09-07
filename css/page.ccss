@@ -158,7 +158,7 @@ em:
 .clear:
   clear: both
 
-.even:
+.odd:
   background-color: $bar_and_box_background
 tr.odd:hover, tr.even:hover:
   background-color: $bar_and_box_border
@@ -179,7 +179,7 @@ tr.odd:hover, tr.even:hover:
     top: 0.5em
     bottom: 0.5em
   font-family: Verdana, sans-serif
-  background: url($images + "header-gradient.gif") repeat-x;
+  background: url($images + "header-gradient.gif") repeat-x bottom;
   a.logo:
     display: block
     float: left
@@ -242,6 +242,7 @@ tr.odd:hover, tr.even:hover:
   .sidebox:
     margin-bottom: 1.3em
     background-color: $bar_and_box_background
+    %rounded(5px)
     ul, ol:
       margin->
         left: 0.667em
@@ -420,14 +421,14 @@ button, input:
     margin->
       left: auto
       right: auto
-    background: url($images + "img/stars.png") repeat-x
+    background: url($images + "stars.png") repeat-x
     position: relative
     padding: 0
     .stars:
       height: 20px
       position: absolute
       margin: 0
-      background-image: url($images + "img/stars.png")
+      background-image: url($images + "stars.png")
       background-repeat: repeat-x
   p:
     margin-top: 0
@@ -435,7 +436,3 @@ button, input:
 .rating.enabled:
   .stars-base:
     cursor: pointer
-
-// Boxes with rounded corners don't get enough breathing room.
-.rounded:
-  padding-bottom: 0.3em

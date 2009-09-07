@@ -24,7 +24,8 @@ oft-used functions for other modules.
 > module Vocabulink.Utils (         if', (?), safeHead, currentDay, currentYear,
 >                                   formatSimpleTime, basename, translate, (<$$>),
 >                                   sendMail, every2nd, every3rd, splitLines,
->  {- Codec.Binary.UTF8.String -}   encodeString, decodeString, convertLineEndings,
+>                                   convertLineEndings,
+>  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
 >  {- Control.Applicative -}        pure, (<$>), (<*>),
 >  {- Control.Applicative.Error -}  Failing(..), maybeRead,
 >  {- Control.Arrow -}              first, second,
@@ -45,10 +46,6 @@ oft-used functions for other modules.
 >  {- System.Locale -}              defaultTimeLocale, rfc822DateFormat,
 >  {- System.Posix.Files -}         getFileStatus, modificationTime,
 >  {- System.Posix.Types -}         EpochTime) where
-
-Vocabulink deals with all strings as UTF8. Every part of the website
-potentially makes use of foreign writing systems. Occasionally I also like
-using other Unicode characters.
 
 > import Codec.Binary.UTF8.String (encodeString, decodeString)
 

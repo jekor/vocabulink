@@ -96,18 +96,21 @@ fieldset#link-word textarea:
   ol:
     list-style-type: decimal
     margin-left: 1.5em
+  textarea:
+    width: 100%
+    height: 24em
 
 .link-ops:
   width: 22.5%
   float: left
   padding-top: 1.3em
-  form:
-    margin: 1.3em
   input, select, button:
     display: block
     margin->
       left: auto
       right: auto
+  > input, button, form:
+    margin-top: 1.3em
   > div:
     margin: 1.3em auto
   p, a:
@@ -134,7 +137,3 @@ a.language-pair:
 
 .pack-links:
   width: 33em
-
-.comments:
-  margin-top: 1.3em
-  margin-left: -2em

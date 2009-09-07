@@ -17,31 +17,6 @@
 
 // This is for star-ratings. It currently only happens on link pages.
 
-$(document).ready(function() {
-  $('.rating.enabled').each(setupRating);
-});
-
-function setupRating() {
-  var starsBase = $(this).find('.stars-base:first');
-  var stars = starsBase.find('.stars:first');
-  var originalWidth = stars.css('width');
-  var originalPosition = stars.css('background-position');
-  var details = {'width': 100, 'numStars': 5, 'numColors': 5, 'spriteHeight': 22};
-  starsBase.mouseenter(beginRating.curry(stars, starsBase, details));
-  starsBase.mouseleave(endRating.curry(stars, originalWidth, originalPosition));
-}
-
-function beginRating(stars, starsBase, details, e) {
-  var x = Math.round($(e.target).offset().left);
-  $(this).mousemove(trackRating.curry(x, stars, details));
-  $(this).click(recordRating.curry(x, starsBase, details));
-}
-
-function endRating(stars, originalWidth, originalPosition, e) {
-  $(this).unbind('mousemove click');
-  stars.css('width', originalWidth).css('background-position', originalPosition);
-}
-
 function trackRating(x, stars, details, e) {
   var percentage = (e.pageX - x) / details.width;
   var pixels = Math.ceil(percentage * details.numStars) *
@@ -77,3 +52,28 @@ function recordRating(x, starsBase, details, e) {
           },
           'error':   function() { p.text("Failed to rate!"); }});
 }
+
+function beginRating(stars, starsBase, details, e) {
+  var x = Math.round($(e.target).offset().left);
+  $(this).mousemove(trackRating.curry(x, stars, details));
+  $(this).click(recordRating.curry(x, starsBase, details));
+}
+
+function endRating(stars, originalWidth, originalPosition, e) {
+  $(this).unbind('mousemove click');
+  stars.css('width', originalWidth).css('background-position', originalPosition);
+}
+
+function setupRating() {
+  var starsBase = $(this).find('.stars-base:first');
+  var stars = starsBase.find('.stars:first');
+  var originalWidth = stars.css('width');
+  var originalPosition = stars.css('background-position');
+  var details = {'width': 100, 'numStars': 5, 'numColors': 5, 'spriteHeight': 22};
+  starsBase.mouseenter(beginRating.curry(stars, starsBase, details));
+  starsBase.mouseleave(endRating.curry(stars, originalWidth, originalPosition));
+}
+
+$(document).ready(function() {
+  $('.rating.enabled').each(setupRating);
+});

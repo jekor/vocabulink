@@ -1,0 +1,28 @@
+// Here are some common interface elements.
+
+// Buttons made from anchors:
+a.button:
+  display: inline-block
+  text-decoration: none // should not be underlined
+  height: 28px // don't look good unless they're a little bit taller
+  line-height: 28px
+  margin: 0
+  padding->
+    left: 0.333em
+    right: 0.333em
+  font-size: 0.875em // and smaller
+  color: #666
+  background: url($images + "button-bevel.png") repeat-x
+  border: 1px solid $bar_and_box_border
+  %rounded(5px)
+  &:hover:
+    text-decoration: none // should not be underlined when hovering either
+    background-position: 0 (-28px)
+  &:active:
+    text-decoration: none
+    background-position: 0 (-56px)
+
+.membername:
+  // We typeset membernames differently to call them out and distinguish them
+  // from other text.
+  font-family: Arial, Helvetica, sans-serif

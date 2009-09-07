@@ -126,15 +126,13 @@ here so that they'll be more familiar as they're introduced.
 
 \begin{description}
 
-\item[Codec.Binary.UTF8.String] Vocabulink would be pretty useless without
-being able to handle the writing systems of other languages. We only make use
-of 2 functions provided by this library: |encodeString| and |decodeString|.
-|decodeString| takes a UTF-8 string---either from the webserver or from the
-database---and converts it into a Unicode string that can be used by Haskell
-natively. We use |encodeString| to go in the other direction. Whenever we write
-out a string to the database, the webserver, or a log file; it needs to be
-encoded to UTF-8. This is something that the type system does not (yet) handle
-for us, so we need to be careful to correctly encode and decode strings.
+\item[utf8-string] Vocabulink would be pretty useless without being able to
+handle the writing systems of other languages. This library provides
+|encodeString| and |decodeString| as well as ByteString versions |encode| and
+|decode|. We make use of these when accepting input via CGI (decoding) and
+outputting via CGI (encoding). HDBC automatically handles UTF-8 conversion for
+us when working with the database. When we write to a log file, we need to
+manually encode to UTF-8 as well.
 
 \item[Data.ConfigFile] We need to have some parameters configurable at runtime.
 This allows us to do things differently in test and production environments. It
@@ -570,23 +568,22 @@ However, topics can be created by anyone and are identified by numbers. This
 might seem like a lost opportunity for search engine optimization, but
 including the forum topic text could lead to some very long URIs.
 
-> dispatch "GET"   ["forum",x,"new"] = newTopicPage x
-> dispatch "POST"  ["forum",x,"new"] = newTopicPage x
+> dispatch "POST"  ["forum",x,"new"] = createForumTopic x
 
 > dispatch "GET"   path@["forum",x,y] =
 >   case maybeRead y of
 >     Nothing  -> output404 path
 >     Just n   -> forumTopicPage x n
 
-``reply'' and ``preview'' are used here as nouns.
+``reply'' is used here as a noun.
 
-> dispatch "GET"   ["comment","reply"] = replyToComment
-> dispatch "POST"  ["comment","reply"] = replyToComment
-
-> dispatch "POST"  path@["comment",x,"votes"] =
+> dispatch method path@("comment":x:method') =
 >   case maybeRead x of
 >     Nothing  -> output404 path
->     Just n   -> voteOnComment n
+>     Just n   -> case (method, method') of
+>                   ("POST"  ,["reply"])  -> replyToComment n
+>                   ("POST"  ,["votes"])  -> voteOnComment n
+>                   (_       ,_)          -> output404 path
 
 \subsection{Everything Else}
 
@@ -635,7 +632,7 @@ or curious.
 >            Nothing   -> return noHtml
 >            Just ls'  -> do
 >              partialLinks <- mapM partialLinkHtml ls'
->              return $ thediv ! [theclass "sidebox rounded"] << [
+>              return $ thediv ! [theclass "sidebox"] << [
 >                         h3 << anchor ! [href ("/links/" ++ show mn)] <<
 >                           "My Links",
 >                         unordList partialLinks ! [theclass "links"] ]
@@ -645,19 +642,19 @@ or curious.
 >            Nothing   -> return noHtml
 >            Just ls'  -> do
 >              partialLinks <- mapM partialLinkHtml ls'
->              return $ thediv ! [theclass "sidebox rounded"] << [
+>              return $ thediv ! [theclass "sidebox"] << [
 >                         h3 << anchor ! [href "/links"] <<
 >                           "Latest Links",
 >                         unordList partialLinks ! [theclass "links"] ]
 >        latestArticles = do
 >          ls <- getArticles
->          return $ maybe noHtml (\l -> thediv ! [theclass "sidebox rounded"] << [
+>          return $ maybe noHtml (\l -> thediv ! [theclass "sidebox"] << [
 >                                         h3 << anchor ! [href "/articles"] <<
 >                                           "Latest Articles",
 >                                         unordList (map articleLinkHtml l)]) ls
 >        featuredPack = do
 >          lp <- getLinkPack 1
->          return $ maybe noHtml (\l -> thediv ! [theclass "sidebox rounded"] << [
+>          return $ maybe noHtml (\l -> thediv ! [theclass "sidebox"] << [
 >                                         h3 << [  stringToHtml "Featured Link Pack:", br,
 >                                                  linkPackTextLink l ],
 >                                         displayCompactLinkPack l False ]) lp

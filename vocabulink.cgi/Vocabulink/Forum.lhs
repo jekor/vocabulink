@@ -38,7 +38,7 @@ security problems.)
 \end{enumerate}
 
 > module Vocabulink.Forum (  forumsPage, forumPage, createForum,
->                            newTopicPage, forumTopicPage ) where
+>                            createForumTopic, forumTopicPage ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -74,7 +74,7 @@ for creating new groups.
 >              then button ! [theclass "reveal forum-group-creator"] <<
 >                     "New Forum Group" +++
 >                   thediv ! [  identifier "forum-group-creator",
->                               theclass "forum-group rounded",
+>                               theclass "forum-group",
 >                               thestyle "display: none" ] << xhtml
 >              else noHtml ]
 >     _                        -> outputError 403 "Access Denied" []
@@ -206,25 +206,18 @@ and the time of the latest topic.
 >   case title of
 >     Nothing  -> output404 ["forum", forum]
 >     Just t   -> do
->       let tc = concatHtml [
->                  td << noHtml,
->                  td ! [theclass "topic"] <<
->                    form ! [action (forum ++ "/new"), method "GET"]
->                      << submit "" "New Topic",
->                  td << noHtml, td << noHtml, td << noHtml ]
 >       topics <- forumTopicRows forum
 >       stdPage ("Forum - " ++ forum) forumDeps []
 >         [  breadcrumbs [  anchor ! [href "../forums"] << "Forums",
 >                           stringToHtml $ fromSql t ],
->            thediv ! [identifier "topics", theclass "rounded"] << table << [
+>            thediv ! [identifier "topics"] << table << [
 >              thead << tr << [
 >                th ! [theclass "votes"]    << "",
 >                th ! [theclass "topic"]    << "Topic",
 >                th ! [theclass "replies"]  << "Replies",
 >                th ! [theclass "author"]   << "Author",
 >                th ! [theclass "last"]     << "Last Comment" ],
->              tbody << tableRows (tc:topics),
->              tfoot << tr << noHtml ] ]
+>              tbody << tableRows topics ] ]
 
 This returns a list of forum topics, sorted by creation date, as HTML rows. It
 saves us some effort by avoiding any intermediate representation which we don't
@@ -286,57 +279,28 @@ bit more difficult and a task for later.
 >                    stringToHtml la' ] ]
 >              topicRow _ = td << "Error retrieving topic."
 
-The page for creating a new topic is very plain. In fact, it doesn't even have
-a way to preview the text of the first comment to the topic.
-
-> newTopicPage :: String -> App CGIResult
-> newTopicPage n = withRequiredMemberNumber $ \_ -> do
->   email <- asks appMemberEmail
->   res <- runForm (forumTopicForm (fromJust email)) (Right noHtml)
->   case res of
->     Left xhtml -> simplePage "New Forum Topic" forumDeps
->       [thediv ! [theclass "comments"] <<
->          thediv ! [theclass "comment toplevel rounded"] <<
->            thediv ! [theclass "reply-options"] <<
->                thediv ! [theclass "comment editable"] <<
->                  form ! [method "POST"] << xhtml]
->     Right (title, body) -> do
->       r <- createTopic (title, body) n
->       case r of
->         Nothing  -> simplePage "Error Creating Forum Topic" forumDeps []
->         Just _   -> redirect $ "../" ++ n
-
-The form for creating the topic is very simple. All we need is a title and the
-body of the first comment (topics can't be created without a root comment).
-
-> forumTopicForm :: String -> AppForm (String, String)
-> forumTopicForm email =
->  ((\x y -> (x, fst y))
->    <$> ("Topic Title" `formLabel`
->           plug (\xhtml -> thediv ! [theclass "title"] << xhtml)
->             (F.input Nothing) `check` ensures (nonEmptyAndLessThan 80 "Title"))
->    <*> commentForm email Nothing)
-
 This creates the topic in the database given the title and root comment body.
 
-> createTopic :: (String, String) -> String -> App (Maybe Integer)
-> createTopic (t, c) fn = do
->   memberNo' <- asks appMemberNo
->   case memberNo' of
->     Nothing        -> return Nothing
->     Just memberNo  -> withTransaction' $ do
->       c' <- asks appDB
->       commentNo' <- storeComment memberNo c Nothing
->       case commentNo' of
->         Nothing  -> liftIO $ rollback c' >> error "DB error"
->         Just n   -> do
->           r <- quickStmt'  "INSERT INTO forum_topic \
->                            \(forum_name, title, root_comment, last_comment) \
->                            \VALUES (?, ?, ?, ?)"
->                            [toSql fn, toSql t, toSql n, toSql n]
->           case r of
->             Nothing  -> liftIO $ rollback c' >> error "DB error"
->             Just _   -> return n
+> createForumTopic :: String -> App CGIResult
+> createForumTopic forumName = withRequiredMemberNumber $ \memberNo -> do
+>   title  <- getRequiredInput "title"
+>   body   <- getRequiredInput "body"
+>   topicNum <- withTransaction' $ do
+>     c' <- asks appDB
+>     commentNo' <- storeComment memberNo body Nothing
+>     case commentNo' of
+>       Nothing  -> liftIO $ rollback c' >> error "DB error"
+>       Just n   -> do
+>         r <- quickStmt'  "INSERT INTO forum_topic \
+>                          \(forum_name, title, root_comment, last_comment) \
+>                          \VALUES (?, ?, ?, ?)"
+>                          [toSql forumName, toSql title, toSql n, toSql n]
+>         case r of
+>           Nothing  -> liftIO $ rollback c' >> error "DB error"
+>           Just _   -> return n
+>   case topicNum of
+>     Nothing  -> error "Error creating new topic."
+>     Just n'  -> outputJSON [("topicNumber", n')]
 
 We're finally getting to the core of the forum: individual topic pages. The
 forum topic page displays the entire comment thread. Eventually it will
@@ -357,4 +321,4 @@ probably need paging.
 >           anchor ! [href $ "../" ++ fn] << (fromSql fTitle :: String),
 >           stringToHtml $ fromSql title ],
 >         comments ]
->     _                         -> output404 ["forum",fn,show i]
+>     _                         -> output404 ["forum", fn, show i]

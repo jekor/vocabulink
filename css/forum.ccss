@@ -20,6 +20,7 @@
     top: 1.3em
     bottom: 1.3em
   background-color: $bar_and_box_background
+  %rounded(5px)
   h2, ul:
     float: left
   h2, ul, label:
@@ -60,16 +61,18 @@
 
 #topics:
   width: 100%
+  border: 1px solid $bar_and_box_border
+  %rounded(5px)
   background-color: $bar_and_box_background
   table:
     width: 100%
+    thead:
+      background: url($images + "header-gradient.gif") repeat-x bottom;
+      border-bottom: 1px solid $bar_and_box_border
     tbody:
       background-color: #FFF
-    tfoot:
-      height: 1.3em
     th, td:
-      padding: 0.2em
-      padding-bottom: 0.5em
+      padding: 0.5em
       vertical-align: middle
       &.topic:
         form:
@@ -109,7 +112,7 @@ a.vote-arrow:
   margin->
     left: auto
     right: auto
-  background-image: url($images + "img/updown.png")
+  background-image: url($images + "updown.png")
   background-repeat: no-repeat
   &:focus:
     outline: 0

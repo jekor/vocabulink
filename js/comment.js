@@ -15,129 +15,79 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-$(document).ready(function() {
-  $('.comment.editable').each(function() {
-    $(this).find('button:first').click(function(e) {
-      e.preventDefault();
-      // The MarkItUp button does not respond to clicks but instead listens for
-      // the mouseup event.
-      $(this).parent().parent().find('.markItUpButton.preview').mouseup();
-    });
-  });
-  $('.reply').each(connectButtons);
-  $('.vote-arrow').click(vote);
-  $('.speech textarea').markItUp(mySettings);
-  // $('.speech textarea').one('focus', function() {$(this).markItUp(mySettings);});
-});
+// TODO: Move all forum-related functionality out to a separate file.
 
-// There is a bit of duplication of effort here since topic creation and
-// comment posting share some, but not all logic.
-function connectButtons() {
-  var button = $(this).find('button:first');
-  var submit = $(this).find('input[type=submit]:first');
-  submit.click(sendReply.curry($(this), button));
-}
-
+// TODO: This should go into a more general AJAX/effects file.
 function overlay(elem) {
+  var oldPosition = elem.css('position');
   elem.css('position', 'relative');
-  var over = $('<div style="background-color: black; opacity: 0.5; width: 100%; height: 100%; top: 0; left: 0; position: absolute; background-image: url(\'http://s.vocabulink.com/wait.gif\'); background-repeat: no-repeat; background-position: center center;"></div>').insertAfter(elem);
-  return function() { over.remove(); elem.css('position', 'inherit'); };
+  var over = $('<div style="opacity: 0.5; width: 100%; height: 100%; top: 0; left: 0; position: absolute; background: black url(\'http://s.vocabulink.com/wait.gif\') no-repeat center center;"></div>').appendTo(elem);
+  return function() {
+    over.remove();
+    elem.css('position', oldPosition);
+  };
 }
 
-function previewReply(replyBox, button, e) {
-  e.preventDefault();
-  button.attr('disabled', null);
-  var speech = replyBox.find('div.speech:first');
-  var remove = overlay(speech);
-  var t = speech.find('textarea:first');
-  $.ajax({'type': 'GET', 'url': '/comment/preview',
-          'data': {'comment': t.val()},
-          'dataType': 'json',
+function sendReply(box, commentNumber, sendButton, e) {
+  var body = $.trim(box.find('textarea').val());
+  if (body == '') {
+    alert('Please enter a comment.');
+    return false;
+  }
+  var removeOverlay = overlay(box);
+  $.ajax({'type': 'POST', 'url': '/comment/' + commentNumber + '/reply',
+          'contentType': 'text/plain',
+          'data': body,
+          'dataType': 'html',
           'success': function(data) {
-            previewSuccess(speech, button, data);
-            remove();
+            sendButton.remove();
+            removeOverlay();
+            box.find('.body').html('<div class="comment">' + data + '</div>');
           },
           'error':   function(data) {
-            previewFailure(speech, button, data);
-            remove();
+            removeOverlay();
+            alert('Error sending reply.');
           }});
+  return false;
 }
 
-function sendReply(replyBox, button, e) {
-  e.preventDefault();
-  button.attr('disabled', null);
-  var speech = replyBox.find('div.speech:first');
-  var remove = overlay(speech);
-  $.ajax({'type': 'POST', 'url': '/comment/reply',
-          'data': replyBox.find('form').serialize(),
+// Here's yet another one to move out to a forum file.
+function createTopic(box, e) {
+  // We get the forum name from the URL.
+  var title = $.trim(box.find('input[name=title]').val());
+  var body = $.trim(box.find('textarea').val());
+  if (title == '') {
+    alert('Please enter a title.');
+    return false;
+  }
+  if (body == '') {
+    alert('Please enter a comment.');
+    return false;
+  }
+  var forumName = window.location.pathname.split('/').pop();
+  var removeOverlay = overlay(box);
+  $.ajax({'type': 'POST', 'url': '/forum/' + forumName + '/new',
+          'data': {'title': title, 'body': body},
           'dataType': 'json',
           'success': function(data) {
-            replySuccess(replyBox, data);
-            remove();
+            window.location.reload();
           },
           'error':   function(data) {
-            replySuccess(replyBox, data);
-            remove();
-          }});
+            removeOverlay();
+            alert('Error creating topic.');
+          }});  
+  return false;
 }
 
-function previewSuccess(speech, button, data) {
-  if (data.status == 'OK' && data.html !== undefined) {
-    button.hide();
-    button.removeAttr('disabled');
-    var editButton = $('<button>Edit</button>').insertAfter(button);
-    speech.hide();
-    var speechPreview = $('<div class="speech">' + data.html + '</div>').insertAfter(speech);
-    editButton.click(function(e) {
-      e.preventDefault();
-      button.text = 'Preview';
-      speechPreview.remove();
-      speech.show();
-      editButton.remove();
-      // We can't use show(), because it assumes display: block.
-      button.css('display', 'inline');
-    });
-  }
-}
-
-function previewFailure(speech, data) {
-  alert('Error generating preview.');
-}
-
-function replySuccess(replyBox, data) {
-  insertReplyForm(replyBox, data);
-}
-
-function replyFailure(replyBox, data) {
-  alert('Error posting reply.');
-}
-
-function insertReplyForm(replyBox, data) {
-  if (data.html !== undefined) {
-    replyBox.html(data.html);
-    if (data.status === 'incomplete') {
-      var button = replyBox.find('input[type=submit]:first');
-      button.click(sendReply.curry(replyBox, button));
-    } else if (data.status === 'accepted') {
-      var newBox = replyBox.find('div.reply:first');
-      var button = replyBox.find('button.reveal:first');
-      button.hide();
-      // connectButton(button);
-      // connectReply(newBox);
-    }
-  } else {
-    alert('Unable to load response form.');
-  }
-}
-
+// TODO: This should be moved out once we have a dependency system.
 function vote(e) {
-  e.preventDefault();
   var arrow = $(this);
   var parent = arrow.parent();
-  if (!parent.hasClass('enabled'))
-    return;
+  if (!parent.hasClass('enabled')) {    
+    return false;
+  }
   var voteCount = parent.find('span:first');
-  var count = parseInt(voteCount.text());
+  var count = parseInt(voteCount.text(), 10);
   var url = arrow.attr('href') + '/votes';
   var fail = function() { voteCount.text('FAIL!'); };
   if (arrow.hasClass('up')) {
@@ -159,4 +109,104 @@ function vote(e) {
             },
             'error': fail});    
   }
+  return false;
 }
+
+function createCommentBox() {
+  var box = $('<div class="comment-box">'
+              + '<img class="avatar" width="60" height="60" src="' + memberObj.gravatar + '"/>'
+              + '<p class="metadata">'
+                + '<span class="membername">' + memberObj.membername + '</span>'
+              + '</p>'
+              + '<div class="body">'
+                + '<textarea></textarea>'
+              + '</div>'
+            + '</div>');  
+  box.find('textarea').markItUp(mySettings);
+  return box;  
+}
+
+// This box is for replying to comments.
+function createReplyBox(parentNumber) {
+  var box = createCommentBox();
+  var sendButton = $('<a class="button" href="#">Send</a>');
+  sendButton.appendTo(box);
+  sendButton.click(sendReply.curry(box, parentNumber, sendButton));
+  return box;
+}
+
+// TODO: Move to forum JS file.
+// This box is for creating new topics (new root comments).
+function createTopicBox() {
+  var box = createCommentBox();
+  var createButton = $('<a class="button" href="#">Create</a>');
+  createButton.appendTo(box);
+  $('<div class="title">'
+    + '<label>Title:</label> <input type="text" name="title"></input>'
+  + '</div>').prependTo(box.find('.body'));
+  createButton.click(createTopic.curry(box));
+  return box;
+}
+
+// Replying to comments, including generating the necessary form, is left up to
+// JavaScript. This creates a box similar to a comment box (which is generated
+// by the backend CGI) but with the additional machinery necessary for sending
+// the reply.
+// The commentBox passed is the one we're replying to. We'll use it to get the
+// target comment number and for relative placement of the new box. commentBox
+// should be a jQuery object.
+function addReplyCommentBox(commentBox, e) {
+  var parentIndent = parseFloat(commentBox.attr('style').match(/margin-left: ([0-9.]+)em/)[1]);
+  if (isNaN(parentIndent)) {
+    alert('Unexpected error. Unable to determine comment level.');
+    return false;
+  }
+  var commentNumber = parseInt(commentBox.attr('id').match(/comment-(\d+)/)[1], 10);
+  if (isNaN(commentNumber)) {
+    alert('Unexpected error. Unable to determine comment number.');
+    return false;
+  }
+  // Set the indent 1 level deeper than commentBox.
+  var indent = parentIndent + 1.3;
+  createReplyBox().css('margin-left', indent + 'em').insertAfter(commentBox);
+  // TODO: Highlight the new box, auto-focus the textarea, or both.
+  return false;
+}
+
+// Add reply buttons to each comment box on the page.
+// This should only be called for authenticated members.
+function setupReply() {
+  var replyButton = $('<a class="button" href="#">Reply</a>');
+  replyButton.appendTo($(this));
+  replyButton.click(addReplyCommentBox.curry($(this)));
+}
+
+// Pages that allow comments have a root comment to which new comments are sent
+// in reply to by default. Sometimes the root comment is visible, sometimes
+// it's an invisible blank comment. In any case, we want to create a comment box
+// in those cases. We'll look for a rootComment variable to do so.
+function setupRootReply() {
+  var rootComment = parseInt($(this).attr('id').match(/comments-(\d+)/)[1], 10);
+  createReplyBox(rootComment).appendTo($(this));
+}
+
+function setupCreateTopic() {
+  var newRow = $('<tr><td></td><td colspan="4"><a class="button" href="#">New Topic</a></td></tr>');
+  var newTopicButton = newRow.find('a.button');
+  newRow.prependTo($(this).find('tbody'));
+  newTopicButton.click(function() {
+    var box = createTopicBox();
+    newTopicButton.replaceWith(box);
+    return false;
+  });
+}
+
+$(document).ready(function() {
+  // This file should only be included for logged-in members, but we'll be double-check.
+  if (isLoggedIn) {
+    $('.comment-box').each(setupReply);
+    $('.comments').each(setupRootReply);
+    $('.vote-arrow').click(vote);
+    $('#topics').each(setupCreateTopic);
+  }
+});

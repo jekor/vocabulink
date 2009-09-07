@@ -15,6 +15,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
+function getReviewStats(startTime) {
+  var stopTime = new Date();
+  var recallTime = stopTime.getTime() - startTime.getTime();
+  $('#recall-time').val(recallTime);
+  $('#recall-buttons').show();
+}
+
 function drawReview(link) {
   var startTime = new Date();
   var g = drawLinkReview(link);
@@ -28,23 +35,17 @@ function drawReview(link) {
   g.node.click(reveal);
   $(document).bind('keyup', function(e) {
     if (e.keyCode == 32) { // spacebar
-      e.preventDefault();
       reveal(startTime);
+      return false;
     }
     var zero     = 48; // key code for the '0' key
     var pad_zero = 96; // We also want to support the number pad.
     if (revealed && ((e.keyCode >= zero && e.keyCode <= zero + 5) ||
                       e.keyCode >= pad_zero && e.keyCode <= pad_zero + 5)) {
-      e.preventDefault();
       var button_num = e.keyCode - (e.keyCode < pad_zero ? zero : pad_zero);
       $('#recall-buttons button')[button_num].click();
+      return false;
     }
+    return true;
   });
-}
-
-function getReviewStats(startTime) {
-  var stopTime = new Date();
-  var recallTime = stopTime.getTime() - startTime.getTime();
-  $('#recall-time').val(recallTime);
-  $('#recall-buttons').show();
 }

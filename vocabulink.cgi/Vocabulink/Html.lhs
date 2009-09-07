@@ -53,15 +53,16 @@ functions. An example of this is |linkList|.
 > import Vocabulink.Utils
 
 > import qualified Data.ByteString.Lazy as BS
-> import Data.List (intersperse, find)
-> import Text.Regex (mkRegex, subRegex)
-> import Text.Regex.Posix ((=~))
+> import Data.List (intersperse)
+> import Network.Gravatar as G (gravatarWith, size)
 > import Text.Formlets (  runFormState, plug, nothingIfNull,
 >                         check, ensure, ensures, checkM, ensureM)
-> import Text.Pandoc (  readMarkdown, writeHtml, defaultParserState,
->                       defaultWriterOptions )
 > import Text.Formlets as F
 > import Text.Formlets (File)
+> import Text.Pandoc (  readMarkdown, writeHtml, defaultParserState,
+>                       defaultWriterOptions )
+> import Text.Regex (mkRegex, subRegex)
+> import Text.Regex.Posix ((=~))
 > import Text.XHtml.Strict hiding (content, menu)
 > import qualified Text.XHtml.Strict.Formlets as XF (input)
 > import Text.XHtml.Strict.Formlets (XHtmlForm)
@@ -82,39 +83,42 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >   footerB  <- footerBar
 >   setHeader "Content-Type" "text/html; charset=utf-8"
 >   memberNo <- asks appMemberNo
->   let  deps' = deps ++ [CSS "common", JS "lib.common"] ++ (isJust memberNo ? [CSS "member", JS "lib.member"] $ [])
+>   memberName <- asks appMemberName
+>   memberEmail <- asks appMemberEmail
+>   let  deps' = deps ++ [CSS "lib.common", JS "lib.common"] ++ (isJust memberNo ? [CSS "lib.member", JS "lib.member"] $ [])
 >        (cssDeps, jsDeps) = partition (\x -> case x of
 >                                               (CSS _) -> True
 >                                               (JS  _) -> False) deps'
+>        gravatarUrl = isJust memberNo ?
+>                      G.gravatarWith  (map toLower $ fromJust memberEmail)
+>                                      Nothing (G.size 60) (Just "wavatar") $
+>                      ""
+>        memberObj = isJust memberNo ?
+>                    [("membername", fromJust memberName), ("gravatar", gravatarUrl)] $
+>                    []
 >   cssDeps'  <- mapM includeDep cssDeps
 >   jsDeps'   <- mapM includeDep jsDeps
 >   let  xhtml = renderHtml $ header <<
 >                  [  thetitle << title',
 >                     concatHtml cssDeps',
->                     primHtml  "<!--[if IE]>\
->                               \<link rel=\"stylesheet\" type=\"text/css\" \
->                               \href=\"http://s.vocabulink.com/css/ie.css\" />\
->                               \<![endif]-->",
 >                     concatHtml head' ] +++
 >                  body << [  script ! [  thetype "text/javascript",
 >                                         src "http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js" ] << noHtml,
 >                             concatHtml jsDeps',
->                             script ! [  thetype "text/javascript"] <<
->                               "$(document).ready(function() { \
->                               \$('.rounded').corner(); \
->                               \Functional.install(); \
->                               \});",
+>                             script ! [  thetype "text/javascript"] << primHtml
+>                               ("var isLoggedIn = " ++ (isJust memberNo ? "true" $ "false") ++ "; \
+>                                \var memberObj = " ++ (encode $ toJSObject memberObj) ++ "; \
+>                                \$(document).ready(function() { \
+>                                \Functional.install(); \
+>                                \});"),
 >                             headerB,
->                             jsNotice,
+>                             case jsDeps of
+>                               []  -> noHtml
+>                               _   -> noscript << paragraph <<
+>                                        "This page requires JavaScript for some functionality.",
 >                             thediv ! [identifier "body"] << concatHtml body',
 >                             footerB ]
 >   output' xhtml
->  where jsNotice = case find (\e -> case e of
->                                      JS _  -> True
->                                      _     -> False) deps of
->                     Nothing  -> noHtml
->                     Just _   -> noscript << paragraph <<
->                       "This page requires JavaScript for some functionality."
 
 Often we just need a simple page where the title and header are the same.
 

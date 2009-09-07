@@ -26,10 +26,9 @@ not the end of the world if we generate an error or don't catch an exception.
 
 > module Vocabulink.CGI (  getInput, getRequiredInput, getInputDefault,
 >                          readInput, readRequiredInput, readInputDefault,
->                          getInputs, handleErrors', referrerOrVocabulink,
+>                          getInputs, getBody, handleErrors', referrerOrVocabulink,
 >                          urlify, outputUnauthorized, outputText, outputJSON,
->                          output', getTextOrFileInput,
->                          tryCGI',
+>                          output', getTextOrFileInput, tryCGI',
 >  {- Network.CGI -}       getInputFPS, getInputFilename,
 >                          MonadCGI, CGIResult, requestURI, requestMethod,
 >                          getVar, setHeader, output, redirect, remoteAddr,
@@ -45,7 +44,7 @@ not the end of the world if we generate an error or don't catch an exception.
 > import Control.Exception (Exception, try)
 > import Control.Monad.Reader (ReaderT(..))
 > import Control.Monad.Writer (WriterT(..))
-> import Data.ByteString.Lazy.UTF8 (fromString)
+> import Data.ByteString.Lazy.UTF8 (fromString, toString)
 > import Data.Char (toLower, isAlphaNum)
 > import Data.Monoid (mempty)
 > import Network.URI (uriPath, uriQuery)
@@ -55,7 +54,7 @@ not the end of the world if we generate an error or don't catch an exception.
 We're going to hide some Network.CGI functions so that we can override them
 with versions that automatically handle UTF-8-encoded input.
 
-> import Network.CGI hiding (getInput, readInput, getInputs)
+> import Network.CGI hiding (getInput, readInput, getInputs, getBody)
 > import Network.CGI.Monad (CGIT(..))
 > import Network.CGI.Protocol (CGIResult(..))
 > import qualified Network.CGI as CGI
@@ -121,20 +120,25 @@ of the site.
 
 > referrerOrVocabulink :: MonadCGI m => m String
 > referrerOrVocabulink =
->   fromMaybe "http://www.vocabulink.com/" `liftM` getVar "HTTP_REFERER"
+>   maybe "http://www.vocabulink.com/" decodeString `liftM` getVar "HTTP_REFERER"
 
 We need to handle UTF-8-encoded GET and POST parameters. The following are
 enhanced versions of Network.CGI's |getInput| and |readInput| along with a few
 helpers.
 
 > getInput :: MonadCGI m => String -> m (Maybe String)
-> getInput = liftM (>>= Just . convertLineEndings . decodeString) . CGI.getInput
+> getInput = liftM (>>= Just . convertLineEndings . toString) . CGI.getInputFPS
 
 We need to do the same for getInputs. (It's used by |runForm| at the least.)
 
 > getInputs :: MonadCGI m => m [(String, String)]
-> getInputs = map decode `liftM` CGI.getInputs
->     where decode (x, y) = (decodeString x, convertLineEndings $ decodeString y)
+> getInputs = map decode' `liftM` CGI.getInputsFPS
+>     where decode' (x, y) = (decodeString x, convertLineEndings $ toString y)
+
+Are you noticing a pattern here?
+
+> getBody :: MonadCGI m => m String
+> getBody = toString `liftM` CGI.getBodyFPS
 
 Often we'll want an input from the client but are happy to fall back to a
 default value.

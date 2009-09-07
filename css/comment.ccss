@@ -15,84 +15,68 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-.comment:
-  &.toplevel:
-    width: 40em
-  background-color: #EEE
-  margin-bottom: 1.3em
-  > *:
-    margin->
-      bottom: 0.25em
-  .timestamp, .signature:
-    text-align: right
-    margin->
-      bottom: 0.25em
-      right: 0.5em
-  .timestamp:
-    margin-top: 0
-  .signature:
-    margin-top: 0.25em
-    font-family: Verdana, sans-serif
-  img.avatar:
-    display: block
-    float: left
-    margin->
-      left: 0.5em
-      right: 0.5em
-  .speech:
-    overflow: hidden
-    margin-right: 0.5em
-    border: 1px solid $bar_and_box_background
+.comment-box:
+  position: relative
+  width: 40em
+  margin->
+    top: 1.3em
+    bottom: 1.3em
+  background: white url($images + "footer-gradient.gif") repeat-x;
+  border: 1px solid $bar_and_box_border
+  %rounded(5px)
+  padding: 5px 10px 10px 80px
+  .avatar:
+    position: absolute
+    left: 10px
+    top: 10px
+  .metadata:
+    margin: 0
+    .timestamp:
+      float: right
+  .body:
+    margin-top: 5px
     background-color: white
-    padding: 0.25em
-    text-align: left
-    // the "soft" class is a bit of a hack
-    &.soft:
-      background-color: inherit
-      border: none
-      margin-right: 0
-    textarea:
-      overflow: auto
-      width: 100%
-      height: 10em
-      padding: 0
-  form:
-    display: inline
-  .reply-options:
-    margin->
-      right: 0.5em
-      top: 0.5em
-    text-align: right
-
-.comment.editable, .reply.editable:
-  margin-bottom: 0
-  .speech:
-    margin-right: 0
-    min-height: 60px
-  label:
-    float: left
-    margin->
-      left: 0.5em
-      right: 0.25em
+    border: 1px solid $bar_and_box_border
+    %rounded(5px)
+    min-height: 3.5em
+    padding: 5px
+  .comment:
+    *:first-child:
+      margin-top: 0
+    *:last-child:
+      margin-bottom: 0
+    ul:
+      list-style-type: disc
+      margin-left: 1em
+    ol:
+      list-style-type: decimal
+      margin-left: 1.5em
+  // The following could, in theory, go into a members-only CSS file.
+  .button:
+    position: absolute
+    margin: 0
+    padding: 0
+    left: 10px
+    top: 80px
+    width: 60px
+    text-align: center
+  textarea:
+    width: 100%
+    height: 10em
+    border: none
+    margin: 0
+    padding: 0
+    background: url($images + "textarea-bg.png") repeat-x
+  .preview:
+    border: 1px solid $bar_and_box_border
+    padding: 5px
   .title:
-    overflow: hidden
-    margin-right: 0.5em
+    padding-bottom: 5px
+    border-bottom: 1px solid $bar_and_box_border
+    margin-bottom: 5px
+    label:
+      display: inline-block
+      width: 10%
+      text-align: right
     input:
-      width: 100%
-  .signature:
-    margin-right: 0
-
-.speech:
-  p:first-child, ul:first-child, ol:first-child:
-    margin-top: 0
-  p:last-child, ul:last-child, ol:last-child:
-    margin-bottom: 0
-  ul:
-    list-style-type: disc
-    margin-left: 1em
-  ol:
-    list-style-type: decimal
-    margin-left: 1.5em
-
-.reply:
-  margin-top: 1.3em
+      width: 85%

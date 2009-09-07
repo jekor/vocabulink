@@ -17,10 +17,6 @@
 
 // Allow for in-page editing and administrative tasks.
 
-$(document).ready(function() {
-  $('button.reveal').each(connectButton);
-});
-
 function connectButton() {
   var classes = $(this).attr('class').split(' ');
   $(this).click(function() {
@@ -28,3 +24,7 @@ function connectButton() {
     $(this).hide();
   });
 }
+
+$(document).ready(function() {
+  $('button.reveal').each(connectButton);
+});
