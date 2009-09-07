@@ -156,19 +156,19 @@ function createTopicBox() {
 // target comment number and for relative placement of the new box. commentBox
 // should be a jQuery object.
 function addReplyCommentBox(commentBox, e) {
-  var parentIndent = parseFloat(commentBox.attr('style').match(/margin-left: ([0-9.]+)em/)[1]);
-  if (isNaN(parentIndent)) {
+  var parentIndent = parseFloat(commentBox.attr('style').match(/margin-left: ([0-9.]+)em/i)[1]);
+  if (parentIndent === undefined || isNaN(parentIndent)) {
     alert('Unexpected error. Unable to determine comment level.');
     return false;
   }
-  var commentNumber = parseInt(commentBox.attr('id').match(/comment-(\d+)/)[1], 10);
-  if (isNaN(commentNumber)) {
+  var commentNumber = parseInt(commentBox.attr('id').match(/comment-(\d+)/i)[1], 10);
+  if (commentNumber === undefined || isNaN(commentNumber)) {
     alert('Unexpected error. Unable to determine comment number.');
     return false;
   }
   // Set the indent 1 level deeper than commentBox.
   var indent = parentIndent + 1.3;
-  createReplyBox().css('margin-left', indent + 'em').insertAfter(commentBox);
+  createReplyBox(commentNumber).css('margin-left', indent + 'em').insertAfter(commentBox);
   // TODO: Highlight the new box, auto-focus the textarea, or both.
   return false;
 }
@@ -186,7 +186,7 @@ function setupReply() {
 // it's an invisible blank comment. In any case, we want to create a comment box
 // in those cases. We'll look for a rootComment variable to do so.
 function setupRootReply() {
-  var rootComment = parseInt($(this).attr('id').match(/comments-(\d+)/)[1], 10);
+  var rootComment = parseInt($(this).attr('id').match(/comments-(\d+)/i)[1], 10);
   createReplyBox(rootComment).appendTo($(this));
 }
 
