@@ -26,7 +26,7 @@ function saveChanges() {
   var button = $(this);
   var linkDetailsBox = $('.link-details');
   var body = $.trim(linkDetailsBox.find('textarea').val());
-  if (body == '') {
+  if (body === '') {
     alert('Please enter some text.');
     return false;
   }

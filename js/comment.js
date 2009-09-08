@@ -30,7 +30,7 @@ function overlay(elem) {
 
 function sendReply(box, commentNumber, sendButton, e) {
   var body = $.trim(box.find('textarea').val());
-  if (body == '') {
+  if (body === '') {
     alert('Please enter a comment.');
     return false;
   }
@@ -55,11 +55,11 @@ function sendReply(box, commentNumber, sendButton, e) {
 function createTopic(box, e) {
   var title = $.trim(box.find('input[name=title]').val());
   var body = $.trim(box.find('textarea').val());
-  if (title == '') {
+  if (title === '') {
     alert('Please enter a title.');
     return false;
   }
-  if (body == '') {
+  if (body === '') {
     alert('Please enter a comment.');
     return false;
   }
@@ -113,15 +113,15 @@ function vote(e) {
 }
 
 function createCommentBox() {
-  var box = $('<div class="comment-box">'
-              + '<img class="avatar" width="60" height="60" src="' + memberObj.gravatar + '"/>'
-              + '<p class="metadata">'
-                + '<span class="membername">' + memberObj.membername + '</span>'
-              + '</p>'
-              + '<div class="body">'
-                + '<textarea></textarea>'
-              + '</div>'
-            + '</div>');  
+  var box = $('<div class="comment-box">' +
+                '<img class="avatar" width="60" height="60" src="' + memberObj.gravatar + '"/>' +
+                '<p class="metadata">' +
+                  '<span class="membername">' + memberObj.membername + '</span>' +
+                '</p>' +
+                '<div class="body">' +
+                  '<textarea></textarea>' +
+                '</div>' +
+              '</div>');  
   box.find('textarea').markItUp(mySettings);
   return box;  
 }
@@ -141,9 +141,9 @@ function createTopicBox() {
   var box = createCommentBox();
   var createButton = $('<a class="button" href="#">Create</a>');
   createButton.appendTo(box);
-  $('<div class="title">'
-    + '<label>Title:</label> <input type="text" name="title"></input>'
-  + '</div>').prependTo(box.find('.body'));
+  $('<div class="title">' +
+      '<label>Title:</label> <input type="text" name="title"></input>' +
+    '</div>').prependTo(box.find('.body'));
   createButton.click(createTopic.curry(box));
   return box;
 }
