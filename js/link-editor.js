@@ -22,13 +22,49 @@ function showLinkEditor() {
   $('#' + linkType).show();
 }
 
+function saveChanges() {
+  var button = $(this);
+  var linkDetailsBox = $('.link-details');
+  var body = $.trim(linkDetailsBox.find('textarea').val());
+  if (body == '') {
+    alert('Please enter some text.');
+    return false;
+  }
+  button.text('Saving...');
+  button.attr('disabled', 'disabled');
+  var removeOverlay = overlay(linkDetailsBox);
+  // We get the link number from the URL.
+  var linkNumber = parseInt(window.location.pathname.split('/').pop(), 10);
+  $.ajax({'type': 'POST', 'url': '/link/' + linkNumber + '/story',
+          'contentType': 'text/plain',
+          'data': body,
+          'dataType': 'html',
+          'success': function(data) {
+            button.text('Saved!');
+            removeOverlay();
+            $('#link-details').html(data).show();
+            linkDetailsBox.find('.markItUp').remove();
+          },
+          'error':   function(data) {
+            alert('Error saving link story.');
+            button.text('Save Changes');
+            button.attr('disabled', null);
+            removeOverlay();
+          }});
+  return false;
+}
+
 // This is for editing in-place on an already-created link page.
 function editLink() {
+  $(this).unbind('click');
+  $(this).click(saveChanges);
+  $(this).text('Save Changes');
   var linkDetails = $('#link-details');
   var box = linkDetails.parent().find('textarea:first');
   box.show();
   linkDetails.hide();
   box.markItUp(mySettings);
+  return false;
 }
 
 $(document).ready(function() {

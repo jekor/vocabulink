@@ -27,7 +27,7 @@ them.
 >                           partialLinkHtml, partialLinkFromValues,
 >                           drawLinkSVG, drawLinkSVG', languagePairsPage,
 >                           languagePairLinks, languageNameFromAbbreviation,
->                           LinkPack(..),
+>                           updateLinkStory, LinkPack(..),
 >                           newLinkPack, linkPackPage, deleteLinkPack,
 >                           addToLinkPack, linkPacksPage, getLinkPack,
 >                           displayCompactLinkPack, linkPackTextLink,
@@ -59,6 +59,7 @@ type (for partially constructed links, which you'll see later).
 
 > data Link = Link {  linkNumber           :: Integer,
 >                     linkTypeName         :: String,
+>                     linkAuthor           :: Integer,
 >                     linkOrigin           :: String,
 >                     linkOriginLang       :: String,
 >                     linkDestination      :: String,
@@ -237,7 +238,8 @@ Retrieving a partial link is simple.
 
 > getPartialLink :: Integer -> App (Maybe PartialLink)
 > getPartialLink linkNo = do
->   t <- queryTuple'  "SELECT link_no, link_type, origin, destination, \
+>   t <- queryTuple'  "SELECT link_no, link_type, author, \
+>                            \origin, destination, \
 >                            \origin_language, destination_language \
 >                     \FROM link \
 >                     \WHERE link_no = ?" [toSql linkNo]
@@ -247,9 +249,10 @@ We use a helper function to convert the raw SQL tuple to a partial link value.
 Note that we leave the link's |linkType| undefined.
 
 > partialLinkFromValues :: [SqlValue] -> Maybe PartialLink
-> partialLinkFromValues [n, t, o, d, ol, dl] = Just $
+> partialLinkFromValues [n, t, a, o, d, ol, dl] = Just $
 >   PartialLink Link {  linkNumber           = fromSql n,
 >                       linkTypeName         = fromSql t,
+>                       linkAuthor           = fromSql a,
 >                       linkOrigin           = fromSql o,
 >                       linkDestination      = fromSql d,
 >                       linkOriginLang       = fromSql ol,
@@ -389,9 +392,7 @@ textarea for in-page editing.
 >   case l of
 >     Nothing  -> output404 ["link", show linkNo]
 >     Just l'  -> do
->       owner <- queryValue'  "SELECT author = ? FROM link WHERE link_no = ?"
->                             [toSql memberNo, toSql linkNo]
->       let owner' = maybe False fromSql owner
+>       let owner' = maybe False (linkAuthor l' ==) memberNo
 >       ops <- linkOperations linkNo owner'
 >       rating <- queryTuple'  "SELECT COUNT(rating), SUM(rating) / COUNT(rating) \
 >                              \FROM link_rating WHERE link_no = ?" [toSql linkNo]
@@ -427,7 +428,7 @@ textarea for in-page editing.
 >              case (owner', linkType l') of
 >                (True, LinkWord _ story)  -> textarea ! [thestyle "display: none"] << story
 >                _                         -> noHtml,
->              thediv ! [identifier "link-details"] << linkTypeHtml (linkType l') ],
+>              thediv ! [identifier "link-details", theclass "htmlfrag"] << linkTypeHtml (linkType l') ],
 >            copyright, clear, hr ! [thestyle "margin-top: 1.3em"],
 >            h3 << "Comments", comments ]
 
@@ -515,7 +516,8 @@ going to require configuring full text search or a separate search daemon.
 
 > linksContainingPage :: String -> App CGIResult
 > linksContainingPage focus = do
->   ts <- queryTuples'  "SELECT link_no, link_type, origin, destination, \
+>   ts <- queryTuples'  "SELECT link_no, link_type, author, \
+>                              \origin, destination, \
 >                              \origin_language, destination_language \
 >                       \FROM link \
 >                       \WHERE NOT deleted \
@@ -634,6 +636,7 @@ how I'm using them), we need to retrieve the link type name from the link type.
 
 > mkLink :: String -> String -> String -> String -> LinkType -> Link
 > mkLink o ol d dl t = Link {  linkNumber           = undefined,
+>                              linkAuthor           = undefined,
 >                              linkTypeName         = linkTypeNameFromType t,
 >                              linkOrigin           = o,
 >                              linkOriginLang       = ol,
@@ -759,7 +762,8 @@ most recent. This assumes the ordering of links is determined by link number.
 
 > latestLinks :: Int -> Int -> App (Maybe [PartialLink])
 > latestLinks offset limit = do
->   ts <- queryTuples'  "SELECT link_no, link_type, origin, destination, \
+>   ts <- queryTuples'  "SELECT link_no, link_type, author, \
+>                              \origin, destination, \
 >                              \origin_language, destination_language \
 >                       \FROM link \
 >                       \WHERE NOT deleted \
@@ -772,7 +776,8 @@ sorted by link number as well.
 
 > memberLinks :: Integer -> Int -> Int -> App (Maybe [PartialLink])
 > memberLinks memberNo offset limit = do
->   ts <- queryTuples'  "SELECT link_no, link_type, origin, destination, \
+>   ts <- queryTuples'  "SELECT link_no, link_type, author, \
+>                              \origin, destination, \
 >                              \origin_language, destination_language \
 >                       \FROM link \
 >                       \WHERE NOT deleted AND author = ? \
@@ -783,7 +788,8 @@ sorted by link number as well.
 
 > languagePairLinks :: String -> String -> Int -> Int -> App (Maybe [PartialLink])
 > languagePairLinks oa da offset limit = do
->   ts <- queryTuples'  "SELECT link_no, link_type, origin, destination, \
+>   ts <- queryTuples'  "SELECT link_no, link_type, author, \
+>                              \origin, destination, \
 >                              \origin_language, destination_language \
 >                       \FROM link \
 >                       \WHERE NOT deleted \
@@ -846,6 +852,35 @@ Display a hyperlink for a language pair.
 >                             linkPackDescription  :: String,
 >                             linkPackImage        :: Maybe String,
 >                             linkPackCreator      :: Integer }
+
+We all make mistakes, and sometimes a member will need to clean up a link
+story. This allows them to make the edit. Originally I left this unimplemented
+since I didn't want major edits to throw off someone's reviewing, so I was
+going to implement versioning. While that's still a possibility, it seems like
+more work than it's worth for now.
+
+This only works for link word links.
+
+TODO: Check that the new trimmed body is not empty.
+
+> updateLinkStory :: Integer -> App CGIResult
+> updateLinkStory linkNo = withRequiredMemberNumber $ \memberNo -> do
+>   story <- getBody
+>   link <- getPartialLink linkNo
+>   case link of
+>     Nothing  -> output404 ["link", show linkNo, "story"]
+>     Just l'  ->
+>       if linkTypeName (pLink l') == "link word"
+>         then if linkAuthor (pLink l') == memberNo
+>                then do
+>                  res <- quickStmt'  "UPDATE link_type_link_word SET story = ? \
+>                                     \WHERE link_no = ?"
+>                                     [toSql story, toSql linkNo]
+>                  case res of
+>                    Nothing  -> error "Failed to update link."
+>                    Just _   -> output' $ showHtmlFragment $ markdownToHtml story
+>                else error "Unauthorized."
+>         else error "Unsupported link type."
 
 > linkPackForm :: Integer -> AppForm (LinkPack, Integer)
 > linkPackForm fl = plug (\xhtml -> table << xhtml) $ mkLinkPack

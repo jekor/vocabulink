@@ -89,7 +89,7 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >        (cssDeps, jsDeps) = partition (\x -> case x of
 >                                               (CSS _) -> True
 >                                               (JS  _) -> False) deps'
->        gravatarUrl = isJust memberNo ?
+>        gravatarUrl = isJust memberEmail ?
 >                      G.gravatarWith  (map toLower $ fromJust memberEmail)
 >                                      Nothing (G.size 60) (Just "wavatar") $
 >                      ""

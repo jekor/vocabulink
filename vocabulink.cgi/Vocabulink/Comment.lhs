@@ -48,7 +48,7 @@
 >       thespan ! [theclass "membername"] << commentUsername c,
 >       thespan ! [theclass "timestamp"] << formatSimpleTime (commentTime c)],
 >     thediv ! [theclass "body"] <<
->       thediv ! [theclass "comment"] << markdownToHtml (commentBody c) ]
+>       thediv ! [theclass "comment htmlfrag"] << markdownToHtml (commentBody c) ]
 
 Each comment uses (Pandoc-extended) Markdown syntax.
 

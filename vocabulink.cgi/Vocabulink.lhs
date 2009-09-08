@@ -420,6 +420,7 @@ establish the link. (Previewing is done through the @GET@ as well.)
 >                   ("POST"  ,["delete"])  -> deleteLink n
 >                   -- The next is not technically a method.
 >                   ("POST"  ,["rating"])  -> rateLink n
+>                   ("POST"  ,["story"])   -> updateLinkStory n
 >                   (_       ,_)           -> output404 path
 
 \subsection{Searching}

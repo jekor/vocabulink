@@ -416,7 +416,7 @@
 			function preview() {
         if (!previewDiv) {
           previewDiv = $('<div class="preview"></div>');
-          previewComment = $('<div class="comment"></div>').appendTo(previewDiv);
+          previewComment = $('<div class="comment htmlfrag"></div>').appendTo(previewDiv);
           if (options.previewPosition == 'after') {
             previewDiv.insertAfter(footer);
           } else {

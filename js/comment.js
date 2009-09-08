@@ -53,7 +53,6 @@ function sendReply(box, commentNumber, sendButton, e) {
 
 // Here's yet another one to move out to a forum file.
 function createTopic(box, e) {
-  // We get the forum name from the URL.
   var title = $.trim(box.find('input[name=title]').val());
   var body = $.trim(box.find('textarea').val());
   if (title == '') {
@@ -64,6 +63,7 @@ function createTopic(box, e) {
     alert('Please enter a comment.');
     return false;
   }
+  // We get the forum name from the URL.
   var forumName = window.location.pathname.split('/').pop();
   var removeOverlay = overlay(box);
   $.ajax({'type': 'POST', 'url': '/forum/' + forumName + '/new',
@@ -179,6 +179,8 @@ function setupReply() {
   var replyButton = $('<a class="button" href="#">Reply</a>');
   replyButton.appendTo($(this));
   replyButton.click(addReplyCommentBox.curry($(this)));
+  // Adjust the comment box's height so that it looks good.
+  $(this).find('.body:first').css('min-height', (88 - ($(this).find('.metadata').height())) + 'px');
 }
 
 // Pages that allow comments have a root comment to which new comments are sent

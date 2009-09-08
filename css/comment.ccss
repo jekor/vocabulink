@@ -18,6 +18,7 @@
 .comment-box:
   position: relative
   width: 40em
+  min-height: 65px // This is dependent on button size. It should be moved out into member-only CSS.
   margin->
     top: 1.3em
     bottom: 1.3em
@@ -38,19 +39,7 @@
     background-color: white
     border: 1px solid $bar_and_box_border
     %rounded(5px)
-    min-height: 3.5em
     padding: 5px
-  .comment:
-    *:first-child:
-      margin-top: 0
-    *:last-child:
-      margin-bottom: 0
-    ul:
-      list-style-type: disc
-      margin-left: 1em
-    ol:
-      list-style-type: decimal
-      margin-left: 1.5em
   // The following could, in theory, go into a members-only CSS file.
   .button:
     position: absolute
@@ -66,10 +55,6 @@
     border: none
     margin: 0
     padding: 0
-    background: url($images + "textarea-bg.png") repeat-x
-  .preview:
-    border: 1px solid $bar_and_box_border
-    padding: 5px
   .title:
     padding-bottom: 5px
     border-bottom: 1px solid $bar_and_box_border
@@ -80,3 +65,6 @@
       text-align: right
     input:
       width: 85%
+  .markItUpWrapper:
+    clear: both
+    border: 1px solid $bar_and_box_border
