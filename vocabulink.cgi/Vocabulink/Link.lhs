@@ -341,7 +341,7 @@ the |JSON| class. Oh well, I didn't want to write |readJSON| anyway.
 >                                   ("dest", linkDestination link),
 >                                   ("color", linkColor link),
 >                                   ("bgcolor", linkBackgroundColor link),
->                                   ("label", linkLabel $ linkType link)] in
+>                                   ("label", linkLabel $ linkType link) ] in
 >                      encode $ toJSObject obj
 >                        where linkLabel (LinkWord word _)  = word
 >                              linkLabel _                  = ""
@@ -373,9 +373,7 @@ partial link more compactly, such as for use in lists, etc.
 >   destinationLanguage <- linkDestinationLanguage l
 >   return $ anchor ! [  href ("/link/" ++ show (linkNumber l)),
 >                        H.title (originLanguage ++ " → " ++ destinationLanguage),
->                        thestyle $  "color: " ++ linkColor l ++
->                                    "; background-color: " ++ linkBackgroundColor l ++
->                                    "; border: 1px solid " ++ linkColor l ] <<
+>                        theclass $ "link-link " ++ translate [(' ', '-')] (linkTypeName l) ] <<
 >              (linkOrigin l ++ " → " ++ linkDestination l)
 
 Each link gets its own URI and page. Most of the extra code in the following is

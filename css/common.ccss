@@ -41,3 +41,22 @@ a.button:
   ol:
     list-style-type: decimal
     margin-left: 1.5em
+
+.link-link:
+  border: 1px solid
+  &.association:
+    color: #000
+    border-color: #000
+    background-color: #DFDFDF
+  &.cognate:
+    color: #0A0
+    border-color: #0A0
+    background-color: #DFF4DF
+  &.link-word:
+    color: #00F
+    border-color: #00F
+    background-color: #DFDFFF
+  // &.relationship:
+  //   color: #A07
+  //   border-color: #A07
+  //   background-color: #F4DFEE

@@ -1,7 +1,15 @@
 #title Vocabulink Source Code
 #date 2009-05-02 14:15:00 -0700
-#updated 2009-08-16 13:05:00 -0700
+#updated 2009-09-08 08:40:00 -0700
 
 The program powering www.vocabulink.com is Free Software. We believe that you should have the freedom to examine and make use of the source code of the web applications that you use. As such, we've released it under the GNU Affero Public License.
 
 You can download an archive of the latest release [[http://jekor.com/vocabulink/vocabulink--2009-08-16.tar.gz][here]]. It contains the Haskell, JavaScript, SQL, and CSS required to create a working copy of Vocabulink. However, it does not include any articles, database records, or any other content from this site. Such content is copyrighted by its respective owners and has NOT been released to you under the GNU Affero Public License.
+
+Vocabulink makes use of the following JavaScript libraries. They are sent minified, but can be obtained in full in the latest source archive in their original form.
+
+ - [[http://raphaeljs.com/][Raphaël]]
+ - [[http://osteele.com/javascripts/functional][Functional]]
+ - [[http://markitup.jaysalvat.com/][markItUp!]]
+ - [[http://attacklab.net/showdown/][Showdown]]
+ - [[http://valums.com/ajax-upload/][Ajax upload]]
