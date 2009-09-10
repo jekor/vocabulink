@@ -93,31 +93,30 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >                      G.gravatarWith  (map toLower $ fromJust memberEmail)
 >                                      Nothing (G.size 60) (Just "wavatar") $
 >                      ""
->        memberObj = isJust memberNo ?
->                    [("membername", fromJust memberName), ("gravatar", gravatarUrl)] $
->                    []
+>        memberObj = liftM (\_ -> [("membername", fromJust memberName), ("gravatar", gravatarUrl)]) memberNo
 >   cssDeps'  <- mapM includeDep cssDeps
 >   jsDeps'   <- mapM includeDep jsDeps
 >   let  xhtml = renderHtml $ header <<
 >                  [  thetitle << title',
 >                     concatHtml cssDeps',
 >                     concatHtml head' ] +++
->                  body << [  script ! [  thetype "text/javascript",
->                                         src "http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js" ] << noHtml,
->                             concatHtml jsDeps',
->                             script ! [  thetype "text/javascript"] << primHtml
->                               ("var isLoggedIn = " ++ (isJust memberNo ? "true" $ "false") ++ "; \
->                                \var memberObj = " ++ (encode $ toJSObject memberObj) ++ "; \
->                                \$(document).ready(function() { \
->                                \Functional.install(); \
->                                \});"),
->                             headerB,
+>                  body << [  thediv ! [identifier "head"] << headerB,
 >                             case jsDeps of
 >                               []  -> noHtml
 >                               _   -> noscript << paragraph <<
 >                                        "This page requires JavaScript for some functionality.",
 >                             thediv ! [identifier "body"] << concatHtml body',
->                             footerB ]
+>                             thediv ! [identifier "foot"] << footerB,
+>                             script ! [src "http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"] << noHtml,
+>                             concatHtml jsDeps',
+>                             script ! [thetype "text/javascript"] << primHtml
+>                               ((isJust memberObj ?
+>                                   "var MEMBER_OBJ = " ++ (encode $ toJSObject $ fromJust memberObj) ++ ";" $
+>                                   "") ++
+>                                "$(document).ready(function () {\
+>                                \Functional.install();\
+>                                \});"),
+>                             googleAnalyticsTag ]
 >   output' xhtml
 
 Often we just need a simple page where the title and header are the same.
@@ -141,9 +140,9 @@ for inclusion in the @<head>@ of the page.
 >     Just v   ->
 >       case d of
 >         CSS  css  -> thelink ! [  href ("http://s.vocabulink.com/css/" ++ css ++ ".css?" ++ v),
->                                   rel "stylesheet", thetype "text/css"] << noHtml
->         JS   js   -> script ! [  src ("http://s.vocabulink.com/js/" ++ js ++ ".js?" ++ v),
->                                  thetype "text/javascript"] << noHtml
+>                                   rel "stylesheet", thetype "text/css" ] << noHtml
+>         JS   js   -> script ! [src ("http://s.vocabulink.com/js/" ++ js ++ ".js?" ++ v)]
+>                        << noHtml
 
 The standard header bar shows the Vocabulink logo (currently just some text), a
 list of hyperlinks, a search box, and either a login/sign up button or a logout
@@ -154,24 +153,24 @@ notice about the number of links that the member has waiting for review.
 > headerBar = do
 >   username <- asks appMemberName
 >   review <- reviewBox
->   return $ thediv ! [identifier "header-bar"] <<
->     [  anchor ! [theclass "logo", href "/", accesskey "1"] << [
->          stringToHtml "Vocabulink", br,
->          thespan ! [theclass "tagline"] << "learn languages through fiction" ],
->        topLinks,
->        maybe loginBox logoutBox username,
->        searchBox,
->        review,
->        clear ]
+>   return $ concatHtml [
+>     anchor ! [theclass "logo", href "/", accesskey "1"] << [
+>       stringToHtml "Vocabulink", br,
+>       thespan ! [theclass "tagline"] << "learn languages through fiction" ],
+>     topLinks,
+>     maybe loginBox logoutBox username,
+>     searchBox,
+>     review,
+>     clear ]
 
 Here are the hyperlinks we want in the header of every page.
 
 > topLinks :: Html
-> topLinks = linkList
->   [  anchor ! [href "/forums"] << "Forums", stringToHtml "|",
->      anchor ! [href "/articles"] << "Articles", stringToHtml "|",
->      anchor ! [href "/languages"] << "Browse Links", stringToHtml "|",
->      anchor ! [href "/help"] << "Help" ]
+> topLinks = linkList [
+>   anchor ! [href "/forums"] << "Forums", stringToHtml "|",
+>   anchor ! [href "/articles"] << "Articles", stringToHtml "|",
+>   anchor ! [href "/languages"] << "Browse Links", stringToHtml "|",
+>   anchor ! [href "/help"] << "Help" ]
 
 The footer bar is more simple. It just includes some hyperlinks to static
 content.
@@ -179,14 +178,13 @@ content.
 > footerBar :: App Html
 > footerBar = do
 >   copy <- copyrightNotice
->   return $ thediv ! [identifier "footer-bar"] <<
->     [  linkList
->        [  anchor ! [href "/help"] << "help",
->           anchor ! [href "/privacy"] << "privacy policy",
->           anchor ! [href "/terms-of-use"] << "terms of use",
->           anchor ! [href "/source"] << "source"],
->        copy,
->        googleAnalyticsTag ]
+>   return $ concatHtml [
+>     linkList [
+>       anchor ! [href "/help"] << "help",
+>       anchor ! [href "/privacy"] << "privacy policy",
+>       anchor ! [href "/terms-of-use"] << "terms of use",
+>       anchor ! [href "/source"] << "source" ],
+>     copy ]
 
 We want a copyright notice at the bottom of every page. Since this is a
 copyright notice for dynamic content, we want it to be up-to-date with the
@@ -204,19 +202,18 @@ We use Google Analytics for tracking site usage. It requires the JavaScript tag
 to be placed on every page.
 
 > googleAnalyticsTag :: Html
-> googleAnalyticsTag = primHtml $ unlines [
->   "<script type=\"text/javascript\">",
->   "var gaJsHost = ((\"https:\" == document.location.protocol) ?\
->                  \ \"https://ssl.\" : \"http://www.\");",
->   "document.write(unescape(\"%3Cscript src='\" + gaJsHost \
->   \+ \"google-analytics.com/ga.js' \
->   \type='text/javascript'%3E%3C/script%3E\"));",
->   "</script>",
->   "<script type=\"text/javascript\">",
->   "try {",
->   "var pageTracker = _gat._getTracker(\"UA-73938-2\");",
->   "pageTracker._trackPageview();",
->   "} catch(err) {}</script>" ]
+> googleAnalyticsTag = concatHtml [
+>   script ! [thetype "text/javascript"] << primHtml (unlines [
+>     "var gaJsHost = ((\"https:\" == document.location.protocol) ?\
+>                     \ \"https://ssl.\" : \"http://www.\");",
+>     "document.write(unescape(\"%3Cscript src='\" + gaJsHost \
+>     \+ \"google-analytics.com/ga.js' \
+>     \%3E%3C/script%3E\"));" ]),
+>   script ! [thetype "text/javascript"] << primHtml (unlines [
+>     "try {",
+>     "  var pageTracker = _gat._getTracker(\"UA-73938-2\");",
+>     "  pageTracker._trackPageview();",
+>     "} catch(err) {}" ]) ]
 
 The following are just login and signup buttons.
 

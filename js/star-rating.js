@@ -47,10 +47,10 @@ function recordRating(x, starsBase, details, e) {
   p.text("Rating...");
   $.ajax({'type': 'POST', 'url': url,
           'data': {'rating': rating},
-          'success': function() {
+          'success': function () {
             p.text("Thanks!");
           },
-          'error':   function() { p.text("Failed to rate!"); }});
+          'error':   function () { p.text("Failed to rate!"); }});
 }
 
 function beginRating(stars, starsBase, details, e) {
@@ -74,6 +74,6 @@ function setupRating() {
   starsBase.mouseleave(endRating.curry(stars, originalWidth, originalPosition));
 }
 
-$(document).ready(function() {
+$(document).ready(function () {
   $('.rating.enabled').each(setupRating);
 });

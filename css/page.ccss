@@ -168,11 +168,11 @@ tr.odd:hover, tr.even:hover:
 #body:
   margin: 1.3em
 
-#header-bar, #footer-bar:
+#head, #foot:
   background-color: $bar_and_box_background
   margin: 0
 
-#header-bar:
+#head:
   padding->
     left: 0.75em
     right: 0.75em
@@ -214,7 +214,7 @@ tr.odd:hover, tr.even:hover:
         left: 0.5em
         right: 0.5em
 
-#footer-bar:
+#foot:
   clear: both
   text-align: center
   padding->

@@ -47,9 +47,9 @@ function graphNode(g, label, p, labelColor, outlineColor, hoverColor, style) {
           'labelcolor': labelColor,
           'outline': outlineColor,
           'hovercolor': hoverColor,
-          'mouseover': function(f) { t.mouseover(f); e.mouseover(f); },
-          'mouseout': function(f) { t.mouseout(f); e.mouseout(f); },
-          'click': function(f) { t.click(f); e.click(f); }};
+          'mouseover': function (f) { t.mouseover(f); e.mouseover(f); },
+          'mouseout': function (f) { t.mouseout(f); e.mouseout(f); },
+          'click': function (f) { t.click(f); e.click(f); }};
 }
 
 // In order to place nodes in a visually-pleasing and space-optimal way, we can
@@ -89,7 +89,7 @@ function normalize(g, p) {
 // Given a list of node labels ("ss"), this creates nodes along the right arc
 // (default) or the left arc (when reverse is set to true).
 function arcNodes(g, ss, reverse) {
-  return map(function(x) {
+  return map(function (x) {
                var p = x[0];
                var s = x[1];
                var point = normalize(g, p);
@@ -109,19 +109,19 @@ function arcNodes(g, ss, reverse) {
 function drawLinkHelper(g, ns) {
   var link = ns[0];
   var node = ns[1];
-  var mouseIn  = function() {
+  var mouseIn  = function () {
     node.node.ellipse.animate({'fill': node.node.hovercolor}, 250);
     g.focus.ellipse.animate({'fill': g.focus.hovercolor}, 250);
     node.line.animate({'stroke-width': 4}, 250);
     document.body.style.cursor = 'pointer';
   };
-  var mouseOut = function() {
+  var mouseOut = function () {
     node.node.ellipse.animate({'fill': '#FFF'}, 250);
     g.focus.ellipse.animate({'fill': '#FFF'}, 250);
     node.line.animate({'stroke-width': 3}, 250);
     document.body.style.cursor = 'auto';
   };
-  var action = function() {
+  var action = function () {
     if (link.url !== undefined) {
       document.location = link.url;
     }
@@ -174,15 +174,15 @@ function drawLink(link) {
     var midpoint = (rdims.x + (ldims.x + ldims.width)) / 2;
     var linkLabel = g.graph.text(midpoint, g.height/2 - 18, link.label).attr({'font-size': '14pt', 'fill': '#000'});
   }
-  var mouseIn  = function(node) {
+  var mouseIn  = function (node) {
     node.ellipse.animate({'fill': node.hovercolor}, 250);
     document.body.style.cursor = 'pointer';
   };
-  var mouseOut = function(node) {
+  var mouseOut = function (node) {
     node.ellipse.animate({'fill': '#FFF'}, 250);
     document.body.style.cursor = 'auto';
   };
-  var action = function(s) {document.location = "/links?contains=" + s;};
+  var action = function (s) {document.location = "/links?contains=" + s;};
   origNode.mouseover(mouseIn.curry(origNode));
   origNode.mouseout(mouseOut.curry(origNode));
   origNode.click(action.curry(link.orig));
@@ -204,11 +204,11 @@ function drawLinkReview(link, callback) {
   var l = g.graph.path({'stroke': '#000', 'stroke-width': 3}).moveTo(g.width*0.3, g.height/2).lineTo(g.width*0.7, g.height/2);
   var origNode = graphNode(g, link.orig, {'x': g.width*0.3, 'y': g.height/2}, '#000', '#000', '#DFDFDF');
   var destNode = graphNode(g, '?', {'x': g.width*0.7, 'y': g.height/2}, '#000', '#000', '#DFDFDF');
-  var mouseIn  = function(node) {
+  var mouseIn  = function (node) {
     node.ellipse.animate({'fill': node.hovercolor}, 250);
     document.body.style.cursor = 'pointer';
   };
-  var mouseOut = function(node) {
+  var mouseOut = function (node) {
     node.ellipse.animate({'fill': '#FFF'}, 250);
     document.body.style.cursor = 'auto';
   };
@@ -217,7 +217,7 @@ function drawLinkReview(link, callback) {
   destNode.mouseover(mouseIn.curry(destNode));
   destNode.mouseout(mouseOut.curry(destNode));
   return {'graph': g.graph, 'node': destNode};
-  // var reveal = function() {g.graph.remove(); drawLink(link);};
+  // var reveal = function () {g.graph.remove(); drawLink(link);};
   // destNode.click(callback);
   // return reveal;
 }

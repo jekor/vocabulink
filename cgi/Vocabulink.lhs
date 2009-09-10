@@ -625,7 +625,7 @@ or curious.
 >     thediv ! [identifier "sidebar"] << [
 >       featured, latest, my, articles ],
 >     if isJust memberNo
->       then primHtml twitterScript
+>       then twitterScript
 >       else noHtml ]
 >  where myLinks mn = do
 >          ls <- memberLinks mn 0 10
@@ -660,13 +660,11 @@ or curious.
 >                                                  linkPackTextLink l ],
 >                                         displayCompactLinkPack l False ]) lp
 
-> twitterScript :: String
+> twitterScript :: Html
 > twitterScript =
->   "<script type=\"text/javascript\" \
->    \src=\"http://twitter.com/javascripts/blogger.js\"></script> \
->   \<script type=\"text/javascript\" \
->    \src=\"http://twitter.com/statuses/user_timeline/Vocabulink.json?\
->          \callback=twitterCallback2&amp;count=7\"></script>"
+>   script ! [src "http://twitter.com/javascripts/blogger.js"] << noHtml +++
+>   script ! [src "http://twitter.com/statuses/user_timeline/Vocabulink.json?\
+>                 \callback=twitterCallback2&amp;count=7"] << noHtml
 
 %include Vocabulink/Utils.lhs
 %include Vocabulink/CGI.lhs

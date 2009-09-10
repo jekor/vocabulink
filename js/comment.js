@@ -22,7 +22,7 @@ function overlay(elem) {
   var oldPosition = elem.css('position');
   elem.css('position', 'relative');
   var over = $('<div style="opacity: 0.5; width: 100%; height: 100%; top: 0; left: 0; position: absolute; background: black url(\'http://s.vocabulink.com/wait.gif\') no-repeat center center;"></div>').appendTo(elem);
-  return function() {
+  return function () {
     over.remove();
     elem.css('position', oldPosition);
   };
@@ -39,12 +39,12 @@ function sendReply(box, commentNumber, sendButton, e) {
           'contentType': 'text/plain',
           'data': body,
           'dataType': 'html',
-          'success': function(data) {
+          'success': function (data) {
             sendButton.remove();
             removeOverlay();
             box.find('.body').html('<div class="comment">' + data + '</div>');
           },
-          'error':   function(data) {
+          'error':   function (data) {
             removeOverlay();
             alert('Error sending reply.');
           }});
@@ -69,10 +69,10 @@ function createTopic(box, e) {
   $.ajax({'type': 'POST', 'url': '/forum/' + forumName + '/new',
           'data': {'title': title, 'body': body},
           'dataType': 'json',
-          'success': function(data) {
+          'success': function (data) {
             window.location.reload();
           },
-          'error':   function(data) {
+          'error':   function (data) {
             removeOverlay();
             alert('Error creating topic.');
           }});  
@@ -89,11 +89,11 @@ function vote(e) {
   var voteCount = parent.find('span:first');
   var count = parseInt(voteCount.text(), 10);
   var url = arrow.attr('href') + '/votes';
-  var fail = function() { voteCount.text('FAIL!'); };
+  var fail = function () { voteCount.text('FAIL!'); };
   if (arrow.hasClass('up')) {
     $.ajax({'type': 'POST', 'url': url,
             'data': {'vote': 'up'},
-            'success': function() {
+            'success': function () {
               voteCount.text(count + 1);
               arrow.css('background-position', '4px -24px');
               parent.removeClass('enabled');
@@ -102,7 +102,7 @@ function vote(e) {
   } else if (arrow.hasClass('down')) {
     $.ajax({'type': 'POST', 'url': url,
             'data': {'vote': 'down'},
-            'success': function() {
+            'success': function () {
               voteCount.text(count - 1);
               arrow.css('background-position', '4px -37px');
               parent.removeClass('enabled');
@@ -114,9 +114,9 @@ function vote(e) {
 
 function createCommentBox() {
   var box = $('<div class="comment-box">' +
-                '<img class="avatar" width="60" height="60" src="' + memberObj.gravatar + '"/>' +
+                '<img class="avatar" width="60" height="60" src="' + MEMBER_OBJ.gravatar + '"/>' +
                 '<p class="metadata">' +
-                  '<span class="membername">' + memberObj.membername + '</span>' +
+                  '<span class="membername">' + MEMBER_OBJ.membername + '</span>' +
                 '</p>' +
                 '<div class="body">' +
                   '<textarea></textarea>' +
@@ -196,19 +196,16 @@ function setupCreateTopic() {
   var newRow = $('<tr><td></td><td colspan="4"><a class="button" href="#">New Topic</a></td></tr>');
   var newTopicButton = newRow.find('a.button');
   newRow.prependTo($(this).find('tbody'));
-  newTopicButton.click(function() {
+  newTopicButton.click(function () {
     var box = createTopicBox();
     newTopicButton.replaceWith(box);
     return false;
   });
 }
 
-$(document).ready(function() {
-  // This file should only be included for logged-in members, but we'll be double-check.
-  if (isLoggedIn) {
-    $('.comment-box').each(setupReply);
-    $('.comments').each(setupRootReply);
-    $('.vote-arrow').click(vote);
-    $('#topics').each(setupCreateTopic);
-  }
+$(document).ready(function () {
+  $('.comment-box').each(setupReply);
+  $('.comments').each(setupRootReply);
+  $('.vote-arrow').click(vote);
+  $('#topics').each(setupCreateTopic);
 });

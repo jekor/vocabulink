@@ -37,17 +37,21 @@ reminded that they have links to review. Or, if a link for review becomes due
 while they are browsing another part of the site, we want them to be notified.
 
 > reviewBox :: App Html
-> reviewBox = withMemberNumber noHtml $ \memberNo -> do
->   n <- numLinksToReview memberNo
->   return $ case n of
->     Just 0   -> anchor ! [  href "/review/next", theclass "review-box",
->                             thestyle "color: black" ] <<
->                   "No links to review"
->     Just n'  -> anchor ! [href "/review/next", theclass "review-box"] <<
->                   [  strong << show n',
->                      stringToHtml (n' > 1 ? " links" $ " link"),
->                      stringToHtml " to review" ]
->     Nothing  -> stringToHtml "Error finding links for review."
+> reviewBox = do
+>   memberNo' <- asks appMemberNo
+>   case memberNo' of
+>     Nothing        -> return noHtml
+>     Just memberNo  -> do
+>       n <- numLinksToReview memberNo
+>       return $ case n of
+>         Just 0   -> anchor ! [  href "/review/next", theclass "review-box",
+>                                 thestyle "color: black" ] <<
+>                       "No links to review"
+>         Just n'  -> anchor ! [href "/review/next", theclass "review-box"] <<
+>                       [  strong << show n',
+>                          stringToHtml (n' > 1 ? " links" $ " link"),
+>                          stringToHtml " to review" ]
+>         Nothing  -> stringToHtml "Error finding links for review."
 
 This retrievs the number of links that a user has for review right now.
 

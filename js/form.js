@@ -19,12 +19,12 @@
 
 function connectButton() {
   var classes = $(this).attr('class').split(' ');
-  $(this).click(function() {
+  $(this).click(function () {
     $('#' + classes[1]).show();
     $(this).hide();
   });
 }
 
-$(document).ready(function() {
+$(document).ready(function () {
   $('button.reveal').each(connectButton);
 });

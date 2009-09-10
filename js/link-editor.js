@@ -39,13 +39,13 @@ function saveChanges() {
           'contentType': 'text/plain',
           'data': body,
           'dataType': 'html',
-          'success': function(data) {
+          'success': function (data) {
             button.text('Saved!');
             removeOverlay();
             $('#link-details').html(data).show();
             linkDetailsBox.find('.markItUp').remove();
           },
-          'error':   function(data) {
+          'error':   function (data) {
             alert('Error saving link story.');
             button.text('Save Changes');
             button.attr('disabled', null);
@@ -67,7 +67,7 @@ function editLink() {
   return false;
 }
 
-$(document).ready(function() {
+$(document).ready(function () {
   var linkTypeSelector = $('select[name=fval4]:first');
   linkTypeSelector.change(showLinkEditor);
   linkTypeSelector.change();

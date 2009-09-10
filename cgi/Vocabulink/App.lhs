@@ -28,7 +28,7 @@ other conveniences.
 
 > module Vocabulink.App (      App, AppEnv(..), AppT, runApp, logApp, getOption,
 >                              Dependency(..), dependencyVersion,
->                              withMemberNumber, withRequiredMemberNumber,
+>                              withRequiredMemberNumber,
 >                              output404, reversibleRedirect,
 >                              queryTuple', queryValue', queryAttribute',
 >                              queryTuples', quickInsertNo', runStmt', quickStmt',
@@ -152,18 +152,11 @@ should see it as a new file.
 
 \subsubsection{Identity}
 
-|withMemberNumber| accepts a default action (for if the client isn't logged in)
-and a function to carry out with the member's number otherwise.
+|withRequiredMemberNumber| checks to see if the member has confirmed their
+email address and provides a ``logged out default'' of redirecting the client
+to the login page.
 
-> withMemberNumber :: a -> (Integer -> App a) -> App a
-> withMemberNumber d f = asks appMemberNo >>= maybe (return d) f
-
-|withRequiredMemberNumber| is like |withMemberNumber|, but it also checks to
-see if the member has confirmed their email adress and provides a ``logged out
-default'' of redirecting the client to the login page.
-
-Use this any time a member number is generally required. If you only use
-|withMemberNumber| you will allow actions from unconfirmed members.
+Use this any time a member number is generally required.
 
 > withRequiredMemberNumber :: (Integer -> App CGIResult) -> App CGIResult
 > withRequiredMemberNumber f = do

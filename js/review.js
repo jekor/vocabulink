@@ -26,14 +26,14 @@ function drawReview(link) {
   var startTime = new Date();
   var g = drawLinkReview(link);
   var revealed = false;
-  var reveal = function() {
+  var reveal = function () {
     revealed = true;
     g.graph.remove();
     drawLink(link);
     getReviewStats(startTime);
   };
   g.node.click(reveal);
-  $(document).bind('keyup', function(e) {
+  $(document).bind('keyup', function (e) {
     if (e.keyCode == 32) { // spacebar
       reveal(startTime);
       return false;
