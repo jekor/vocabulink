@@ -60,7 +60,7 @@ functions. An example of this is |linkList|.
 > import Text.Formlets as F
 > import Text.Formlets (File)
 > import Text.Pandoc (  readMarkdown, writeHtml, defaultParserState,
->                       defaultWriterOptions )
+>                       defaultWriterOptions, stateSanitizeHTML )
 > import Text.Regex (mkRegex, subRegex)
 > import Text.Regex.Posix ((=~))
 > import Text.XHtml.Strict hiding (content, menu)
@@ -305,10 +305,11 @@ Currently this uses an icon from the
 \subsection{Other Markup}
 
 A modified version of Markdown (Pandoc Markdown) is used in comments and link
-bodies.
+bodies. We need to sanitize incoming HTML so that we don't end up with XSS
+attacks.
 
 > markdownToHtml :: String -> Html
-> markdownToHtml = writeHtml defaultWriterOptions . readMarkdown defaultParserState
+> markdownToHtml = writeHtml defaultWriterOptions . readMarkdown defaultParserState {stateSanitizeHTML = True}
 
 \subsection{Form Builders}
 
