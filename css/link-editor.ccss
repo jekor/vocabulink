@@ -1,0 +1,10 @@
+// This is specifically for editing links, not for viewing them.
+
+#link-word:
+  .markItUp:
+    width: 50%
+    margin->
+      left: auto
+      right: auto
+    textarea:
+      width: 100%

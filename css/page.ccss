@@ -387,8 +387,8 @@ blockquote:
     top: 1.486em
     bottom: 1.486em
 
-// Buttons!
-.button:
+// Help buttons!
+.help-button:
   line-height: 1.3em
   color: inherit
   font-size: 0.875em

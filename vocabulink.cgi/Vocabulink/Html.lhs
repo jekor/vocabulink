@@ -298,7 +298,7 @@ Currently this uses an icon from the
 \href{http://www.famfamfam.com/lab/icons/mini/}{FamFamFam ``Mini''} set.
 
 > helpButton :: String -> Maybe String -> Html
-> helpButton url label' = anchor ! [href url, theclass "button"] << [
+> helpButton url label' = anchor ! [href url, theclass "help-button"] << [
 >                           image ! [src "http://s.vocabulink.com/icon_info.gif"],
 >                           maybe noHtml (\x -> stringToHtml $ ' ' : x) label' ]
 
