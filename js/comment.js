@@ -42,7 +42,7 @@ function sendReply(box, commentNumber, sendButton, e) {
           'success': function (data) {
             sendButton.remove();
             removeOverlay();
-            box.find('.body').html('<div class="comment">' + data + '</div>');
+            box.find('.body').html('<div class="comment htmlfrag">' + data + '</div>');
           },
           'error':   function (data) {
             removeOverlay();
@@ -176,11 +176,10 @@ function addReplyCommentBox(commentBox, e) {
 // Add reply buttons to each comment box on the page.
 // This should only be called for authenticated members.
 function setupReply() {
-  var replyButton = $('<a class="button" href="#">Reply</a>');
-  replyButton.appendTo($(this));
+  var replyButton = $(this).find('a.button');
   replyButton.click(addReplyCommentBox.curry($(this)));
   // Adjust the comment box's height so that it looks good.
-  $(this).find('.body:first').css('min-height', (88 - ($(this).find('.metadata').height())) + 'px');
+  // $(this).find('.body:first').css('min-height', (88 - ($(this).find('.metadata').height())) + 'px');
 }
 
 // Pages that allow comments have a root comment to which new comments are sent
@@ -193,9 +192,7 @@ function setupRootReply() {
 }
 
 function setupCreateTopic() {
-  var newRow = $('<tr><td></td><td colspan="4"><a class="button" href="#">New Topic</a></td></tr>');
-  var newTopicButton = newRow.find('a.button');
-  newRow.prependTo($(this).find('tbody'));
+  var newTopicButton = $(this).find('a.button');
   newTopicButton.click(function () {
     var box = createTopicBox();
     newTopicButton.replaceWith(box);

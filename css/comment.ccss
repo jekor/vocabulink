@@ -18,7 +18,7 @@
 .comment-box:
   position: relative
   width: 40em
-  min-height: 65px // This is dependent on button size. It should be moved out into member-only CSS.
+  min-height: 105px
   margin->
     top: 1.3em
     bottom: 1.3em

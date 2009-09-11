@@ -28,7 +28,7 @@ other conveniences.
 
 > module Vocabulink.App (      App, AppEnv(..), AppT, runApp, logApp, getOption,
 >                              Dependency(..), dependencyVersion,
->                              withRequiredMemberNumber,
+>                              withRequiredMemberNumber, loggedInVerified,
 >                              output404, reversibleRedirect,
 >                              queryTuple', queryValue', queryAttribute',
 >                              queryTuples', quickInsertNo', runStmt', quickStmt',
@@ -166,6 +166,20 @@ Use this any time a member number is generally required.
 >     (Just mn, Just _)  -> f mn
 >     (Just _, Nothing)  -> redirect =<< reversibleRedirect "/member/confirmation"
 >     _                  -> redirect =<< reversibleRedirect "/member/login"
+
+This is a helper to quickly return a value based on the client's status. If the
+client is not authenticated, return nothing. If they are authenticated but have
+not verified their email address, return loggedIn. If they have verified their
+email address, return verified.
+
+> loggedInVerified :: a -> a -> a -> App a
+> loggedInVerified verified loggedIn nothing = do
+>   memberNo <- asks appMemberNo
+>   memberEmail <- asks appMemberEmail
+>   return $ case (memberNo, memberEmail) of
+>     (Just _,  Just _)  -> verified
+>     (Just _,  _)       -> loggedIn
+>     (_     ,  _)       -> nothing
 
 When we direct a user to some page, we might want to make sure that they can
 find their way back to where they were. To do so, we get the current URI and

@@ -66,22 +66,17 @@ When displaying a link, it's useful to show its review status (or a method to
 add it to a review set if it's not). This returns an Html element that will do
 both based on the link number and the currently logged in member.
 
-> reviewIndicator :: Integer -> App (Html)
-> reviewIndicator linkNo = do
->   memberNo <- asks appMemberNo
->   case memberNo of
->     Nothing -> return $ paragraph ! [theclass "review-box login"] <<
->                           anchor ! [href "/member/login"] << "Login to Review" 
->     Just n  -> do
->       r <- reviewing n linkNo
->       case r of
->         Nothing  -> return $ paragraph ! [theclass "review-box"] <<
->                       "Unable to determine review status."
->         Just r'  -> return $ r' ? paragraph ! [theclass "review-box reviewing"] <<
->                       "Reviewing" $
->                         form ! [  action ("/review/" ++ show linkNo ++ "/add"),
->                                   method "POST", theclass "review-box review"] <<
->                           [ submit "review" "Review" ]
+> reviewIndicator :: Integer -> Integer -> App (Html)
+> reviewIndicator linkNo memberNo = do
+>   r <- reviewing memberNo linkNo
+>   case r of
+>     Nothing  -> return $ paragraph ! [theclass "review-box"] <<
+>                   "Unable to determine review status."
+>     Just r'  -> return $ r' ? paragraph ! [theclass "review-box reviewing"] <<
+>                   "Reviewing" $
+>                     form ! [  action ("/review/" ++ show linkNo ++ "/add"),
+>                               method "POST", theclass "review-box review"] <<
+>                       [ submit "review" "Review" ]
 
 |reviewing| determines whether or not a member is already reviewing a link.
 This will be true only if the member is currently reviewing the link, not if

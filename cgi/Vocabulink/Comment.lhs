@@ -35,12 +35,13 @@
 >                           commentTime      :: UTCTime,
 >                           commentBody      :: String }
 
-> commentBox :: Comment -> Html
-> commentBox c =
->   let indent = show (fromIntegral (commentLevel c) * (1.3 :: Double)) ++ "em" in
->   thediv ! [  identifier ("comment-" ++ show (commentNo c)),
->               theclass "comment-box",
->               thestyle ("margin-left: " ++ indent)] << [
+> commentBox :: Comment -> App Html
+> commentBox c = do
+>   reply <- loggedInVerifiedButton "Reply"
+>   let indent = show (fromIntegral (commentLevel c) * (1.3 :: Double)) ++ "em"
+>   return $ thediv ! [  identifier ("comment-" ++ show (commentNo c)),
+>                        theclass "comment-box",
+>                        thestyle ("margin-left: " ++ indent)] << [
 >     image ! [  width "60", height "60", theclass "avatar",
 >                src $ gravatarWith  (map toLower $ commentEmail c)
 >                                    Nothing (size 60) (Just "wavatar") ],
@@ -48,7 +49,8 @@
 >       thespan ! [theclass "membername"] << commentUsername c,
 >       thespan ! [theclass "timestamp"] << formatSimpleTime (commentTime c)],
 >     thediv ! [theclass "body"] <<
->       thediv ! [theclass "comment htmlfrag"] << markdownToHtml (commentBody c) ]
+>       thediv ! [theclass "comment htmlfrag"] << markdownToHtml (commentBody c),
+>     reply ]
 
 Each comment uses (Pandoc-extended) Markdown syntax.
 
@@ -89,11 +91,13 @@ from getComments to determine which we're dealing with.
 >   case comments of
 >     Nothing  -> return $ paragraph << "Unable to retrieve comments."
 >     Just cs  -> do
->       let cs' = if (length cs > 0 && commentLevel (head cs) == 0)
->                   then cs -- true root
->                   else map (\c -> c {commentLevel = commentLevel c - 1}) cs -- pseudo root
+>       let cs'  = if (length cs > 0 && commentLevel (head cs) == 0)
+>                    then cs -- true root
+>                    else map (\c -> c {commentLevel = commentLevel c - 1}) cs -- pseudo root
+>       invitation <- invitationLink "Comment"
+>       cs'' <- mapM commentBox cs'
 >       return $ thediv ! [  identifier ("comments-" ++ show root),
->                            theclass "comments"] << map commentBox cs'
+>                            theclass "comments" ] << (cs'' +++ invitation)
 
 Replying to a comment is also a complex matter (are you noticing a trend
 here?). The complexity is mainly because we need to update information in a

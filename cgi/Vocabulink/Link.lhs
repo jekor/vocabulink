@@ -386,12 +386,13 @@ textarea for in-page editing.
 > linkPage :: Integer -> App CGIResult
 > linkPage linkNo = do
 >   memberNo <- asks appMemberNo
+>   memberEmail <- asks appMemberEmail
 >   l <- getLink linkNo
 >   case l of
 >     Nothing  -> output404 ["link", show linkNo]
 >     Just l'  -> do
 >       let owner' = maybe False (linkAuthor l' ==) memberNo
->       ops <- linkOperations linkNo owner'
+>       ops <- linkOperations linkNo memberNo (isJust memberEmail) owner'
 >       rating <- queryTuple'  "SELECT COUNT(rating), SUM(rating) / COUNT(rating) \
 >                              \FROM link_rating WHERE link_no = ?" [toSql linkNo]
 >       ratingEnabled <- if isJust memberNo
@@ -410,6 +411,7 @@ textarea for in-page editing.
 >       comments <- case r of
 >                     Just root  -> renderComments $ fromSql root
 >                     Nothing    -> return noHtml
+>       rateInvitation <- invitationLink "Rate"
 >       stdPage (orig ++ " -> " ++ dest) [CSS "link", JS "lib.link"] []
 >         [  drawLinkSVG l',
 >            thediv ! [theclass "link-ops"] << [
@@ -420,7 +422,7 @@ textarea for in-page editing.
 >                             Just [c'', r'']  -> (fromSql c'', fromSql r'')
 >                             _                -> (0, Nothing) in
 >              ratingBar ("/link" </> show linkNo </> "rating") c' r' ratingEnabled,
->              isNothing memberNo ? anchor ! [href "/member/login"] << "Login to Rate" $ noHtml,
+>              rateInvitation,
 >              ops ],
 >            thediv ! [theclass "link-details"] << [
 >              case (owner', linkType l') of
@@ -437,22 +439,26 @@ such as ``tag'', ``rate'', etc.
 The |Bool| parameter indicates whether or not the currently logged-in member
 (if the client is logged in) is the owner of the link.
 
-> linkOperations :: Integer -> Bool -> App Html
-> linkOperations n owner = do
->   review <- reviewIndicator n
+> linkOperations :: Integer -> Maybe Integer -> Bool -> Bool -> App Html
+> linkOperations linkNo memberNo verified owner = do
+>   review <- case memberNo of
+>               Nothing  -> invitationLink "Review"
+>               Just n   -> reviewIndicator linkNo n
 >   deleted <- queryValue'  "SELECT deleted FROM link \
->                           \WHERE link_no = ?" [toSql n]
->   packForm <- addToLinkPackForm n
+>                           \WHERE link_no = ?" [toSql linkNo]
+>   pack <- if verified
+>             then  addToLinkPackForm linkNo
+>             else  invitationLink "Pack"
 >   return $ concatHtml [
 >     review,
->     packForm,
+>     pack,
 >     if owner
 >       then button ! [identifier "link-edit"] << "Edit"
 >       else noHtml,
 >     case (owner, deleted) of
 >       (True, Just d)  -> if fromSql d
 >                            then paragraph << "Deleted"
->                            else form ! [action ("/link/" ++ show n ++ "/delete"), method "POST"] <<
+>                            else form ! [action ("/link/" ++ show linkNo ++ "/delete"), method "POST"] <<
 >                                   submit "" "Delete"
 >       (True, _)       -> stringToHtml
 >                            "Can't determine whether or not link has been deleted."
@@ -543,7 +549,7 @@ it outputs and digest each local function separately.
 > linkFocusBox :: String -> [PartialLink] -> [Html]
 > linkFocusBox focus links = [
 >   thediv ! [identifier "graph"] << noHtml,
->   script << primHtml
+>   script ! [thetype "text/javascript"] << primHtml
 >     (  "$(document).ready(drawLinks.curry(" ++
 >        encode focus ++ "," ++
 >        jsonNodes ("/link/new?fval2=" ++ focus) origs ++ "," ++
@@ -1016,7 +1022,8 @@ TODO: Check that the new trimmed body is not empty.
 
 > linkPackLinks :: Integer -> App (Maybe [PartialLink])
 > linkPackLinks n = do
->   ts <- queryTuples'  "SELECT l.link_no, l.link_type, l.origin, l.destination, \
+>   ts <- queryTuples'  "SELECT l.link_no, l.link_type, l.author, \
+>                              \l.origin, l.destination, \
 >                              \l.origin_language, l.destination_language \
 >                       \FROM link_pack_link \
 >                       \INNER JOIN link l USING (link_no) \

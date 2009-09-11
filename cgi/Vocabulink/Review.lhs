@@ -122,7 +122,7 @@ link for review, we send them to the review page.
 >     \WHERE member_no = ? AND current_timestamp >= target_time \
 >     \ORDER BY target_time ASC LIMIT 1" [toSql memberNo]
 >   case linkNo of
->     Just []     -> noLinksToReviewPage
+>     Just []     -> noLinksToReviewPage memberNo
 >     Just [[n]]  -> reviewLinkPage $ fromSql n
 >     _           -> error "Failed to retrieve next link for review."
 
@@ -179,8 +179,8 @@ Here's a critical chance to:
 But for now, the page is pretty plain. We congratulate the member and let them
 know when their next review is scheduled.
 
-> noLinksToReviewPage :: App CGIResult
-> noLinksToReviewPage = withRequiredMemberNumber $ \memberNo -> do
+> noLinksToReviewPage :: Integer -> App CGIResult
+> noLinksToReviewPage memberNo = do
 >   t <- nextReviewTime memberNo
 >   now <- liftIO getCurrentTime
 >   simplePage "No Links to Review" [CSS "link"] [

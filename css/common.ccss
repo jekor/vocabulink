@@ -6,6 +6,7 @@ a.button:
   text-decoration: none // should not be underlined
   height: 28px // don't look good unless they're a little bit taller
   line-height: 28px
+  text-align: center
   margin: 0
   padding->
     left: 0.333em
@@ -60,3 +61,6 @@ a.button:
   //   color: #A07
   //   border-color: #A07
   //   background-color: #F4DFEE
+
+#body > h3:
+  margin-bottom: 1em

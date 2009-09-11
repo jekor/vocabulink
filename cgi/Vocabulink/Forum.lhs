@@ -207,6 +207,9 @@ and the time of the latest topic.
 >     Nothing  -> output404 ["forum", forum]
 >     Just t   -> do
 >       topics <- forumTopicRows forum
+>       newTopicButton <- loggedInVerifiedButton "New Topic"
+>       let newTopicRow = tr << [  td << noHtml,
+>                                  td ! [colspan 4] << newTopicButton ]
 >       stdPage ("Forum - " ++ forum) forumDeps []
 >         [  breadcrumbs [  anchor ! [href "../forums"] << "Forums",
 >                           stringToHtml $ fromSql t ],
@@ -217,7 +220,7 @@ and the time of the latest topic.
 >                th ! [theclass "replies"]  << "Replies",
 >                th ! [theclass "author"]   << "Author",
 >                th ! [theclass "last"]     << "Last Comment" ],
->              tbody << tableRows topics ] ]
+>              tbody << tableRows (newTopicRow:topics) ] ]
 
 This returns a list of forum topics, sorted by creation date, as HTML rows. It
 saves us some effort by avoiding any intermediate representation which we don't

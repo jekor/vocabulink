@@ -31,6 +31,7 @@ functions. An example of this is |linkList|.
 >                           checkbox', tabularInput, tabularSubmit,
 >                           nonEmptyAndLessThan,
 >                           pager, currentPage, fileUpload, uploadFile, forID,
+>                           invitationLink, loggedInVerifiedButton,
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
 >                           (<<), (+++), (!), showHtmlFragment,
 >                           identifier, theclass, thediv, thespan, style,
@@ -85,7 +86,7 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >   memberNo <- asks appMemberNo
 >   memberName <- asks appMemberName
 >   memberEmail <- asks appMemberEmail
->   let  deps' = deps ++ [CSS "lib.common", JS "lib.common"] ++ (isJust memberNo ? [CSS "lib.member", JS "lib.member"] $ [])
+>   let  deps' = deps ++ [CSS "lib.common", JS "lib.common"] ++ (isJust memberEmail ? [CSS "lib.member", JS "lib.member"] $ [])
 >        (cssDeps, jsDeps) = partition (\x -> case x of
 >                                               (CSS _) -> True
 >                                               (JS  _) -> False) deps'
@@ -100,14 +101,7 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >                  [  thetitle << title',
 >                     concatHtml cssDeps',
 >                     concatHtml head' ] +++
->                  body << [  thediv ! [identifier "head"] << headerB,
->                             case jsDeps of
->                               []  -> noHtml
->                               _   -> noscript << paragraph <<
->                                        "This page requires JavaScript for some functionality.",
->                             thediv ! [identifier "body"] << concatHtml body',
->                             thediv ! [identifier "foot"] << footerB,
->                             script ! [src "http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"] << noHtml,
+>                  body << [  script ! [src "http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"] << noHtml,
 >                             concatHtml jsDeps',
 >                             script ! [thetype "text/javascript"] << primHtml
 >                               ((isJust memberObj ?
@@ -116,6 +110,13 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >                                "$(document).ready(function () {\
 >                                \Functional.install();\
 >                                \});"),
+>                             thediv ! [identifier "head"] << headerB,
+>                             case jsDeps of
+>                               []  -> noHtml
+>                               _   -> noscript << paragraph <<
+>                                        "This page requires JavaScript for some functionality.",
+>                             thediv ! [identifier "body"] << concatHtml body',
+>                             thediv ! [identifier "foot"] << footerB,
 >                             googleAnalyticsTag ]
 >   output' xhtml
 
@@ -123,6 +124,34 @@ Often we just need a simple page where the title and header are the same.
 
 > simplePage :: String -> [Dependency] -> [Html] -> App CGIResult
 > simplePage t deps h = stdPage t deps [] $ (h1 << t) : h
+
+It's common to add a little hyperlink teaser for actions that require
+verification. For example "login to reply" or "verify email to reply".
+
+> invitationLink :: String -> App Html
+> invitationLink text = do
+>   memberNo <- asks appMemberNo
+>   memberEmail <- asks appMemberEmail
+>   case (memberNo, memberEmail) of
+>     (Just _,  Just _)  -> return noHtml
+>     (Just _,  _)       -> do
+>       url <- reversibleRedirect "/member/confirmation"
+>       return $ anchor ! [theclass "invitation", href url] <<
+>         ("Verify Email to " ++ text)
+>     (_     ,  _)       -> do
+>       url <- reversibleRedirect "/member/login"
+>       return $ anchor ! [theclass "invitation", href url] <<
+>         ("Login to " ++ text)
+
+In other cases, we're going to place an action button that should redirect when
+the client is not a verified member.
+
+> loggedInVerifiedButton :: String -> App Html
+> loggedInVerifiedButton text = do
+>   confirm  <- reversibleRedirect "/member/confirmation"
+>   login    <- reversibleRedirect "/member/login"
+>   url <- loggedInVerified "#" confirm login
+>   return $ anchor ! [theclass "button", href url] << text
 
 Each dependency is expressed as the path from the root of the static files
 subdomain (for now, @s.vocabulink.com@) to the file. Do not include the file

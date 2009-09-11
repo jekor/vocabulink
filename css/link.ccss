@@ -105,7 +105,7 @@ fieldset#link-word textarea:
     margin->
       left: auto
       right: auto
-  > input, button, form:
+  > input, button, form, a:
     margin-top: 1.3em
   > div:
     margin: 1.3em auto

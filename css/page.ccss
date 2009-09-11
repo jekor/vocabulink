@@ -158,7 +158,7 @@ em:
 .clear:
   clear: both
 
-.odd:
+.even:
   background-color: $bar_and_box_background
 tr.odd:hover, tr.even:hover:
   background-color: $bar_and_box_border

@@ -493,9 +493,6 @@ way. The intent behind this is that in the future they will be able to review
 their links through different means such as a desktop program or a phone
 application.
 
-Because of the use of |withRequiredMemberNumber|, a logged out member will be
-redirected to a login page when attempting to review.
-
 \begin{center}
 \begin{tabular}{lcl}
 retrieve the next link for review & $\rightarrow$ & @GET  /review/next@ \\
@@ -506,19 +503,25 @@ add a link for review             & $\rightarrow$ & @POST /review/n/add@
 
 (where @n@ is the link number)
 
-> dispatch method path@("review":rpath) =
->   withRequiredMemberNumber $ \memberNo ->
->     case (method,rpath) of
->       ("GET"   ,["next"])   -> nextReview memberNo
->       ("POST"  ,(x:xs))     ->
->          case maybeRead x of
->            Nothing  -> outputError 400
->                        "Links are identified by numbers only." []
->            Just n   -> case xs of
->                          ["add"]  -> newReview memberNo n
->                          []       -> linkReviewed memberNo n
->                          _        -> output404 path
->       (_       ,_)          -> output404 path
+Reviewing links is one of the only things that logged-in-but-unverified members
+are allowed to do.
+
+> dispatch method path@("review":rpath) = do
+>   memberNo' <- asks appMemberNo
+>   case memberNo' of
+>     Nothing        -> redirect =<< reversibleRedirect "/member/login"
+>     Just memberNo  ->
+>       case (method,rpath) of
+>         ("GET"   ,["next"])   -> nextReview memberNo
+>         ("POST"  ,(x:xs))     ->
+>            case maybeRead x of
+>              Nothing  -> outputError 400
+>                          "Links are identified by numbers only." []
+>              Just n   -> case xs of
+>                            ["add"]  -> newReview memberNo n
+>                            []       -> linkReviewed memberNo n
+>                            _        -> output404 path
+>         (_       ,_)          -> output404 path
 
 \subsection{Membership}
 
