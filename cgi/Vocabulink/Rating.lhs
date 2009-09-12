@@ -45,7 +45,8 @@ full star into the rating system.
 >   thediv ! [theclass $ "rating" ++ (allowRating ? " enabled" $ "")] << [
 >     thediv ! [theclass "stars-base"] <<
 >       form ! [  theclass "stars",
->                 action baseUrl, method "POST",
+>                 action baseUrl,
+>                 method "post",
 >                 thestyle (  "width: " ++ show starWidth ++ "px; \
 >                             \background-position: left " ++ show starPosition ++ "px" ) ] << noHtml,
 >     paragraph << (show numRatings ++ " rating" ++ (numRatings == 1 ? "" $ "s")) ]

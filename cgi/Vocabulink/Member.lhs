@@ -326,7 +326,7 @@ Get a fresh support form (don't attempt to run it).
 > getSupportForm :: Maybe String -> App Html
 > getSupportForm redirect' = do
 >   (_, xhtml) <- runForm' =<< supportForm redirect'
->   return $ form ! [action "/member/support", method "POST"] << xhtml
+>   return $ form ! [action "/member/support", method "post"] << xhtml
 
 And finally, here is the actual support page. It's not just for member support.
 If the client isn't logged in it will ask for a contact email address.

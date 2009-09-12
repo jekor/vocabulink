@@ -301,7 +301,7 @@ This page is for displaying a listing of published articles.
 >            refresh memberName ] ]
 >  where refresh member = case member of
 >                           Just "jekor"  ->
->                             form ! [action "/articles", method "POST"] <<
+>                             form ! [action "/articles", method "post"] <<
 >                               submit "" "Refresh from filesystem."
 >                           _               -> noHtml
 

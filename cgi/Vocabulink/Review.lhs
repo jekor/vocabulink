@@ -148,7 +148,7 @@ the client to |nextReview| which begins the process all over again.
 >       stdPage ("Review: " ++ source ++ " -- ?")
 >               [CSS "link", JS "lib.link"] []
 >         [  drawLinkSVG' "drawReview" l',
->            form ! [action ("/review/" ++ show linkNo), method "POST"] <<
+>            form ! [action ("/review/" ++ show linkNo), method "post"] <<
 >              [  hidden "recall-time" "",
 >                 hidden "hidden-lexeme" dest,
 >                 fieldset ! [identifier "recall-buttons", thestyle "display: none"] <<
@@ -199,7 +199,7 @@ page". It'll need to be made more general if you need it for anything else.
 
 > jsTimer :: Integer -> Html
 > jsTimer seconds = concatHtml [
->   script ! [thetype "text/javascript"] << primHtml (unlines [
+>   script << primHtml (unlines [
 >     "function updateCountdown() {",
 >     "  if (typeof updateCountdown.seconds == 'undefined') {",
 >     "    updateCountdown.seconds = " ++ show seconds ++ ";",

@@ -122,7 +122,7 @@ forums within the group).
 >            form ! [  identifier ("forum-creator-" ++ g),
 >                      thestyle "display: none",
 >                      action "/forum/new",
->                      method "POST",
+>                      method "post",
 >                      enctype "multipart/form-data" ] <<
 >              fieldset <<
 >                [  legend << "New Forum",

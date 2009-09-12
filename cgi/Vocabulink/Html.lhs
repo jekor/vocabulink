@@ -103,7 +103,7 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >                     concatHtml head' ] +++
 >                  body << [  script ! [src "http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"] << noHtml,
 >                             concatHtml jsDeps',
->                             script ! [thetype "text/javascript"] << primHtml
+>                             script << primHtml
 >                               ((isJust memberObj ?
 >                                   "var MEMBER_OBJ = " ++ (encode $ toJSObject $ fromJust memberObj) ++ ";" $
 >                                   "") ++
@@ -164,7 +164,7 @@ for inclusion in the @<head>@ of the page.
 > includeDep d = do
 >   version <- dependencyVersion d
 >   return $ case version of
->     Nothing  -> script ! [thetype "text/javascript"] << primHtml
+>     Nothing  -> script << primHtml
 >                   ("alert('Dependency \"" ++ show d ++ "\" not found.');")
 >     Just v   ->
 >       case d of
@@ -232,13 +232,13 @@ to be placed on every page.
 
 > googleAnalyticsTag :: Html
 > googleAnalyticsTag = concatHtml [
->   script ! [thetype "text/javascript"] << primHtml (unlines [
+>   script << primHtml (unlines [
 >     "var gaJsHost = ((\"https:\" == document.location.protocol) ?\
 >                     \ \"https://ssl.\" : \"http://www.\");",
 >     "document.write(unescape(\"%3Cscript src='\" + gaJsHost \
 >     \+ \"google-analytics.com/ga.js' \
 >     \%3E%3C/script%3E\"));" ]),
->   script ! [thetype "text/javascript"] << primHtml (unlines [
+>   script << primHtml (unlines [
 >     "try {",
 >     "  var pageTracker = _gat._getTracker(\"UA-73938-2\");",
 >     "  pageTracker._trackPageview();",
@@ -256,7 +256,7 @@ your username to show that you're logged in).
 
 > logoutBox :: String -> Html
 > logoutBox username = form ! [  theclass "auth-box logout", action "/member/logout",
->                                method "POST"] <<
+>                                method "post"] <<
 >                        [  stringToHtml username, submit "" "Log Out" ]
 
 Students with a goal in mind will want to search for words they're studying
@@ -265,7 +265,7 @@ page. This also is currently the only way to create new links (aside from
 entering in the URL manually), but that might change in the future.
 
 > searchBox :: Html
-> searchBox = form ! [theclass "search-box", action "/links", method "GET"] <<
+> searchBox = form ! [theclass "search-box", action "/links", method "get"] <<
 >   [ textfield "contains" ! [accesskey "s"], stringToHtml " ",
 >     submit "" "Search Links" ]
 
@@ -412,7 +412,7 @@ you don't want a submit button).
 >       let submit' = case s of
 >                       Left s'  -> submit "" s'
 >                       Right h  -> h
->       return $ Left $ form ! [action (uriPath uri), method "POST"] <<
+>       return $ Left $ form ! [action (uriPath uri), method "post"] <<
 >                         [  (meth == "GET" ? noHtml $ unordList failures),
 >                            xhtml, submit' ]
 >     Success result    -> return $ Right result
@@ -507,7 +507,7 @@ uploaded the input will reflect the name of the file on the server side.
 
 > fileUpload :: String -> String -> AppForm String
 > fileUpload target l = plug (\xhtml -> concatHtml [
->   script ! [thetype "text/javascript"] << primHtml (unlines [
+>   script << primHtml (unlines [
 >     "connect(window, 'onload', function() {",
 >       "new AjaxUpload('file-upload', {action: '" ++ target ++ "',",
 >                                      "onSubmit: submitFile,",

@@ -75,7 +75,7 @@ both based on the link number and the currently logged in member.
 >     Just r'  -> return $ r' ? paragraph ! [theclass "review-box reviewing"] <<
 >                   "Reviewing" $
 >                     form ! [  action ("/review/" ++ show linkNo ++ "/add"),
->                               method "POST", theclass "review-box review"] <<
+>                               method "post", theclass "review-box review"] <<
 >                       [ submit "review" "Review" ]
 
 |reviewing| determines whether or not a member is already reviewing a link.

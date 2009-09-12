@@ -330,7 +330,7 @@ sure to include |JS "lib.link"| as a dependency when using this.
 
 > drawLinkSVG' :: String -> Link -> Html
 > drawLinkSVG' f link = thediv ! [identifier "graph", thestyle "height: 100px"] << noHtml +++
->   script ! [thetype "text/javascript"] << primHtml (
+>   script << primHtml (
 >     "$(document).ready(" ++ f ++ ".curry(" ++ showLinkJSON link ++ "));")
 
 It seems that the JSON library author does not want us making new instances of
@@ -352,7 +352,7 @@ of the link but displaying its type-level details as well.
 > displayLink :: Link -> Html
 > displayLink l = concatHtml [
 >   drawLinkSVG l,
->   thediv ! [theclass "link-details"] << linkTypeHtml (linkType l) ]
+>   thediv ! [theclass "link-details htmlfrag"] << linkTypeHtml (linkType l) ]
 
 > linkTypeHtml :: LinkType -> Html
 > linkTypeHtml Association = noHtml
@@ -458,7 +458,7 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 >     case (owner, deleted) of
 >       (True, Just d)  -> if fromSql d
 >                            then paragraph << "Deleted"
->                            else form ! [action ("/link/" ++ show linkNo ++ "/delete"), method "POST"] <<
+>                            else form ! [action ("/link/" ++ show linkNo ++ "/delete"), method "post"] <<
 >                                   submit "" "Delete"
 >       (True, _)       -> stringToHtml
 >                            "Can't determine whether or not link has been deleted."
@@ -484,7 +484,7 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 >           let ps' = map (\x -> (fromSql $ head x, fromSql $ head $ tail x)) ps
 >           return $ concatHtml [
 >             button ! [theclass "reveal add-to-pack"] << "→ Pack",
->             form ! [  action "/pack/link/new", method "POST",
+>             form ! [  action "/pack/link/new", method "post",
 >                       identifier "add-to-pack", thestyle "display: none" ] << [
 >               hidden "link" $ show n,
 >               menu "pack" (ps' ++ [("new", "New Pack")]) !
@@ -549,7 +549,7 @@ it outputs and digest each local function separately.
 > linkFocusBox :: String -> [PartialLink] -> [Html]
 > linkFocusBox focus links = [
 >   thediv ! [identifier "graph"] << noHtml,
->   script ! [thetype "text/javascript"] << primHtml
+>   script << primHtml
 >     (  "$(document).ready(drawLinks.curry(" ++
 >        encode focus ++ "," ++
 >        jsonNodes ("/link/new?fval2=" ++ focus) origs ++ "," ++
@@ -599,13 +599,13 @@ result, and dispatching the creation of the link on successful form validation.
 >       simplePage "Create a Link (preview)" deps
 >         [  preview',
 >            form ! [  thestyle "text-align: center",
->                      action (uriPath uri), method "POST"] <<
+>                      action (uriPath uri), method "post"] <<
 >              [xhtml, actionBar] ]
 >     Nothing ->
 >       case status of
 >         Failure failures  -> simplePage "Create a Link" deps
 >           [  form ! [  thestyle "text-align: center",
->                        action (uriPath uri), method "POST"] <<
+>                        action (uriPath uri), method "post"] <<
 >                [  meth == "GET" ? noHtml $ unordList failures,
 >                   xhtml, actionBar ] ]
 >         Success link -> do
@@ -920,7 +920,7 @@ TODO: Check that the new trimmed body is not empty.
 >       simplePage "Create a Link Pack (preview)" deps
 >         [  preview',
 >            form ! [  thestyle "text-align: center",
->                      action (uriPath uri), method "POST" ] <<
+>                      action (uriPath uri), method "post" ] <<
 >              [xhtml, actionBar] ]
 >     Nothing ->
 >       case result of
@@ -931,7 +931,7 @@ TODO: Check that the new trimmed body is not empty.
 >             Nothing  -> error "Failed to establish link."
 >         Failure failures -> simplePage "Create a Link Pack" deps
 >           [  form ! [  thestyle "text-align: center",
->                        action (uriPath uri), method "POST" ] <<
+>                        action (uriPath uri), method "post" ] <<
 >                [  meth == "GET" ? noHtml $ unordList failures,
 >                   xhtml, actionBar ] ]
 >  where deps = [CSS "link", JS "lib.link"]
