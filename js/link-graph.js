@@ -156,6 +156,7 @@ function drawLinks(focus, origs, dests) {
 
 function createGraph() {
   var graph = $('#graph');
+  graph.empty();
   var gdims = {'w': graph.width(),
                'h': graph.height()};
   var g = {'graph': new Raphael('graph', gdims.w, gdims.h),

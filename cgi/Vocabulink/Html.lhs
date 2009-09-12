@@ -29,7 +29,7 @@ functions. An example of this is |linkList|.
 >                           accesskey, readonly, helpButton, markdownToHtml,
 >                           AppForm, runForm, runForm', formLabel, formLabel',
 >                           checkbox', tabularInput, tabularSubmit,
->                           nonEmptyAndLessThan,
+>                           nonEmptyAndLessThan, noscript,
 >                           pager, currentPage, fileUpload, uploadFile, forID,
 >                           invitationLink, loggedInVerifiedButton,
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
@@ -98,12 +98,12 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >   cssDeps'  <- mapM includeDep cssDeps
 >   jsDeps'   <- mapM includeDep jsDeps
 >   let  xhtml = renderHtml $ header <<
->                  [  thetitle << title',
->                     concatHtml cssDeps',
+>                  [  concatHtml cssDeps',
+>                     thetitle << title',
 >                     concatHtml head' ] +++
 >                  body << [  script ! [src "http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"] << noHtml,
 >                             concatHtml jsDeps',
->                             script << primHtml
+>                             script ! [thetype "text/javascript"] << primHtml
 >                               ((isJust memberObj ?
 >                                   "var MEMBER_OBJ = " ++ (encode $ toJSObject $ fromJust memberObj) ++ ";" $
 >                                   "") ++
@@ -164,7 +164,7 @@ for inclusion in the @<head>@ of the page.
 > includeDep d = do
 >   version <- dependencyVersion d
 >   return $ case version of
->     Nothing  -> script << primHtml
+>     Nothing  -> script ! [thetype "text/javascript"] << primHtml
 >                   ("alert('Dependency \"" ++ show d ++ "\" not found.');")
 >     Just v   ->
 >       case d of
@@ -232,13 +232,13 @@ to be placed on every page.
 
 > googleAnalyticsTag :: Html
 > googleAnalyticsTag = concatHtml [
->   script << primHtml (unlines [
+>   script ! [thetype "text/javascript"] << primHtml (unlines [
 >     "var gaJsHost = ((\"https:\" == document.location.protocol) ?\
 >                     \ \"https://ssl.\" : \"http://www.\");",
 >     "document.write(unescape(\"%3Cscript src='\" + gaJsHost \
 >     \+ \"google-analytics.com/ga.js' \
->     \%3E%3C/script%3E\"));" ]),
->   script << primHtml (unlines [
+>     \type='text/javascript'%3E%3C/script%3E\"));" ]),
+>   script ! [thetype "text/javascript"] << primHtml (unlines [
 >     "try {",
 >     "  var pageTracker = _gat._getTracker(\"UA-73938-2\");",
 >     "  pageTracker._trackPageview();",
@@ -507,7 +507,7 @@ uploaded the input will reflect the name of the file on the server side.
 
 > fileUpload :: String -> String -> AppForm String
 > fileUpload target l = plug (\xhtml -> concatHtml [
->   script << primHtml (unlines [
+>   script ! [thetype "text/javascript"] << primHtml (unlines [
 >     "connect(window, 'onload', function() {",
 >       "new AjaxUpload('file-upload', {action: '" ++ target ++ "',",
 >                                      "onSubmit: submitFile,",

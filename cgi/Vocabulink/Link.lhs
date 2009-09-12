@@ -329,9 +329,11 @@ sure to include |JS "lib.link"| as a dependency when using this.
 > drawLinkSVG = drawLinkSVG' "drawLink"
 
 > drawLinkSVG' :: String -> Link -> Html
-> drawLinkSVG' f link = thediv ! [identifier "graph", thestyle "height: 100px"] << noHtml +++
->   script << primHtml (
->     "$(document).ready(" ++ f ++ ".curry(" ++ showLinkJSON link ++ "));")
+> drawLinkSVG' f link =
+>   thediv ! [identifier "graph", thestyle "height: 100px"] <<
+>     h1 << ((linkOrigin link) ++ " → " ++ (linkDestination link)) +++
+>     script ! [thetype "text/javascript"] << primHtml (
+>       "$(document).ready(" ++ f ++ ".curry(" ++ showLinkJSON link ++ "));")
 
 It seems that the JSON library author does not want us making new instances of
 the |JSON| class. Oh well, I didn't want to write |readJSON| anyway.
@@ -412,7 +414,7 @@ textarea for in-page editing.
 >                     Just root  -> renderComments $ fromSql root
 >                     Nothing    -> return noHtml
 >       rateInvitation <- invitationLink "Rate"
->       stdPage (orig ++ " -> " ++ dest) [CSS "link", JS "lib.link"] []
+>       stdPage (orig ++ " → " ++ dest) [CSS "link", JS "lib.link"] []
 >         [  drawLinkSVG l',
 >            thediv ! [theclass "link-ops"] << [
 >              anchor ! [href (  "/links?ol=" ++ linkOriginLang l' ++
@@ -549,7 +551,7 @@ it outputs and digest each local function separately.
 > linkFocusBox :: String -> [PartialLink] -> [Html]
 > linkFocusBox focus links = [
 >   thediv ! [identifier "graph"] << noHtml,
->   script << primHtml
+>   script ! [thetype "text/javascript"] << primHtml
 >     (  "$(document).ready(drawLinks.curry(" ++
 >        encode focus ++ "," ++
 >        jsonNodes ("/link/new?fval2=" ++ focus) origs ++ "," ++
