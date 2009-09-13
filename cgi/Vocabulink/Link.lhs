@@ -527,7 +527,7 @@ going to require configuring full text search or a separate search daemon.
 >                              \origin_language, destination_language \
 >                       \FROM link \
 >                       \WHERE NOT deleted \
->                         \AND (origin LIKE ? OR destination LIKE ?) \
+>                         \AND (origin ILIKE ? OR destination ILIKE ?) \
 >                       \LIMIT 20"
 >                       [toSql focus, toSql focus]
 >   case ts of

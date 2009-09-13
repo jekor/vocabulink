@@ -236,8 +236,7 @@ to be placed on every page.
 >     "var gaJsHost = ((\"https:\" == document.location.protocol) ?\
 >                     \ \"https://ssl.\" : \"http://www.\");",
 >     "document.write(unescape(\"%3Cscript src='\" + gaJsHost \
->     \+ \"google-analytics.com/ga.js' \
->     \type='text/javascript'%3E%3C/script%3E\"));" ]),
+>     \+ \"google-analytics.com/ga.js'%3E%3C/script%3E\"));" ]),
 >   script ! [thetype "text/javascript"] << primHtml (unlines [
 >     "try {",
 >     "  var pageTracker = _gat._getTracker(\"UA-73938-2\");",
@@ -264,10 +263,17 @@ rather than browse randomly. We display a search box for them at the top of the
 page. This also is currently the only way to create new links (aside from
 entering in the URL manually), but that might change in the future.
 
+Currently, this uses a combination of our search logic and Google Custom Search.
+
 > searchBox :: Html
-> searchBox = form ! [theclass "search-box", action "/links", method "get"] <<
->   [ textfield "contains" ! [accesskey "s"], stringToHtml " ",
->     submit "" "Search Links" ]
+> searchBox = form ! [identifier "cse-search-box", theclass "search-box", action "/search"] <<
+>   thediv << [
+>     hidden "cx"   "011479832181784786223:2ibwsl9f6ca",
+>     hidden "cof"  "FORID:10",
+>     hidden "ie"   "UTF-8",
+>     textfield "q" ! [accesskey "s"], stringToHtml " ",
+>     submit "sa" "Search" ] +++
+>   script ! [src "http://www.google.com/cse/brand?form=cse-search-box&lang=en"] << noHtml
 
 \subsection{Higher-Level Combinators}
 

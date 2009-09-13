@@ -114,6 +114,7 @@ Each of these modules will be described in its own section.
 > import Vocabulink.Member
 > import Vocabulink.Rating
 > import Vocabulink.Review
+> import Vocabulink.Search
 > import Vocabulink.Utils
 
 > import Network (PortID(..))
@@ -457,6 +458,10 @@ in the query string for the links page, it will do a search. E.g.
 >         Nothing  -> output404 path
 >         Just n'  -> linksPage ("Links by " ++ n') (memberLinks n)
 
+Site-wide search is done separately for now.
+
+> dispatch "GET" ["search"] = searchPage
+
 \subsection{Link Packs}
 
 The process of creating link packs is similar to that for creating links.
@@ -682,6 +687,7 @@ or curious.
 %include Vocabulink/Review/SM2.lhs
 %include Vocabulink/Article.lhs
 %include Vocabulink/Forum.lhs
+%include Vocabulink/Search.lhs
 
 That's it! You've seen everything required to run
 \url{http://www.vocabulink.com/}!
