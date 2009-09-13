@@ -24,7 +24,7 @@ static page we currently display is an article.
 
 > module Vocabulink.Article (  articlePage, articlesPage, refreshArticles,
 >                              getArticle, articleBody, getArticles,
->                              articleLinkHtml ) where
+>                              articleLinkHtml, Article(..) ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -259,7 +259,7 @@ published articles in the database that are in the ``main'' section.
 >                      \FROM article \
 >                      \WHERE publish_time < CURRENT_TIMESTAMP \
 >                        \AND section = 'main' \
->                      \ORDER BY publish_time DESC" []
+>                      \ORDER BY publish_time" []
 >   case rs of
 >     Nothing   -> return Nothing
 >     Just rs'  -> return $ Just $ mapMaybe articleFromTuple rs'

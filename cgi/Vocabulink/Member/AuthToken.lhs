@@ -126,12 +126,20 @@ token and send it to the client.
 >   setCookie Cookie {  cookieName     = "auth",
 >                       cookieValue    = show authTok,
 >                       cookieExpires  = Just expires,
->                       cookieDomain   = Just "vocabulink.com",
+>                       cookieDomain   = Just "www.vocabulink.com",
 >                       cookiePath     = Just "/",
 >                       cookieSecure   = False }
 
 > deleteAuthCookie :: MonadCGI m => m ()
-> deleteAuthCookie =
+> deleteAuthCookie = do
+>   deleteCookie Cookie {  cookieName   = "auth",
+>                          cookieDomain = Just "www.vocabulink.com",
+>                          cookiePath   = Just "/",
+>                          -- The following are only here to get rid of GHC warnings.
+>                          cookieValue  = "",
+>                          cookieExpires = Nothing,
+>                          cookieSecure = False }
+>   -- For the next 30 days, we need to support old cookies
 >   deleteCookie Cookie {  cookieName   = "auth",
 >                          cookieDomain = Just "vocabulink.com",
 >                          cookiePath   = Just "/",

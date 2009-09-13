@@ -1,6 +1,22 @@
 #title How to Write a Memorable Mnemonic Story
 #date 2008-11-13 00:00:00 -0800
+#updated 2009-09-12 14:45:00 -0700
 #section main
+
+; * Keys to Memorable Mnemonic Stories
+
+; unambiguous/essential
+; vivid/concrete
+; interactive/personal
+; ridiculous/imaginative
+
+; What makes a good bedtime story?
+
+; Try for at least 1 ridiculous element of the story.
+
+; * Layer in the Meanings of the Word
+
+; * Mnemonics are Stories
 
 For あるく ➝ to walk, it's easy to think of the link word "ark". And you could make up a mnemonic link such as "Noah walked around the ark."
 
@@ -19,6 +35,24 @@ It might take a while before you can easily create memorable mnemonics. Don't wo
 It's helpful to start writing as soon as you have a link word, even if you think it's not that great. You can always scrap or change your mnemonic at any time.
 
 You'll find that as you begin with what you thought was a weak mnemonic, the very act of writing begins to activate other regions of your mind giving you more ideas for embellishment. It seems to be an unfailing trait of the mind that it is very hard to drag ideas from it when staring at a blank page, but that the ideas begin to flow freely once the first word is laid down.
+
+* Mnemonics Can Be Long
+
+...as long as they're not ambiguous
+
+A story does not need to be short to be memorable. In fact, the opposite can be true. The more detail that you put into a story, the more connections it creates in the reader's brain. Brains work on associations, and detailed stories lead to more associations.
+
+The challenge is to add detail without introducing ambiguity. Walking this delicate balance takes practice.
+
+* Deliver a Memorable Punchline
+
+We tend to remember the beginning and end of a story more than the middle. We can take advantage of that by delivering the key component of the mnemonic in the punchline. This allows us to increase the size of a mnemonic story without making the essence of it ambiguous.
+
+; "build-up"
+
+* Writing Good Mnemonics Takes Practice
+
+Fortunately, spaced repetition gives us a feedback loop for how well our mnemonics work. By writing mnemonics for words you want to learn, and then studying those words, you can learn from your own experience what works well and what doesn't.
 
 * What to Avoid
 

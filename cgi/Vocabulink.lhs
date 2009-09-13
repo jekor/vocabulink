@@ -651,7 +651,7 @@ or curious.
 >                           "Latest Links",
 >                         unordList partialLinks ! [theclass "links"] ]
 >        latestArticles = do
->          ls <- getArticles
+>          ls <- reverse <$$> getArticles
 >          return $ maybe noHtml (\l -> thediv ! [theclass "sidebox"] << [
 >                                         h3 << anchor ! [href "/articles"] <<
 >                                           "Latest Articles",

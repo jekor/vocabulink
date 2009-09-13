@@ -2,7 +2,7 @@
 
 all : lib.common.js lib.link.js lib.member.js
 
-lib.common.js : to-function.js functional.js
+lib.common.js : to-function.js functional.js common.js
 	cat $^ | yuicompress --type js > $@
 
 # link viewing and reviewing, not editing

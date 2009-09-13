@@ -1,6 +1,5 @@
 #title Welcome to Vocabulink
 #date 2009-03-24 21:54:00 -0700
-#section main
 
 Vocabulink is devoted to helping you learn foreign languages as quickly and effortlessly as possible. We do this by focusing only on vocabulary building.
 
@@ -37,11 +36,11 @@ Vocabulink exploits this unique feature of the human brain to make learning more
 
 * Study Only the Words that Count
 
-According to some estimates[2], there are nearly 1 million words in the English language. That seems very daunting until you realize that the word "the" makes up 7% of the total words we read[3]. Following "the", the word "of" accounts for 3.5%. The next word, "and", makes up another 2.8% or so. With only 3 words you can read something like 13% of written English! You only need 135 words to read 50%[3]. And 135 words can be learned in a week with the right stories.
+According to some estimates[1], there are nearly 1 million words in the English language. That seems very daunting until you realize that the word "the" makes up 7% of the total words we read[2]. Following "the", the word "of" accounts for 3.5%. The next word, "and", makes up another 2.8% or so. With only 3 words you can read something like 13% of written English! You only need 135 words to read 50%[2]. And 135 words can be learned in a week with the right stories.
 
 This uneven spread is similar in every language that statisticians have studied. In fact, it has a name: Zipf's law. We can take advantage of this law to build vocabulary scientifically. You can get up in running with a foreign language with a minimum of study by avoiding studying words that you'll rarely, if ever, use.
 
-It'd be very easy to go after words that naturally lend themselves to mnemonics like: ひろ (pronounced "hero") or たこ (pronounced "taco"), but how often are you going to need to talk about ducks and octopuses? Instead, we focus on very common words like the ones we mentioned above.[4]
+It'd be very easy to go after words that naturally lend themselves to mnemonics like: ひろ (pronounced "hero") or たこ (pronounced "taco"), but how often are you going to need to talk about ducks and octopuses? Instead, we focus on very common words like the ones we mentioned above.[3]
 
 * Keep the Words You've Learned Fresh and at the Front of Your Brain
 
@@ -49,20 +48,18 @@ Sometimes we forget words, even when we've used memorable stories. But it's a te
 
 The traditional solution to this is flashcards. But there's a better way.
 
-We've taken some of the latest scientific research about how memory works and made it an integrated part of Vocabulink. It's called spaced repetition[5] and it makes sure that you spend as little time reviewing words as possible. You can think of it as your own personal language trainer, keeping detailed stats on what you've learned and drilling you only on the ones it thinks you're about to forget.
+We've taken some of the latest scientific research about how memory works and made it an integrated part of Vocabulink. It's called spaced repetition[4] and it makes sure that you spend as little time reviewing words as possible. You can think of it as your own personal language trainer, keeping detailed stats on what you've learned and drilling you only on the ones it thinks you're about to forget.
 
 * [[/member/signup][Sign Up]] for Free Now!
 
 See for yourself just how easy it is.
 
 Footnotes: 
-[1]  [[http://www.languagemonitor.com/][The Global Language Monitor]]
+[1]  according to the [[http://khnt.aksis.uib.no/icame/manuals/brown/][Brown Corpus]]
 
-[2]  according to the [[http://khnt.aksis.uib.no/icame/manuals/brown/][Brown Corpus]]
+[2]  [[http://en.wikipedia.org/wiki/Zipf%27s_law][Zipf's Law]]
 
-[3]  [[http://en.wikipedia.org/wiki/Zipf%27s_law][Zipf's Law]]
+[3]  The most common words in a language are referred to as "particles". They also tend to be the most difficult to learn due to their abstract meaning. However, link-word mnemonics do work for them if you come up with the right story.
 
-[4]  The most common words in a language are referred to as "particles". They also tend to be the most difficult to learn due to their abstract meaning. However, link-word mnemonics do work for them if you come up with the right story.
-
-[5]  [[http://www.supermemo.com/english/ol/background.htm][Spaced repetition in the practice of learning]]
+[4]  [[http://www.supermemo.com/english/ol/background.htm][Spaced repetition in the practice of learning]]
 

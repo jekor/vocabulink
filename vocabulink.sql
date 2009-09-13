@@ -374,7 +374,7 @@ BEGIN
 END; $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER add_root_comment AFTER INSERT ON article FOR EACH ROW
-EXECUTE PROCEDURE create_link_pack_root_comment();
+EXECUTE PROCEDURE create_article_root_comment();
 
 -- Forums
 
