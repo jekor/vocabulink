@@ -41,6 +41,23 @@
     img:
       border: 0
 
+h1.link .linkword:
+  font-size: 0.667em
+  vertical-align: top
+  text-decoration: underline
+  margin->
+    left: 0.2em
+    right: 0.2em
+  &:before:
+    content: "\00a0\00a0\00a0" // &nbsp;&nbsp;&nbsp;
+  &:after:
+    content: "\00a0\00a0\00a0"
+
+h1.link.cognate:
+  .orig:
+    &:after:
+      content: "\2500\2500\2500" // ────
+
 #baseline:
   margin->
     top: 5em
@@ -81,7 +98,7 @@ table.focus-box:
     &.destinations:
       text-align: left
 
-fieldset#link-word textarea:
+fieldset#linkword textarea:
   width: 50%
   height: 20em
 

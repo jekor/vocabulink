@@ -1,4 +1,4 @@
-% Copyright 2008, 2009 Chris Forno
+% Copyright 2009 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -40,8 +40,8 @@ For now, we're making use of Google Custom Search.
 >         [l]  -> anchor ! [href ("/link/" ++ show l)] <<
 >                  ("→ View 1 link containing '" ++ q ++ "'")
 >         ls   -> anchor ! [href ("/links?contains=" ++ q)] <<
->                  ("→ View all " ++ (show $ length ls) ++ " links containing '" ++ q ++ "'"),
->       anchor ! [href ("/link/new?fval0=" ++ q)] << ("→ Create a new link with '" ++ q ++ "'") ] ! [identifier "search-hints"],
+>                  ("→ View all " ++ show (length ls) ++ " links containing \"" ++ q ++ "\""),
+>       anchor ! [href ("/link/new?fval0=" ++ q)] << ("→ Create a new link with \"" ++ q ++ "\"") ] ! [identifier "search-hints"],
 >     thediv ! [identifier "cse-search-results"] << noHtml,
 >     script ! [thetype "text/javascript"] << primHtml (unlines [
 >       "var googleSearchIframeName = \"cse-search-results\";",

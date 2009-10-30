@@ -11,26 +11,31 @@ If you don't find a link that works for you, consider creating your own. The
 easiest way to create a link is to search for a link containing the word you're
 interested in.[1]
 
+; * How to Learn a Link
+
 ** How to Create a New Link
 
 To demonstrate, let's learn the word "lerni" ("to learn" in Esperanto).
 
  1. Enter =lerni= into the search box at the top of the page and click =Search
     Links=.
- 2. The search results page will tell you that it found 0 (or more) links
-    containing =lerni=. Click on a =new link= node (oval) to the right of
-    =lerni=.[2]
- 3. You'll now be on the =Create a Link= page and the =Origin= side of the link
+ 2. Note that at the top of the search results page you'll see a link titled
+    something like 'View all links containing "lerni"'. This means that links
+    with =lerni= on one side or the other already exist.
+ 3. We'll ignore the fact that links already exist for this demonstration.
+    Click the next link titled 'Create a new link with "lerni"'.
+ 4. You'll now be on the =Create a Link= page and the =Foreign= side of the link
     will be pre-filled with =lerni=.
- 4. Choose =Esperanto= from the drop-down menu next to the origin.
- 5. Fill in =to learn= in the destination box and choose =English= as the
-    destination language.
- 6. Because this link is a cognate (see [[/article/understanding-link-types][Understanding Link Types]]), choose
+ 5. Choose =Esperanto= from the drop-down menu next to =Foreign=.
+ 6. Fill in =to learn= in the =Native= box and choose =English= as the language.
+ 7. Because this link is a cognate (see [[/article/understanding-link-types][Understanding Link Types]]), choose
     =Cognate= from the =Link Type= drop-down menu.
- 7. Click =Preview= to see what your link will look like when it's created.
- 8. Once you're satisfied, click =Link=. This will establish the link.
- 9. Add the link to your review set by clicking the =Review= button to the left
-    of the newly created link.
+ 8. Click =Preview= to see what your link will look like when it's created. Once
+    you're satisfied...
+ 9. Don't actually do the following, as a link for =lerni= already exists: click
+    =Link=. This will establish the link.
+ 10. Add the link to your review set by clicking the =Review= button on the page
+     of a newly created link.
 
 Congratulations! Continue on to see how to review your newly created link.
 

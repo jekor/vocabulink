@@ -9,6 +9,9 @@ all : $(cgi)
 
 doc : vocabulink.pdf
 
+configure : $(lhss)
+	runhaskell Setup.lhs configure
+
 vocabulink.cgi : $(lhss)
 	runhaskell Setup.lhs build
 
@@ -30,7 +33,7 @@ lint : $(lhss)
 	hlint $^
 
 clean :
-	find . -iregex ".*\.\(o\|hi\|o-boot\|hi-boot\)" -print0 | xargs -0 rm
+	cabal clean
 
 metrics : $(lhss)
 	@echo -e -n "\tSLOC: "

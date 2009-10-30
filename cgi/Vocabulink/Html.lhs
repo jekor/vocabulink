@@ -57,9 +57,8 @@ functions. An example of this is |linkList|.
 > import Data.List (intersperse)
 > import Network.Gravatar as G (gravatarWith, size)
 > import Text.Formlets (  runFormState, plug, nothingIfNull,
->                         check, ensure, ensures, checkM, ensureM)
+>                         check, ensure, ensures, checkM, ensureM, File)
 > import Text.Formlets as F
-> import Text.Formlets (File)
 > import Text.Pandoc (  readMarkdown, writeHtml, defaultParserState,
 >                       defaultWriterOptions, stateSanitizeHTML )
 > import Text.Regex (mkRegex, subRegex)
@@ -94,7 +93,7 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >                      G.gravatarWith  (map toLower $ fromJust memberEmail)
 >                                      Nothing (G.size 60) (Just "wavatar") $
 >                      ""
->        memberObj = liftM (\_ -> [("membername", fromJust memberName), ("gravatar", gravatarUrl)]) memberNo
+>        memberObj = liftM (const [("membername", fromJust memberName), ("gravatar", gravatarUrl)]) memberNo
 >   cssDeps'  <- mapM includeDep cssDeps
 >   jsDeps'   <- mapM includeDep jsDeps
 >   let  xhtml = renderHtml $ header <<
@@ -105,7 +104,7 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >                             concatHtml jsDeps',
 >                             script ! [thetype "text/javascript"] << primHtml
 >                               ((isJust memberObj ?
->                                   "var MEMBER_OBJ = " ++ (encode $ toJSObject $ fromJust memberObj) ++ ";" $
+>                                   "var MEMBER_OBJ = " ++ encode (toJSObject $ fromJust memberObj) ++ ";" $
 >                                   "") ++
 >                                "$(document).ready(function () {\
 >                                \Functional.install();\
@@ -123,7 +122,7 @@ If any JavaScript files are required, |stdPage| will automatically add a
 Often we just need a simple page where the title and header are the same.
 
 > simplePage :: String -> [Dependency] -> [Html] -> App CGIResult
-> simplePage t deps h = stdPage t deps [] $ (h1 << t) : h
+> simplePage t deps = stdPage t deps [] . ((h1 << t) :)
 
 It's common to add a little hyperlink teaser for actions that require
 verification. For example "login to reply" or "verify email to reply".
@@ -206,7 +205,7 @@ content.
 
 > footerBar :: App Html
 > footerBar = do
->   copy <- copyrightNotice
+>   copy <- liftIO $ copyrightNotice
 >   return $ concatHtml [
 >     linkList [
 >       anchor ! [href "/help"] << "help",
@@ -219,9 +218,9 @@ We want a copyright notice at the bottom of every page. Since this is a
 copyright notice for dynamic content, we want it to be up-to-date with the
 generation time (now).
 
-> copyrightNotice :: App Html
+> copyrightNotice :: IO Html
 > copyrightNotice = do
->   year <- liftIO currentYear
+>   year <- currentYear
 >   return $ paragraph ! [theclass "copyright"] <<
 >     [  stringToHtml "Copyright 2008–",
 >        stringToHtml (show year ++ " "),
@@ -269,7 +268,7 @@ Currently, this uses a combination of our search logic and Google Custom Search.
 > searchBox = form ! [identifier "cse-search-box", theclass "search-box", action "/search"] <<
 >   thediv << [
 >     hidden "cx"   "011479832181784786223:2ibwsl9f6ca",
->     hidden "cof"  "FORID:10",
+>     hidden "cof"  "FORID:9",
 >     hidden "ie"   "UTF-8",
 >     textfield "q" ! [accesskey "s"], stringToHtml " ",
 >     submit "sa" "Search" ] +++
@@ -332,7 +331,7 @@ Currently this uses an icon from the
 > helpButton :: String -> Maybe String -> Html
 > helpButton url label' = anchor ! [href url, theclass "help-button"] << [
 >                           image ! [src "http://s.vocabulink.com/icon_info.gif"],
->                           maybe noHtml (\x -> stringToHtml $ ' ' : x) label' ]
+>                           maybe noHtml (stringToHtml . (' ' :)) label' ]
 
 \subsection{Other Markup}
 

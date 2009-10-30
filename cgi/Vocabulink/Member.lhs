@@ -151,7 +151,7 @@ Our password input is as permissive as our username input.
 
 > passwd :: String -> AppForm String
 > passwd l = plug (tabularInput l) (F.password Nothing) `check` ensures
->   [  ((>=  6)   . length  , "Your password must be 6 characters or longer."),
+>   [  ((>=  4)   . length  , "Your password must be 4 characters or longer."),
 >      ((<=  72)  . length  , "Your password must be 72 characters or shorter.") ]
 
 During registration, we want the client to confirm their password, if for no

@@ -53,7 +53,7 @@ a.button:
     color: #0A0
     border-color: #0A0
     background-color: #DFF4DF
-  &.link-word:
+  &.linkword:
     color: #00F
     border-color: #00F
     background-color: #DFDFFF

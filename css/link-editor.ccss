@@ -1,6 +1,6 @@
 // This is specifically for editing links, not for viewing them.
 
-#link-word:
+#linkword:
   .markItUp:
     width: 50%
     margin->

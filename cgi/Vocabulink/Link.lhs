@@ -25,7 +25,7 @@ them.
 >                           memberLinks, latestLinks, linkPage, deleteLink,
 >                           linksPage, linksContainingPage, newLink,
 >                           partialLinkHtml, partialLinkFromValues,
->                           drawLinkSVG, drawLinkSVG', languagePairsPage,
+>                           drawLinkSVG', languagePairsPage,
 >                           languagePairLinks, languageNameFromAbbreviation,
 >                           updateLinkStory, LinkPack(..),
 >                           newLinkPack, linkPackPage, deleteLinkPack,
@@ -105,7 +105,7 @@ with a client or the database.
 > linkTypeNameFromType :: LinkType -> String
 > linkTypeNameFromType Association         = "association"
 > linkTypeNameFromType Cognate             = "cognate"
-> linkTypeNameFromType (LinkWord _ _)      = "link word"
+> linkTypeNameFromType (LinkWord _ _)      = "linkword"
 > linkTypeNameFromType (Relationship _ _)  = "relationship"
 
 Each link type also has an associated color. This makes the type of links stand
@@ -115,7 +115,7 @@ out clearly in lists and graphs.
 > linkColor l = case linkTypeName l of
 >                 "association"   -> "#000000"
 >                 "cognate"       -> "#00AA00"
->                 "link word"     -> "#0000FF"
+>                 "linkword"     -> "#0000FF"
 >                 "relationship"  -> "#AA0077"
 >                 _               -> "#FF00FF"
 
@@ -125,7 +125,7 @@ The link's background color is used for shading and highlighting.
 > linkBackgroundColor l = case linkTypeName l of
 >                 "association"   -> "#DFDFDF"
 >                 "cognate"       -> "#DFF4DF"
->                 "link word"     -> "#DFDFFF"
+>                 "linkword"     -> "#DFDFFF"
 >                 "relationship"  -> "#F4DFEE"
 >                 _               -> "#FFDFFF"
 
@@ -272,7 +272,7 @@ We just need to retrieve its type-level details from the database.
 > getLinkType (PartialLink p) = case p of
 >   (Link {  linkTypeName  = "association" })  -> return $ Just Association
 >   (Link {  linkTypeName  = "cognate"})       -> return $ Just Cognate
->   (Link {  linkTypeName  = "link word",
+>   (Link {  linkTypeName  = "linkword",
 >            linkNumber    = n })              -> do
 >     rs <- queryTuple'  "SELECT link_word, story FROM link_type_link_word \
 >                        \WHERE link_no = ?" [toSql n]
@@ -301,7 +301,7 @@ types (some, like Relationship, are experimental) sorted by how common they
 are.
 
 > activeLinkTypes :: [String]
-> activeLinkTypes = ["link word", "association", "cognate"]
+> activeLinkTypes = ["linkword", "association", "cognate"]
 
 \subsection{Deleting Links}
 
@@ -325,15 +325,38 @@ Fortunately there is Raphaël (http://raphaeljs.com/reference.html) which makes
 some pretty fancy link drawing possible via JavaScript. You'll need to make
 sure to include |JS "lib.link"| as a dependency when using this.
 
-> drawLinkSVG :: Link -> Html
-> drawLinkSVG = drawLinkSVG' "drawLink"
+\subsubsection{How to Represent a Link with HTML}
+
+For pages that prominently display a single link, such as the link page or
+review page, use an h1. For links in a list (in compact form), such as on the
+Latest Links page, use an h2. The class is the same for either.
+
+<h1 class="link linkword">
+    <span class="orig">Origin</span>
+    <span class="dest">Destination</span>
+    <span class="linkword">Link Word</span>
+</h1>
+
+<h2 class="link cognate">
+    <span class="orig">Origin</span>
+    <span class="dest">Destination</span>
+</h2>
 
 > drawLinkSVG' :: String -> Link -> Html
 > drawLinkSVG' f link =
 >   thediv ! [identifier "graph", thestyle "height: 100px"] <<
->     h1 << ((linkOrigin link) ++ " → " ++ (linkDestination link)) +++
+>     h1 << (linkOrigin link ++ " → " ++ linkDestination link) +++
 >     script ! [thetype "text/javascript"] << primHtml (
 >       "$(document).ready(" ++ f ++ ".curry(" ++ showLinkJSON link ++ "));")
+
+> renderLink :: Link -> Html
+> renderLink link = h1 ! [theclass ("link " ++ linkTypeName link)] << [
+>   thespan ! [theclass "orig"] << linkOrigin link,
+>   renderLinkType $ linkType link,
+>   thespan ! [theclass "dest"] << linkDestination link ]
+>  where renderLinkType :: LinkType -> Html
+>        renderLinkType (LinkWord word _)  = thespan ! [theclass "linkword"] << word
+>        renderLinkType _                  = noHtml
 
 It seems that the JSON library author does not want us making new instances of
 the |JSON| class. Oh well, I didn't want to write |readJSON| anyway.
@@ -353,7 +376,7 @@ of the link but displaying its type-level details as well.
 
 > displayLink :: Link -> Html
 > displayLink l = concatHtml [
->   drawLinkSVG l,
+>   renderLink l,
 >   thediv ! [theclass "link-details htmlfrag"] << linkTypeHtml (linkType l) ]
 
 > linkTypeHtml :: LinkType -> Html
@@ -415,7 +438,7 @@ textarea for in-page editing.
 >                     Nothing    -> return noHtml
 >       rateInvitation <- invitationLink "Rate"
 >       stdPage (orig ++ " → " ++ dest) [CSS "link", JS "lib.link"] []
->         [  drawLinkSVG l',
+>         [  renderLink l',
 >            thediv ! [theclass "link-ops"] << [
 >              anchor ! [href (  "/links?ol=" ++ linkOriginLang l' ++
 >                                "&dl=" ++ linkDestinationLang l' ) ] <<
@@ -719,7 +742,7 @@ Hopefully by then I will know more than I do now.
 >                                      ("Link Type" `formLabel` linkSelect Nothing)
 >                                <*> pure Association
 >                                <*> pure Cognate
->                                <*> fieldset' "link-word" linkTypeLinkWord
+>                                <*> fieldset' "linkword" linkTypeLinkWord
 >                                <*> fieldset' "relationship" linkTypeRelationship)
 >                    `check` ensure complete
 >                      "Please fill in all the link type fields."
@@ -734,7 +757,7 @@ Hopefully by then I will know more than I do now.
 > linkTypeS :: String -> LinkType -> LinkType -> LinkType -> LinkType -> LinkType
 > linkTypeS "association"   l _ _ _  = l
 > linkTypeS "cognate"       _ l _ _  = l
-> linkTypeS "link word"     _ _ l _  = l
+> linkTypeS "linkword"      _ _ l _  = l
 > linkTypeS "relationship"  _ _ _ l  = l
 > linkTypeS _               _ _ _ _  = error "Unknown link type."
 
@@ -743,7 +766,7 @@ Hopefully by then I will know more than I do now.
 >   <*> linkTypeLinkWordStory "Write a story linking the 2 words here."
 
 > linkTypeLinkWordStory :: String -> AppForm String
-> linkTypeLinkWordStory s = F.textarea Nothing Nothing (Just s)
+> linkTypeLinkWordStory = F.textarea Nothing Nothing . Just
 
 > linkTypeRelationship :: AppForm LinkType
 > linkTypeRelationship = Relationship <$>
@@ -865,7 +888,7 @@ since I didn't want major edits to throw off someone's reviewing, so I was
 going to implement versioning. While that's still a possibility, it seems like
 more work than it's worth for now.
 
-This only works for link word links.
+This only works for linkword links.
 
 TODO: Check that the new trimmed body is not empty.
 
@@ -876,7 +899,7 @@ TODO: Check that the new trimmed body is not empty.
 >   case link of
 >     Nothing  -> output404 ["link", show linkNo, "story"]
 >     Just l'  ->
->       if linkTypeName (pLink l') == "link word"
+>       if linkTypeName (pLink l') == "linkword"
 >         then if linkAuthor (pLink l') == memberNo
 >                then do
 >                  res <- quickStmt'  "UPDATE link_type_link_word SET story = ? \
@@ -889,7 +912,7 @@ TODO: Check that the new trimmed body is not empty.
 >         else error "Unsupported link type."
 
 > linkPackForm :: Integer -> AppForm (LinkPack, Integer)
-> linkPackForm fl = plug (\xhtml -> table << xhtml) $ mkLinkPack
+> linkPackForm fl = plug (table <<) $ mkLinkPack
 >   <$>  F.hidden (Just $ show fl) `check` ensure ((> 0) . length) "Missing first link number."
 >   <*>  plug (tabularInput "Pack Name") (F.input Nothing) `check`
 >          ensures (nonEmptyAndLessThan 50 "Pack Name")

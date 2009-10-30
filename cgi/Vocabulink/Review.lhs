@@ -145,7 +145,7 @@ the client to |nextReview| which begins the process all over again.
 >     Just l'  -> do
 >       let source  = linkOrigin l'
 >           dest    = linkDestination l'
->       stdPage ("Review: " ++ source ++ " -- ?")
+>       stdPage ("Review: " ++ source ++ " → ?")
 >               [CSS "link", JS "lib.link"] []
 >         [  drawLinkSVG' "drawReview" l',
 >            form ! [action ("/review/" ++ show linkNo), method "post"] <<

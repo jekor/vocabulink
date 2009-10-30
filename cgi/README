@@ -1,4 +1,4 @@
-This is Vocabulink, the program that powers www.vocabulink.com.
+This is Vocabulink, the program that powers http://www.vocabulink.com/.
 
 This source distribution consists mostly of a literate Haskell CGI application,
 but also contains the JavaScript, SQL, and CSS used by the site as well. It
@@ -9,13 +9,11 @@ to you under the GNU Affero Public license.
 
 How to Build
 ============
-Just run gmake. The program has not been built for Cabal as it's not intended
-to be a general purpose application or library.
+run `make configure && make` or `cabal install`
 
-Note that I've only tested using GHC 6.8.3. GHC 6.10 won't work because of
-changes to Control.Exception. To build on GHC 6.10, you can try the patches
-provided by Henry Laxen. To apply the patches: patch -p1 < ghc.6.10.diff
+Note that you'll need GHC 6.10 or greater.
 
 Contact
 =======
 Questions, comments, suggestions? Contact <jekor@jekor.com>.
+http://www.vocabulink.com/source

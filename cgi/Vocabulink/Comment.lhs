@@ -91,7 +91,7 @@ from getComments to determine which we're dealing with.
 >   case comments of
 >     Nothing  -> return $ paragraph << "Unable to retrieve comments."
 >     Just cs  -> do
->       let cs'  = if (length cs > 0 && commentLevel (head cs) == 0)
+>       let cs'  = if length cs > 0 && commentLevel (head cs) == 0
 >                    then cs -- true root
 >                    else map (\c -> c {commentLevel = commentLevel c - 1}) cs -- pseudo root
 >       invitation <- invitationLink "Comment"

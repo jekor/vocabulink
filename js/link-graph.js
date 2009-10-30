@@ -164,8 +164,7 @@ function createGraph() {
   return g;
 }
 
-function drawLink(link) {
-  var g = createGraph();
+function drawLink(g, link) {
   var l = g.graph.path({'stroke': link.color, 'stroke-width': 3}).moveTo(g.width*0.3, g.height/2).lineTo(g.width*0.7, g.height/2);
   var origNode = graphNode(g, link.orig, {'x': g.width*0.3, 'y': g.height/2}, '#00F', '#000', '#DFDFDF');
   var destNode = graphNode(g, link.dest, {'x': g.width*0.7, 'y': g.height/2}, '#00F', link.color, link.bgcolor);
@@ -218,7 +217,35 @@ function drawLinkReview(link, callback) {
   destNode.mouseover(mouseIn.curry(destNode));
   destNode.mouseout(mouseOut.curry(destNode));
   return {'graph': g.graph, 'node': destNode};
-  // var reveal = function () {g.graph.remove(); drawLink(link);};
+  // var reveal = function () {g.graph.remove(); drawLink(g, link);};
   // destNode.click(callback);
   // return reveal;
 }
+
+function createGraph_(block) {
+  // TODO: What about just replacing the contents and maybe changing the style of the h1?
+  var graph = $('<div class="graph" style="height: 100px"></div>');
+  $(block).replaceWith(graph);
+  var gdims = {'w': graph.width(),
+               'h': graph.height()};
+  var g = {'graph': new Raphael(graph[0], gdims.w, gdims.h),
+           'width': gdims.w, 'height': gdims.h};
+  return g;
+}
+
+function drawLink_() {
+  // TODO: Switch drawLink to take the target block as a parameter.
+  var orig = $(this).find('.orig').text();
+  var dest = $(this).find('.dest').text();
+  var label = '';
+  if ($(this).hasClass('linkword')) {
+    label = $(this).find('.linkword').text();
+  }
+  var g = createGraph_(this);
+  drawLink(g, {'orig': orig, 'dest': dest, 'label': label,
+               'color': '#0000FF', 'bgcolor': '#DFDFFF'});
+}
+
+$(document).ready(function () {
+  $('h1.link').each(drawLink_);
+});

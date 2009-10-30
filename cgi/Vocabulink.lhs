@@ -117,8 +117,6 @@ Each of these modules will be described in its own section.
 > import Vocabulink.Search
 > import Vocabulink.Utils
 
-> import Network (PortID(..))
-
 \section{Other Modules}
 
 Vocabulink makes use of a couple dozen or so Haskell libraries. Even though we
@@ -196,6 +194,7 @@ directory).
 > import Data.ConfigFile (readfile, emptyCP, ConfigParser, get, CPError, options)
 > import Data.List (find, intercalate, intersect)
 > import Data.List.Split (splitOn)
+> import Network (PortID(..))
 > import Network.SCGI (runSCGIConcurrent')
 > import Network.URI (URI(..), unEscapeString)
 > import System.Directory (getDirectoryContents)

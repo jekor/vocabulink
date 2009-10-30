@@ -38,7 +38,7 @@ You'll find that as you begin with what you thought was a weak mnemonic, the ver
 
 * Mnemonics Can Be Long
 
-...as long as they're not ambiguous
+...as long as they're not ambiguous.
 
 A story does not need to be short to be memorable. In fact, the opposite can be true. The more detail that you put into a story, the more connections it creates in the reader's brain. Brains work on associations, and detailed stories lead to more associations.
 
