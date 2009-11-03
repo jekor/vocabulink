@@ -24,6 +24,7 @@
 >   authExpiry     :: Day,
 >   authMemberNo   :: Integer,
 >   authUsername   :: String,
+>   authGravatar   :: Maybe String,
 >   authIPAddress  :: String,
 >   authDigest     :: String
 > }

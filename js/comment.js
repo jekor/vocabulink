@@ -114,9 +114,9 @@ function vote(e) {
 
 function createCommentBox() {
   var box = $('<div class="comment-box">' +
-                '<img class="avatar" width="60" height="60" src="' + MEMBER_OBJ.gravatar + '"/>' +
+                '<img class="avatar" width="60" height="60" src="' + memberGravatar() + '"/>' +
                 '<p class="metadata">' +
-                  '<span class="membername">' + MEMBER_OBJ.membername + '</span>' +
+                  '<span class="membername">' + memberName() + '</span>' +
                 '</p>' +
                 '<div class="body">' +
                   '<textarea></textarea>' +

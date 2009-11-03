@@ -147,7 +147,7 @@ the client to |nextReview| which begins the process all over again.
 >           dest    = linkDestination l'
 >       stdPage ("Review: " ++ source ++ " → ?")
 >               [CSS "link", JS "lib.link"] []
->         [  drawLinkSVG' "drawReview" l',
+>         [  renderLink ["review"] l',
 >            form ! [action ("/review/" ++ show linkNo), method "post"] <<
 >              [  hidden "recall-time" "",
 >                 hidden "hidden-lexeme" dest,

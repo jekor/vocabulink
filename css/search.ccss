@@ -1,0 +1,10 @@
+// Our search results
+#new-link:
+  margin-bottom: 1.3em
+
+// Google's search results
+#cse-search-results:
+  width: 795px
+  margin->
+    left: auto
+    right: auto

@@ -427,20 +427,11 @@ establish the link. (Previewing is done through the @GET@ as well.)
 
 Retrieving a listing of links is easier.
 
-Searching means forms and forms mean query strings. So if there's a @contains@
-in the query string for the links page, it will do a search. E.g.
-
-\begin{center}
-@GET /links?contains=water@
-\end{center}
-
 > dispatch "GET" path@["links"] = do
->   contains <- getInput "contains"
 >   ol <- getInput "ol"
 >   dl <- getInput "dl"
->   case (contains, ol, dl) of
->     (Just contains', _, _)   -> linksContainingPage contains'
->     (_, Just ol', Just dl')  -> do
+>   case (ol, dl) of
+>     (Just ol', Just dl')  -> do
 >       ol'' <- languageNameFromAbbreviation ol'
 >       dl'' <- languageNameFromAbbreviation dl'
 >       case (ol'', dl'') of
@@ -639,7 +630,7 @@ or curious.
 >          case ls of
 >            Nothing   -> return noHtml
 >            Just ls'  -> do
->              partialLinks <- mapM partialLinkHtml ls'
+>              partialLinks <- mapM renderPartialLink ls'
 >              return $ thediv ! [theclass "sidebox"] << [
 >                         h3 << anchor ! [href ("/links/" ++ show mn)] <<
 >                           "My Links",
@@ -649,7 +640,7 @@ or curious.
 >          case ls of
 >            Nothing   -> return noHtml
 >            Just ls'  -> do
->              partialLinks <- mapM partialLinkHtml ls'
+>              partialLinks <- mapM renderPartialLink ls'
 >              return $ thediv ! [theclass "sidebox"] << [
 >                         h3 << anchor ! [href "/links"] <<
 >                           "Latest Links",

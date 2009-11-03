@@ -24,7 +24,7 @@ formed (although we have no guarantee that it will be valid). But more
 importantly, it allows us to use abstraction to get higher-level HTML-based
 functions. An example of this is |linkList|.
 
-> module Vocabulink.Html (  Dependency(..), stdPage, simplePage, clear,
+> module Vocabulink.Html (  stdPage, simplePage, clear,
 >                           linkList, breadcrumbs, options, menu, tableRows,
 >                           accesskey, readonly, helpButton, markdownToHtml,
 >                           AppForm, runForm, runForm', formLabel, formLabel',
@@ -36,7 +36,7 @@ functions. An example of this is |linkList|.
 >                           (<<), (+++), (!), showHtmlFragment,
 >                           identifier, theclass, thediv, thespan, style,
 >                           paragraph, pre, h1, h2, h3, br, anchor, href, script,
->                           image, unordList, form, action, method, enctype,
+>                           image, ulist, li, unordList, form, action, method, enctype,
 >                           hidden, label, textfield, password, button, submit,
 >                           fieldset, legend, afile, textarea, select, widget,
 >                           thestyle, src, width, height, value, name, thetype,
@@ -55,7 +55,6 @@ functions. An example of this is |linkList|.
 
 > import qualified Data.ByteString.Lazy as BS
 > import Data.List (intersperse)
-> import Network.Gravatar as G (gravatarWith, size)
 > import Text.Formlets (  runFormState, plug, nothingIfNull,
 >                         check, ensure, ensures, checkM, ensureM, File)
 > import Text.Formlets as F
@@ -79,21 +78,14 @@ If any JavaScript files are required, |stdPage| will automatically add a
 
 > stdPage :: String -> [Dependency] -> [Html] -> [Html] -> App CGIResult
 > stdPage title' deps head' body' = do
+>   setHeader "Content-Type" "text/html; charset=utf-8"
 >   headerB  <- headerBar
 >   footerB  <- footerBar
->   setHeader "Content-Type" "text/html; charset=utf-8"
->   memberNo <- asks appMemberNo
->   memberName <- asks appMemberName
 >   memberEmail <- asks appMemberEmail
 >   let  deps' = deps ++ [CSS "lib.common", JS "lib.common"] ++ (isJust memberEmail ? [CSS "lib.member", JS "lib.member"] $ [])
 >        (cssDeps, jsDeps) = partition (\x -> case x of
 >                                               (CSS _) -> True
 >                                               (JS  _) -> False) deps'
->        gravatarUrl = isJust memberEmail ?
->                      G.gravatarWith  (map toLower $ fromJust memberEmail)
->                                      Nothing (G.size 60) (Just "wavatar") $
->                      ""
->        memberObj = liftM (const [("membername", fromJust memberName), ("gravatar", gravatarUrl)]) memberNo
 >   cssDeps'  <- mapM includeDep cssDeps
 >   jsDeps'   <- mapM includeDep jsDeps
 >   let  xhtml = renderHtml $ header <<
@@ -102,13 +94,6 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >                     concatHtml head' ] +++
 >                  body << [  script ! [src "http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"] << noHtml,
 >                             concatHtml jsDeps',
->                             script ! [thetype "text/javascript"] << primHtml
->                               ((isJust memberObj ?
->                                   "var MEMBER_OBJ = " ++ encode (toJSObject $ fromJust memberObj) ++ ";" $
->                                   "") ++
->                                "$(document).ready(function () {\
->                                \Functional.install();\
->                                \});"),
 >                             thediv ! [identifier "head"] << headerB,
 >                             case jsDeps of
 >                               []  -> noHtml

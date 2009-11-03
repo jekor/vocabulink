@@ -40,6 +40,11 @@
       bottom: 2em
     img:
       border: 0
+  &.review:
+    .dest:
+      display: none
+    .linkword:
+      display: none
 
 h1.link .linkword:
   font-size: 0.667em

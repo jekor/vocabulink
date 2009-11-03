@@ -21,7 +21,7 @@ Most functionality on Vocabulink---such as review scheduling---is for
 registered members only.
 
 > module Vocabulink.Member (  login, logout, registerMember,
->                             getMemberNumber, getMemberName,
+>                             getMemberNumber, getMemberName, getMemberEmail,
 >                             confirmEmail, confirmEmailPage,
 >                             memberSupport ) where
 
@@ -74,10 +74,11 @@ and then continuing where it left off.
 >     Right (user, _) -> do
 >       ip         <- remoteAddr
 >       memberNo   <- getMemberNumber user
+>       email      <- maybe (return Nothing) getMemberEmail memberNo
 >       case memberNo of
 >         Nothing  -> redirect redir
 >         Just n   -> do
->           setAuthCookie n user ip
+>           setAuthCookie n user email ip
 >           redirect redir
 
 At the time of authentication, we have to fetch the member's number from the
@@ -85,15 +86,20 @@ database before it can be packed into their auth token. There may be a way to
 put this step into password verification so that we don't need 2 queries.
 
 > getMemberNumber :: String -> App (Maybe Integer)
-> getMemberNumber user = do
->   n <- queryValue' "SELECT member_no FROM member \
->                    \WHERE username = ?" [toSql user]
->   return $ maybe Nothing fromSql n
+> getMemberNumber memberName =
+>   maybe Nothing fromSql <$> queryValue' "SELECT member_no FROM member \
+>                                         \WHERE username = ?" [toSql memberName]
 
 > getMemberName :: Integer -> App (Maybe String)
-> getMemberName number =
+> getMemberName memberNo =
 >   maybe Nothing fromSql <$> queryValue' "SELECT username FROM member \
->                                         \WHERE member_no = ?" [toSql number]
+>                                         \WHERE member_no = ?" [toSql memberNo]
+
+> getMemberEmail :: Integer -> App (Maybe String)
+> getMemberEmail memberNo =
+>   maybe Nothing fromSql <$> queryValue' "SELECT email FROM member \
+>                                         \WHERE member_no = ?" [toSql memberNo]
+
 
 To logout a member, we simply clear their auth cookie and redirect them
 somewhere sensible. If you want to send a client somewhere other than the front
@@ -217,7 +223,7 @@ registered, we log them in and redirect them to the front page.
 >         Nothing  -> error "Registration failure (this is not your fault)."
 >         Just n   -> do
 >           ip <- remoteAddr
->           setAuthCookie n (regUser reg) ip
+>           setAuthCookie n (regUser reg) Nothing ip
 >           sendConfirmationEmail n reg
 >           redirect "/"
 
@@ -255,6 +261,9 @@ This is the place that the dispatcher will send the client to if they click the
 hyperlink in the email. If confirmation is successful it redirects them to some
 hopefully useful page.
 
+Once we have confirmed the member's email, we need to set a new auth token
+cookie for them that contains their gravatar hash.
+
 > confirmEmail :: String -> App CGIResult
 > confirmEmail hash = do
 >   memberNo <- asks appMemberNo
@@ -275,7 +284,12 @@ hopefully useful page.
 >                       \WHERE member_no = ?" [toSql n]
 >           case res of
 >             Nothing  -> confirmEmailPage
->             Just _   -> redirect =<< referrerOrVocabulink
+>             Just _   -> do
+>               email <- getMemberEmail n
+>               memberName <- fromJust <$> asks appMemberName
+>               ip <- remoteAddr
+>               setAuthCookie n memberName email ip
+>               redirect =<< referrerOrVocabulink
 >         else confirmEmailPage
 
 This is the page we redirect unconfirmed members to when they try to interact

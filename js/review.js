@@ -22,17 +22,48 @@ function getReviewStats(startTime) {
   $('#recall-buttons').show();
 }
 
-function drawReview(link) {
+// This draws a link with the destination obscured (for reviews).
+function drawLinkReview(g, link, callback) {
+  // We want to give away as little as possible about the link.
+  // The idea is that eventually we'll support hinting. When a member asks for
+  // a hint, we might show the color of the link. The next hint might be the
+  // link word (if one exists), etc.
+  // At first, I thought I could repurpose drawLink() or make it more general.
+  // But after some review it has less in common with the needs of this
+  // function than I thought.
+  var l = g.graph.path({'stroke': '#000', 'stroke-width': 3}).moveTo(g.width*0.3, g.height/2).lineTo(g.width*0.7, g.height/2);
+  var origNode = graphNode(g, link.orig, {'x': g.width*0.3, 'y': g.height/2}, '#000', '#000', '#DFDFDF');
+  var destNode = graphNode(g, '?', {'x': g.width*0.7, 'y': g.height/2}, '#000', '#000', '#DFDFDF');
+  var mouseIn  = function (node) {
+    node.ellipse.animate({'fill': node.hovercolor}, 250);
+    document.body.style.cursor = 'pointer';
+  };
+  var mouseOut = function (node) {
+    node.ellipse.animate({'fill': '#FFF'}, 250);
+    document.body.style.cursor = 'auto';
+  };
+  origNode.mouseover(mouseIn.curry(origNode));
+  origNode.mouseout(mouseOut.curry(origNode));
+  destNode.mouseover(mouseIn.curry(destNode));
+  destNode.mouseout(mouseOut.curry(destNode));
+  return {'graph': g.graph, 'node': destNode};
+  // var reveal = function () {g.graph.remove(); drawLink(g, link);};
+  // destNode.click(callback);
+  // return reveal;
+}
+
+function drawReview(block, link) {
   var startTime = new Date();
-  var g = drawLinkReview(link);
+  var g = createGraph_(block);
+  var h = drawLinkReview(g, link);
   var revealed = false;
   var reveal = function () {
     revealed = true;
-    g.graph.remove();
-    drawLink(link);
     getReviewStats(startTime);
+    g = createGraph_(g.node);
+    drawLink(g, link);
   };
-  g.node.click(reveal);
+  h.node.click(reveal);
   $(document).bind('keyup', function (e) {
     if (e.keyCode == 32) { // spacebar
       reveal(startTime);
@@ -49,3 +80,23 @@ function drawReview(link) {
     return true;
   });
 }
+
+function drawLinkReview_() {
+  var orig = $(this).find('.orig').text();
+  var dest = $(this).find('.dest').text();
+  var label = '';
+  var colors = linkColors['association'];
+  if ($(this).hasClass('cognate')) {
+    colors = linkColors['cognate'];
+  }
+  if ($(this).hasClass('linkword')) {
+    label = $(this).find('.linkword').text();
+    colors = linkColors['linkword'];
+  }
+  drawReview(this, {'orig': orig, 'dest': dest, 'label': label,
+                    'color': colors[0], 'bgcolor': colors[1]});
+}
+
+$(document).ready(function () {
+  $('h1.link.review').each(drawLinkReview_);
+});

@@ -239,25 +239,26 @@ tr.odd:hover, tr.even:hover:
 #sidebar:
   width: 30%
   float: right
-  .sidebox:
-    padding: 0.667em
-    margin-bottom: 1.3em
-    background-color: $bar_and_box_background
-    %rounded(5px)
-    ul, ol:
-      margin: 0
-      li:
-        margin-top: 0.333em
-        text-align: center
-        a:
-          line-height: 1.667
-        &:last-child:
-          margin-bottom: 0
-    h3:
+
+.sidebox:
+  padding: 0.667em
+  margin-bottom: 1.3em
+  background-color: $bar_and_box_background
+  %rounded(5px)
+  ul, ol:
+    margin: 0
+    li:
+      margin-top: 0.333em
       text-align: center
-      margin->
-        top: 0
-        bottom: 0.667em
+      a:
+        line-height: 1.667
+      &:last-child:
+        margin-bottom: 0
+  h3:
+    text-align: center
+    margin->
+      top: 0
+      bottom: 0.667em
 
 // These are mnemonic links.
 ul.links:

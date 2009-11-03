@@ -26,23 +26,25 @@ noticing it painfully myself lately, and I know where everything is!
 > import Vocabulink.DB
 > import Vocabulink.CGI
 > import Vocabulink.Html
+> import Vocabulink.Link
+> import Vocabulink.Utils
 
 For now, we're making use of Google Custom Search.
 
 > searchPage :: App CGIResult
 > searchPage = do
 >   q <- getRequiredInput "q"
->   links <- linksContaining q
+>   links   <- fromMaybe [] <$> linksContaining q
+>   links'  <- mapM renderPartialLink links
 >   stdPage (q ++ " - Search Results") [CSS "search"] [] [
->     unordList [
->       case links of
->         []   -> noHtml
->         [l]  -> anchor ! [href ("/link/" ++ show l)] <<
->                  ("→ View 1 link containing '" ++ q ++ "'")
->         ls   -> anchor ! [href ("/links?contains=" ++ q)] <<
->                  ("→ View all " ++ show (length ls) ++ " links containing \"" ++ q ++ "\""),
->       anchor ! [href ("/link/new?fval0=" ++ q)] << ("→ Create a new link with \"" ++ q ++ "\"") ] ! [identifier "search-hints"],
->     thediv ! [identifier "cse-search-results"] << noHtml,
+>     thediv ! [identifier "main-content"] << [
+>       thediv ! [identifier "cse-search-results"] << noHtml ],
+>     thediv ! [identifier "sidebar"] << [
+>       thediv ! [identifier "new-link"] << [
+>         anchor ! [href ("/link/new?fval0=" ++ q)] << ("→ Create a new link with \"" ++ q ++ "\"") ],
+>       thediv ! [theclass "sidebox"] << [
+>         h3 << ("Found " ++ show (length links) ++ " Links Containing \"" ++ q ++ "\""),
+>         unordList links' ! [theclass "links"] ] ],
 >     script ! [thetype "text/javascript"] << primHtml (unlines [
 >       "var googleSearchIframeName = \"cse-search-results\";",
 >       "var googleSearchFormName = \"cse-search-box\";",
@@ -55,14 +57,14 @@ This is a close parallel to the original search for Vocabulink. We use it so
 that we can display a link to a specialized link search only when results are
 available.
 
-> linksContaining :: String -> App [Integer]
+> linksContaining :: String -> App (Maybe [PartialLink])
 > linksContaining q = do
->   ts <- queryAttribute'  "SELECT link_no \
->                          \FROM link \
->                          \WHERE NOT deleted \
->                            \AND (origin ILIKE ? OR destination ILIKE ?) \
->                          \LIMIT 20"
->                          [toSql q, toSql q]
->   return $ case ts of
->     Nothing  -> [] -- Technically an error, but we don't care.
->     Just ns  -> map fromSql ns
+>   ts <- queryTuples'  "SELECT link_no, link_type, author, \
+>                              \origin, destination, \
+>                              \origin_language, destination_language \
+>                       \FROM link \
+>                       \WHERE NOT deleted \
+>                         \AND (origin ILIKE ? OR destination ILIKE ?) \
+>                       \LIMIT 20"
+>                       [toSql q, toSql q]
+>   return $ mapMaybe partialLinkFromValues `liftM` ts

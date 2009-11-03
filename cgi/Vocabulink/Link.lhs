@@ -23,9 +23,8 @@ them.
 > module Vocabulink.Link (  Link(..), PartialLink(..), LinkType(..),
 >                           getPartialLink, getLinkFromPartial, getLink,
 >                           memberLinks, latestLinks, linkPage, deleteLink,
->                           linksPage, linksContainingPage, newLink,
->                           partialLinkHtml, partialLinkFromValues,
->                           drawLinkSVG', languagePairsPage,
+>                           linksPage, newLink, partialLinkFromValues,
+>                           renderLink, renderPartialLink, languagePairsPage,
 >                           languagePairLinks, languageNameFromAbbreviation,
 >                           updateLinkStory, LinkPack(..),
 >                           newLinkPack, linkPackPage, deleteLinkPack,
@@ -43,7 +42,6 @@ them.
 > import Vocabulink.Utils
 
 > import Control.Exception (try)
-> import Data.List (partition)
 > import System.Cmd (system)
 > import System.Exit (ExitCode(..))
 > import qualified Text.Formlets as Fl
@@ -107,27 +105,6 @@ with a client or the database.
 > linkTypeNameFromType Cognate             = "cognate"
 > linkTypeNameFromType (LinkWord _ _)      = "linkword"
 > linkTypeNameFromType (Relationship _ _)  = "relationship"
-
-Each link type also has an associated color. This makes the type of links stand
-out clearly in lists and graphs.
-
-> linkColor :: Link -> String
-> linkColor l = case linkTypeName l of
->                 "association"   -> "#000000"
->                 "cognate"       -> "#00AA00"
->                 "linkword"     -> "#0000FF"
->                 "relationship"  -> "#AA0077"
->                 _               -> "#FF00FF"
-
-The link's background color is used for shading and highlighting.
-
-> linkBackgroundColor :: Link -> String
-> linkBackgroundColor l = case linkTypeName l of
->                 "association"   -> "#DFDFDF"
->                 "cognate"       -> "#DFF4DF"
->                 "linkword"     -> "#DFDFFF"
->                 "relationship"  -> "#F4DFEE"
->                 _               -> "#FFDFFF"
 
 Links are created by members. Vocabulink does not own them. It merely has a
 license to use them (as part of the Terms of Use). So when displaying a link in
@@ -342,15 +319,12 @@ Latest Links page, use an h2. The class is the same for either.
     <span class="dest">Destination</span>
 </h2>
 
-> drawLinkSVG' :: String -> Link -> Html
-> drawLinkSVG' f link =
->   thediv ! [identifier "graph", thestyle "height: 100px"] <<
->     h1 << (linkOrigin link ++ " → " ++ linkDestination link) +++
->     script ! [thetype "text/javascript"] << primHtml (
->       "$(document).ready(" ++ f ++ ".curry(" ++ showLinkJSON link ++ "));")
+We really shouldn't need to allow for passing class names. However, the !
+function has a problem in that it will add another class attribute instead of
+extending the existing one, which at least jquery doesn't like.
 
-> renderLink :: Link -> Html
-> renderLink link = h1 ! [theclass ("link " ++ linkTypeName link)] << [
+> renderLink :: [String] -> Link -> Html
+> renderLink classes link = h1 ! [theclass ("link " ++ linkTypeName link ++ (classes == [] ? "" $ " " ++ (intercalate " " classes)))] << [
 >   thespan ! [theclass "orig"] << linkOrigin link,
 >   renderLinkType $ linkType link,
 >   thespan ! [theclass "dest"] << linkDestination link ]
@@ -358,25 +332,23 @@ Latest Links page, use an h2. The class is the same for either.
 >        renderLinkType (LinkWord word _)  = thespan ! [theclass "linkword"] << word
 >        renderLinkType _                  = noHtml
 
-It seems that the JSON library author does not want us making new instances of
-the |JSON| class. Oh well, I didn't want to write |readJSON| anyway.
-
-> showLinkJSON :: Link -> String
-> showLinkJSON link =  let obj = [  ("orig", linkOrigin link),
->                                   ("dest", linkDestination link),
->                                   ("color", linkColor link),
->                                   ("bgcolor", linkBackgroundColor link),
->                                   ("label", linkLabel $ linkType link) ] in
->                      encode $ toJSObject obj
->                        where linkLabel (LinkWord word _)  = word
->                              linkLabel _                  = ""
+> renderPartialLink :: PartialLink -> App Html
+> renderPartialLink (PartialLink l) = do
+>   originLanguage       <- linkOriginLanguage l
+>   destinationLanguage  <- linkDestinationLanguage l
+>   return $ anchor ! [  theclass $ "partial-link " ++ linkTypeName l,
+>                        href ("/link/" ++ show (linkNumber l)),
+>                        H.title (originLanguage ++ " → " ++ destinationLanguage) ] << [
+>              thespan ! [theclass "orig"] << linkOrigin l,
+>              stringToHtml " → ",
+>              thespan ! [theclass "dest"] << linkDestination l ]
 
 Displaying an entire link involves not just drawing a graphical representation
 of the link but displaying its type-level details as well.
 
 > displayLink :: Link -> Html
 > displayLink l = concatHtml [
->   renderLink l,
+>   renderLink [] l,
 >   thediv ! [theclass "link-details htmlfrag"] << linkTypeHtml (linkType l) ]
 
 > linkTypeHtml :: LinkType -> Html
@@ -388,18 +360,6 @@ of the link but displaying its type-level details as well.
 >   paragraph ! [thestyle "text-align: center"] << [
 >     stringToHtml "as", br,
 >     stringToHtml $ leftSide ++ " → " ++ rightSide ]
-
-Sometimes we don't need to display all of a links details. This displays a
-partial link more compactly, such as for use in lists, etc.
-
-> partialLinkHtml :: PartialLink -> App Html
-> partialLinkHtml (PartialLink l) = do
->   originLanguage <- linkOriginLanguage l
->   destinationLanguage <- linkDestinationLanguage l
->   return $ anchor ! [  href ("/link/" ++ show (linkNumber l)),
->                        H.title (originLanguage ++ " → " ++ destinationLanguage),
->                        theclass $ "link-link " ++ translate [(' ', '-')] (linkTypeName l) ] <<
->              (linkOrigin l ++ " → " ++ linkDestination l)
 
 Each link gets its own URI and page. Most of the extra code in the following is
 for handling the display of link operations (``review'', ``delete'', etc.),
@@ -438,7 +398,7 @@ textarea for in-page editing.
 >                     Nothing    -> return noHtml
 >       rateInvitation <- invitationLink "Rate"
 >       stdPage (orig ++ " → " ++ dest) [CSS "link", JS "lib.link"] []
->         [  renderLink l',
+>         [  renderLink [] l',
 >            thediv ! [theclass "link-ops"] << [
 >              anchor ! [href (  "/links?ol=" ++ linkOriginLang l' ++
 >                                "&dl=" ++ linkDestinationLang l' ) ] <<
@@ -530,74 +490,10 @@ away eventually.
 >     Nothing  -> error "Error while retrieving links."
 >     Just ps  -> do
 >       pagerControl <- pager pg n $ offset + length ps
->       partialLinks <- mapM partialLinkHtml (take n ps)
+>       partialLinks <- mapM renderPartialLink (take n ps)
 >       simplePage title [CSS "link"] [
 >         unordList partialLinks ! [identifier "central-column", theclass "links"],
 >         pagerControl ]
-
-A more practical option for the long run is providing search. ``Containing''
-search is a search for links that ``contain'' the given ``focus'' lexeme on one
-side or the other of the link. The term ``containing'' is a little misleading
-and should be changed at some point.
-
-For now we use exact matching only as that can use an index. Fuzzy matching is
-going to require configuring full text search or a separate search daemon.
-
-> linksContainingPage :: String -> App CGIResult
-> linksContainingPage focus = do
->   ts <- queryTuples'  "SELECT link_no, link_type, author, \
->                              \origin, destination, \
->                              \origin_language, destination_language \
->                       \FROM link \
->                       \WHERE NOT deleted \
->                         \AND (origin ILIKE ? OR destination ILIKE ?) \
->                       \LIMIT 20"
->                       [toSql focus, toSql focus]
->   case ts of
->     Nothing  -> error "Error while retrieving links."
->     Just ls  -> simplePage (  "Found " ++ show (length ls) ++
->                               " link" ++ (length ls == 1 ? "" $ "s") ++ 
->                               " containing \"" ++ focus ++ "\"")
->                   [CSS "link", JS "lib.link"]
->                   (linkFocusBox focus (mapMaybe partialLinkFromValues ls))
-
-When the links containing a search term have been found, we need a way to
-display them. We do so by drawing a ``link graph'': a circular array of links.
-
-Before we can display the graph, we need to sort the links into ``links
-containing the focus as the origin'' and ``links containing the focus as the
-destination''.
-
-If you're trying to understand this function, it helps to read the JavaScript
-it outputs and digest each local function separately.
-
-> linkFocusBox :: String -> [PartialLink] -> [Html]
-> linkFocusBox focus links = [
->   thediv ! [identifier "graph"] << noHtml,
->   script ! [thetype "text/javascript"] << primHtml
->     (  "$(document).ready(drawLinks.curry(" ++
->        encode focus ++ "," ++
->        jsonNodes ("/link/new?fval2=" ++ focus) origs ++ "," ++
->        jsonNodes ("/link/new?fval0=" ++ focus) dests ++ "));" ) ]
->  where partitioned   = partition ((== focus) . linkOrigin . pLink) links
->        origs         = snd partitioned
->        dests         = fst partitioned
->        jsonNodes url = encode . insertMid
->          (toJSObject [  ("orig",   "new link"),
->                         ("dest",   "new link"),
->                         ("color",  "#000000"),
->                         ("bgcolor", "#DFDFDF"),
->                         ("style",  "dotted"),
->                         ("url",    url) ]) .
->          map (\o ->  let o' = pLink o in
->                      toJSObject [  ("orig",     linkOrigin o'),
->                                    ("dest",     linkDestination o'),
->                                    ("color",    linkColor $ pLink o),
->                                    ("bgcolor",  linkBackgroundColor $ pLink o),
->                                    ("number",   show $ linkNumber $ pLink o)])
->        insertMid :: a -> [a] -> [a]
->        insertMid x xs = let (l,r) = every2nd xs in
->                         reverse l ++ [x] ++ r
 
 \subsection{Creating New Links}
 
@@ -1063,7 +959,7 @@ TODO: Check that the new trimmed body is not empty.
 >   links <- linkPackLinks n
 >   case (linkPack, links) of
 >     (Just lp, Just ls)  -> do
->       ls' <- mapM partialLinkHtml ls
+>       ls' <- mapM renderPartialLink ls
 >       r <- queryValue'  "SELECT root_comment \
 >                         \FROM link_pack_comments \
 >                         \WHERE pack_no = ?" [toSql $ linkPackNumber lp]

@@ -25,7 +25,7 @@ you are.
 
 > import Vocabulink.App
 > import Vocabulink.CGI
-> import Vocabulink.Utils
+> import Vocabulink.Utils hiding ((<$$>))
 
 > import Data.ByteString.Char8 (pack)
 > import Data.Digest.OpenSSL.HMAC (hmac, sha1)
@@ -33,9 +33,12 @@ you are.
 > import Data.Time.Format (parseTime)
 > import System.Locale (defaultTimeLocale, iso8601DateFormat)
 > import System.Time (TimeDiff(..), getClockTime, addToClockTime, toCalendarTime)
+> import Network.Gravatar (gravatar)
 > import Network.URI (escapeURIString, unEscapeString, isUnescapedInURI)
-> import Text.ParserCombinators.Parsec (  Parser, parse, manyTill, many1,
->                                         anyChar, char, string)
+> import Text.ParserCombinators.Parsec (  Parser, parse, noneOf, many1, try,
+>                                         char, string, optional)
+> import Text.ParserCombinators.Parsec.Perm ((<$$>), (<||>), (<|?>), permute)
+> import Text.Regex.Posix ((=~))
 
 \subsection{Creating the Auth Token}
 
@@ -49,10 +52,16 @@ the member logged in from so that we can protect against request spoofing. The
 solution is to store all of the session state stays in the cookie. This also
 means we don't have to deal with storing session state on our end.
 
+Storing the member's username and gravatar hash are not necessary for
+authentication, but it's useful to have them here for client-side code to use
+for generating dynamic UI elements (such as comment boxes). We store the
+gravatar hash instead of the member's email address for privacy/security.
+
 > data AuthToken = AuthToken {
 >   authExpiry     :: Day,
 >   authMemberNo   :: Integer,
 >   authUsername   :: String,
+>   authGravatar   :: Maybe String,
 >   authIPAddress  :: String,
 >   authDigest     :: String
 > }
@@ -73,24 +82,27 @@ Here is the format of the actual cookie we send to the client.
 >             "&no="    ++ show (authMemberNo a) ++
 >             "&name="  ++ escapeURIString isUnescapedInURI
 >                            (encodeString $ authUsername a) ++
+>             maybe "" ("&grav=" ++) (authGravatar a) ++
 >             "&ip="    ++ authIPAddress a ++
 >             "&mac="   ++ authDigest a
 
 This creates an AuthToken with the default expiration time, automatically
 calculating the digest.
 
-> authToken :: Integer -> String -> String -> String -> IO (AuthToken)
-> authToken memberNo username ip key = do
+> authToken :: Integer -> String -> Maybe String -> String -> String -> IO (AuthToken)
+> authToken memberNo username email ip key = do
 >   now <- currentDay
 >   let expires = addDays cookieShelfLife now
 >   digest <- tokenDigest AuthToken {  authExpiry     = expires,
 >                                      authMemberNo   = memberNo,
 >                                      authUsername   = username,
+>                                      authGravatar   = gravatarHash =<< email,
 >                                      authIPAddress  = ip,
 >                                      authDigest     = "" } key
 >   return AuthToken {  authExpiry     = expires,
 >                       authMemberNo   = memberNo,
 >                       authUsername   = username,
+>                       authGravatar   = gravatarHash =<< email,
 >                       authIPAddress  = ip,
 >                       authDigest     = digest }
 
@@ -105,15 +117,16 @@ this, authentication is less secure.
 >   where token =  showGregorian (authExpiry a) ++
 >                  show (authMemberNo a) ++
 >                  encodeString (authUsername a) ++
+>                  maybe "" ("&grav=" ++) (authGravatar a) ++
 >                  authIPAddress a
 
 Setting the cookie is rather simple by this point. We just create the auth
 token and send it to the client.
 
-> setAuthCookie :: Integer -> String -> String -> App ()
-> setAuthCookie memberNo username ip = do
+> setAuthCookie :: Integer -> String -> Maybe String -> String -> App ()
+> setAuthCookie memberNo username email ip = do
 >   key <- fromJust <$> getOption "authtokenkey"
->   authTok <- liftIO $ authToken memberNo username ip key
+>   authTok <- liftIO $ authToken memberNo username email ip key
 >   now <- liftIO getClockTime
 >   expires <- liftIO $ toCalendarTime
 >                (addToClockTime TimeDiff {  tdYear     = 0,
@@ -170,22 +183,33 @@ the token.
 >          then return $ Just a
 >          else return Nothing
 
-This is a Parsec parser for auth tokens (as stored in cookies).
+This is a Parsec parser for auth tokens (as stored in cookies). An auth token looks like:
+exp=2009-12-01&no=1&name=jekor&ip=127.0.0.1&mac=d0170bc011b6260a1de7596bad1cd4de
 
-> authTokenParser :: Parser (Maybe AuthToken)
-> authTokenParser = do
->   string "exp=";   day'      <- manyTill anyChar $ char '&'
->   string "no=";    memberNo  <- manyTill anyChar $ char '&'
->   string "name=";  username  <- manyTill anyChar $ char '&'
->   string "ip=";    ip        <- manyTill anyChar $ char '&'
->   string "mac=";   digest    <- many1 anyChar
->   let day = parseTime defaultTimeLocale (iso8601DateFormat Nothing) day'
->   return $ day >>= \d -> Just AuthToken {  authExpiry     = d,
->                                            authMemberNo   = read memberNo,
->                                            authUsername   = decodeString $
->                                                               unEscapeString username,
->                                            authIPAddress  = ip,
->                                            authDigest     = digest }
+> authTokenParser :: Parser AuthToken
+> authTokenParser = permute
+>   (mkAuthToken  <$$>  authFrag "exp"
+>                 <||>  authFrag "no"
+>                 <||>  authFrag "name"
+>                 <|?>  (Nothing, Just <$> authFrag "grav")
+>                 <||>  authFrag "ip"
+>                 <||>  authFrag "mac")
+>  where authFrag key = do
+>          try $ string (key ++ "=")
+>          frag <- many1 $ noneOf "&"
+>          optional $ char '&'
+>          return frag
+>        mkAuthToken exp' no name grav ip mac =
+>          let day = parseTime defaultTimeLocale (iso8601DateFormat Nothing) exp' in
+>          case day of
+>            Nothing  -> error "Failed to parse expiration time"
+>            Just d   -> AuthToken {  authExpiry     = d,
+>                                     authMemberNo   = read no,
+>                                     authUsername   = decodeString $
+>                                                      unEscapeString name,
+>                                     authGravatar   = grav,
+>                                     authIPAddress  = ip,
+>                                     authDigest     = mac }
 
 It'd be nice to log an error if parsing fails, but we don't have a database
 handle.
@@ -193,4 +217,16 @@ handle.
 > parseAuthToken :: String -> Maybe AuthToken
 > parseAuthToken s = case parse authTokenParser "" s of
 >                      Left   _  -> Nothing
->                      Right  x  -> x
+>                      Right  x  -> Just x
+
+The gravatar library will generate the entire URL, but sometimes we just need
+the hash. Rather than implement the hashing ourselves, we'll dissect the one we
+receive from the gravatar library.
+
+> gravatarHash :: String -> Maybe String
+> gravatarHash email =
+>   let url = gravatar email
+>       (_, _, _, matches) = url =~ "gravatar_id=([0-9a-f]+)" :: (String, String, String, [String]) in
+>   case matches of
+>     [hash]  -> Just hash
+>     _       -> Nothing

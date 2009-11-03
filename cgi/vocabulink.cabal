@@ -68,4 +68,4 @@ Executable vocabulink.cgi
                  Vocabulink.Utils
   Extensions:    TypeSynonymInstances,
                  GeneralizedNewtypeDeriving
-  GHC-Options:   -Wall
+  GHC-Options:   -Wall -O2

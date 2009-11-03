@@ -43,24 +43,20 @@ a.button:
     list-style-type: decimal
     margin-left: 1.5em
 
-.link-link:
+.partial-link:
   border: 1px solid
   &.association:
-    color: #000
-    border-color: #000
-    background-color: #DFDFDF
+    color: $linktype_association_fg
+    border-color: $linktype_association_fg
+    background-color: $linktype_association_bg
   &.cognate:
-    color: #0A0
-    border-color: #0A0
-    background-color: #DFF4DF
+    color: $linktype_cognate_fg
+    border-color: $linktype_cognate_fg
+    background-color: $linktype_cognate_bg
   &.linkword:
-    color: #00F
-    border-color: #00F
-    background-color: #DFDFFF
-  // &.relationship:
-  //   color: #A07
-  //   border-color: #A07
-  //   background-color: #F4DFEE
+    color: $linktype_linkword_fg
+    border-color: $linktype_linkword_fg
+    background-color: $linktype_linkword_bg
 
 #body > h3:
   margin-bottom: 1em

@@ -5,14 +5,14 @@ lhss := $(shell find . -name "*.lhs" -print)
 date := $(shell date +%Y-%m-%d)
 DIST := vocabulink--$(date)
 
-all : $(cgi)
+all : dist/build/$(cgi)/$(cgi)
 
 doc : vocabulink.pdf
 
 configure : $(lhss)
 	runhaskell Setup.lhs configure
 
-vocabulink.cgi : $(lhss)
+dist/build/$(cgi)/$(cgi) : $(lhss)
 	runhaskell Setup.lhs build
 
 vocabulink.pdf : vocabulink.tex

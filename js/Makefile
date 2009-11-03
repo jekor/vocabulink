@@ -2,11 +2,11 @@
 
 all : lib.common.js lib.link.js lib.member.js
 
-lib.common.js : to-function.js functional.js common.js
+lib.common.js : to-function.js functional.js jquery.cookie.js common.js
 	cat $^ | yuicompress --type js > $@
 
 # link viewing and reviewing, not editing
-lib.link.js : raphael.js link-graph.js review.js
+lib.link.js : raphael.js link-graph.js link.js review.js
 	cat $^ | yuicompress --type js > $@
 
 # This is for email-verified members.
