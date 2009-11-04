@@ -1,6 +1,10 @@
 // initialization for every page
 $(document).ready(function () {
   Functional.install();
+  try {
+    var pageTracker = _gat._getTracker("UA-73938-2");
+    pageTracker._trackPageview();
+  } catch(err) {}
 });
 
 // Crockford's prototypal inheritance operator

@@ -814,7 +814,7 @@ TODO: Check that the new trimmed body is not empty.
 >          ensures (nonEmptyAndLessThan 50 "Pack Name")
 >   <*>  plug (tabularInput "Description") (F.textarea Nothing Nothing Nothing) `check`
 >          ensures (nonEmptyAndLessThan 5000 "Pack Name")
->   <*>  plug (tabularInput "Image") (nothingIfNull $ fileUpload "/pack/image" "Upload Image")
+>   <*>  plug (tabularInput "Image") (nothingIfNull $ fileUpload "Upload Image")
 >  where mkLinkPack ::  String -> String -> String -> Maybe String ->
 >                       (LinkPack, Integer)
 >        mkLinkPack l n d f = (  LinkPack {  linkPackNumber       = 0,
@@ -855,7 +855,7 @@ TODO: Check that the new trimmed body is not empty.
 >                        action (uriPath uri), method "post" ] <<
 >                [  meth == "GET" ? noHtml $ unordList failures,
 >                   xhtml, actionBar ] ]
->  where deps = [CSS "link", JS "lib.link"]
+>  where deps = [CSS "link", JS "lib.link", JS "lib.upload"]
 >        actionBar = thediv ! [thestyle "margin-left: auto; margin-right: auto; \
 >                                       \margin-top: 1.3em; width: 12em"] <<
 >                      [  submit "preview" "Preview" !

@@ -183,59 +183,19 @@ know when their next review is scheduled.
 > noLinksToReviewPage memberNo = do
 >   t <- nextReviewTime memberNo
 >   now <- liftIO getCurrentTime
->   simplePage "No Links to Review" [CSS "link"] [
+>   simplePage "No Links to Review" [CSS "link", JS "lib.link"] [
 >     thediv ! [identifier "central-column"] << [
 >       paragraph ! [thestyle "text-align: center"] << "Take a break! \
 >         \You don't have any links to review right now.",
 >       case t of
 >         Just t'  -> paragraph ! [thestyle "text-align: center"] << [
 >                       stringToHtml "Your next review is due ",
->                       jsTimer $ round $ diffUTCTime t' now,
+>                       thespan ! [identifier "countdown"] << [
+>                         stringToHtml "in ",
+>                         thespan ! [theclass "seconds"] << show (round $ diffUTCTime t' now :: Integer),
+>                         stringToHtml " seconds" ],
 >                       stringToHtml "." ]
 >         Nothing  -> noHtml ] ]
-
-Our Javascript timer is only intended for use on the "no links left to review
-page". It'll need to be made more general if you need it for anything else.
-
-> jsTimer :: Integer -> Html
-> jsTimer seconds = concatHtml [
->   script << primHtml (unlines [
->     "function updateCountdown() {",
->     "  if (typeof updateCountdown.seconds == 'undefined') {",
->     "    updateCountdown.seconds = " ++ show seconds ++ ";",
->     "    updateCountdown.elem = $('#countdown');",
->     "    updateCountdown.timer = setInterval(updateCountdown, 1000);",
->     "  }",
->     "  updateCountdown.seconds -= 1;",
->     "  if (updateCountdown.seconds < 1) {",
->     "    $(updateCountdown.elem).text('now');",
->     "    clearInterval(updateCounter.timer);",
->     "  } else {",
->     "    $(updateCountdown.elem).text('in ' + formatSeconds(updateCountdown.seconds));",
->     "  }",
->     "}",
->     "function formatSeconds(seconds) {",
->     "  units = {day: 86400, hour: 3600, minute: 60};",
->     "  counts = {day: 0, hour: 0, minute: 0, second: 0};",
->     "  output = '';",
->     "  for (var unit in units) {",
->     "    if (seconds > units[unit]) {",
->     "      counts[unit] = Math.floor(seconds / units[unit]);",
->     "      seconds %= units[unit];",
->     "    }",
->     "  }",
->     "  counts.second = seconds;",
->     "  printing = false;",
->     "  for (var unit in counts) {",
->     "    if (counts[unit] > 0) printing = true;",
->     "    if (printing) {",
->     "      output += ' ' + counts[unit] + ' ' + unit + (counts[unit] == 1 ? '' : 's');",
->     "    }",
->     "  }",
->     "  return output;",
->     "}",
->     "$(document).ready(updateCountdown);" ]),
->   thespan ! [identifier "countdown"] << ("in " ++ show seconds ++ " seconds") ]
 
 The next review time can be in the future or in the past.
 

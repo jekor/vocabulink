@@ -97,6 +97,42 @@ function drawLinkReview_() {
                     'color': colors[0], 'bgcolor': colors[1]});
 }
 
+function updateCountdown() {
+  updateCountdown.seconds -= 1;
+  if (updateCountdown.seconds < 1) {
+    $(updateCountdown.elem).text('now');
+    clearInterval(updateCounter.timer);
+  } else {
+    $(updateCountdown.elem).text('in ' + formatSeconds(updateCountdown.seconds));
+  }
+}
+
+function formatSeconds(seconds) {
+  units = {day: 86400, hour: 3600, minute: 60};
+  counts = {day: 0, hour: 0, minute: 0, second: 0};
+  output = '';
+  for (var unit in units) {
+    if (seconds > units[unit]) {
+      counts[unit] = Math.floor(seconds / units[unit]);
+      seconds %= units[unit];
+    }
+  }
+  counts.second = seconds;
+  printing = false;
+  for (var unit in counts) {
+    if (counts[unit] > 0) printing = true;
+    if (printing) {
+      output += ' ' + counts[unit] + ' ' + unit + (counts[unit] == 1 ? '' : 's');
+    }
+  }
+  return output;
+}
+
 $(document).ready(function () {
   $('h1.link.review').each(drawLinkReview_);
+  $('#countdown').each(function () {
+    updateCountdown.seconds = $(this).find('.seconds').text();
+    updateCountdown.elem = $(this);
+    updateCountdown.timer = setInterval(updateCountdown, 1000);
+  });
 });

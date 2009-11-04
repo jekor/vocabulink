@@ -93,6 +93,7 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >                     thetitle << title',
 >                     concatHtml head' ] +++
 >                  body << [  script ! [src "http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"] << noHtml,
+>                             script ! [src "http://www.google-analytics.com/ga.js"] << noHtml,
 >                             concatHtml jsDeps',
 >                             thediv ! [identifier "head"] << headerB,
 >                             case jsDeps of
@@ -100,8 +101,7 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >                               _   -> noscript << paragraph <<
 >                                        "This page requires JavaScript for some functionality.",
 >                             thediv ! [identifier "body"] << concatHtml body',
->                             thediv ! [identifier "foot"] << footerB,
->                             googleAnalyticsTag ]
+>                             thediv ! [identifier "foot"] << footerB ]
 >   output' xhtml
 
 Often we just need a simple page where the title and header are the same.
@@ -210,22 +210,6 @@ generation time (now).
 >     [  stringToHtml "Copyright 2008–",
 >        stringToHtml (show year ++ " "),
 >        anchor ! [href "http://jekor.com/"] << "Chris Forno" ]
-
-We use Google Analytics for tracking site usage. It requires the JavaScript tag
-to be placed on every page.
-
-> googleAnalyticsTag :: Html
-> googleAnalyticsTag = concatHtml [
->   script ! [thetype "text/javascript"] << primHtml (unlines [
->     "var gaJsHost = ((\"https:\" == document.location.protocol) ?\
->                     \ \"https://ssl.\" : \"http://www.\");",
->     "document.write(unescape(\"%3Cscript src='\" + gaJsHost \
->     \+ \"google-analytics.com/ga.js'%3E%3C/script%3E\"));" ]),
->   script ! [thetype "text/javascript"] << primHtml (unlines [
->     "try {",
->     "  var pageTracker = _gat._getTracker(\"UA-73938-2\");",
->     "  pageTracker._trackPageview();",
->     "} catch(err) {}" ]) ]
 
 The following are just login and signup buttons.
 
@@ -495,32 +479,10 @@ Instead, we'll use some JavaScript to submit the file once in the background
 and store its filename in a standard input. This way, once the file has been
 uploaded the input will reflect the name of the file on the server side.
 
-> fileUpload :: String -> String -> AppForm String
-> fileUpload target l = plug (\xhtml -> concatHtml [
->   script ! [thetype "text/javascript"] << primHtml (unlines [
->     "connect(window, 'onload', function() {",
->       "new AjaxUpload('file-upload', {action: '" ++ target ++ "',",
->                                      "onSubmit: submitFile,",
->                                      "onComplete: fileSubmitted});",
->       "$('file-upload').disabled = false;});",
->     "function submitFile() {setStyle($$('.upload-file')[0], \
->         \{'background': \"url('http://s.vocabulink.com/img/wait-bar.gif') \
->                         \no-repeat center center\"}); \
->       \$('file-upload').disabled = true;",
->     "}",
->     "function fileSubmitted(f,r) {",
->       "var inputFile = $$('.upload-file')[0];",
->       "if (r.substr(0," ++ show (length target) ++ ") == '" ++ target ++ "') {",
->         "inputFile.value = r.substring(" ++ show (length target) ++ " + 1, r.length);",
->         "inputFile.disabled = false;",
->         "inputFile.readOnly = true;",
->       "} else {",
->         "alert('Error uploading file.');",
->       "}",
->       "setStyle(inputFile, {'background': 'none'});",
->       "$('file-upload').disabled = false;}" ]),
+> fileUpload :: String -> AppForm String
+> fileUpload l = plug (\xhtml -> concatHtml [
 >   xhtml ! [theclass "upload-file", thestyle "width: 50%", readonly],
->   button ! [  identifier "file-upload", disabled,
+>   button ! [  identifier "upload-file-button", disabled,
 >               thestyle "text-align: center" ] << l ])
 >     (XF.input Nothing)
 

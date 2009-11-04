@@ -1,6 +1,6 @@
 # Vocabulink JavaScript modules
 
-all : lib.common.js lib.link.js lib.member.js
+all : lib.common.js lib.link.js lib.member.js lib.upload.js
 
 lib.common.js : to-function.js functional.js jquery.cookie.js common.js
 	cat $^ | yuicompress --type js > $@
@@ -10,5 +10,8 @@ lib.link.js : raphael.js link-graph.js link.js review.js
 	cat $^ | yuicompress --type js > $@
 
 # This is for email-verified members.
-lib.member.js : jquery.markitup.js markdown.set.js showdown.js form.js comment.js star-rating.js link-editor.js ajaxupload.js
+lib.member.js : jquery.markitup.js markdown.set.js showdown.js form.js comment.js star-rating.js link-editor.js
+	cat $^ | yuicompress --type js > $@
+
+lib.upload.js : ajaxupload.js upload.js
 	cat $^ | yuicompress --type js > $@
