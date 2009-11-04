@@ -68,22 +68,11 @@ The |linkOriginLang| and |linkDestinationLang| are the language abbrevations.
 To get the full name we need to look it up.
 
 > languageNameFromAbbreviation :: String -> App (Maybe String)
-> languageNameFromAbbreviation a = return . lookup a =<< languages
-
-Here are a couple shortcuts.
+> languageNameFromAbbreviation abbr = lookup abbr <$> asks appLanguages
 
 > linkOriginLanguage, linkDestinationLanguage :: Link -> App String
-> linkOriginLanguage l = fromJust <$> languageNameFromAbbreviation (linkOriginLang l)
-> linkDestinationLanguage l = fromJust <$> languageNameFromAbbreviation (linkDestinationLang l)
-
-> languages :: App [(String, String)]
-> languages = languagesFromDB
-
-> languagesFromDB :: App [(String, String)]
-> languagesFromDB = map langToPair . fromJust <$>
->   queryTuples'  "SELECT abbr, name FROM language ORDER BY name" []
->     where  langToPair [a, n]  = (fromSql a, fromSql n)
->            langToPair _       = error "Failed to retrieve languages from the database."
+> linkOriginLanguage       l = fromJust <$> languageNameFromAbbreviation (linkOriginLang l)
+> linkDestinationLanguage  l = fromJust <$> languageNameFromAbbreviation (linkDestinationLang l)
 
 We can associate 2 lexemes in many different ways. Because different linking
 methods require different information, they each need different representations
@@ -600,7 +589,7 @@ This takes an either parameter to signify whether you want origin language
 >               \GROUP BY " ++ side' ++ "_language, abbr, name \
 >               \ORDER BY COUNT(" ++ side' ++ "_language) DESC")
 >              [toSql memberNo]
->   allLangs <- languages
+>   allLangs <- asks appLanguages
 >   let choices = langs ++ [("","")] ++ allLangs
 >   return $ F.selectRaw [] choices (Just $ fst . head $ choices) `check` ensures
 >              [  ((/= "")  ,  side' ++ " language is required") ]

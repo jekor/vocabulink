@@ -59,6 +59,7 @@ because of cyclic dependencies.
 > data AppEnv = AppEnv {  appDB          :: Connection,
 >                         appCP          :: ConfigParser,
 >                         appStaticDeps  :: [(Dependency, EpochTime)],
+>                         appLanguages   :: [(String, String)],
 >                         appMemberNo    :: Maybe Integer,
 >                         appMemberName  :: Maybe String,
 >                         appMemberEmail :: Maybe String }
@@ -99,8 +100,8 @@ request came from a logged in member).
 We can't use the convenience of |getOption| here as we're not in the App monad
 yet.
 
-> runApp :: Connection -> ConfigParser -> [(Dependency, EpochTime)] -> App CGIResult -> CGI CGIResult
-> runApp c cp sd (AppT a) = do
+> runApp :: Connection -> ConfigParser -> [(Dependency, EpochTime)] -> [(String, String)] -> App CGIResult -> CGI CGIResult
+> runApp c cp sd ls (AppT a) = do
 >   let key = forceEither $ get cp "DEFAULT" "authtokenkey"
 >   token <- verifiedAuthToken key
 >   email <- liftIO $ maybe (return Nothing)
@@ -112,6 +113,7 @@ yet.
 >   runReaderT a AppEnv {  appDB          = c,
 >                          appCP          = cp,
 >                          appStaticDeps  = sd,
+>                          appLanguages   = ls,
 >                          appMemberNo    = authMemberNo `liftM` token,
 >                          appMemberName  = authUsername `liftM` token,
 >                          appMemberEmail = email }
