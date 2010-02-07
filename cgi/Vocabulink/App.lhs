@@ -44,7 +44,7 @@ because of cyclic dependencies.
 > import {-# SOURCE #-} Vocabulink.Member.AuthToken
 > import Vocabulink.Utils
 
-> import Control.Applicative
+> import Control.Applicative (Applicative)
 > import Control.Exception (try)
 > import Control.Monad (ap)
 > import Control.Monad.Error (runErrorT)
