@@ -1,4 +1,4 @@
-% Copyright 2008, 2009 Chris Forno
+% Copyright 2008, 2009, 2010 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -41,7 +41,7 @@ other conveniences.
 We have to import the authorization token code using GHC's @SOURCE@ directive
 because of cyclic dependencies.
 
-> import {-# SOURCE #-} Vocabulink.Member.AuthToken
+> import Vocabulink.Member.AuthToken
 > import Vocabulink.Utils
 
 > import Control.Applicative (Applicative)
@@ -123,7 +123,7 @@ in 1 location. For now, the profusion of monads and exception handlers makes
 this difficult. |logApp| will write a message to the database. It takes a type
 name which are enumerated in the database.
 
-> logApp :: String -> String -> App (String)
+> logApp :: String -> String -> App ()
 > logApp type' message = do
 >   c <- asks appDB
 >   liftIO $ logMsg c type' message
@@ -272,7 +272,7 @@ the exception and returns Nothing).
 >     Right x  -> do  liftIO $ commit c
 >                     return $ Just x
 >     Left e   -> do  logApp "exception" $ show e
->                     liftIO (try (rollback c) :: IO (Either SomeException ())) -- Discard any exception here
+>                     _ <- liftIO (try (rollback c) :: IO (Either SomeException ())) -- Discard any exception here
 >                     return Nothing
 
 > run' :: String -> [SqlValue] -> App (Integer)

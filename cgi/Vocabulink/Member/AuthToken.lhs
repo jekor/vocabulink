@@ -1,4 +1,4 @@
-% Copyright 2008, 2009 Chris Forno
+% Copyright 2008, 2009, 2010 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -21,9 +21,9 @@ Much of what you can do on Vocabulink requires us to know and trust who you say
 you are.
 
 > module Vocabulink.Member.AuthToken (  AuthToken(..), verifiedAuthToken,
+>                                       authToken,
 >                                       setAuthCookie, deleteAuthCookie) where
 
-> import Vocabulink.App
 > import Vocabulink.CGI
 > import Vocabulink.Utils hiding ((<$$>))
 
@@ -31,7 +31,7 @@ you are.
 > import Data.Digest.OpenSSL.HMAC (hmac, sha1)
 > import Data.Time.Calendar (addDays, diffDays, showGregorian)
 > import Data.Time.Format (parseTime)
-> import System.Locale (defaultTimeLocale, iso8601DateFormat)
+> import System.Locale (iso8601DateFormat)
 > import System.Time (TimeDiff(..), getClockTime, addToClockTime, toCalendarTime)
 > import Network.Gravatar (gravatar)
 > import Network.URI (escapeURIString, unEscapeString, isUnescapedInURI)
@@ -123,10 +123,8 @@ this, authentication is less secure.
 Setting the cookie is rather simple by this point. We just create the auth
 token and send it to the client.
 
-> setAuthCookie :: Integer -> String -> Maybe String -> String -> App ()
-> setAuthCookie memberNo username email ip = do
->   key <- fromJust <$> getOption "authtokenkey"
->   authTok <- liftIO $ authToken memberNo username email ip key
+> setAuthCookie :: (MonadCGI m, MonadIO m) => AuthToken -> m ()
+> setAuthCookie authTok = do
 >   now <- liftIO getClockTime
 >   expires <- liftIO $ toCalendarTime
 >                (addToClockTime TimeDiff {  tdYear     = 0,
@@ -195,7 +193,7 @@ exp=2009-12-01&no=1&name=jekor&ip=127.0.0.1&mac=d0170bc011b6260a1de7596bad1cd4de
 >                 <||>  authFrag "ip"
 >                 <||>  authFrag "mac")
 >  where authFrag key = do
->          try $ string (key ++ "=")
+>          _ <- try $ string (key ++ "=")
 >          frag <- many1 $ noneOf "&"
 >          optional $ char '&'
 >          return frag

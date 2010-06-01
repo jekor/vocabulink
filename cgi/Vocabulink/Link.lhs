@@ -1,4 +1,4 @@
-% Copyright 2008, 2009 Chris Forno
+% Copyright 2008, 2009, 2010 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -44,7 +44,6 @@ them.
 > import Control.Exception (try)
 > import System.Cmd (system)
 > import System.Exit (ExitCode(..))
-> import qualified Text.Formlets as Fl
 > import qualified Text.XHtml as H
 > import qualified Text.XHtml.Strict.Formlets as F (input, selectRaw, textarea, hidden)
 
@@ -171,28 +170,34 @@ This returns the newly established link number.
 >       "link_link_no_seq"
 >     case linkNo of
 >       Nothing  -> liftIO $ rollback c >> return Nothing
->       Just n   -> do  establishLinkType (l {linkNumber = n})
->                       return linkNo
+>       Just n   -> do  res <- establishLinkType (l {linkNumber = n})
+>                       case res of
+>                         Nothing  -> return Nothing
+>                         Just _   -> return linkNo
 >   return $ fromMaybe Nothing r
 
 The relation we insert additional details into depends on the type of the link
 and it's easiest to use a separate function for it.
 
-> establishLinkType :: Link -> App ()
+> establishLinkType :: Link -> App (Maybe ())
 > establishLinkType l = case linkType l of
->   Association                -> return ()
->   Cognate                    -> return ()
+>   Association                -> return $ Just ()
+>   Cognate                    -> return $ Just ()
 >   (LinkWord word story)      -> do
->     run'  "INSERT INTO link_type_link_word (link_no, link_word, story) \
->                                    \VALUES (?, ?, ?)"
->           [toSql (linkNumber l), toSql word, toSql story]
->     return ()
+>     res <- run'  "INSERT INTO link_type_link_word (link_no, link_word, story) \
+>                                          \VALUES (?, ?, ?)"
+>                  [toSql (linkNumber l), toSql word, toSql story]
+>     case res of
+>       1  -> return $ Just ()
+>       _  -> return Nothing
 >   (Relationship left right)  -> do
->     run'  "INSERT INTO link_type_relationship \
->                  \(link_no, left_side, right_side) \
->           \VALUES (?, ?, ?)"
->           [toSql (linkNumber l), toSql left, toSql right]
->     return ()
+>     res <- run'  "INSERT INTO link_type_relationship \
+>                         \(link_no, left_side, right_side) \
+>                  \VALUES (?, ?, ?)"
+>                  [toSql (linkNumber l), toSql left, toSql right]
+>     case res of
+>       1  -> return $ Just ()
+>       _  -> return Nothing
 
 \subsection{Retrieving Links}
 
@@ -974,9 +979,11 @@ TODO: Check that the new trimmed body is not empty.
 >     _      ->  do
 >       let  packNo = read pack :: Integer
 >            linkNo = read link :: Integer
->       quickStmt' "INSERT INTO link_pack_link (pack_no, link_no) \
->                                      \VALUES (?, ?)" [toSql packNo, toSql linkNo]
->       redirect $ "/pack/" ++ pack
+>       res <- quickStmt' "INSERT INTO link_pack_link (pack_no, link_no) \
+>                                             \VALUES (?, ?)" [toSql packNo, toSql linkNo]
+>       case res of
+>         Nothing  -> error "Failed to add link to pack."
+>         Just _   -> redirect $ "/pack/" ++ pack
 
 > latestLinkPacks :: App [Maybe LinkPack]
 > latestLinkPacks = maybe [] (map linkPackFromValues) <$>

@@ -1,9 +1,9 @@
 Name:          Vocabulink
-Version:       2009.8.16
+Version:       2010.5.31
 Cabal-Version: >= 1.2
 License:       OtherLicense
 License-File:  COPYING
-Copyright:     2008, 2009 Chris Forno
+Copyright:     2008, 2009, 2010 Chris Forno
 Author:        Chris Forno (jekor)
 Maintainer:    jekor@jekor.com
 Stability:     stable
@@ -17,7 +17,7 @@ Description:   This is Vocabulink, the SCGI program that handles all web
                learn languages through fiction. It provides a mnemonics
                database, spaced repition (review) tools, and a forum for
                learners to collaborate.
-Tested-With:   GHC == 6.10.4
+Tested-With:   GHC == 6.12.1
 Build-Type:    Custom
 
 Executable vocabulink.cgi
@@ -29,7 +29,7 @@ Executable vocabulink.cgi
                  ConfigFile,
                  directory,
                  filepath,
-                 formlets >= 0.5,
+                 formlets == 0.5,
                  gravatar,
                  HDBC >= 2,
                  HDBC-postgresql >= 2,

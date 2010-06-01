@@ -1,4 +1,4 @@
-% Copyright 2008, 2009 Chris Forno
+% Copyright 2008, 2009, 2010 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -68,7 +68,7 @@ We make particularly extensive use of |liftM| and the Maybe monad.
 > import Data.Either.Utils (forceEither) -- MissingH
 > import Data.List (intercalate, partition)
 > import Data.List.Utils (join) -- MissingH
-> import Data.Maybe (maybe, fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
+> import Data.Maybe (fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
 
 Time is notoriously difficult to deal with in Haskell. It gets especially
 tricky when working with the database and libraries that expect different

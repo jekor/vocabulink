@@ -1,4 +1,4 @@
-% Copyright 2008, 2009 Chris Forno
+% Copyright 2008, 2009, 2010 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -190,7 +190,7 @@ directory).
 \end{description}
 
 > import Control.Concurrent (forkIO)
-> import Data.List (find, intercalate)
+> import Data.List (find)
 > import Data.List.Split (splitOn)
 > import Network (PortID(..))
 > import Network.SCGI (runSCGIConcurrent')

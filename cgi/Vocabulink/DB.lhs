@@ -1,4 +1,4 @@
-% Copyright 2008, 2009 Chris Forno
+% Copyright 2008, 2009, 2010 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -95,9 +95,12 @@ only be used for inserting into tables with a sequence-based primary key
 > insertNo ::  IConnection conn =>
 >              conn -> String -> [SqlValue] -> String -> IO (Maybe Integer)
 > insertNo c sql vs seqName = do
->   run c sql vs
->   seqNo <- queryValue c "SELECT currval(?)" [toSql seqName]
->   return $ fmap fromSql seqNo
+>   res <- run c sql vs
+>   case res of
+>     1  -> do
+>       seqNo <- queryValue c "SELECT currval(?)" [toSql seqName]
+>       return $ fmap fromSql seqNo
+>     _  -> return Nothing
 
 This is the same as |insertNo|, but with its own transaction.
 
@@ -148,12 +151,11 @@ It's useful to have all errors logged in 1 location: the database.
 message. The type and message is then logged to the database along with a
 timestamp. If the message type is not found, it defaults to ``unknown''.
 
-> logMsg :: IConnection conn => conn -> String -> String -> IO (String)
+> logMsg :: IConnection conn => conn -> String -> String -> IO ()
 > logMsg c t s = do
 >   quickStmt c  "INSERT INTO log (type, message) \
 >                \VALUES ((SELECT name FROM log_type WHERE name = ?), ?)"
 >                [toSql t, toSql s]
->   return s
 
 Exceptions come in different shapes and sizes, and we'd like to have log
 information about them when we encounter them. Or, we might want to ignore
@@ -166,12 +168,12 @@ certain exceptions.
 % >                                   return "Database Error"
 % >     _                      -> logMsg c "exception" (show e)
 
-> logException :: (IConnection conn) => conn -> SomeException -> IO (String)
+> logException :: (IConnection conn) => conn -> SomeException -> IO ()
 > logException c = logMsg c "exception" . show
 
 |logSqlError| is used by |logException|, |catchSqlD|, and |catchSqlE|. It's
 special because it's potentially the most common type of exception we'll
 encounter, and the one we most want to hear about.
 
-> logSqlError :: IConnection conn => conn -> SqlError -> IO (String)
+> logSqlError :: IConnection conn => conn -> SqlError -> IO ()
 > logSqlError c = logMsg c "SQL error" . init . seErrorMsg

@@ -1,4 +1,4 @@
-% Copyright 2008, 2009 Chris Forno
+% Copyright 2008, 2009, 2010 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -45,7 +45,7 @@ not the end of the world if we generate an error or don't catch an exception.
 > import Control.Monad.Reader (ReaderT(..))
 > import Control.Monad.Writer (WriterT(..))
 > import Data.ByteString.Lazy.UTF8 (fromString, toString)
-> import Data.Char (toLower, isAlphaNum)
+> import Data.Char (isAlphaNum)
 > import Data.Monoid (mempty)
 > import Network.URI (uriPath, uriQuery)
 > import Text.Formlets as F
@@ -87,9 +87,9 @@ in the CGI monad (and the thread).
 > outputException' ::  (MonadCGI m, MonadIO m, IConnection conn) =>
 >                      conn -> SomeException -> m CGIResult
 > outputException' c ex = do
->   s <- liftIO $ logException c ex
+>   liftIO $ logException c ex
 >   liftIO $ disconnect c
->   outputInternalServerError [s]
+>   outputInternalServerError [show ex]
 
 Usually we use the |withRequired| functions when an action requires that the
 client be authenticated. However, sometimes (as with AJAX) we want to output an

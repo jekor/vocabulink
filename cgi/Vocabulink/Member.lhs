@@ -1,4 +1,4 @@
-% Copyright 2008, 2009 Chris Forno
+% Copyright 2008, 2009, 2010 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -65,6 +65,7 @@ and then continuing where it left off.
 >   ref    <- referrerOrVocabulink
 >   redir  <- getInputDefault ref "redirect"
 >   res    <- runForm (loginForm redir) $ Right noHtml
+>   key    <- fromJust <$> getOption "authtokenkey"
 >   case res of
 >     Left xhtml -> simplePage "Login" []
 >       [  paragraph ! [thestyle "text-align: center"] <<
@@ -78,7 +79,8 @@ and then continuing where it left off.
 >       case memberNo of
 >         Nothing  -> redirect redir
 >         Just n   -> do
->           setAuthCookie n user email ip
+>           authTok <- liftIO $ authToken n user email ip key
+>           setAuthCookie authTok
 >           redirect redir
 
 At the time of authentication, we have to fetch the member's number from the
@@ -211,6 +213,7 @@ registered, we log them in and redirect them to the front page.
 > registerMember :: App CGIResult
 > registerMember = do
 >   res <- runForm register $ Right noHtml
+>   key <- fromJust <$> getOption "authtokenkey"
 >   case res of
 >     Left xhtml  -> simplePage "Sign Up for Vocabulink" [] [xhtml]
 >     Right reg   -> do
@@ -223,9 +226,12 @@ registered, we log them in and redirect them to the front page.
 >         Nothing  -> error "Registration failure (this is not your fault)."
 >         Just n   -> do
 >           ip <- remoteAddr
->           setAuthCookie n (regUser reg) Nothing ip
->           sendConfirmationEmail n reg
->           redirect "/"
+>           authTok <- liftIO $ authToken n (regUser reg) Nothing ip key
+>           setAuthCookie authTok
+>           res' <- sendConfirmationEmail n reg
+>           case res' of
+>             Nothing  -> error "Registration failure (this is not your fault)."
+>             Just _   -> redirect "/"
 
 Once a user registers, they can log in. However, they won't be able to use most
 member-specific functions until they've confirmed their email address. This is
@@ -237,10 +243,10 @@ email address confirmed.
 
 > sendConfirmationEmail :: Integer -> Registration -> App (Maybe ())
 > sendConfirmationEmail memberNo r = do
->   quickStmt'  "INSERT INTO member_confirmation \
->               \(member_no, hash, email) VALUES \
->               \(?, md5(random()::text), ?)"
->               [toSql memberNo, toSql (regEmail r)]
+>   _ <- quickStmt'  "INSERT INTO member_confirmation \
+>                    \(member_no, hash, email) VALUES \
+>                    \(?, md5(random()::text), ?)"
+>                    [toSql memberNo, toSql (regEmail r)]
 >   hash <- queryValue'  "SELECT hash FROM member_confirmation \
 >                        \WHERE member_no = ?" [toSql memberNo]
 >   case hash of
@@ -276,10 +282,10 @@ cookie for them that contains their gravatar hash.
 >       if match'
 >         then do
 >           res <- withTransaction' $ do
->             runStmt'  "UPDATE member SET email = \
->                          \(SELECT email FROM member_confirmation \
->                           \WHERE member_no = ?) \
->                       \WHERE member_no = ?" [toSql n, toSql n]
+>             _ <- runStmt'  "UPDATE member SET email = \
+>                              \(SELECT email FROM member_confirmation \
+>                              \WHERE member_no = ?) \
+>                            \WHERE member_no = ?" [toSql n, toSql n]
 >             runStmt'  "DELETE FROM member_confirmation \
 >                       \WHERE member_no = ?" [toSql n]
 >           case res of
@@ -288,7 +294,9 @@ cookie for them that contains their gravatar hash.
 >               email <- getMemberEmail n
 >               memberName <- fromJust <$> asks appMemberName
 >               ip <- remoteAddr
->               setAuthCookie n memberName email ip
+>               key <- fromJust <$> getOption "authtokenkey"
+>               authTok <- liftIO $ authToken n memberName email ip key
+>               setAuthCookie authTok
 >               redirect =<< referrerOrVocabulink
 >         else confirmEmailPage
 
