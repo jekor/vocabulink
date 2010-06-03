@@ -24,7 +24,7 @@ oft-used functions for other modules.
 > module Vocabulink.Utils (         if', (?), safeHead, currentDay, currentYear,
 >                                   formatSimpleTime, basename, translate, (<$$>),
 >                                   sendMail, every2nd, every3rd, splitLines,
->                                   convertLineEndings,
+>                                   convertLineEndings, logError,
 >  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
 >  {- Control.Applicative -}        pure, (<$>), (<*>),
 >  {- Control.Applicative.Error -}  Failing(..), maybeRead,
@@ -83,6 +83,7 @@ formats.
 > import System.Exit (ExitCode(..))
 > import System.FilePath (  (</>), takeExtension, addExtension, replaceExtension,
 >                           takeBaseName, takeFileName )
+> import System.IO (hPutStrLn, stderr)
 > import System.IO.Error (try)
 > import System.Locale (defaultTimeLocale, rfc822DateFormat)
 > import System.Posix.Files (getFileStatus, modificationTime)
@@ -219,3 +220,8 @@ This comes from Real World Haskell.
 
 > isLineTerminator :: Char -> Bool
 > isLineTerminator c = c == '\r' || c == '\n'
+
+Log a message to standard error.
+
+> logError :: String -> String -> IO ()
+> logError typ msg = hPutStrLn stderr $ "[" ++ typ ++ "] " ++ msg

@@ -55,9 +55,8 @@ functions. An example of this is |linkList|.
 
 > import qualified Data.ByteString.Lazy as BS
 > import Data.List (intersperse)
-> import Text.Formlets (  runFormState, plug, nothingIfNull,
+> import Text.Formlets (  runFormState, plug, nothingIfNull, optionalInput,
 >                         check, ensure, ensures, checkM, ensureM, File)
-> import Text.Formlets as F
 > import Text.Pandoc (  readMarkdown, writeHtml, defaultParserState,
 >                       defaultWriterOptions, stateSanitizeHTML )
 > import Text.Regex (mkRegex, subRegex)

@@ -87,7 +87,7 @@ in the CGI monad (and the thread).
 > outputException' ::  (MonadCGI m, MonadIO m, IConnection conn) =>
 >                      conn -> SomeException -> m CGIResult
 > outputException' c ex = do
->   liftIO $ logException c ex
+>   liftIO $ logError "exception" (show ex)
 >   liftIO $ disconnect c
 >   outputInternalServerError [show ex]
 

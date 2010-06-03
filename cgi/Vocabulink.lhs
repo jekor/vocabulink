@@ -190,6 +190,7 @@ directory).
 \end{description}
 
 > import Control.Concurrent (forkIO)
+> import Data.ConfigFile (get)
 > import Data.List (find)
 > import Data.List.Split (splitOn)
 > import Network (PortID(..))
@@ -216,7 +217,8 @@ environment.
 > main = do  cp <- liftM forceEither getConfig
 >            sd <- staticDeps cp
 >            runSCGIConcurrent' forkIO 2048 (PortNumber 10033) (do
->              c <- liftIO connect
+>              let pw = forceEither $ get cp "DEFAULT" "dbpassword"
+>              c <- liftIO $ connect pw
 >              ls <- liftIO $ languagesFromDB c
 >              handleErrors' c (runApp c cp sd ls handleRequest))
 

@@ -4,21 +4,6 @@
 -- for unicode characters. Instead, I'll leave it up to the Haskell layer to do
 -- verification.
 
-CREATE TABLE log_type (
-       name CHARACTER VARYING(32) PRIMARY KEY
-);
-INSERT INTO log_type (name) VALUES ('exception'), ('IO exception'),
-                                   ('SQL error'), ('404'), ('parse error'),
-                                   ('config');
-
-CREATE TABLE log (
-       time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-       type CHARACTER VARYING(32) REFERENCES log_type (name) ON UPDATE CASCADE,
-       message TEXT
-);
-CREATE INDEX log_time_index ON log (time);
-COMMENT ON TABLE log IS 'We''d like to keep track of errors and other events we might be interested in. This is not meant to be a permanent log. To create a primary key for this table, we''d need a way of identifying the host and thread that the message came from. For now, we''ll ignore that';
-
 CREATE TABLE member (
        member_no SERIAL PRIMARY KEY,
        username CHARACTER VARYING(32) NOT NULL UNIQUE,

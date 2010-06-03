@@ -2,7 +2,7 @@
 
 SUBDIRS := vocabulink.cgi articles static
 date := $(shell date +%Y-%m-%d)
-sync_options := -avzk --exclude 'cgi/dist' --exclude '*.muse' --exclude '*.ccss' --exclude 'articles/Makefile' --exclude '*.el' --exclude 'css/Makefile' --exclude 'js/Makefile' --exclude 'cgi/*.pdf' --exclude 'cgi/TAGS' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --delete articles cgi css etc js scripts linode:vocabulink/
+sync_options := -avzk --exclude 'cgi/dist' --exclude '*.muse' --exclude '*.ccss' --exclude 'articles/Makefile' --exclude '*.el' --exclude 'css/Makefile' --exclude 'js/Makefile' --exclude 'cgi/*.pdf' --exclude 'cgi/TAGS' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --delete articles css etc js scripts vocabulink.cgi linode:vocabulink/
 
 .PHONY : $(SUBDIRS) all
 

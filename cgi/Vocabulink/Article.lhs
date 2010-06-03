@@ -1,4 +1,4 @@
-% Copyright 2008, 2009 Chris Forno
+% Copyright 2008, 2009, 2010 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -38,7 +38,6 @@ static page we currently display is an article.
 > import System.Directory (  getDirectoryContents, getPermissions, doesFileExist,
 >                            readable)
 > import qualified System.IO.UTF8 as IO.UTF8
-> import System.Locale (defaultTimeLocale)
 > import qualified Text.ParserCombinators.Parsec as P
 > import Text.ParserCombinators.Parsec.Perm ((<$$>), (<||>), (<|?>), permute)
 
@@ -153,7 +152,7 @@ this to succeed.
 >   dir   <- articleDir
 >   muse  <- liftIO $ IO.UTF8.readFile $ dir </> path ++ ".muse"
 >   case P.parse articleHeader "" muse of
->     Left e     -> logApp "parse error" (show e) >> return Nothing
+>     Left e     -> liftIO $ logError "parse" (show e) >> return Nothing
 >     Right hdr  -> return $ Just $ hdr {  articleFilename  = path }
 
 Each article is expected to have a particular structure. The structure is based

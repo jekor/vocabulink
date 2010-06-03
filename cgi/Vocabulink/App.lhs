@@ -26,7 +26,7 @@ signatures a little bit.
 The App monad is now also used for passing around member information and a few
 other conveniences.
 
-> module Vocabulink.App (      App, AppEnv(..), AppT, runApp, logApp, getOption,
+> module Vocabulink.App (      App, AppEnv(..), AppT, runApp, getOption,
 >                              Dependency(..), dependencyVersion,
 >                              withRequiredMemberNumber, loggedInVerified,
 >                              output404, reversibleRedirect,
@@ -118,16 +118,6 @@ yet.
 >                          appMemberName  = authUsername `liftM` token,
 >                          appMemberEmail = email }
 
-At some point it's going to be essential to have all errors and notices logged
-in 1 location. For now, the profusion of monads and exception handlers makes
-this difficult. |logApp| will write a message to the database. It takes a type
-name which are enumerated in the database.
-
-> logApp :: String -> String -> App ()
-> logApp type' message = do
->   c <- asks appDB
->   liftIO $ logMsg c type' message
-
 \subsection{Convenience Functions}
 
 Here are some functions that abstract away even having to ask for values from
@@ -193,13 +183,10 @@ what to do with it.
 >   request <- fromMaybe "/" `liftM` getVar "REQUEST_URI"
 >   return $ path ++ "?redirect=" ++ escapeURIString isUnescapedInURI request
 
-We want to log 404 errors in the database, as they may indicate a problem or
-opportunity with the site. This takes a list of Strings that are stored in the
-log. It outputs to the user the requested URI.
+I used to log all 404s, but the logs were overrun by favicon requests and the like.
 
 > output404 :: [String] -> App CGIResult
-> output404 s = do  logApp "404" (show s)
->                   outputNotFound $ intercalate "/" s
+> output404 = outputNotFound . intercalate "/"
 
 \subsubsection{Database}
 
@@ -271,7 +258,7 @@ the exception and returns Nothing).
 >   case r of
 >     Right x  -> do  liftIO $ commit c
 >                     return $ Just x
->     Left e   -> do  logApp "exception" $ show e
+>     Left e   -> do  liftIO $ logError "exception" $ show e
 >                     _ <- liftIO (try (rollback c) :: IO (Either SomeException ())) -- Discard any exception here
 >                     return Nothing
 
@@ -300,5 +287,5 @@ This always pulls from the @DEFAULT@ section. It also only supports strings.
 >   cp <- asks appCP
 >   opt <- runErrorT $ get cp "DEFAULT" option
 >   case opt of
->     Left e   -> logApp "config" (show e) >> return Nothing
+>     Left e   -> liftIO $ logError "config" (show e) >> return Nothing
 >     Right o  -> return $ Just o
