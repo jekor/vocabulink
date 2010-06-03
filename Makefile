@@ -2,7 +2,7 @@
 
 SUBDIRS := vocabulink.cgi articles static
 date := $(shell date +%Y-%m-%d)
-sync_options := -avzk --exclude 'graphics' --exclude 's/icons' --exclude 's/pack/image/' --exclude 'vocabulink.cgi/vocabulink.cgi' --exclude 'tests' --exclude '*.hi' --exclude '*.o' --exclude '*.pdf' --exclude '*.hi-boot' --exclude '.o-boot' --exclude 'vocabulink--*.gz' --exclude 'vocabulink--*.gpg' --exclude 'dist/' --delete . chris@efektiva:vocabulink/
+sync_options := -avzk --exclude 'cgi/dist' --exclude '*.muse' --exclude '*.ccss' --exclude 'articles/Makefile' --exclude '*.el' --exclude 'css/Makefile' --exclude 'js/Makefile' --exclude 'cgi/*.pdf' --exclude 'cgi/TAGS' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --delete articles cgi css etc js scripts linode:vocabulink/
 
 .PHONY : $(SUBDIRS) all
 
@@ -15,7 +15,7 @@ backup-database :
 	pg_dump --host localhost --username vocabulink --create vocabulink | gzip > vocabulink--$(date).sql.gz
 
 sync :
-	rsync -avzk --exclude 'graphics' --exclude 's/icons' --exclude 's/pack/image/' --exclude 'vocabulink.cgi/vocabulink.cgi' --exclude 'tests' --exclude '*.hi' --exclude '*.o' --exclude '*.pdf' --exclude '*.hi-boot' --exclude '.o-boot' --exclude 'vocabulink--*.gz' --exclude 'vocabulink--*.gpg' --exclude 'dist/' --delete . chris@efektiva:vocabulink/
+	rsync $(sync_options)
 
 sync-test :
 	rsync --dry-run $(sync_options)
