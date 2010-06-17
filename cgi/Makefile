@@ -5,18 +5,21 @@ lhss := $(shell find . -name "*.lhs" -print)
 date := $(shell date +%Y-%m-%d)
 DIST := vocabulink--$(date)
 
-all : ../$(cgi)
+all : ../$(cgi).new
 
 doc : vocabulink.pdf
 
 configure : $(lhss)
-	runhaskell Setup.lhs configure
+	cabal configure
 
-../$(cgi) : $(lhss)
-	runhaskell Setup.lhs build
+../$(cgi) : ../$(cgi).new
 	cp ../$(cgi) ../$(cgi).bak
-	cp dist/build/$(cgi)/$(cgi) ../
-	strip ../$(cgi)
+	mv ../$(cgi).new ../$(cgi)
+
+../$(cgi).new : $(lhss)
+	cabal build
+	cp dist/build/$(cgi)/$(cgi) ../$(cgi).new
+	strip ../$(cgi).new
 
 vocabulink.pdf : vocabulink.tex
 	pdflatex $<
@@ -24,7 +27,9 @@ vocabulink.pdf : vocabulink.tex
 vocabulink.tex : $(lhss)
 	lhs2TeX Vocabulink.lhs > $@
 
-install : ../$(cgi)
+install : ../$(cgi).new
+	mv ../$(cgi) ../$(cgi).old
+	mv ../$(cgi).new ../$(cgi)
 	-killall $(cgi)
 
 tags : $(lhss)

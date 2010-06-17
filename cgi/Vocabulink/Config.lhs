@@ -26,7 +26,7 @@
 > import Control.Monad (join)
 > import Control.Monad.Error (runErrorT)
 > import Data.ConfigFile (readfile, emptyCP, ConfigParser, get, CPError, options)
-> import Data.List (intersect)
+> import Data.List (intersect, (\\))
 > import System.Directory (getDirectoryContents)
 
 The path to the configuration file is the one bit of configuration that's the
@@ -40,8 +40,8 @@ They are guaranteed to exist later and can safely be read with |forceEither $
 get|.
 
 > requiredConfigVars :: [String]
-> requiredConfigVars = [  "authtokenkey", "articledir", "staticdir",
->                         "supportaddress" ]
+> requiredConfigVars = [  "dbpassword", "authtokenkey", "threads",
+>                         "maindir", "supportaddress" ]
 
 This retrieves the config file and makes sure that it contains all of the
 required configuration variables. We check the variables now because we want to
@@ -54,7 +54,8 @@ later.
 >   opts <- options cp "DEFAULT"
 >   if requiredConfigVars `intersect` opts == requiredConfigVars
 >      then return cp
->      else error "Missing configuration options."
+>      else do  let missing = show $ requiredConfigVars \\ opts
+>               error $ "Missing configuration options: " ++ missing
 
 Vocabulink makes use of a number of CSS and JavaScript files. We want the
 client browser to cache these for as long as possible, but we need some method
@@ -95,7 +96,7 @@ recursively; JS and CSS are in 2 flat directories.
 
 > staticDeps :: ConfigParser -> IO ([(Dependency, EpochTime)])
 > staticDeps cp = do
->   let dir = forceEither $ get cp "DEFAULT" "staticdir"
+>   let dir = forceEither $ get cp "DEFAULT" "maindir"
 >   jsDeps   <- map (first (JS   . takeBaseName)) `liftM` modificationTimes (dir </> "js")   ".js"
 >   cssDeps  <- map (first (CSS  . takeBaseName)) `liftM` modificationTimes (dir </> "css")  ".css"
 >   return $ jsDeps ++ cssDeps

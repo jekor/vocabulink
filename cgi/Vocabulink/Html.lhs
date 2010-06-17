@@ -32,6 +32,7 @@ functions. An example of this is |linkList|.
 >                           nonEmptyAndLessThan, noscript,
 >                           pager, currentPage, fileUpload, uploadFile, forID,
 >                           invitationLink, loggedInVerifiedButton,
+>                           multiColumn, multiColumnList,
 >  {- Text.XHtml.Strict -}  Html, noHtml, primHtml, stringToHtml, concatHtml,
 >                           (<<), (+++), (!), showHtmlFragment,
 >                           identifier, theclass, thediv, thespan, style,
@@ -49,7 +50,9 @@ functions. An example of this is |linkList|.
 >  {- Text.XHtml.Strict.Formlets -} XHtmlForm) where
 
 > import Vocabulink.App
+> import Vocabulink.Article
 > import Vocabulink.CGI
+> import Vocabulink.DB
 > import Vocabulink.Review.Html
 > import Vocabulink.Utils
 
@@ -184,19 +187,58 @@ Here are the hyperlinks we want in the header of every page.
 >   anchor ! [href "/languages"] << "Browse Links", stringToHtml "|",
 >   anchor ! [href "/help"] << "Help" ]
 
+The footer displays a number of common (or what we believe to be common)
+hyperlinks for English speakers.
+
+> languageLinks :: App [Html]
+> languageLinks = do
+>   ts <- queryTuples'  "SELECT lf.abbr, l.name \
+>                       \FROM language_frequency lf \
+>                       \INNER JOIN language l USING (abbr) \
+>                       \WHERE lf.abbr <> 'en' \
+>                       \ORDER BY freq DESC LIMIT 7" []
+>   return $ case ts of
+>     Nothing   -> []
+>     Just ts'  -> map languageLink ts' ++ [anchor ! [href "/languages"] << "more..."]
+>       where languageLink [abbr', name']  =
+>               anchor ! [href ("/links?ol=" ++ (fromSql abbr') ++ "&dl=en")] << ((fromSql name')::String)
+>             languageLink _             = error "Malformed tuple."
+
 The footer bar is more simple. It just includes some hyperlinks to static
 content.
 
 > footerBar :: App Html
 > footerBar = do
+>   langLinks <- languageLinks
+>   articles <- maybe [] (map articleLinkHtml . take 4) <$> getArticles
+>   forums <- footerForums
 >   copy <- liftIO $ copyrightNotice
 >   return $ concatHtml [
+>     multiColumn [
+>       h2 << "Browse links by language:" +++
+>       multiColumnList 2 langLinks,
+>       h2 << "Latest Articles:" +++ unordList articles,
+>       h2 << "Forums:" +++
+>       multiColumnList 2 forums ] ! [identifier "handy-links"],
 >     linkList [
 >       anchor ! [href "/help"] << "help",
 >       anchor ! [href "/privacy"] << "privacy policy",
 >       anchor ! [href "/terms-of-use"] << "terms of use",
->       anchor ! [href "/source"] << "source" ],
+>       anchor ! [href "/source"] << "source" ] ! [identifier "common-links"],
 >     copy ]
+>  where articleLinkHtml a =
+>          anchor ! [href ("/article/" ++ articleFilename a)] <<
+>            articleTitle a
+
+> footerForums :: App [Html]
+> footerForums = do
+>   ts <- queryTuples'  "SELECT name, title FROM forum \
+>                       \WHERE group_name = 'Vocabulink'" []
+>   return $ case ts of
+>     Nothing   -> []
+>     Just ts'  -> map forumLink ts'
+>       where forumLink [n', t']  = anchor ! [href ("/forum/" ++ fromSql n')] << ((fromSql t')::String)
+>             forumLink _         = error "Malformed forum."
 
 We want a copyright notice at the bottom of every page. Since this is a
 copyright notice for dynamic content, we want it to be up-to-date with the
@@ -485,9 +527,13 @@ uploaded the input will reflect the name of the file on the server side.
 >               thestyle "text-align: center" ] << l ])
 >     (XF.input Nothing)
 
-> uploadFile :: String -> App CGIResult
+For now, you're responsible for providing a safe FilePath to upload to.
+
+TODO: Do a check right before writeFile to ensure a safe path.
+
+> uploadFile :: FilePath -> App CGIResult
 > uploadFile path = do
->   dir <- (++ path) . fromJust <$> getOption "staticdir"
+>   dir <- (</> "upload" </> path) <$> asks appDir
 >   filename <- getInputFilename "userfile"
 >   case filename of
 >     Nothing  -> error "Missing filename."
@@ -497,3 +543,22 @@ uploaded the input will reflect the name of the file on the server side.
 >           file  = dir ++ f'
 >       liftIO $ BS.writeFile file content'
 >       output' $ path ++ f'
+
+> multiColumn :: [Html] -> Html
+> multiColumn cls =
+>   let num = case length cls of
+>               1 -> "one"
+>               2 -> "two"
+>               3 -> "three"
+>               _ -> "unsupported" in
+>   thediv ! [theclass (num ++ "-column")] <<
+>     map (thediv ! [theclass "column"] <<) cls
+
+> multiColumnList :: Int -> [Html] -> Html
+> multiColumnList 2 xs  =
+>   let (col1, col2) = every2nd xs in
+>   multiColumn [unordList col1, unordList col2]
+> multiColumnList 3 xs  =
+>   let (col1, col2, col3) = every3rd xs in
+>   multiColumn [unordList col1, unordList col2, unordList col3]
+> multiColumnList _ _   = stringToHtml "Unsupported number of columns."

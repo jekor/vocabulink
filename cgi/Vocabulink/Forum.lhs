@@ -1,4 +1,4 @@
-% Copyright 2008, 2009 Chris Forno
+% Copyright 2008, 2009, 2010 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -145,7 +145,7 @@ arriving at the top-level forums page.
 >                                   stringToHtml $ fromSql u ] in
 >   anchor ! [href $ "/forum/" ++ fromSql n] << [
 >     image ! [  width "64", height "64",
->                src ("http://s.vocabulink.com/icons/" ++ fromSql i)],
+>                src ("http://s.vocabulink.com/img/icon/" ++ fromSql i)],
 >     h3 << (fromSql t :: String),
 >     latest, clear ]
 > renderForum _       = stringToHtml "Error retrieving forum."
@@ -167,14 +167,14 @@ For now, we just upload to the icons directory in our static directory.
 
 > createForum :: App CGIResult
 > createForum = do
->   icons     <- iconDir
+>   iconDir   <- (</> "upload" </> "img" </> "icon") <$> asks appDir
 >   filename  <- getInputFilename "forum-icon"
 >   group     <- getInput "forum-group"
 >   title     <- getInput "forum-title"
 >   case (filename, group, title) of
 >     (Just f, Just g, Just t) -> do
 >       icon <- fromJust <$> getInputFPS "forum-icon"
->       let iconfile = icons </> basename f
+>       let iconfile = iconDir </> basename f
 >       liftIO $ BS.writeFile iconfile icon
 >       c <- asks appDB
 >       liftIO $ quickStmt c  "INSERT INTO forum (name, title, group_name, \
@@ -188,12 +188,6 @@ For now, we just upload to the icons directory in our static directory.
 >       redirect =<< referrerOrVocabulink
 >     _ -> error "Please fill in the form completely. \
 >                \Make sure to include an icon."
-
-The directory for forum icons is located within the static directory (and hence
-served from the static subdomain).
-
-> iconDir :: App String
-> iconDir = (++ "/icons") . fromJust <$> getOption "staticdir"
 
 Each forum page is a table of topics. Each topic lists the title (a description
 of the topic), how many replies the topic has received, who created the topic,

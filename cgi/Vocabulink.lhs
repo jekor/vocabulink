@@ -105,6 +105,7 @@ separate module.
 Each of these modules will be described in its own section.
 
 > import Vocabulink.Article
+> import Vocabulink.Article.Html
 > import Vocabulink.DB
 > import Vocabulink.CGI
 > import Vocabulink.Comment
@@ -215,12 +216,14 @@ environment.
 
 > main :: IO ()
 > main = do  cp <- liftM forceEither getConfig
+>            let threads  = forceEither $ get cp "DEFAULT" "threads"
+>                pw       = forceEither $ get cp "DEFAULT" "dbpassword"
+>                dir      = forceEither $ get cp "DEFAULT" "maindir"
 >            sd <- staticDeps cp
->            runSCGIConcurrent' forkIO 2048 (PortNumber 10033) (do
->              let pw = forceEither $ get cp "DEFAULT" "dbpassword"
+>            runSCGIConcurrent' forkIO threads (PortNumber 10033) (do
 >              c <- liftIO $ connect pw
 >              ls <- liftIO $ languagesFromDB c
->              handleErrors' c (runApp c cp sd ls handleRequest))
+>              handleErrors' c (runApp c cp dir sd ls handleRequest))
 
 |handleRequest| ``digests'' the requested URI before passing it to the
  dispatcher.
@@ -384,7 +387,7 @@ The process of creating link packs is similar to that for creating links.
 > dispatch "GET"   ["pack","new"] = newLinkPack
 > dispatch "POST"  ["pack","new"] = newLinkPack
 
-> dispatch "POST"  ["pack","image"] = uploadFile "/pack/image"
+> dispatch "POST"  ["pack","image"] = uploadFile $ "img" </> "pack"
 
 > dispatch "POST"  ["pack","link","new"] = addToLinkPack
 
@@ -600,6 +603,7 @@ or curious.
 %include Vocabulink/Review/Html.lhs
 %include Vocabulink/Review/SM2.lhs
 %include Vocabulink/Article.lhs
+%include Vocabulink/Article/Html.lhs
 %include Vocabulink/Forum.lhs
 %include Vocabulink/Search.lhs
 

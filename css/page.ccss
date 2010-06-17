@@ -1,4 +1,4 @@
-// Copyright 2008, 2009 Chris Forno
+// Copyright 2008, 2009, 2010 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -229,6 +229,8 @@ tr.odd:hover, tr.even:hover:
     margin->
       left: 0.5em
       right: 0.5em
+  #common-links:
+    clear: left
 
 #main-content:
   width: 67%
@@ -404,12 +406,12 @@ button, input:
   vertical-align: middle
 
 .two-column:
-  .column:
+  > .column:
     width: 50%
     float: left
 
 .three-column:
-  .column:
+  > .column:
     width: 33%
     float: left
 

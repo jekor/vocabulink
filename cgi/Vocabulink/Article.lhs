@@ -22,15 +22,12 @@ All of Vocabulink's @www@ subdomain is served by this program. As such, if we
 want to publish static data there, we need some outlet for it. The only form of
 static page we currently display is an article.
 
-> module Vocabulink.Article (  articlePage, articlesPage, refreshArticles,
->                              getArticle, articleBody, getArticles,
->                              articleLinkHtml, Article(..) ) where
+> module Vocabulink.Article (  refreshArticles, getArticle, getArticles,
+>                              Article(..) ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
-> import Vocabulink.Comment
 > import Vocabulink.DB
-> import Vocabulink.Html
 > import Vocabulink.Utils hiding ((<$$>))
 
 > import Control.Monad (filterM)
@@ -71,9 +68,6 @@ file ourselves.
 Keeping the body of the article outside of the database gives us some of the
 advantages of the filesystem such as revision control.
 
-> articleDir :: App String
-> articleDir = fromJust <$> getOption "articledir"
-
 We need a way of keeping the database consistent with the filesystem. This is
 it. For a logged in administrator, the articles page displays a ``Refresh from
 Filesystem'' button that POSTs here.
@@ -110,7 +104,7 @@ them. Then we return a list of Articles with undefined numbers and bodies.
 
 > publishedArticles :: App [Article]
 > publishedArticles = do
->   dir <- articleDir
+>   dir <- (</> "articles") <$> asks appDir
 >   ls <- liftIO $ getDirectoryContents dir
 >   let fullPaths = map (dir </>) ls
 >   paths <- liftIO $ map takeBaseName <$> filterM isPublished fullPaths
@@ -149,8 +143,8 @@ this to succeed.
 
 > articleFromFile :: String -> App (Maybe Article)
 > articleFromFile path = do
->   dir   <- articleDir
->   muse  <- liftIO $ IO.UTF8.readFile $ dir </> path ++ ".muse"
+>   dir   <- (</> "articles") <$> asks appDir
+>   muse  <- liftIO $ IO.UTF8.readFile $ dir </> path <.> "muse"
 >   case P.parse articleHeader "" muse of
 >     Left e     -> liftIO $ logError "parse" (show e) >> return Nothing
 >     Right hdr  -> return $ Just $ hdr {  articleFilename  = path }
@@ -216,14 +210,6 @@ A muse directive looks sort of like a C preprocessor directive.
 > dateTimeP =  parseTime defaultTimeLocale "%F %T %z" <$>
 >              P.manyTill P.anyChar P.newline
 
-We don't need the article body until we go to actually display the article, so
-there's no point in storing it in the article record.
-
-> articleBody :: Article -> App Html
-> articleBody article = do
->   path <- (</> articleFilename article ++ ".html") <$> articleDir
->   liftIO $ primHtml <$> IO.UTF8.readFile path
-
 \subsection{Retrieving Articles}
 
 To retrieve an article with need its (relative) filename (or path, or whatever
@@ -258,54 +244,7 @@ published articles in the database that are in the ``main'' section.
 >                      \FROM article \
 >                      \WHERE publish_time < CURRENT_TIMESTAMP \
 >                        \AND section = 'main' \
->                      \ORDER BY publish_time" []
+>                      \ORDER BY publish_time DESC" []
 >   case rs of
 >     Nothing   -> return Nothing
 >     Just rs'  -> return $ Just $ mapMaybe articleFromTuple rs'
-
-\subsection{Article Pages}
-
-Here's how to display an article to the client. We don't check here to see
-whether or not it's published (past its publication date) as unpublished
-articles presumably don't have links to them.
-
-> articlePage :: String -> App CGIResult
-> articlePage path = do
->   article <- getArticle path
->   case article of
->     Nothing  -> output404 ["article", path]
->     Just a   -> do
->       r <- queryValue'  "SELECT root_comment \
->                         \FROM article_comments \
->                         \WHERE filename = ?" [toSql path]
->       comments <- case r of
->                     Just root  -> renderComments $ fromSql root
->                     Nothing    -> return noHtml
->       body <- articleBody a
->       stdPage (articleTitle a) [CSS "article"] []
->         [  thediv ! [theclass "article"] << body,
->            hr ! [theclass "clear"], h3 << "Comments", comments ]
-
-This page is for displaying a listing of published articles.
-
-> articlesPage :: App CGIResult
-> articlesPage = do
->   articles <- getArticles
->   memberName <- asks appMemberName
->   case articles of
->     Nothing  -> error "Error retrieving articles"
->     Just as  -> simplePage "Articles" [CSS "article"]
->       [  thediv ! [theclass "article"] << [
->            unordList $ map articleLinkHtml as,
->            refresh memberName ] ]
->  where refresh member = case member of
->                           Just "jekor"  ->
->                             form ! [action "/articles", method "post"] <<
->                               submit "" "Refresh from filesystem."
->                           _               -> noHtml
-
-Create a clickable link HTML fragment for an article.
-
-> articleLinkHtml :: Article -> Html
-> articleLinkHtml a = anchor ! [href ("/article/" ++ articleFilename a)] <<
->   articleTitle a

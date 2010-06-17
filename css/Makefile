@@ -6,7 +6,6 @@ csses := $(sources:.ccss=.css)
 clevercss := clevercss
 
 all : $(csses) lib.common.css lib.member.css
-	cp *.css ../s/css/
 
 lib.common.css : common.css page.css comment.css
 	cat $^ > $@

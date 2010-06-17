@@ -511,3 +511,17 @@ CREATE TABLE link_rating (
   rating REAL NOT NULL,
   PRIMARY KEY (link_no, member_no)
 );
+
+-- What are the most popular languages on vocabulink? Count the number of times
+-- the language appears on either side of a link to find out.
+CREATE VIEW language_frequency AS
+SELECT abbr, SUM(freq) AS freq FROM
+((SELECT origin_language AS abbr, COUNT(*) AS freq
+ FROM link
+ WHERE NOT deleted
+ GROUP BY origin_language) UNION
+(SELECT destination_language AS abbr, COUNT(*) AS freq
+ FROM link
+ WHERE NOT deleted
+ GROUP BY destination_language)) AS t
+GROUP BY abbr;

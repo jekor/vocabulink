@@ -369,7 +369,7 @@ form we fall back to a secondary (disposable) support address.
 >                 stringToHtml "?" ],
 >            xhtml ] ]
 >     Right (email, problem, redirect') -> do
->       supportAddress <- fromJust <$> getOption "staticDir"
+>       supportAddress <- fromJust <$> getOption "supportaddress"
 >       res' <- liftIO $ sendMail supportAddress "Support Request" $
 >                 unlines [  "Email: " ++ email,
 >                            "Problem: " ++ problem ]

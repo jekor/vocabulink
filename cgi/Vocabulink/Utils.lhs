@@ -41,7 +41,7 @@ oft-used functions for other modules.
 >  {- Data.Time.Clock -}            UTCTime, getCurrentTime, diffUTCTime,
 >  {- Data.Time.Format -}           formatTime,
 >  {- Data.Time.LocalTime -}        ZonedTime,
->  {- System.FilePath -}            (</>), takeExtension, addExtension,
+>  {- System.FilePath -}            (</>), (<.>), takeExtension,
 >                                   replaceExtension, takeBaseName, takeFileName,
 >  {- System.Locale -}              defaultTimeLocale, rfc822DateFormat,
 >  {- System.Posix.Files -}         getFileStatus, modificationTime,
@@ -81,7 +81,7 @@ formats.
 >                               LocalTime(..), ZonedTime)
 > import System.Cmd (system)
 > import System.Exit (ExitCode(..))
-> import System.FilePath (  (</>), takeExtension, addExtension, replaceExtension,
+> import System.FilePath (  (</>), (<.>), takeExtension, replaceExtension,
 >                           takeBaseName, takeFileName )
 > import System.IO (hPutStrLn, stderr)
 > import System.IO.Error (try)
@@ -94,7 +94,7 @@ rather than an if then else. The |(?)| operator can be used like:
 
 \begin{quote}|Bool ? trueExpression $ falseExpression|\end{quote}
 
-I think I originally saw this on the Haskell wiki.
+I think I originally saw this defined on the Haskell wiki.
 
 > infixl 1 ?
 > (?)  :: Bool -> a -> a -> a

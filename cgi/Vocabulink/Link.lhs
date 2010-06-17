@@ -731,7 +731,8 @@ in URLs and the name for display to the client), we return these as triples:
 > linkLanguages = do
 >   ts <- queryTuples'  "SELECT origin_language, orig.name, \
 >                              \destination_language, dest.name, \
->                              \COUNT(*) FROM link \
+>                              \COUNT(*) \
+>                       \FROM link \
 >                       \INNER JOIN language orig ON (orig.abbr = origin_language) \
 >                       \INNER JOIN language dest ON (dest.abbr = destination_language) \
 >                       \WHERE NOT deleted \
@@ -751,12 +752,8 @@ the site.
 > languagePairsPage :: App CGIResult
 > languagePairsPage = do
 >   languages' <- linkLanguages
->   let (col1, col2, col3) = every3rd $ map languagePairLink languages'
 >   simplePage "Links by Language Pair" [CSS "link"] [
->     thediv ! [theclass "three-column"] << [
->       thediv ! [theclass "column"] << unordList col1,
->       thediv ! [theclass "column"] << unordList col2,
->       thediv ! [theclass "column"] << unordList col3 ] ]
+>     multiColumnList 3 $ map languagePairLink languages' ]
 
 Display a hyperlink for a language pair.
 
@@ -769,7 +766,7 @@ Display a hyperlink for a language pair.
 > data LinkPack = LinkPack {  linkPackNumber       :: Integer,
 >                             linkPackName         :: String,
 >                             linkPackDescription  :: String,
->                             linkPackImage        :: Maybe String,
+>                             linkPackImage        :: Maybe FilePath,
 >                             linkPackCreator      :: Integer }
 
 We all make mistakes, and sometimes a member will need to clean up a link
@@ -871,7 +868,7 @@ TODO: Check that the new trimmed body is not empty.
 
 > linkPackIcon :: LinkPack -> Html
 > linkPackIcon lp =
->   image ! [  src (  "http://s.vocabulink.com/pack/image/" ++
+>   image ! [  src (  "http://s.vocabulink.com/img/pack/" ++
 >                     case linkPackImage lp of
 >                       Just i   -> i
 >                       Nothing  -> "default.png" ),
@@ -909,11 +906,11 @@ TODO: Check that the new trimmed body is not empty.
 >     Just (Just r')  -> case linkPackImage lp of
 >                          Nothing  -> return $ Just r'
 >                          Just i   -> moveImage i >> return (Just r')
->       where  moveImage :: String -> App (Either SomeException ExitCode)
+>       where  moveImage :: FilePath -> App (Either SomeException ExitCode)
 >              moveImage i' = do
->                dir  <- (++ "/pack/image/") . fromJust <$> getOption "staticdir"
->                let old  =  dir ++ i'
->                    new  =  dir ++ addExtension (show r') (takeExtension i')
+>                dir  <- (</> "img" </> "pack") <$> asks appDir
+>                let old  =  dir </> i'
+>                    new  =  dir </> show r' <.> takeExtension i'
 >                    cmd  =  "mv " ++ old ++ " " ++ new
 >                liftIO $ try $ system cmd
 >     _               -> return Nothing

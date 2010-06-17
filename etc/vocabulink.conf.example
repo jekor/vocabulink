@@ -2,6 +2,6 @@
 # `openssl rand -base64 160` is a good candidate
 dbpassword = phae9Xom
 authtokenkey = o/SG237DCtyKiA05kXP3WKw+Pu7fQhPlr8vgEJlS8J3MJzNu40h7w//s18kquWfwSkOw1vic7GgsXFrapVELNL+enxKVfe0kfSeEQYV0JyHUMrZZEVu1xmRhOPPTNOwGZToJRei1Xlq7p7wKABty7gZRUfVSis1+mMKARJr6ImIpcD2RQhOh9b5odMNjTZ/fxCg7yVTWl393DzqgLGrOFA
-articledir = /home/jekor/vocabulink/articles
-staticdir = /home/jekor/vocabulink/s
+threads = 2048
+maindir = /home/jekor/vocabulink
 supportaddress = someaddress@your.com

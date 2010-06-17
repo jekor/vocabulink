@@ -94,19 +94,21 @@ All database updates during this process are wrapped in a transaction.
 >       case seconds of
 >         Nothing  -> error "Failed to retrieve review interval."
 >         Just s   -> do
->           run'  "INSERT INTO link_review (member_no, link_no, recall, \
->                                          \recall_time, target_time) \
->                 \VALUES (?, ?, ?, ?, \
->                        \(SELECT target_time FROM link_to_review \
->                 \WHERE member_no = ? AND link_no = ?))"
->                 [  toSql memberNo, toSql linkNo, toSql recall,
->                    toSql recallTime, toSql memberNo, toSql linkNo]
->           run' ("UPDATE link_to_review \
->                 \SET target_time = current_timestamp + interval \
->                 \'" ++ show s ++ " seconds" ++ "' \
->                 \WHERE member_no = ? AND link_no = ?")
->                [toSql memberNo, toSql linkNo]
->           return ()
+>           n <- run'  "INSERT INTO link_review (member_no, link_no, recall, \
+>                                               \recall_time, target_time) \
+>                      \VALUES (?, ?, ?, ?, \
+>                             \(SELECT target_time FROM link_to_review \
+>                      \WHERE member_no = ? AND link_no = ?))"
+>                      [  toSql memberNo, toSql linkNo, toSql recall,
+>                         toSql recallTime, toSql memberNo, toSql linkNo]
+>           m <- run' ("UPDATE link_to_review \
+>                      \SET target_time = current_timestamp + interval \
+>                      \'" ++ show s ++ " seconds" ++ "' \
+>                      \WHERE member_no = ? AND link_no = ?")
+>                     [toSql memberNo, toSql linkNo]
+>           case [n, m] of
+>             [1, 1] -> return ()
+>             _      -> error "Failed to update study statistics."
 
 \subsection{Review Pages}
 
