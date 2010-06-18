@@ -169,58 +169,60 @@ tr.odd:hover, tr.even:hover:
   margin: 1.3em
 
 #head, #foot:
-  background-color: $bar_and_box_background
   margin: 0
 
 #head:
-  padding->
-    left: 0.75em
-    right: 0.75em
-    top: 0.5em
-    bottom: 0.5em
+  width: 100%
   font-family: Verdana, sans-serif
-  background: url($images + "header-gradient.gif") repeat-x bottom;
-  a.logo:
+  .logo:
     display: block
     float: left
-    font->
-      size: 1.25em
-      weight: bold
-    color: black
-    line-height: 1.0
-    .tagline:
-      font->
-        size: 0.75em
-        weight: normal
-  .logo, .auth-box, .search-box, .review-box:
+    margin->
+      left: 1.3em
+      top: 13px
+  #head-decoration:
+    height: 2px
+    background-color: #2D2D2D
+    border-bottom: 3px solid #53D2DA
+  #head-bar:
+    display: inline-block
+    float: right
+    padding: 0.5em 1em
+    margin->
+      right: 1.3em
+      top: -3px
+    %rounded_bl(5px)
+    %rounded_br(5px)
+    background-color: #2D2D2D
+    border->
+      left: 3px solid #53D2DA
+      right: 3px solid #53D2DA
+      bottom: 3px solid #53D2DA
+    color: white
+    .clear:
+      clear: right
+    a:
+      color: white
+      &:hover:
+        text-decoration: underline
+  .auth-box, .search-box, .review-box:
     display: inline
     line-height: 1.3
-  .logo, .search-box, .review-box:
+  .search-box, .review-box:
+    float: left
     margin-right: 1em
-  .search-box, .auth-box, .review-box:
-    float: right
-  .search-box, .auth-box, .review-box, .hyperlinks:
-    margin->
-      top: 0.5em
-      bottom: 0
   .auth-box.logout input:
     margin-left: 1em
-  ul.hyperlinks:
-    margin->
-      left: 3em
-    float: left
-    li:
-      margin->
-        left: 0.5em
-        right: 0.5em
 
 #foot:
   clear: both
   text-align: center
   padding->
-    top: 0.5em
     bottom: 0.5em
-  background: url($images + "footer-gradient.gif") repeat-x;
+  background-color: #1F1F1F
+  color: #696969
+  a:
+    color: #006C6C
   *:
     margin->
       top: 0.125em
@@ -229,8 +231,18 @@ tr.odd:hover, tr.even:hover:
     margin->
       left: 0.5em
       right: 0.5em
-  #common-links:
     clear: left
+    a:
+      color: #00BFBF
+  #handy-links:
+    background-color: #2D2D2D
+    h2:
+      color: #9D9C9C
+      font-size: 1em
+    a:
+      color: #6FD86D
+  #design-attribution:
+    margin-left: 1.3em
 
 #main-content:
   width: 67%

@@ -169,23 +169,17 @@ notice about the number of links that the member has waiting for review.
 >   username <- asks appMemberName
 >   review <- reviewBox
 >   return $ concatHtml [
->     anchor ! [theclass "logo", href "/", accesskey "1"] << [
->       stringToHtml "Vocabulink", br,
->       thespan ! [theclass "tagline"] << "learn languages through fiction" ],
->     topLinks,
->     maybe loginBox logoutBox username,
->     searchBox,
->     review,
+>     anchor ! [href "/", accesskey "1"] <<
+>       (image ! [  theclass "logo",
+>                   alt "Vocabulink: Learn Languages through Fiction",
+>                   src "http://s.vocabulink.com/img/logo-compact.png" ]),
+>     thediv ! [identifier "head-decoration"] << noHtml,
+>     thediv ! [identifier "head-bar"] << [
+>       searchBox,
+>       review,
+>       maybe loginBox logoutBox username,
+>       clear ],
 >     clear ]
-
-Here are the hyperlinks we want in the header of every page.
-
-> topLinks :: Html
-> topLinks = linkList [
->   anchor ! [href "/forums"] << "Forums", stringToHtml "|",
->   anchor ! [href "/articles"] << "Articles", stringToHtml "|",
->   anchor ! [href "/languages"] << "Browse Links", stringToHtml "|",
->   anchor ! [href "/help"] << "Help" ]
 
 The footer displays a number of common (or what we believe to be common)
 hyperlinks for English speakers.
@@ -204,28 +198,30 @@ hyperlinks for English speakers.
 >               anchor ! [href ("/links?ol=" ++ (fromSql abbr') ++ "&dl=en")] << ((fromSql name')::String)
 >             languageLink _             = error "Malformed tuple."
 
-The footer bar is more simple. It just includes some hyperlinks to static
-content.
-
 > footerBar :: App Html
 > footerBar = do
 >   langLinks <- languageLinks
->   articles <- maybe [] (map articleLinkHtml . take 4) <$> getArticles
+>   articles <- maybe [] (map articleLinkHtml . take 3) <$> getArticles
 >   forums <- footerForums
 >   copy <- liftIO $ copyrightNotice
 >   return $ concatHtml [
 >     multiColumn [
 >       h2 << "Browse links by language:" +++
 >       multiColumnList 2 langLinks,
->       h2 << "Latest Articles:" +++ unordList articles,
+>       h2 << "Latest Articles:" +++
+>       unordList (articles ++ [anchor ! [href "/articles"] << "more..."]),
 >       h2 << "Forums:" +++
->       multiColumnList 2 forums ] ! [identifier "handy-links"],
+>       multiColumnList 2 (forums ++ [anchor ! [href "/forums"] << "more..."]) ] ! [identifier "handy-links"],
 >     linkList [
 >       anchor ! [href "/help"] << "help",
 >       anchor ! [href "/privacy"] << "privacy policy",
 >       anchor ! [href "/terms-of-use"] << "terms of use",
->       anchor ! [href "/source"] << "source" ] ! [identifier "common-links"],
->     copy ]
+>       anchor ! [href "/source"] << "source" ],
+>     paragraph << [
+>       copy,
+>       thespan ! [identifier "design-attribution"] << [
+>         stringToHtml "Design by: ",
+>         anchor ! [href "http://www.designcharisma.com"] << "Design Charisma" ] ] ]
 >  where articleLinkHtml a =
 >          anchor ! [href ("/article/" ++ articleFilename a)] <<
 >            articleTitle a
@@ -247,7 +243,7 @@ generation time (now).
 > copyrightNotice :: IO Html
 > copyrightNotice = do
 >   year <- currentYear
->   return $ paragraph ! [theclass "copyright"] <<
+>   return $ thespan ! [theclass "copyright"] <<
 >     [  stringToHtml "Copyright 2008–",
 >        stringToHtml (show year ++ " "),
 >        anchor ! [href "http://jekor.com/"] << "Chris Forno" ]
@@ -552,7 +548,7 @@ TODO: Do a check right before writeFile to ensure a safe path.
 >               3 -> "three"
 >               _ -> "unsupported" in
 >   thediv ! [theclass (num ++ "-column")] <<
->     map (thediv ! [theclass "column"] <<) cls
+>     (map (thediv ! [theclass "column"] <<) cls ++ [clear])
 
 > multiColumnList :: Int -> [Html] -> Html
 > multiColumnList 2 xs  =
