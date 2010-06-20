@@ -170,8 +170,8 @@ For now, we just upload to the icons directory in our static directory.
 >   iconDir   <- (</> "upload" </> "img" </> "icon") <$> asks appDir
 >   filename  <- getInputFilename "forum-icon"
 >   group     <- getInput "forum-group"
->   title     <- getInput "forum-title"
->   case (filename, group, title) of
+>   title'    <- getInput "forum-title"
+>   case (filename, group, title') of
 >     (Just f, Just g, Just t) -> do
 >       icon <- fromJust <$> getInputFPS "forum-icon"
 >       let iconfile = iconDir </> basename f
@@ -195,9 +195,9 @@ and the time of the latest topic.
 
 > forumPage :: String -> App CGIResult
 > forumPage forum = do
->   title <- queryValue'  "SELECT title FROM forum WHERE name = ?"
->                         [toSql forum]
->   case title of
+>   title' <- queryValue'  "SELECT title FROM forum WHERE name = ?"
+>                          [toSql forum]
+>   case title' of
 >     Nothing  -> output404 ["forum", forum]
 >     Just t   -> do
 >       topics <- forumTopicRows forum
@@ -280,8 +280,8 @@ This creates the topic in the database given the title and root comment body.
 
 > createForumTopic :: String -> App CGIResult
 > createForumTopic forumName = withRequiredMemberNumber $ \memberNo -> do
->   title  <- getRequiredInput "title"
->   body   <- getRequiredInput "body"
+>   title'  <- getRequiredInput "title"
+>   body    <- getRequiredInput "body"
 >   topicNum <- withTransaction' $ do
 >     c' <- asks appDB
 >     commentNo' <- storeComment memberNo body Nothing
@@ -291,7 +291,7 @@ This creates the topic in the database given the title and root comment body.
 >         r <- quickStmt'  "INSERT INTO forum_topic \
 >                          \(forum_name, title, root_comment, last_comment) \
 >                          \VALUES (?, ?, ?, ?)"
->                          [toSql forumName, toSql title, toSql n, toSql n]
+>                          [toSql forumName, toSql title', toSql n, toSql n]
 >         case r of
 >           Nothing  -> liftIO $ rollback c' >> error "DB error"
 >           Just _   -> return n
@@ -310,12 +310,12 @@ probably need paging.
 >                     \WHERE f.name = t.forum_name \
 >                       \AND t.topic_no = ?" [toSql i]
 >   case r of
->     Just [root,title,fTitle]  -> do
+>     Just [root,title',fTitle]  -> do
 >       comments <- renderComments $ fromSql root
->       stdPage (fromSql title) forumDeps [] [
+>       stdPage (fromSql title') forumDeps [] [
 >         breadcrumbs [
 >           anchor ! [href "../../forums"] << "Forums",
 >           anchor ! [href $ "../" ++ fn] << (fromSql fTitle :: String),
->           stringToHtml $ fromSql title ],
+>           stringToHtml $ fromSql title' ],
 >         comments ]
 >     _                         -> output404 ["forum", fn, show i]

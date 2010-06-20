@@ -1,4 +1,4 @@
-// Copyright 2008, 2009 Chris Forno
+// Copyright 2008, 2009, 2010 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -15,143 +15,181 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-.link:
+@import lib.sass
+
+.link
   text-align: center
   margin-left: 0
   margin-right: 0
-  img, .lexeme, input, #destination:
+  img, .lexeme, input, #destination
     vertical-align: middle
-  lexeme:
-    padding->
+  lexeme
+    padding:
       left: 0.5em
       right: 0.5em
-    font->
+    font:
       family: sans-serif
       size: xx-large
-  #destination:
+  #destination
     width: 10em
     margin-left: 1em
-  > a:
+  > a
     display: block
     color: black
     border: 1px solid black
-    padding->
+    padding:
       top: 2em
       bottom: 2em
-    img:
+    img
       border: 0
-  &.review:
-    .dest:
+  &.review
+    .dest
       display: none
-    .linkword:
+    .linkword
       display: none
 
-h1.link .linkword:
-  font-size: 0.667em
-  vertical-align: top
-  text-decoration: underline
-  margin->
-    left: 0.2em
-    right: 0.2em
-  &:before:
-    content: "\00a0\00a0\00a0" // &nbsp;&nbsp;&nbsp;
-  &:after:
-    content: "\00a0\00a0\00a0"
+h1.link
+  margin-bottom: 2em
+  .orig, .dest
+    display: inline-block
+    border: 3px solid black
+    @include rounded(10px)
+    @include drop_shadow(3px, 3px, 6px, rgba(0, 0, 0, 0.2))
+    font-size: 0.875em
+    padding: 1em 1.5em
+  .link
+    font-size: 0.75em
+    vertical-align: 50%
+    border-bottom: 3px solid black
+    padding:
+      left: 2em
+      right: 2em
+      bottom: 0.1em
+    margin:
+      left: 8px
+      right: 5px
 
-h1.link.cognate:
-  .orig:
-    &:after:
-      content: "\2500\2500\2500" // ────
+h1.link.linkword
+  .orig, .dest, .link
+    color: $linktype_linkword_foreground
+  .orig, .dest
+    background-color: $linktype_linkword_background
+    border-color: $linktype_linkword_border
+  .link
+    border-color: $linktype_linkword_foreground
 
-#baseline:
-  margin->
+h1.link.cognate
+  .orig, .dest, .link
+    color: $linktype_cognate_foreground
+  .orig, .dest
+    background-color: $linktype_cognate_background
+    border-color: $linktype_cognate_border
+  .link
+    border-color: $linktype_cognate_foreground
+
+h1.link.association
+  .orig, .dest, .link
+    color: $linktype_association_foreground
+  .orig, .dest
+    background-color: $linktype_association_background
+    border-color: $linktype_association_border
+  .link
+    border-color: $linktype_association_foreground
+
+.caption
+  display: inline-block
+  color: #A0A0A0
+  font-size: 0.875em
+
+#baseline
+  margin:
     top: 5em
     bottom: 5em
 
-.preview:
+.preview
   border: 1px solid $bar_and_box_background
   margin-bottom: 1.3em
-  h2:
+  h2
     text-align: center
 
 // review
 
-a#lexeme-cover:
+a#lexeme-cover
   padding: 0.5em 4em
   border: 1px solid black
   color: black
-  &:visited:
+  &:visited
     color: inherit
 
-table.focus-box:
+table.focus-box
   width: 100%
   height: 300px
   margin-top: 1em
-  td:
+  td
     padding: 0.5em
     vertical-align: middle
-    &.edges:
+    &.edges
       width: 200px
-    &.focus:
+    &.focus
       text-align: center
       width: 1em
-    &.origins table, &.destinations table:
+    &.origins table, &.destinations table
       width: 100%
       height: 100%
-    &.origins table td:
+    &.origins table td
       text-align: right
-    &.destinations:
+    &.destinations
       text-align: left
 
-fieldset#linkword textarea:
+fieldset#linkword textarea
   width: 50%
   height: 20em
 
-.link-details:
+.link-details
   width: 50%
-  margin->
+  margin:
     left: auto
     right: auto
     top: 1.3em
     bottom: 1.3em
-  textarea:
+  textarea
     width: 100%
     height: 24em
 
-.link-ops:
+.link-ops
   width: 22.5%
   float: left
   padding-top: 1.3em
-  input, select, button:
+  input, select, button
     display: block
-    margin->
+    margin:
       left: auto
       right: auto
-  > input, button, form, a:
+  > input, button, form, a
     margin-top: 1.3em
-  > div:
+  > div
     margin: 1.3em auto
-  p, a:
+  p, a
     text-align: center
-  a:
+  a
     display: block
-  #add-to-pack:
+  #add-to-pack
     padding: 0.667em
     background-color: $bar_and_box_background
 
-#recall-buttons:
+#recall-buttons
   text-align: center
-  button:
+  button
     padding: 0.5em 0.75em
 
-a.language-pair:
+a.language-pair
   display: block
   text-align: center
 
-.column .link-pack:
-  margin->
+.column .link-pack
+  margin:
     right: 1.3em
     left: auto
 
-.pack-links:
+.pack-links
   width: 33em

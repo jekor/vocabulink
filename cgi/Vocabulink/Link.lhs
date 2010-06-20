@@ -317,13 +317,17 @@ We really shouldn't need to allow for passing class names. However, the !
 function has a problem in that it will add another class attribute instead of
 extending the existing one, which at least jquery doesn't like.
 
-> renderLink :: [String] -> Link -> Html
-> renderLink classes link = h1 ! [theclass ("link " ++ linkTypeName link ++ (classes == [] ? "" $ " " ++ (intercalate " " classes)))] << [
->   thespan ! [theclass "orig"] << linkOrigin link,
->   renderLinkType $ linkType link,
->   thespan ! [theclass "dest"] << linkDestination link ]
+> renderLink :: Link -> App Html
+> renderLink link = do
+>   oLang <- linkOriginLanguage link
+>   dLang <- linkDestinationLanguage link
+>   return $ h1 ! [theclass ("link " ++ linkTypeName link)] << [
+>     thespan ! [theclass "orig", title oLang] << linkOrigin link,
+>     thespan ! [theclass "link", title (linkTypeNameFromType $ linkType link)] <<
+>       (renderLinkType $ linkType link),
+>     thespan ! [theclass "dest", title dLang] << linkDestination link ]
 >  where renderLinkType :: LinkType -> Html
->        renderLinkType (LinkWord word _)  = thespan ! [theclass "linkword"] << word
+>        renderLinkType (LinkWord word _)  = stringToHtml word
 >        renderLinkType _                  = noHtml
 
 > renderPartialLink :: PartialLink -> App Html
@@ -340,10 +344,12 @@ extending the existing one, which at least jquery doesn't like.
 Displaying an entire link involves not just drawing a graphical representation
 of the link but displaying its type-level details as well.
 
-> displayLink :: Link -> Html
-> displayLink l = concatHtml [
->   renderLink [] l,
->   thediv ! [theclass "link-details htmlfrag"] << linkTypeHtml (linkType l) ]
+> displayLink :: Link -> App Html
+> displayLink l = do
+>   renderedLink <- renderLink l
+>   return $ concatHtml [
+>     renderedLink,
+>     thediv ! [theclass "link-details htmlfrag"] << linkTypeHtml (linkType l) ]
 
 > linkTypeHtml :: LinkType -> Html
 > linkTypeHtml Association = noHtml
@@ -391,8 +397,9 @@ textarea for in-page editing.
 >                     Just root  -> renderComments $ fromSql root
 >                     Nothing    -> return noHtml
 >       rateInvitation <- invitationLink "Rate"
+>       renderedLink <- renderLink l'
 >       stdPage (orig ++ " → " ++ dest) [CSS "link", JS "lib.link"] []
->         [  renderLink [] l',
+>         [  renderedLink,
 >            thediv ! [theclass "link-ops"] << [
 >              anchor ! [href (  "/links?ol=" ++ linkOriginLang l' ++
 >                                "&dl=" ++ linkDestinationLang l' ) ] <<
@@ -477,7 +484,7 @@ displaying all the (non-deleted) links in the system. This will probably go
 away eventually.
 
 > linksPage :: String -> (Int -> Int -> App (Maybe [PartialLink])) -> App CGIResult
-> linksPage title f = do
+> linksPage title' f = do
 >   (pg, n, offset) <- currentPage
 >   ts <- f offset (n + 1)
 >   case ts of
@@ -485,7 +492,7 @@ away eventually.
 >     Just ps  -> do
 >       pagerControl <- pager pg n $ offset + length ps
 >       partialLinks <- mapM renderPartialLink (take n ps)
->       simplePage title [CSS "link"] [
+>       simplePage title' [CSS "link"] [
 >         unordList partialLinks ! [identifier "central-column", theclass "links"],
 >         pagerControl ]
 
@@ -507,10 +514,12 @@ result, and dispatching the creation of the link on successful form validation.
 >   (status, xhtml) <- runForm' establishF
 >   case preview of
 >     Just _  -> do
->       let preview' = case status of
->                        Failure failures  -> unordList failures
->                        Success link      -> thediv ! [theclass "preview"] <<
->                                               displayLink link
+>       preview' <- case status of
+>                     Failure failures  -> return $ unordList failures
+>                     Success link      -> do
+>                       displayedLink <- displayLink link
+>                       return $ thediv ! [theclass "preview"] <<
+>                         displayedLink
 >       simplePage "Create a Link (preview)" deps
 >         [  preview',
 >            form ! [  thestyle "text-align: center",

@@ -1,9 +1,8 @@
-# Vocabulink (Clever) CSS files
-# See http://sandbox.pocoo.org/clevercss-hs/
+# Vocabulink CSS (SASS) files
+# See http://sass-lang.com/
 
-sources := $(shell ls *.ccss)
-csses := $(sources:.ccss=.css)
-clevercss := clevercss
+sources := $(shell ls *.sass | grep -v lib.sass)
+csses := $(sources:.sass=.css)
 
 all : $(csses) lib.common.css lib.member.css
 
@@ -13,8 +12,8 @@ lib.common.css : common.css page.css comment.css
 lib.member.css : link-editor.css markitup-set.css markitup-skin.css
 	cat $^ > $@
 
-%.css : %.ccss constants
-	cat constants $< | $(clevercss) > $@
+%.css : %.sass lib.sass
+	sass $< > $@
 
 clean :
-	rm $(csses)
+	rm $(csses) lib.common.css lib.member.css

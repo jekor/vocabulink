@@ -1,4 +1,4 @@
-// Copyright 2008, 2009 Chris Forno
+// Copyright 2008, 2009, 2010 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -137,25 +137,25 @@ function createGraph_(block) {
   return g;
 }
 
-// Convert an <h1> representing a link into a more visually-expressive version
-// using SVG.
-function drawH1Link() {
-  var orig = $(this).find('.orig').text();
-  var dest = $(this).find('.dest').text();
-  var label = '';
-  var colors = linkColors['association'];
-  if ($(this).hasClass('cognate')) {
-    colors = linkColors['cognate'];
-  } else if ($(this).hasClass('linkword')) {
-    label = $(this).find('.linkword').text();
-    colors = linkColors['linkword'];
-  }
-  $(this).empty().css('height', '100px');
-  var gdims = {'w': $(this).width(),
-               'h': 100};
-  var g = {'graph': new Raphael(this, gdims.w, gdims.h),
-           'node': this,
-           'width': gdims.w, 'height': gdims.h};
-  drawLink(g, {'orig': orig, 'dest': dest, 'label': label,
-               'color': colors[0], 'bgcolor': colors[1]});
-}
+// // Convert an <h1> representing a link into a more visually-expressive version
+// // using SVG.
+// function drawH1Link() {
+//   var orig = $(this).find('.orig').text();
+//   var dest = $(this).find('.dest').text();
+//   var label = '';
+//   var colors = linkColors['association'];
+//   if ($(this).hasClass('cognate')) {
+//     colors = linkColors['cognate'];
+//   } else if ($(this).hasClass('linkword')) {
+//     label = $(this).find('.linkword').text();
+//     colors = linkColors['linkword'];
+//   }
+//   $(this).empty().css('height', '100px');
+//   var gdims = {'w': $(this).width(),
+//                'h': 100};
+//   var g = {'graph': new Raphael(this, gdims.w, gdims.h),
+//            'node': this,
+//            'width': gdims.w, 'height': gdims.h};
+//   drawLink(g, {'orig': orig, 'dest': dest, 'label': label,
+//                'color': colors[0], 'bgcolor': colors[1]});
+// }

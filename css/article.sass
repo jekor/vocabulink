@@ -1,4 +1,4 @@
-// Copyright 2008, 2009 Chris Forno
+// Copyright 2008, 2009, 2010 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -15,34 +15,36 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-.article:
+@import lib.sass
+
+.article
   width: 50%
   margin-left: auto
   margin-right: auto
-  dl:
+  dl
     border: 3px double #CCC
     padding: 0.667em 0.667em 0 0.667em
     margin: 1.3em
-    dt:
+    dt
       float: left
       clear: left
       line-height: 1.3em
       width: 3em
       text-align: right
       font-weight: bold
-      &:after:
+      &:after
         content: ":"
-    dd:
+    dd
       line-height: 1.3em
-      margin->
+      margin:
         left: 4.3em
         bottom: 0.667em
-  ul:
+  ul
     list-style-type: disc
     margin-left: 1em
-  ol:
+  ol
     list-style-type: decimal
     margin-left: 1.5em
-  code:
+  code
     font-family: Courier New, monospace
     font-weight: bold

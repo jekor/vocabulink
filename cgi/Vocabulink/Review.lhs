@@ -1,4 +1,4 @@
-% Copyright 2008, 2009 Chris Forno
+% Copyright 2008, 2009, 2010 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -147,9 +147,10 @@ the client to |nextReview| which begins the process all over again.
 >     Just l'  -> do
 >       let source  = linkOrigin l'
 >           dest    = linkDestination l'
+>       renderedLink <- renderLink l'
 >       stdPage ("Review: " ++ source ++ " → ?")
 >               [CSS "link", JS "lib.link"] []
->         [  renderLink ["review"] l',
+>         [  renderedLink ! [theclass "review"],
 >            form ! [action ("/review/" ++ show linkNo), method "post"] <<
 >              [  hidden "recall-time" "",
 >                 hidden "hidden-lexeme" dest,

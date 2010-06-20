@@ -1,4 +1,4 @@
-// Copyright 2008, 2009 Chris Forno
+// Copyright 2008, 2009, 2010 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -15,113 +15,115 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-.forum-group:
-  margin->
+@import lib.sass
+
+.forum-group
+  margin:
     top: 1.3em
     bottom: 1.3em
   background-color: $bar_and_box_background
-  %rounded(5px)
-  h2, ul:
+  @include rounded(5px)
+  h2, ul
     float: left
-  h2, ul, label:
-    margin->
+  h2, ul, label
+    margin:
       left: 0.5em
       right: 0.5em
-  ul:
-    li:
-      margin->
+  ul
+    li
+      margin:
         top: 1.3em
         bottom: 1.3em
-    img:
+    img
       float: left
       clear: left
       // vertical-align: middle
       margin-right: 0.5em
-  h2:
+  h2
     text-align: center
     width: 15%
-  ul:
+  ul
     width: 40%
-  input:
+  input
     display: inline
-  a:
+  a
     display: block
-    &:hover:
+    &:hover
       text-decoration: none
       background-color: $bar_and_box_border
-  h3:
+  h3
     margin-bottom: 0.325em
-  .metadata:
+  .metadata
     margin: 0
     color: black
     font-size: 0.875em
 
-#body > form:
+#body > form
   margin-bottom: 1.3em
 
-#topics:
+#topics
   width: 100%
   border: 1px solid $bar_and_box_border
-  %rounded(5px)
+  @include rounded(5px)
   background-color: $bar_and_box_background
-  table:
+  table
     width: 100%
-    thead:
-      background: url($images + "header-gradient.gif") repeat-x bottom;
+    thead
+      background: url(#{$images}header-gradient.gif) repeat-x bottom
       border-bottom: 1px solid $bar_and_box_border
-    tbody:
+    tbody
       background-color: #FFF
-    th, td:
+    th, td
       padding: 0.5em
       vertical-align: middle
-      &.topic:
-        form:
+      &.topic
+        form
           display: inline
           // line-height doesn't seem to work for inputs
-          input:
-            padding->
+          input
+            padding:
               top: 0.15em
               bottom: 0.15em
-    .votes:
+    .votes
       width: 4em
       line-height: 1em
-    .votes, .replies, .author, .last:
+    .votes, .replies, .author, .last
       text-align: center
 
-fieldset:
+fieldset
   border: 1px solid black
-  padding->
+  padding:
     left: 0.65em
     right: 1.3em
-  table:
+  table
     border-spacing: 0 1.3em
-  th:
+  th
     text-align: right
-  input[type="text"], input[type="file"]:
+  input[type="text"], input[type="file"]
     width: 100%
-  input[type="submit"]:
+  input[type="submit"]
     display: block
-    margin->
+    margin:
       left: auto
       right: auto
 
-a.vote-arrow:
+a.vote-arrow
   display: block
   width: 28px
   height: 14px
-  margin->
+  margin:
     left: auto
     right: auto
-  background-image: url($images + "updown.png")
+  background-image: url(#{$images}updown.png)
   background-repeat: no-repeat
-  &:focus:
+  &:focus
     outline: 0
-  &.up:
+  &.up
     background-position: 4px 2px
-  &.down:
-    background-position: 4px (-11px)
+  &.down
+    background-position: 4px -11px
     margin-top: 2px
-  &.up:hover:
-    background-position: 4px (-24px)
-  &.down:hover:
-    background-position: 4px (-37px)
+  &.up:hover
+    background-position: 4px -24px
+  &.down:hover
+    background-position: 4px -37px

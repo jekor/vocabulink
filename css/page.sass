@@ -19,12 +19,14 @@
 
 // Based on Eric Meyer's CSS Reset - http://meyerweb.com/eric/thoughts/2007/05/01/reset-reloaded/
 
-html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, font, img, ins, kbd, q, s, samp, small, strike, strong, tt, var, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td:
+@import lib.sass
+
+html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, font, img, ins, kbd, q, s, samp, small, strike, strong, tt, var, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, span, button
   margin: 0
   padding: 0
   border: 0
   outline: 0
-  font->
+  font:
     weight: inherit
     style: inherit
     size: 100%
@@ -32,420 +34,407 @@ html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockq
   vertical-align: baseline
 
 // remember to define focus styles!
-:focus:
+\:focus
   outline: 0
 
-h1, h2, h3, h4, h5, h6, p, ol, ul, dl, table, a:
+h1, h2, h3, h4, h5, h6, p, ol, ul, dl, table, a, span
   font-family: Verdana, sans-serif
 
-a:
+a
   color: #00F
-  &:focus:
+  &:focus
     outline: 1px dotted black
 
-body:
+body
   line-height: 1
   color: black
   background: white
 
-ol, ul:
+ol, ul
   list-style: none
-  margin->
+  margin:
     top: 1.3em
     bottom: 1.3em
-  li:
-    margin->
+  li
+    margin:
       top: 0.667em
       bottom: 0.667em
 
 // tables still need 'cellspacing="0"' in the markup
-table:
-  border->
+table
+  border:
     collapse: separate
     spacing: 0
 
-th, td:
+th, td
   text-align: left
   font-weight: normal
   vertical-align: middle
 
-caption:
+caption
   text-align: center
   font-weight: normal
 
-form > table:
+form > table
   border-spacing: 0.5em
-  th:
+  th
     text-align: right
-  tfoot:
-    td:
+  tfoot
+    td
       text-align: center
 
-fieldset:
-  margin->
+fieldset
+  margin:
     top: 1.3em
     bottom: 1.3em
-  & > p:
+  & > p
     margin-top: 0
 
-blockquote:before, blockquote:after, q:before, q:after:
-        content: \"\"
+blockquote:before, blockquote:after, q:before, q:after
+  content: ""
 
-blockquote, q:
-        quotes: \"\" \"\"
+blockquote, q
+  quotes: "" ""
 
 // Initialize the page and provide helpers.
 
-h1, h2, h3:
+h1, h2, h3
   font-weight: bold
 
 // Font sizes initially taken from http://webtypography.net/Harmony_and_Counterpoint/Size/3.1.1/
 
-h1:
+h1
   font-size: 2em
   text-align: center
   line-height: 1.156
-  margin->
+  margin:
     top: 0.578em
     bottom: 0.578em
 
-h2:
-//  font-size: 1.5em
+h2
+  // font-size: 1.5em
   font-size: 1.3em
-//  line-height: 0.867
+  // line-height: 0.867
   line-height: 1.154
-  margin->
+  margin:
     top: 1em
     bottom: 1em
 //    top: 0.867em
 //    bottom: 0.867em
 
-h3:
+h3
   font-size: 1.125em
   line-height: 1.156
 
-h4:
+h4
   text-align: center
   font-size: 0.875em
   line-height: 1.486
-  margin->
+  margin:
     top: 1.486em
     bottom: 1.486em
 
-p:
+p
   line-height: 1.3
-  margin->
+  margin:
     top: 1.3em
     bottom: 1.3em
 
-th, td:
+th, td
   line-height: 1.3
 
-li:
+li
   line-height: 1.3
 
-a:
+a
   text-decoration: none
-  &:hover:
+  &:hover
     text-decoration: underline
 
-b, strong:
+b, strong
   font-weight: bold
 
-em:
+em
   font-style: oblique
 
-.clear:
+.clear
   clear: both
 
-.even:
+.even
   background-color: $bar_and_box_background
-tr.odd:hover, tr.even:hover:
+tr.odd:hover, tr.even:hover
   background-color: $bar_and_box_border
 
 // Top-Level Page Elements
 
-#body:
+#body
   margin: 1.3em
 
-#head, #foot:
+#head, #foot
   margin: 0
 
-#head:
+#head
   width: 100%
   font-family: Verdana, sans-serif
-  .logo:
+  .logo
     display: block
     float: left
-    margin->
+    margin:
       left: 1.3em
       top: 13px
-  #head-decoration:
+  #head-decoration
     height: 2px
     background-color: #2D2D2D
     border-bottom: 3px solid #53D2DA
-  #head-bar:
+  #head-bar
     display: inline-block
     float: right
     padding: 0.5em 1em
-    margin->
+    margin:
       right: 1.3em
       top: -3px
-    %rounded_bl(5px)
-    %rounded_br(5px)
+    @include rounded_bl(5px)
+    @include rounded_br(5px)
     background-color: #2D2D2D
-    border->
+    border:
       left: 3px solid #53D2DA
       right: 3px solid #53D2DA
       bottom: 3px solid #53D2DA
     color: white
-    .clear:
+    .clear
       clear: right
-    a:
+    a
       color: white
-      &:hover:
+      &:hover
         text-decoration: underline
-  .auth-box, .search-box, .review-box:
+  .auth-box, .search-box, .review-box
     display: inline
     line-height: 1.3
-  .search-box, .review-box:
+  .search-box, .review-box
     float: left
     margin-right: 1em
-  .auth-box.logout input:
+  .auth-box.logout input
     margin-left: 1em
 
-#foot:
+#foot
   clear: both
   text-align: center
-  padding->
+  padding:
     bottom: 0.5em
   background-color: #1F1F1F
   color: #696969
-  a:
+  a
     color: #006C6C
-  *:
-    margin->
+  *
+    margin:
       top: 0.125em
       bottom: 0.125em
-  ul.hyperlinks li:
-    margin->
+  ul.hyperlinks li
+    margin:
       left: 0.5em
       right: 0.5em
     clear: left
-    a:
+    a
       color: #00BFBF
-  #handy-links:
+  #handy-links
     background-color: #2D2D2D
-    h2:
+    h2
       color: #9D9C9C
       font-size: 1em
-    a:
+    a
       color: #6FD86D
-  #design-attribution:
+  #design-attribution
     margin-left: 1.3em
 
-#main-content:
+#main-content
   width: 67%
   float: left
-  h1:
+  h1
     margin-top: 0
 
-#sidebar:
+#sidebar
   width: 30%
   float: right
 
-.sidebox:
+.sidebox
   padding: 0.667em
   margin-bottom: 1.3em
   background-color: $bar_and_box_background
-  %rounded(5px)
-  ul, ol:
+  @include rounded(5px)
+  ul, ol
     margin: 0
-    li:
-      margin-top: 0.333em
+    li
       text-align: center
-      a:
-        line-height: 1.667
-      &:last-child:
+      &:last-child
         margin-bottom: 0
-  h3:
+  h3
     text-align: center
-    margin->
+    margin:
       top: 0
       bottom: 0.667em
 
-// These are mnemonic links.
-ul.links:
-  li:
-    margin-top: 0.333em
-    text-align: center
-    a:
-      display: block
-      width: 100%
-
-#central-column.links li a, .column .links li a:
-  line-height: 2.6
+// #central-column.links li a, .column .links li a:
+//   line-height: 2.6
 
 // And these are web links.
-ul.hyperlinks:
+ul.hyperlinks
   margin-left: 0
   padding-left: 0
-  li:
+  li
     display: inline
 
-.link-pack:
+.link-pack
   width: 33em
   margin: 1.3em auto
-  img:
+  img
     width: 240px
     height: 336px
     float: left
-    border: 1px solid $bar_and_box_border;
-    margin->
-      right: 1.3em
+    border: 1px solid $bar_and_box_border
+    margin-right: 1.3em
 
-.link-pack.compact:
+.link-pack.compact
   width: 240px
   margin: 1.3em
-  h3:
+  h3
     text-align: center
     margin-bottom: 0.25em
-  .sidebox &:
+  .sidebox &
     margin: 0 auto
 
-p.copyright:
+p.copyright
   margin: 0
   text-align: center
   clear: both
 
 // The Pager is used to page results that won't fit on a single page.
 
-.pager:
+.pager
   text-align: center
-  margin->
+  margin:
     top: 1.3em
     bottom: 1.3em
   // Group controls in a box so that they can be logically associated.
-  .controls:
+  .controls
     border: 1px solid $bar_and_box_border
     background-color: $bar_and_box_background
     padding: 0.5em
-    .next:
+    .next
       margin-left: 2em
   // Links should never turn the "visited" color for paging. It's logically correct, but people have come to expect otherwise.
-  a:
+  a
     color: blue
   // Grey out controls that can't be used.
-  span:
-    &.prev, &.next:
+  span
+    &.prev, &.next
       color: $bar_and_box_border
 
-.breadcrumbs:
-  li:
-    display: inline
+.breadcrumbs
   margin-bottom: 1.3em
+  li
+    display: inline
 
-noscript > p:
+noscript > p
   width: 33em
-  margin->
+  margin:
     left: auto
     right: auto
   background-color: pink
   text-align: center
 
-form:
-  table:
-    margin->
+form
+  table
+    margin:
       left: auto
       right: auto
-    input[type=text], input[type=password], textarea:
+    input[type=text], input[type=password], textarea
       width: 25em
-    textarea:
+    textarea
       height: 10em
-  > ul:
+  > ul
     text-align: center
 
-#central-column:
+#central-column
   width: 50%
-  margin->
+  margin:
     left: auto
     right: auto
 
 // pull quotes (http://en.wikipedia.org/wiki/Pull_quote)
-blockquote:
+blockquote
   width: 15em
   padding: 1em
-  border->
+  border:
     top: 3px solid $bar_and_box_border
     bottom: 3px solid $bar_and_box_border
   background-color: $bar_and_box_background
-  p:
+  p
     margin: 0
     text-align: center
-    font->
+    font:
       size: 1.125em
       style: italic
       family: Georgia, serif
-  &.right:
+  &.right
     float: right
     clear: right
     margin-left: 1.3em
-  &.left:
+  &.left
     float: left
     clear: left
     margin-right: 1.3em
 
-.footnote:
+.footnote
   font-size: 0.875em
   line-height: 1.486
-  margin->
+  margin:
     top: 1.486em
     bottom: 1.486em
 
 // Help buttons!
-.help-button:
+.help-button
   line-height: 1.3em
   color: inherit
   font-size: 0.875em
-  margin->
+  margin:
     left: 0.667em
     right: 0.667em
-  img:
+  img
     vertical-align: middle
 
-button, input:
+button, input
   line-height: 1.3em
   vertical-align: middle
 
-.two-column:
-  > .column:
+.two-column
+  > .column
     width: 50%
     float: left
 
-.three-column:
-  > .column:
+.three-column
+  > .column
     width: 33%
     float: left
 
-.rating:
-  .stars-base:
+.rating
+  .stars-base
     width: 100px
     height: 20px
-    margin->
+    margin:
       left: auto
       right: auto
-    background: url($images + "stars.png") repeat-x
+    background: url(#{$images}stars.png) repeat-x
     position: relative
     padding: 0
-    .stars:
+    .stars
       height: 20px
       position: absolute
       margin: 0
-      background-image: url($images + "stars.png")
+      background-image: url(#{$images}stars.png)
       background-repeat: repeat-x
-  p:
+  p
     margin-top: 0
 
-.rating.enabled:
-  .stars-base:
+.rating.enabled
+  .stars-base
     cursor: pointer

@@ -552,7 +552,7 @@ or curious.
 >       then twitterScript
 >       else noHtml ]
 >  where myLinks mn = do
->          ls <- memberLinks mn 0 10
+>          ls <- memberLinks mn 0 7
 >          case ls of
 >            Nothing   -> return noHtml
 >            Just ls'  -> do
@@ -562,7 +562,7 @@ or curious.
 >                           "My Links",
 >                         unordList partialLinks ! [theclass "links"] ]
 >        newLinks = do
->          ls <- latestLinks 0 10
+>          ls <- latestLinks 0 7
 >          case ls of
 >            Nothing   -> return noHtml
 >            Just ls'  -> do

@@ -1,0 +1,57 @@
+$static: "http://s.vocabulink.com/"
+$images: "#{$static}img/"
+
+@mixin rounded($radius)
+  -moz-border-radius: $radius
+  -webkit-border-radius: $radius
+  -khtml-border-radius: $radius
+  border-radius: $radius
+
+@mixin rounded_tl($radius)
+  -moz-border-radius-topleft: $radius
+  -webkit-border-top-left-radius: $radius
+  -khtml-border-top-left-radius: $radius
+  border-top-left-radius: $radius
+
+@mixin rounded_tr($radius)
+  -moz-border-radius-topright: $radius
+  -webkit-border-top-right-radius: $radius
+  -khtml-border-top-right-radius: $radius
+  border-top-right-radius: $radius
+
+@mixin rounded_bl($radius)
+  -moz-border-radius-bottomleft: $radius
+  -webkit-border-bottom-left-radius: $radius
+  -khtml-border-bottom-left-radius: $radius
+  border-bottom-left-radius: $radius
+
+@mixin rounded_br($radius)
+  -moz-border-radius-bottomright: $radius
+  -webkit-border-bottom-right-radius: $radius
+  -khtml-border-bottom-right-radius: $radius
+  border-bottom-right-radius: $radius
+
+@mixin drop_shadow($offset_x, $offset_y, $blur, $color)
+  -moz-box-shadow: $offset_x $offset_y $blur $color
+  -webkit-box-shadow: $offset_x $offset_y $blur $color
+  box-shadow: $offset_x $offset_y $blur $color
+
+@mixin vertical_gradient($from, $to)
+  background: mix($from, $to)
+  background: -moz-linear-gradient(top, $from, $to)
+  background: -webkit-gradient(linear, center top, center bottom, from($from), to($to))
+
+// This is the background color for major blocks in the interface.
+$bar_and_box_background: #F9F9F9
+$bar_and_box_border: #DFDFDF
+
+// Each link type is represented with different colors.
+$linktype_linkword_foreground: #00B5B5
+$linktype_linkword_background: #E7F8F7
+$linktype_linkword_border: #CFF2F2
+$linktype_cognate_foreground: #86CF6A
+$linktype_cognate_background: #ECF9DF
+$linktype_cognate_border: #D4F1C8
+$linktype_association_foreground: #000000
+$linktype_association_background: #DFDFDF
+$linktype_association_border: #000000

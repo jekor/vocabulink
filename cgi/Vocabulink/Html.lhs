@@ -37,7 +37,8 @@ functions. An example of this is |linkList|.
 >                           (<<), (+++), (!), showHtmlFragment,
 >                           identifier, theclass, thediv, thespan, style,
 >                           paragraph, pre, h1, h2, h3, br, anchor, href, script,
->                           image, ulist, li, unordList, form, action, method, enctype,
+>                           image, title, ulist, li, unordList,
+>                           form, action, method, enctype,
 >                           hidden, label, textfield, password, button, submit,
 >                           fieldset, legend, afile, textarea, select, widget,
 >                           thestyle, src, width, height, value, name, thetype,
@@ -93,6 +94,8 @@ If any JavaScript files are required, |stdPage| will automatically add a
 >   let  xhtml = renderHtml $ header <<
 >                  [  concatHtml cssDeps',
 >                     thetitle << title',
+>                     thelink ! [rel "icon", thetype "image/png",
+>                                href "http://s.vocabulink.com/img/favicon.png"] << noHtml,
 >                     concatHtml head' ] +++
 >                  body << [  script ! [src "http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"] << noHtml,
 >                             script ! [src "http://www.google-analytics.com/ga.js"] << noHtml,
