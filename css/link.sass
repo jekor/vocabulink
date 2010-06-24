@@ -42,14 +42,11 @@
       bottom: 2em
     img
       border: 0
-  &.review
-    .dest
-      display: none
-    .linkword
-      display: none
 
 h1.link
   margin: 1.5em auto 2em
+  .orig, .dest, .link
+    position: relative
   .orig, .dest
     display: inline-block
     border: 3px solid black
@@ -68,6 +65,9 @@ h1.link
     margin:
       left: 8px
       right: 5px
+  &.review
+    a
+      cursor: pointer
 
 h1.link.linkword
   .orig, .dest, .link
@@ -99,7 +99,8 @@ h1.link.association
 .caption
   display: inline-block
   color: #A0A0A0
-  font-size: 0.875em
+  font-size: 11pt
+  font-weight: normal
 
 #baseline
   margin:
@@ -113,33 +114,6 @@ h1.link.association
     text-align: center
 
 // review
-
-a#lexeme-cover
-  padding: 0.5em 4em
-  border: 1px solid black
-  color: black
-  &:visited
-    color: inherit
-
-table.focus-box
-  width: 100%
-  height: 300px
-  margin-top: 1em
-  td
-    padding: 0.5em
-    vertical-align: middle
-    &.edges
-      width: 200px
-    &.focus
-      text-align: center
-      width: 1em
-    &.origins table, &.destinations table
-      width: 100%
-      height: 100%
-    &.origins table td
-      text-align: right
-    &.destinations
-      text-align: left
 
 fieldset#linkword textarea
   width: 50%

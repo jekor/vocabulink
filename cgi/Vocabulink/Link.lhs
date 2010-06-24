@@ -30,7 +30,8 @@ them.
 >                           newLinkPack, linkPackPage, deleteLinkPack,
 >                           addToLinkPack, linkPacksPage, getLinkPack,
 >                           displayCompactLinkPack, linkPackTextLink,
->                           linkPackIconLink ) where
+>                           linkPackIconLink,
+>                           linkOriginLanguage, linkDestinationLanguage ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -454,12 +455,12 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 > linkOperations :: Link -> App Html
 > linkOperations link = do
 >   memberNo     <- asks appMemberNo
->   memberEmail  <- asks appMemberEmail
+> --  memberEmail  <- asks appMemberEmail
 >   editable    <- canEdit link
 >   deletable   <- canDelete link
 >   reviewing'  <- reviewing link
 >   let review  = linkAction "add to review"
->       pack    = linkAction "add to link pack"
+> --      pack    = linkAction "add to link pack"
 >   return $ concatHtml [
 >     case (memberNo, reviewing') of
 >       (_,        Just True)  -> (review False)  ! [title "already reviewing this link"]

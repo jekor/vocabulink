@@ -147,10 +147,16 @@ the client to |nextReview| which begins the process all over again.
 >     Just l'  -> do
 >       let source  = linkOrigin l'
 >           dest    = linkDestination l'
->       renderedLink <- renderLink l'
+>       sLang  <- linkOriginLanguage l'
+>       dLang  <- linkDestinationLanguage l'
+>       fullLink <- renderLink l'
 >       stdPage ("Review: " ++ source ++ " → ?")
 >               [CSS "link", JS "lib.link"] []
->         [  renderedLink ! [theclass "review"],
+>         [  h1 ! [identifier "review-link", theclass "link review"] << [
+>              thespan ! [theclass "orig", title sLang] << source,
+>              thespan ! [theclass "link"] << noHtml,
+>              anchor ! [theclass "dest", title dLang] << "?" ],
+>            fullLink ! [identifier "full-link", thestyle "display: none"],
 >            form ! [action ("/review/" ++ show linkNo), method "post"] <<
 >              [  hidden "recall-time" "",
 >                 hidden "hidden-lexeme" dest,

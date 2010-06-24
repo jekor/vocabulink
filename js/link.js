@@ -15,20 +15,26 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-$(document).ready(function () {
-  var link = $('h1.link');
-  link.find('span').each(function () {
+function annotateLink(link) {
+  link.children().each(function () {
     var word = $(this);
     var caption = $('<span class="caption">' + word.attr('title') + '</span>');
-    caption.insertAfter(link);
-    var x = word.offset().left + ((word.outerWidth() - caption.width()) / 2);
+    // We have to calculate these before we add content to them and screw up
+    // the dimensions.
+    var width = word.outerWidth();
     if (word.hasClass('.orig') || word.hasClass('.dest')) {
-      var y = word.offset().top + word.outerHeight() + 8;
+      var y = word.outerHeight() + 4;
     } else {
-      var y = word.offset().top + word.height() + 8;
+      var y = word.height() + 8;
     }
+    caption.appendTo(word);
+    var x = (width - caption.width()) / 2;
     caption.css({'position': 'absolute', 'left': x, 'top': y});
   });
+}
+
+$(document).ready(function () {
+  annotateLink($('h1.link:visible'));
 
   // "add to review"
   $('#link-op-review.enabled').click(function () {
