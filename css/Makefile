@@ -9,7 +9,7 @@ all : $(csses) lib.common.css lib.member.css
 lib.common.css : common.css page.css comment.css
 	cat $^ > $@
 
-lib.member.css : link-editor.css markitup-set.css markitup-skin.css
+lib.member.css : link-editor.css markitup-set.css markitup-skin.css jquery-loadmask.css
 	cat $^ > $@
 
 %.css : %.sass lib.sass

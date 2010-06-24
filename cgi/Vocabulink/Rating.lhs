@@ -42,14 +42,15 @@ full star into the rating system.
 >                      Nothing  -> 0
 >        starColor = min (floor (r * fromIntegral numColors) + 1) 5
 >        starPosition = -1 * spriteHeight * (numColors + 1) + starColor * spriteHeight in
->   thediv ! [theclass $ "rating" ++ (allowRating ? " enabled" $ "")] << [
+>   thediv ! [theclass $ "rating" ++ (allowRating ? " enabled" $ ""),
+>             title (show numRatings ++ " rating" ++ (numRatings == 1 ? "" $ "s"))] << [
+>     stringToHtml "rate: ",
 >     thediv ! [theclass "stars-base"] <<
 >       form ! [  theclass "stars",
 >                 action baseUrl,
 >                 method "post",
 >                 thestyle (  "width: " ++ show starWidth ++ "px; \
->                             \background-position: left " ++ show starPosition ++ "px" ) ] << noHtml,
->     paragraph << (show numRatings ++ " rating" ++ (numRatings == 1 ? "" $ "s")) ]
+>                             \background-position: left " ++ show starPosition ++ "px" ) ] << noHtml ]
 
 > rateLink :: Integer -> App CGIResult
 > rateLink ln = withRequiredMemberNumber $ \memberNo -> do

@@ -145,7 +145,7 @@ arriving at the top-level forums page.
 >                                   stringToHtml $ fromSql u ] in
 >   anchor ! [href $ "/forum/" ++ fromSql n] << [
 >     image ! [  width "64", height "64",
->                src ("http://s.vocabulink.com/img/icon/" ++ fromSql i)],
+>                src ("http://s.vocabulink.com/img/icon/forum/" ++ fromSql i)],
 >     h3 << (fromSql t :: String),
 >     latest, clear ]
 > renderForum _       = stringToHtml "Error retrieving forum."
@@ -167,7 +167,7 @@ For now, we just upload to the icons directory in our static directory.
 
 > createForum :: App CGIResult
 > createForum = do
->   iconDir   <- (</> "upload" </> "img" </> "icon") <$> asks appDir
+>   iconDir   <- (</> "upload" </> "img" </> "icon" </> "forum") <$> asks appDir
 >   filename  <- getInputFilename "forum-icon"
 >   group     <- getInput "forum-group"
 >   title'    <- getInput "forum-title"

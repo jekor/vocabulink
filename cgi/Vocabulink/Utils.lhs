@@ -153,15 +153,13 @@ forwarding for us so that we don't have to deal with SMTP here.
 
 > sendMail :: String -> String -> String -> IO (Maybe ())
 > sendMail to subject body = do
->   let body' = unlines [  "To: <" ++ to ++ ">",
+>   let body' = unlines [  "From: Vocabulink <vocabulink@vocabulink.com>",
+>                          "To: <" ++ to ++ ">",
 >                          "Subject: " ++ subject,
 >                          "",
 >                          body ]
 >   res <- try $ system
->            (  "export MAILUSER=vocabulink; \
->               \export MAILHOST=vocabulink.com; \
->               \export MAILNAME=Vocabulink; \
->               \echo -e \""   ++ body'  ++ "\" | \
+>            (  "echo -e \""   ++ body'  ++ "\" | \
 >               \sendmail \""  ++ to     ++ "\"" )
 >   case res of
 >     Right ExitSuccess  -> return $ Just ()

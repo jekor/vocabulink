@@ -29,4 +29,38 @@ $(document).ready(function () {
     }
     caption.css({'position': 'absolute', 'left': x, 'top': y});
   });
+
+  // "add to review"
+  $('#link-op-review.enabled').click(function () {
+    var op = $(this);
+    op.mask("Adding...");
+    var linkNum = window.location.pathname.split('/').pop();
+    $.postJSON('/review/' + linkNum + '/add', null, function (successful, data) {
+      op.unmask();
+      op.removeClass("enabled").addClass("disabled");
+      if (successful) {
+        op.text("now reviewing");
+      } else {
+        op.addClass("failed");
+        op.text("Failed!");
+      }
+    });
+  });
+
+  // "delete link"
+  $('#link-op-delete.enabled').click(function () {
+    var op = $(this);
+    op.mask("Deleting...");
+    var linkNum = window.location.pathname.split('/').pop();
+    $.postJSON('/link/' + linkNum + '/delete', null, function (successful, data) {
+      op.unmask();
+      op.removeClass("enabled").addClass("disabled");
+      if (successful) {
+        op.text("deleted");
+      } else {
+        op.addClass("failed");
+        op.text("Failed!");
+      }
+    });
+  });
 });

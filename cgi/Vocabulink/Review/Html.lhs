@@ -1,4 +1,4 @@
-% Copyright 2008, 2009 Chris Forno
+% Copyright 2008, 2009, 2010 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -20,7 +20,7 @@
 This is separate from the main Review module only to break cyclical imports. It
 may end up being more work than it's worth.
 
-> module Vocabulink.Review.Html (reviewBox, reviewIndicator) where
+> module Vocabulink.Review.Html (reviewBox) where
 
 > import Vocabulink.App
 > import Vocabulink.DB
@@ -61,29 +61,3 @@ This retrievs the number of links that a user has for review right now.
 >                     \WHERE member_no = ? AND current_timestamp > target_time"
 >                     [toSql memberNo]
 >   return $ fmap fromSql v
-
-When displaying a link, it's useful to show its review status (or a method to
-add it to a review set if it's not). This returns an Html element that will do
-both based on the link number and the currently logged in member.
-
-> reviewIndicator :: Integer -> Integer -> App (Html)
-> reviewIndicator linkNo memberNo = do
->   r <- reviewing memberNo linkNo
->   case r of
->     Nothing  -> return $ paragraph ! [theclass "review-box"] <<
->                   "Unable to determine review status."
->     Just r'  -> return $ r' ? paragraph ! [theclass "review-box reviewing"] <<
->                   "Reviewing" $
->                     form ! [  action ("/review/" ++ show linkNo ++ "/add"),
->                               method "post", theclass "review-box review"] <<
->                       [ submit "review" "Review" ]
-
-|reviewing| determines whether or not a member is already reviewing a link.
-This will be true only if the member is currently reviewing the link, not if
-they've reviewed it in the past and later removed it from their review set.
-
-> reviewing :: Integer -> Integer -> App (Maybe Bool)
-> reviewing memberNo linkNo =
->   (/= []) <$$> queryTuples'  "SELECT link_no FROM link_to_review \
->                              \WHERE member_no = ? AND link_no = ?"
->                              [toSql memberNo, toSql linkNo]

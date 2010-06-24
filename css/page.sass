@@ -37,7 +37,7 @@ html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockq
 \:focus
   outline: 0
 
-h1, h2, h3, h4, h5, h6, p, ol, ul, dl, table, a, span
+h1, h2, h3, h4, h5, h6, p, ol, ul, dl, table, a, div, span
   font-family: Verdana, sans-serif
 
 a
@@ -185,7 +185,7 @@ tr.odd:hover, tr.even:hover
   #head-decoration
     height: 2px
     background-color: #2D2D2D
-    border-bottom: 3px solid #53D2DA
+    border-bottom: 3px solid #61C6CF
   #head-bar
     display: inline-block
     float: right
@@ -197,9 +197,9 @@ tr.odd:hover, tr.even:hover
     @include rounded_br(5px)
     background-color: #2D2D2D
     border:
-      left: 3px solid #53D2DA
-      right: 3px solid #53D2DA
-      bottom: 3px solid #53D2DA
+      left: 3px solid #61C6CF
+      right: 3px solid #61C6CF
+      bottom: 3px solid #61C6CF
     color: white
     .clear
       clear: right
@@ -224,7 +224,7 @@ tr.odd:hover, tr.even:hover
   background-color: #1F1F1F
   color: #696969
   a
-    color: #006C6C
+    color: #186A6B
   *
     margin:
       top: 0.125em
@@ -235,14 +235,14 @@ tr.odd:hover, tr.even:hover
       right: 0.5em
     clear: left
     a
-      color: #00BFBF
+      color: #29BBBD
   #handy-links
     background-color: #2D2D2D
     h2
       color: #9D9C9C
       font-size: 1em
     a
-      color: #6FD86D
+      color: #86CF6A
   #design-attribution
     margin-left: 1.3em
 
@@ -417,7 +417,10 @@ button, input
     float: left
 
 .rating
+  display: inline-block
   .stars-base
+    display: inline-block
+    vertical-align: -20%
     width: 100px
     height: 20px
     margin:

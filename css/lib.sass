@@ -41,17 +41,16 @@ $images: "#{$static}img/"
   background: -moz-linear-gradient(top, $from, $to)
   background: -webkit-gradient(linear, center top, center bottom, from($from), to($to))
 
-// This is the background color for major blocks in the interface.
-$bar_and_box_background: #F9F9F9
-$bar_and_box_border: #DFDFDF
+@mixin vertical_half_gradient($from, $to)
+  background: $to
+  background: -moz-linear-gradient(top, $from, $from, $from, $to, $to, $to)
+  background: -webkit-gradient(linear, center top, center bottom, from($from), color-stop(40%, $from), color-stop(60%, $to), to($to))
 
-// Each link type is represented with different colors.
-$linktype_linkword_foreground: #00B5B5
-$linktype_linkword_background: #E7F8F7
-$linktype_linkword_border: #CFF2F2
-$linktype_cognate_foreground: #86CF6A
-$linktype_cognate_background: #ECF9DF
-$linktype_cognate_border: #D4F1C8
-$linktype_association_foreground: #000000
-$linktype_association_background: #DFDFDF
-$linktype_association_border: #000000
+@mixin vertical_third_gradient($from, $to)
+  background: $to
+  background: -moz-linear-gradient(top, $from, $to, $to, $to)
+  background: -webkit-gradient(linear, center top, center bottom, from($from), color-stop(33%, $to), to($to))
+
+// This is the background color for major blocks in the interface.
+$bar_and_box_background: #F7F7F7
+$bar_and_box_border: #DFDFDF

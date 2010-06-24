@@ -37,8 +37,8 @@ them.
 > import Vocabulink.Comment
 > import Vocabulink.DB
 > import Vocabulink.Html
+> import Vocabulink.Member
 > import Vocabulink.Rating
-> import Vocabulink.Review.Html
 > import Vocabulink.Utils
 
 > import Control.Exception (try)
@@ -62,6 +62,26 @@ type (for partially constructed links, which you'll see later).
 >                     linkDestination      :: String,
 >                     linkDestinationLang  :: String,
 >                     linkType             :: LinkType }
+
+We'll eventually want to support private/unpublished links.
+
+> instance UserContent Link where
+>   canView _       = return True
+>   canEdit link    = do
+>     memberNo <- asks appMemberNo
+>     return $ case memberNo of
+>       Just n   -> n == linkAuthor link || n == 1
+>       Nothing  -> False
+>   canDelete link  = do
+>     edit <- canEdit link
+>     if edit
+>       then do
+>         deleted <- queryValue'  "SELECT deleted FROM link \
+>                                 \WHERE link_no = ?" [toSql $ linkNumber link]
+>         return $ case deleted of
+>           Just d   -> not $ fromSql d
+>           Nothing  -> False
+>       else return False
 
 The |linkOriginLang| and |linkDestinationLang| are the language abbrevations.
 To get the full name we need to look it up.
@@ -287,7 +307,7 @@ appear in most contexts.
 >                       \WHERE link_no = ?" [toSql linkNo]
 >   case res of
 >     Nothing  -> error "Failed to delete link."
->     Just _   -> redirect =<< referrerOrVocabulink
+>     Just _   -> outputJSON [("", "")]
 
 \subsection{Displaying Links}
 
@@ -371,13 +391,12 @@ textarea for in-page editing.
 > linkPage :: Integer -> App CGIResult
 > linkPage linkNo = do
 >   memberNo <- asks appMemberNo
->   memberEmail <- asks appMemberEmail
 >   l <- getLink linkNo
 >   case l of
 >     Nothing  -> output404 ["link", show linkNo]
 >     Just l'  -> do
 >       let owner' = maybe False (linkAuthor l' ==) memberNo
->       ops <- linkOperations linkNo memberNo (isJust memberEmail) owner'
+>       ops <- linkOperations l'
 >       rating <- queryTuple'  "SELECT COUNT(rating), SUM(rating) / COUNT(rating) \
 >                              \FROM link_rating WHERE link_no = ?" [toSql linkNo]
 >       ratingEnabled <- if isJust memberNo
@@ -386,30 +405,27 @@ textarea for in-page editing.
 >                                                            [toSql linkNo, toSql memberNo]
 >                           else  return False
 >       copyright <- linkCopyright l'
+>       oLang <- linkOriginLanguage l'
+>       dLang <- linkDestinationLanguage l'
 >       let orig  = linkOrigin l'
 >           dest  = linkDestination l'
->       originLanguage <- linkOriginLanguage l'
->       destinationLanguage <- linkDestinationLanguage l'
 >       r <- queryValue'  "SELECT root_comment \
 >                         \FROM link_comments \
 >                         \WHERE link_no = ?" [toSql linkNo]
 >       comments <- case r of
 >                     Just root  -> renderComments $ fromSql root
 >                     Nothing    -> return noHtml
->       rateInvitation <- invitationLink "Rate"
 >       renderedLink <- renderLink l'
 >       stdPage (orig ++ " → " ++ dest) [CSS "link", JS "lib.link"] []
->         [  renderedLink,
->            thediv ! [theclass "link-ops"] << [
->              anchor ! [href (  "/links?ol=" ++ linkOriginLang l' ++
->                                "&dl=" ++ linkDestinationLang l' ) ] <<
->                (originLanguage ++ " → " ++ destinationLanguage),
->              let (c', r') = case rating of
->                             Just [c'', r'']  -> (fromSql c'', fromSql r'')
->                             _                -> (0, Nothing) in
->              ratingBar ("/link" </> show linkNo </> "rating") c' r' ratingEnabled,
->              rateInvitation,
->              ops ],
+>         [  thediv ! [identifier "link-head-bar"] << [
+>              h2 << (oLang ++ " to " ++ dLang ++ ":"),
+>              thediv ! [identifier "link-ops"] << [
+>                ops,
+>                let (c', r') = case rating of
+>                               Just [c'', r'']  -> (fromSql c'', fromSql r'')
+>                               _                -> (0, Nothing) in
+>                ratingBar ("/link" </> show linkNo </> "rating") c' r' ratingEnabled ] ],
+>            renderedLink,
 >            thediv ! [theclass "link-details"] << [
 >              case (owner', linkType l') of
 >                (True, LinkWord _ story)  -> textarea ! [thestyle "display: none"] << story
@@ -425,30 +441,47 @@ such as ``tag'', ``rate'', etc.
 The |Bool| parameter indicates whether or not the currently logged-in member
 (if the client is logged in) is the owner of the link.
 
-> linkOperations :: Integer -> Maybe Integer -> Bool -> Bool -> App Html
-> linkOperations linkNo memberNo verified owner = do
->   review <- case memberNo of
->               Nothing  -> invitationLink "Review"
->               Just n   -> reviewIndicator linkNo n
->   deleted <- queryValue'  "SELECT deleted FROM link \
->                           \WHERE link_no = ?" [toSql linkNo]
->   pack <- if verified
->             then  addToLinkPackForm linkNo
->             else  invitationLink "Pack"
+> linkAction :: String -> Bool -> Html
+> linkAction label' enabled =
+>   let icon =  "http://s.vocabulink.com/img/icon/" ++
+>               translate [(' ', '-')] label' ++
+>               (enabled ? "" $ "-disabled") ++
+>               ".png" in
+>   anchor ! [theclass ("operation " ++ (enabled ? "enabled" $ "disabled"))] << [
+>     image ! [src icon, theclass "icon"],
+>     stringToHtml label' ]
+
+> linkOperations :: Link -> App Html
+> linkOperations link = do
+>   memberNo     <- asks appMemberNo
+>   memberEmail  <- asks appMemberEmail
+>   editable    <- canEdit link
+>   deletable   <- canDelete link
+>   reviewing'  <- reviewing link
+>   let review  = linkAction "add to review"
+>       pack    = linkAction "add to link pack"
 >   return $ concatHtml [
->     review,
->     pack,
->     if owner
->       then button ! [identifier "link-edit"] << "Edit"
->       else noHtml,
->     case (owner, deleted) of
->       (True, Just d)  -> if fromSql d
->                            then paragraph << "Deleted"
->                            else form ! [action ("/link/" ++ show linkNo ++ "/delete"), method "post"] <<
->                                   submit "" "Delete"
->       (True, _)       -> stringToHtml
->                            "Can't determine whether or not link has been deleted."
->       (False, _)      -> noHtml ]
+>     case (memberNo, reviewing') of
+>       (_,        Just True)  -> (review False)  ! [title "already reviewing this link"]
+>       (Just _,   _)          -> (review True)   ! [identifier "link-op-review", title "add this link to be quizzed on it later"]
+>       (Nothing,  _)          -> (review False)  ! [href "/member/login", title "login to review"],
+>     case (editable, linkType link) of
+>       (True, LinkWord _ _) ->  (linkAction "edit link" True) ! [identifier "link-op-edit", title "edit the linkword story"]
+>       _                    ->  noHtml,
+> --    case (memberNo, memberEmail) of
+> --      (_, Just _)        -> (pack True)  ! [identifier "link-op-pack", title "add this link to a collection of other links"]
+> --      (Just _, Nothing)  -> (pack False) ! [href "/member/confirmation", title "confirm your email to add this link to a link pack"]
+> --      (Nothing, _)       -> (pack False) ! [href "/member/login", title "login to add this link to a link pack"],
+>     if deletable
+>       then  (linkAction "delete link" True) ! [identifier "link-op-delete", title "delete this link (it will still be visibles to others who are reviewing it)"]
+>       else  noHtml ]
+>  where reviewing :: Link -> App (Maybe Bool)
+>        reviewing l = do
+>          memberNo <- asks appMemberNo
+>          (/= []) <$$> queryTuples'  "SELECT link_no FROM link_to_review \
+>                                     \WHERE member_no = ? AND link_no = ? \
+>                                     \LIMIT 1"
+>                                     [toSql memberNo, toSql (linkNumber l)]
 
 > addToLinkPackForm :: Integer -> App Html
 > addToLinkPackForm n = do

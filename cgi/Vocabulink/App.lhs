@@ -33,6 +33,7 @@ other conveniences.
 >                              queryTuple', queryValue', queryAttribute',
 >                              queryTuples', quickInsertNo', runStmt', quickStmt',
 >                              withTransaction', run',
+>  {- Network.CGI -}           outputNothing,
 >  {- Control.Monad.Reader -}  asks ) where
 
 > import Vocabulink.CGI
@@ -53,7 +54,7 @@ because of cyclic dependencies.
 
 > import Data.ConfigFile (ConfigParser, get)
 > import Network.CGI.Monad (MonadCGI(..))
-> import Network.CGI (CGI, CGIT, outputNotFound)
+> import Network.CGI (CGI, CGIT, outputNotFound, outputNothing)
 > import Network.URI (escapeURIString, isUnescapedInURI)
 
 > data AppEnv = AppEnv {  appDB          :: Connection,

@@ -49,7 +49,7 @@
       display: none
 
 h1.link
-  margin-bottom: 2em
+  margin: 1.5em auto 2em
   .orig, .dest
     display: inline-block
     border: 3px solid black
@@ -71,30 +71,30 @@ h1.link
 
 h1.link.linkword
   .orig, .dest, .link
-    color: $linktype_linkword_foreground
-  .orig, .dest
-    background-color: $linktype_linkword_background
-    border-color: $linktype_linkword_border
+    color: #13B1B3
   .link
-    border-color: $linktype_linkword_foreground
+    border-color: #13B1B3
+  .orig, .dest
+    background-color: #E9F7F7
+    border-color: #D3F1F1
 
 h1.link.cognate
   .orig, .dest, .link
-    color: $linktype_cognate_foreground
-  .orig, .dest
-    background-color: $linktype_cognate_background
-    border-color: $linktype_cognate_border
+    color: #86CF6A
   .link
-    border-color: $linktype_cognate_foreground
+    border-color: #86CF6A
+  .orig, .dest
+    background-color: #ECF9DF
+    border-color: #D4F1C8
 
 h1.link.association
   .orig, .dest, .link
-    color: $linktype_association_foreground
-  .orig, .dest
-    background-color: $linktype_association_background
-    border-color: $linktype_association_border
+    color: #000000
   .link
-    border-color: $linktype_association_foreground
+    border-color: #000000
+  .orig, .dest
+    background-color: #FFFFFF
+    border-color: #F4F3F3
 
 .caption
   display: inline-block
@@ -145,37 +145,37 @@ fieldset#linkword textarea
   width: 50%
   height: 20em
 
+#link-head-bar, .link-details
+  width: 50em
+  margin: 2em auto
+
+#link-head-bar h2
+  display: inline-block
+  color: #ACACAC
+  margin: 0 0 5px 0
+
+#link-ops
+  border-top: 1px solid #EBEBEB
+  padding: 5px 0
+  @include vertical_third_gradient(#F7F8F7, #FFFFFF)
+  .operation
+    margin-right: 2em
+    cursor: pointer
+    img
+      vertical-align: middle
+      margin-right: 0.33em
+    &.disabled
+      color: grey
+  .rating
+    float: right
+
 .link-details
-  width: 50%
   margin:
-    left: auto
-    right: auto
     top: 1.3em
     bottom: 1.3em
   textarea
     width: 100%
     height: 24em
-
-.link-ops
-  width: 22.5%
-  float: left
-  padding-top: 1.3em
-  input, select, button
-    display: block
-    margin:
-      left: auto
-      right: auto
-  > input, button, form, a
-    margin-top: 1.3em
-  > div
-    margin: 1.3em auto
-  p, a
-    text-align: center
-  a
-    display: block
-  #add-to-pack
-    padding: 0.667em
-    background-color: $bar_and_box_background
 
 #recall-buttons
   text-align: center

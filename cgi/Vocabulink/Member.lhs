@@ -22,8 +22,8 @@ registered members only.
 
 > module Vocabulink.Member (  login, logout, registerMember,
 >                             getMemberNumber, getMemberName, getMemberEmail,
->                             confirmEmail, confirmEmailPage,
->                             memberSupport ) where
+>                             confirmEmail, confirmEmailPage, memberSupport,
+>                             UserContent(..) ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -383,3 +383,10 @@ form we fall back to a secondary (disposable) support address.
 >                            paragraph << [
 >                              anchor ! [href redirect'] << "Click here to go back",
 >                              stringToHtml " to where you came from." ] ] ]
+
+\subsection{Permissions}
+
+> class UserContent u where
+>   canView    :: u -> App Bool
+>   canEdit    :: u -> App Bool
+>   canDelete  :: u -> App Bool

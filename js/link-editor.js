@@ -1,4 +1,4 @@
-// Copyright 2008, 2009 Chris Forno
+// Copyright 2008, 2009, 2010 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -73,5 +73,5 @@ $(document).ready(function () {
   linkTypeSelector.change();
   // Setup the link word editor right away.
   $('#link-word textarea').markItUp(mySettings);
-  $('#link-edit').click(editLink);
+  $('#link-op-edit').click(editLink);
 });
