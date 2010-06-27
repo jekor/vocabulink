@@ -539,7 +539,6 @@ or curious.
 >   memberNo <- asks appMemberNo
 >   my <- maybe (return noHtml) myLinks memberNo
 >   latest <- newLinks
->   articles <- latestArticles
 >   featured <- featuredPack
 >   let article = isJust memberNo ? "welcome-member" $ "welcome"
 >   article' <- getArticle article
@@ -547,7 +546,7 @@ or curious.
 >   stdPage "Welcome to Vocabulink" [] [] [
 >     thediv ! [identifier "main-content"] << body,
 >     thediv ! [identifier "sidebar"] << [
->       featured, latest, my, articles ],
+>       featured, latest, my ],
 >     if isJust memberNo
 >       then twitterScript
 >       else noHtml ]
@@ -571,12 +570,6 @@ or curious.
 >                         h3 << anchor ! [href "/links"] <<
 >                           "Latest Links",
 >                         unordList partialLinks ! [theclass "links"] ]
->        latestArticles = do
->          ls <- reverse <$$> getArticles
->          return $ maybe noHtml (\l -> thediv ! [theclass "sidebox"] << [
->                                         h3 << anchor ! [href "/articles"] <<
->                                           "Latest Articles",
->                                         unordList (map articleLinkHtml l)]) ls
 >        featuredPack = do
 >          lp <- getLinkPack 1
 >          return $ maybe noHtml (\l -> thediv ! [theclass "sidebox"] << [
