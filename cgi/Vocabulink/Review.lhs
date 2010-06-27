@@ -155,7 +155,7 @@ the client to |nextReview| which begins the process all over again.
 >         [  h1 ! [identifier "review-link", theclass "link review"] << [
 >              thespan ! [theclass "orig", title sLang] << source,
 >              thespan ! [theclass "link"] << noHtml,
->              anchor ! [theclass "dest", title dLang] << "?" ],
+>              anchor ! [theclass "dest hidden", title dLang] << "?" ],
 >            fullLink ! [identifier "full-link", thestyle "display: none"],
 >            form ! [action ("/review/" ++ show linkNo), method "post"] <<
 >              [  hidden "recall-time" "",

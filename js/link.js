@@ -16,7 +16,7 @@
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
 function annotateLink(link) {
-  link.children().each(function () {
+  link.children('.orig, .link, .dest').each(function () {
     var word = $(this);
     var caption = $('<span class="caption">' + word.attr('title') + '</span>');
     // We have to calculate these before we add content to them and screw up

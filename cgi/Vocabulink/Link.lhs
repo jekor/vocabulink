@@ -335,11 +335,53 @@ extending the existing one, which at least jquery doesn't like.
 > renderLink link = do
 >   oLang <- linkOriginLanguage link
 >   dLang <- linkDestinationLanguage link
+>   prevLink <- queryValue'  "(SELECT link_no FROM link \
+>                             \WHERE origin_language = ? \
+>                               \AND destination_language = ? \
+>                               \AND link_no < ? \
+>                               \AND NOT deleted \
+>                             \ORDER BY link_no DESC LIMIT 1) \
+>                            \UNION \
+>                            \(SELECT link_no FROM link \
+>                             \WHERE origin_language = ? \
+>                               \AND destination_language = ? \
+>                               \AND NOT link_no = ? \
+>                               \AND NOT deleted \
+>                             \ORDER BY link_no DESC LIMIT 1) \
+>                            \ORDER BY link_no ASC"
+>                            [  toSql $ linkOriginLang link,
+>                               toSql $ linkDestinationLang link,
+>                               toSql $ linkNumber link,
+>                               toSql $ linkOriginLang link,
+>                               toSql $ linkDestinationLang link,
+>                               toSql $ linkNumber link ]
+>   nextLink <- queryValue'  "(SELECT link_no FROM link \
+>                             \WHERE origin_language = ? \
+>                               \AND destination_language  = ? \
+>                               \AND link_no > ? \
+>                               \AND NOT deleted \
+>                             \ORDER BY link_no ASC LIMIT 1) \
+>                            \UNION \
+>                            \(SELECT link_no FROM link \
+>                             \WHERE origin_language = ? \
+>                               \AND destination_language = ? \
+>                               \AND NOT link_no = ? \
+>                               \AND NOT deleted \
+>                             \ORDER BY link_no ASC LIMIT 1) \
+>                            \ORDER BY link_no DESC"
+>                            [  toSql $ linkOriginLang link,
+>                               toSql $ linkDestinationLang link,
+>                               toSql $ linkNumber link,
+>                               toSql $ linkOriginLang link,
+>                               toSql $ linkDestinationLang link,
+>                               toSql $ linkNumber link ]
 >   return $ h1 ! [theclass ("link " ++ linkTypeName link)] << [
+>     maybe noHtml (\l -> anchor ! [href $ fromSql l, title "Previous Link", theclass "prev"] << noHtml) prevLink,
 >     thespan ! [theclass "orig", title oLang] << linkOrigin link,
 >     thespan ! [theclass "link", title (linkTypeName link)] <<
 >       (renderLinkType $ linkType link),
->     thespan ! [theclass "dest", title dLang] << linkDestination link ]
+>     thespan ! [theclass "dest", title dLang] << linkDestination link,
+>     maybe noHtml (\l -> anchor ! [href $ fromSql l, title "Next Link", theclass "next"] << noHtml) nextLink ]
 >  where renderLinkType :: LinkType -> Html
 >        renderLinkType (LinkWord word _)  = stringToHtml word
 >        renderLinkType _                  = noHtml

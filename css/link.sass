@@ -34,7 +34,8 @@
     width: 10em
     margin-left: 1em
   > a
-    display: block
+    display: inline-block
+  .hidden
     color: black
     border: 1px solid black
     padding:
@@ -68,6 +69,16 @@ h1.link
   &.review
     a
       cursor: pointer
+  .prev, .next
+    width: 35px
+    height: 61px
+    vertical-align: middle
+  .prev
+    background: url(/img/prev-triangle.png)
+    margin-right: 2em
+  .next
+    background: url(/img/next-triangle.png)
+    margin-left: 2em
 
 h1.link.linkword
   .orig, .dest, .link
