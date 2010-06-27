@@ -6,7 +6,7 @@ lib.common.js : to-function.js functional.js jquery.cookie.js common.js
 	cat $^ | yuicompress --type js > $@
 
 # link viewing and reviewing, not editing
-lib.link.js : raphael.js link-graph.js link.js review.js
+lib.link.js : link.js review.js
 	cat $^ | yuicompress --type js > $@
 
 # This is for email-verified members.

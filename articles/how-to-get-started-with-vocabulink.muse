@@ -28,8 +28,8 @@ To demonstrate, let's learn the word "lerni" ("to learn" in Esperanto).
     will be pre-filled with =lerni=.
  5. Choose =Esperanto= from the drop-down menu next to =Foreign=.
  6. Fill in =to learn= in the =Native= box and choose =English= as the language.
- 7. Because this link is a cognate (see [[/article/understanding-link-types][Understanding Link Types]]), choose
-    =Cognate= from the =Link Type= drop-down menu.
+ 7. Because this link is a sound-alike (see [[/article/understanding-link-types][Understanding Link Types]]), choose
+    =sound-alike= from the =Link Type= drop-down menu.
  8. Click =Preview= to see what your link will look like when it's created. Once
     you're satisfied...
  9. Don't actually do the following, as a link for =lerni= already exists: click

@@ -239,7 +239,7 @@ COMMENT ON TABLE link_type IS 'There are different types of links between lexeme
 COMMENT ON COLUMN link_type.relation IS 'For most link types, an individual link carries with it extra information. We use a separate table for each to store the extra information for each link. I considered using PostgreSQL''s inheritance features, but they seem to be problematic and I don''t know how well they perform. More than 1 link type can share the same table.';
 INSERT INTO link_type (name, description, relation)
      VALUES ('association', 'A simple association with no attached meaning', NULL),
-            ('cognate', 'A sound-alike or borrowed word', NULL),
+            ('sound-alike', 'A sound-alike or borrowed word', NULL),
             ('link word', 'A story derived from a native-language link word', 'link_type_link_word');
 --            ('relationship', 'A relationship between 2 native words and a corresponding pair in a foreign language', 'link_type_relationship');
 
@@ -515,7 +515,7 @@ CREATE TABLE link_rating (
 -- What are the most popular languages on vocabulink? Count the number of times
 -- the language appears on either side of a link to find out.
 CREATE VIEW language_frequency AS
-SELECT abbr, SUM(freq) AS freq FROM
+SELECT lang.abbr, lang.name, SUM(t.freq) AS freq FROM
 ((SELECT origin_language AS abbr, COUNT(*) AS freq
  FROM link
  WHERE NOT deleted
@@ -524,4 +524,12 @@ SELECT abbr, SUM(freq) AS freq FROM
  FROM link
  WHERE NOT deleted
  GROUP BY destination_language)) AS t
-GROUP BY abbr;
+INNER JOIN language lang USING (abbr)
+GROUP BY lang.abbr, lang.name;
+
+CREATE VIEW language_frequency_to_english AS
+SELECT lang.abbr, lang.name, COUNT(*) AS freq
+FROM link
+INNER JOIN language lang ON (lang.abbr = link.origin_language)
+WHERE NOT deleted AND destination_language = 'en'
+GROUP BY lang.abbr, lang.name;

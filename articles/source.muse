@@ -8,8 +8,10 @@ You can download an archive of the latest release [[http://jekor.com/vocabulink/
 
 Vocabulink makes use of the following JavaScript libraries. They are sent minified, but can be obtained in full in the latest source archive in their original form.
 
- - [[http://raphaeljs.com/][Raphaël]]
+ - [[http://jquery.com/][jQuery]]
  - [[http://osteele.com/javascripts/functional][Functional]]
  - [[http://markitup.jaysalvat.com/][markItUp!]]
  - [[http://attacklab.net/showdown/][Showdown]]
  - [[http://valums.com/ajax-upload/][Ajax upload]]
+ - [[http://code.google.com/p/jquery-loadmask/][jQuery LoadMask]]
+ - [[http://plugins.jquery.com/project/Cookie][jQuery Cookie]]

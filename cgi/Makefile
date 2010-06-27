@@ -60,7 +60,7 @@ $(DIST).tar.gz: vocabulink.pdf
 #	`darcs dist` would be nice, but the darcs repository is the parent directory
 #	of this one and needs to be cleaned up a bit. For now, we'll have to do it
 #	ourselves.
-	echo README COPYING Makefile vocabulink.cabal vocabulink.pdf ../vocabulink.sql ../js/{comment,form,link-graph,link-editor,review,star-rating}.js ../js/Makefile ../js/{raphael,functional,jquery.markitup,markdown.set,showdown,ajaxupload}.js ../css/*.ccss ../css/Makefile ../etc/vocabulink.conf.example ../xhtml-unicode.patch ../tests/{Makefile,web.lhs,web.pdf} `find -name "*.lhs" -o -name "*.lhs-boot"` | xargs tar --transform 's,^(\./)?,$(DIST)/,x' -czvf $(DIST).tar.gz
+	echo README COPYING Makefile vocabulink.cabal vocabulink.pdf ../vocabulink.sql ../js/{comment,form,link-editor,review,star-rating}.js ../js/Makefile ../js/{functional,jquery.markitup,markdown.set,showdown,ajaxupload}.js ../css/*.ccss ../css/Makefile ../etc/vocabulink.conf.example ../xhtml-unicode.patch ../tests/{Makefile,web.lhs,web.pdf} `find -name "*.lhs" -o -name "*.lhs-boot"` | xargs tar --transform 's,^(\./)?,$(DIST)/,x' -czvf $(DIST).tar.gz
 
 publish : $(DIST).tar.gz
 	cp $(DIST).tar.gz vocabulink.pdf ~/project/jekor.com/vocabulink/

@@ -189,10 +189,8 @@ hyperlinks for English speakers.
 
 > languageLinks :: App [Html]
 > languageLinks = do
->   ts <- queryTuples'  "SELECT lf.abbr, l.name \
->                       \FROM language_frequency lf \
->                       \INNER JOIN language l USING (abbr) \
->                       \WHERE lf.abbr <> 'en' \
+>   ts <- queryTuples'  "SELECT abbr, name \
+>                       \FROM language_frequency_to_english \
 >                       \ORDER BY freq DESC LIMIT 7" []
 >   return $ case ts of
 >     Nothing   -> []

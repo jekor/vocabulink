@@ -102,16 +102,19 @@ Each link between lexemes has a type. This type determines how the link is
 displayed, edited, used in statistical analysis, etc. See the Vocabulink
 handbook for a more in-depth description of the types.
 
-> data LinkType =  Association | Cognate | LinkWord String String |
+> data LinkType =  Association | SoundAlike | LinkWord String String |
 >                  Relationship String String
 >                  deriving (Show)
 
 Sometimes we need to work with a human-readable name, such as when interacting
 with a client or the database.
 
+I used to call cognates "cognates" on the site, but it's a confusing term for
+most people. Now, I call it a "sound-alike".
+
 > linkTypeNameFromType :: LinkType -> String
 > linkTypeNameFromType Association         = "association"
-> linkTypeNameFromType Cognate             = "cognate"
+> linkTypeNameFromType SoundAlike          = "sound-alike"
 > linkTypeNameFromType (LinkWord _ _)      = "linkword"
 > linkTypeNameFromType (Relationship _ _)  = "relationship"
 
@@ -171,8 +174,8 @@ member.
 Since we need to store the link in 2 different tables, we use a transaction.
 Our App-level database functions are not yet great with transactions, so we'll
 have to handle the transaction manually here. You'll also notice that some link
-types (such as cognates) have no additional information and hence no relation
-in the database.
+types (such as sound-alikes) have no additional information and hence no
+relation in the database.
 
 This returns the newly established link number.
 
@@ -203,7 +206,7 @@ and it's easiest to use a separate function for it.
 > establishLinkType :: Link -> App (Maybe ())
 > establishLinkType l = case linkType l of
 >   Association                -> return $ Just ()
->   Cognate                    -> return $ Just ()
+>   SoundAlike                 -> return $ Just ()
 >   (LinkWord word story)      -> do
 >     res <- run'  "INSERT INTO link_type_link_word (link_no, link_word, story) \
 >                                          \VALUES (?, ?, ?)"
@@ -263,7 +266,7 @@ We just need to retrieve its type-level details from the database.
 > getLinkType :: PartialLink -> App (Maybe LinkType)
 > getLinkType (PartialLink p) = case p of
 >   (Link {  linkTypeName  = "association" })  -> return $ Just Association
->   (Link {  linkTypeName  = "cognate"})       -> return $ Just Cognate
+>   (Link {  linkTypeName  = "sound-alike"})   -> return $ Just SoundAlike
 >   (Link {  linkTypeName  = "linkword",
 >            linkNumber    = n })              -> do
 >     rs <- queryTuple'  "SELECT link_word, story FROM link_type_link_word \
@@ -293,7 +296,7 @@ types (some, like Relationship, are experimental) sorted by how common they
 are.
 
 > activeLinkTypes :: [String]
-> activeLinkTypes = ["linkword", "association", "cognate"]
+> activeLinkTypes = ["linkword", "sound-alike", "association"]
 
 \subsection{Deleting Links}
 
@@ -312,26 +315,16 @@ appear in most contexts.
 
 \subsection{Displaying Links}
 
-Drawing links is a rather complicated process due to the limitations of HTML.
-Fortunately there is Raphaël (http://raphaeljs.com/reference.html) which makes
-some pretty fancy link drawing possible via JavaScript. You'll need to make
-sure to include |JS "lib.link"| as a dependency when using this.
-
-\subsubsection{How to Represent a Link with HTML}
-
-For pages that prominently display a single link, such as the link page or
-review page, use an h1. For links in a list (in compact form), such as on the
-Latest Links page, use an h2. The class is the same for either.
-
 <h1 class="link linkword">
-    <span class="orig">Origin</span>
-    <span class="dest">Destination</span>
-    <span class="linkword">Link Word</span>
+    <span class="orig" title="Esperanto">nur</span>
+    <span class="link" title="linkword">newer</span>
+    <span class="dest" title="English">only</span>
 </h1>
 
-<h2 class="link cognate">
-    <span class="orig">Origin</span>
-    <span class="dest">Destination</span>
+<h2 class="link sound-alike">
+    <span class="orig" title="Esperanto">lingvo</span>
+    <span class="link" title="sound-alike"></span>
+    <span class="dest" title="English">language</span>
 </h2>
 
 We really shouldn't need to allow for passing class names. However, the !
@@ -344,7 +337,7 @@ extending the existing one, which at least jquery doesn't like.
 >   dLang <- linkDestinationLanguage link
 >   return $ h1 ! [theclass ("link " ++ linkTypeName link)] << [
 >     thespan ! [theclass "orig", title oLang] << linkOrigin link,
->     thespan ! [theclass "link", title (linkTypeNameFromType $ linkType link)] <<
+>     thespan ! [theclass "link", title (linkTypeName link)] <<
 >       (renderLinkType $ linkType link),
 >     thespan ! [theclass "dest", title dLang] << linkDestination link ]
 >  where renderLinkType :: LinkType -> Html
@@ -374,7 +367,7 @@ of the link but displaying its type-level details as well.
 
 > linkTypeHtml :: LinkType -> Html
 > linkTypeHtml Association = noHtml
-> linkTypeHtml Cognate = noHtml
+> linkTypeHtml SoundAlike = noHtml
 > linkTypeHtml (LinkWord _ story) =
 >   markdownToHtml story
 > linkTypeHtml (Relationship leftSide rightSide) =
@@ -674,14 +667,14 @@ Hopefully by then I will know more than I do now.
 >                         helpButton "/article/understanding-link-types" Nothing])
 >                                      ("Link Type" `formLabel` linkSelect Nothing)
 >                                <*> pure Association
->                                <*> pure Cognate
+>                                <*> pure SoundAlike
 >                                <*> fieldset' "linkword" linkTypeLinkWord
 >                                <*> fieldset' "relationship" linkTypeRelationship)
 >                    `check` ensure complete
 >                      "Please fill in all the link type fields."
 >   where linkSelect = F.selectRaw [] $ zip ts ts
 >         complete Association         = True
->         complete Cognate             = True
+>         complete SoundAlike          = True
 >         complete (LinkWord w s)      = (w /= "") && (s /= "")
 >         complete (Relationship l r)  = (l /= "") && (r /= "")
 >         fieldset' ident              = plug
@@ -689,7 +682,7 @@ Hopefully by then I will know more than I do now.
 
 > linkTypeS :: String -> LinkType -> LinkType -> LinkType -> LinkType -> LinkType
 > linkTypeS "association"   l _ _ _  = l
-> linkTypeS "cognate"       _ l _ _  = l
+> linkTypeS "sound-alike"   _ l _ _  = l
 > linkTypeS "linkword"      _ _ l _  = l
 > linkTypeS "relationship"  _ _ _ l  = l
 > linkTypeS _               _ _ _ _  = error "Unknown link type."
