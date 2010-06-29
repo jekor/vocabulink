@@ -253,8 +253,8 @@ The following are just login and signup buttons.
 
 > loginBox :: Html
 > loginBox = thespan ! [theclass "auth-box login"] << [
->   anchor ! [href "/member/login"] << "Login", stringToHtml " | ",
->   anchor ! [href "/member/signup"] << "Sign Up" ]
+>   anchor ! [identifier "login-button"] << "Log in", stringToHtml " | ",
+>   anchor ! [href "/member/signup"] << "Sign up" ]
 
 For logged-in members, we provide a logout button (with an indicator of
 your username to show that you're logged in).

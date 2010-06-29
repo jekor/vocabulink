@@ -17,6 +17,7 @@
 
 // This file is for site-wide styling. This will be used for all standard pages.
 
+// Reset Code
 // Based on Eric Meyer's CSS Reset - http://meyerweb.com/eric/thoughts/2007/05/01/reset-reloaded/
 
 @import lib.sass
@@ -42,8 +43,12 @@ h1, h2, h3, h4, h5, h6, p, ol, ul, dl, table, a, div, span
 
 a
   color: #00F
+  cursor: pointer
   &:focus
     outline: 1px dotted black
+
+input[type=submit]
+  cursor: pointer
 
 body
   line-height: 1
@@ -186,20 +191,20 @@ tr.odd:hover, tr.even:hover
     height: 2px
     background-color: #2D2D2D
     border-bottom: 3px solid #61C6CF
-  #head-bar
+  #head-bar, #login-popup
     display: inline-block
-    float: right
-    padding: 0.5em 1em
-    margin:
-      right: 1.3em
-      top: -3px
-    @include rounded_bl(5px)
-    @include rounded_br(5px)
     background-color: #2D2D2D
     border:
       left: 3px solid #61C6CF
       right: 3px solid #61C6CF
       bottom: 3px solid #61C6CF
+    @include rounded_bl(5px)
+    @include rounded_br(5px)
+  #head-bar
+    float: right
+    padding: 0.5em 1em
+    margin-right: 1.3em
+    margin-top: -3px
     color: white
     .clear
       clear: right
@@ -207,14 +212,28 @@ tr.odd:hover, tr.even:hover
       color: white
       &:hover
         text-decoration: underline
-  .auth-box, .search-box, .review-box
-    display: inline
-    line-height: 1.3
-  .search-box, .review-box
-    float: left
-    margin-right: 1em
-  .auth-box.logout input
-    margin-left: 1em
+    .auth-box, .search-box, .review-box
+      display: inline
+      line-height: 1.3
+    .search-box, .review-box
+      float: left
+      margin-right: 1em
+    .auth-box.logout input
+      margin-left: 1em
+  #login-popup
+    position: absolute
+    // @include rounded(5px)
+    // border: 3px solid #61C6CF
+    color: #BABABA
+    text-align: right
+    form
+      margin-top: -0.25em
+    input[type=text], input[type=password]
+      width: 10em
+    input[type=submit]
+      margin: 0 0.5em 0.5em
+    .close-button
+      color: #BABABA
 
 #foot
   clear: both
@@ -466,18 +485,10 @@ a.button
     background-position: 0 (-56px)
 
 // Search button. Once I add more buttons I'm going to abstract some of this.
-#sa
-  color: #6ACFD8
-  font-size: 9pt
-  border: 1px solid #C4C4C4
+#sa, #login-popup input[type=submit], .close-button
   //@include vertical_gradient(#888888, #000000)
   @include vertical_half_gradient(#686868, #000000)
-  @include rounded(0.5em)
   @include drop_shadow(0, 1px, 2px, rgba(0, 0, 0, 0.2))
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3)
-  padding: 0.2em 1.25em 0.25em
-  margin-left: 0.5em
-  cursor: pointer
   &:hover
     @include vertical_half_gradient(#444444, #000000)
   &:active
@@ -485,12 +496,33 @@ a.button
     color: darken(#6ACFD8, 20%)
     position: relative
     top: 1px
+#sa, #login-popup input[type=submit]
+  border: 1px solid #C4C4C4
+  @include rounded(0.5em)
+  color: #6ACFD8
+  font-size: 9pt
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3)
+  padding: 0.2em 1.25em 0.25em
+  margin-left: 0.5em
 
-#q
+#q, #login-popup input
   font-size: 9pt
   @include rounded(0.5em)
   padding: 0.33em
   border: none
+
+.close-button
+  display: inline-block
+  @include rounded(3px)
+  margin: 0.33em 0.5em 0 0
+  border: 1px solid #767676
+  color: #767676
+  padding: 0 0.025em
+  line-height: 0.6
+  span
+    vertical-align: 30%
+  &:hover
+    text-decoration: none
 
 .membername
   // We typeset membernames differently to call them out and distinguish them
@@ -539,5 +571,3 @@ ul.links
 
 .failed
   color: red !important
-
-#login-popup
