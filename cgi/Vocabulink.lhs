@@ -106,7 +106,6 @@ Each of these modules will be described in its own section.
 
 > import Vocabulink.Article
 > import Vocabulink.Article.Html
-> import Vocabulink.DB
 > import Vocabulink.CGI
 > import Vocabulink.Comment
 > import Vocabulink.Config
@@ -194,6 +193,7 @@ directory).
 > import Data.ConfigFile (get)
 > import Data.List (find)
 > import Data.List.Split (splitOn)
+> import Database.TemplatePG (pgConnect)
 > import Network (PortID(..))
 > import Network.SCGI (runSCGIConcurrent')
 > import Network.URI (URI(..), unEscapeString)
@@ -201,10 +201,8 @@ directory).
 \section{Entry and Dispatch}
 
 When the program starts, it immediately begin listening for connections.
-|runSCGIConcurrent'| spawns up to 2,048 threads. This matches the number that
-cherokee, running in front of vocabulink.cgi, is configured for.
-|handleErrors'| and |runApp| will be explained later. They basically catch
-unhandled database errors and pack information into the App monad.
+|runSCGIConcurrent'| spawns up to some number of threads. This matches the
+number that cherokee, running in front of vocabulink.cgi, is configured for.
 
 Before forking, we read a configuration file. We pass this to runApp so that
 all threads have access to global configuration information.
@@ -221,9 +219,9 @@ environment.
 >                dir      = forceEither $ get cp "DEFAULT" "maindir"
 >            sd <- staticDeps cp
 >            runSCGIConcurrent' forkIO threads (PortNumber 10033) (do
->              c <- liftIO $ connect pw
->              ls <- liftIO $ languagesFromDB c
->              handleErrors' c (runApp c cp dir sd ls handleRequest))
+>              h <- liftIO $ pgConnect "localhost" (PortNumber 5432) "vocabulink" "vocabulink" pw
+>              ls <- liftIO $ languagesFromDB h
+>              handleErrors' h (runApp h cp dir sd ls handleRequest))
 
 |handleRequest| ``digests'' the requested URI before passing it to the
  dispatcher.
@@ -448,7 +446,7 @@ are allowed to do.
 
 Becoming a member is simply a matter of filling out a form.
 
-> dispatch "GET"   ["member","signup"]  = registerMember
+> dispatch "GET"   ["member","signup"]  = registerMemberPage
 > dispatch "POST"  ["member","signup"]  = registerMember
 
 But to use most of the site, we require email confirmation.
@@ -552,24 +550,18 @@ or curious.
 >       else noHtml ]
 >  where myLinks mn = do
 >          ls <- memberLinks mn 0 7
->          case ls of
->            Nothing   -> return noHtml
->            Just ls'  -> do
->              partialLinks <- mapM renderPartialLink ls'
->              return $ thediv ! [theclass "sidebox"] << [
->                         h3 << anchor ! [href ("/links/" ++ show mn)] <<
->                           "My Links",
->                         unordList partialLinks ! [theclass "links"] ]
+>          partialLinks <- mapM renderPartialLink ls
+>          return $ thediv ! [theclass "sidebox"] << [
+>                     h3 << anchor ! [href ("/links/" ++ show mn)] <<
+>                       "My Links",
+>                     unordList partialLinks ! [theclass "links"] ]
 >        newLinks = do
 >          ls <- latestLinks 0 7
->          case ls of
->            Nothing   -> return noHtml
->            Just ls'  -> do
->              partialLinks <- mapM renderPartialLink ls'
->              return $ thediv ! [theclass "sidebox"] << [
->                         h3 << anchor ! [href "/links"] <<
->                           "Latest Links",
->                         unordList partialLinks ! [theclass "links"] ]
+>          partialLinks <- mapM renderPartialLink ls
+>          return $ thediv ! [theclass "sidebox"] << [
+>                     h3 << anchor ! [href "/links"] <<
+>                       "Latest Links",
+>                     unordList partialLinks ! [theclass "links"] ]
 >        featuredPack = do
 >          lp <- getLinkPack 1
 >          return $ maybe noHtml (\l -> thediv ! [theclass "sidebox"] << [
@@ -587,7 +579,6 @@ or curious.
 %include Vocabulink/Utils.lhs
 %include Vocabulink/CGI.lhs
 %include Vocabulink/App.lhs
-%include Vocabulink/DB.lhs
 %include Vocabulink/Html.lhs
 %include Vocabulink/Member/AuthToken.lhs
 %include Vocabulink/Member.lhs

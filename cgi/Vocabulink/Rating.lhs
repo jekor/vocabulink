@@ -2,7 +2,6 @@
 
 > import Vocabulink.App
 > import Vocabulink.CGI
-> import Vocabulink.DB
 > import Vocabulink.Html
 > import Vocabulink.Utils
 
@@ -34,7 +33,7 @@ So instead what we do is we re-align the rating display in the same way as we
 re-align the rating scale when taking the rating from the user: we place 0 at 1
 full star into the rating system.
 
-> ratingBar :: String -> Integer -> Maybe Double -> Bool -> Html
+> ratingBar :: String -> Integer -> Maybe Float -> Bool -> Html
 > ratingBar baseUrl numRatings rating allowRating =
 >   let  r = fromMaybe 0 rating
 >        starWidth = case rating of
@@ -55,9 +54,6 @@ full star into the rating system.
 > rateLink :: Integer -> App CGIResult
 > rateLink ln = withRequiredMemberNumber $ \memberNo -> do
 >   rating <- readRequiredInput "rating" :: App Double
->   res <- quickStmt'  "INSERT INTO link_rating (link_no, member_no, rating) \
->                                       \VALUES (?, ?, ?)"
->                      [toSql ln, toSql memberNo, toSql rating]
->   case res of
->     Nothing  -> error "Failed to rate link."
->     Just _   -> output' ""
+>   $(execute' "INSERT INTO link_rating (link_no, member_no, rating) \
+>                               \VALUES ({ln}, {memberNo}, {rating})")
+>   output' ""

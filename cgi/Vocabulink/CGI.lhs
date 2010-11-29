@@ -38,16 +38,17 @@ not the end of the world if we generate an error or don't catch an exception.
 >  {- Network.URI -}       uriPath, uriQuery,
 >  {- Text.JSON -}         JSON, encode, toJSObject ) where
 
-> import Vocabulink.DB
 > import Vocabulink.Utils
 
 > import Control.Exception (Exception, try)
 > import Control.Monad.Reader (ReaderT(..))
 > import Control.Monad.Writer (WriterT(..))
+> import Database.TemplatePG (pgDisconnect)
 > import Data.ByteString.Lazy.UTF8 (fromString, toString)
 > import Data.Char (isAlphaNum)
 > import Data.Monoid (mempty)
 > import Network.URI (uriPath, uriQuery)
+> import System.IO (Handle)
 > import Text.Formlets as F
 > import Text.JSON (JSON, encode, toJSObject)
 
@@ -68,11 +69,11 @@ went wrong.
 |catchCGI| will handle exceptions in the CGI monad. If no exception is thrown,
  we'll close the database handle and return the CGI result.
 
-> handleErrors' :: IConnection conn => conn -> CGI CGIResult -> CGI CGIResult
-> handleErrors' c a =  catchCGI' (do  r <- a
->                                     liftIO $ disconnect c
+> handleErrors' :: Handle -> CGI CGIResult -> CGI CGIResult
+> handleErrors' h a =  catchCGI' (do  r <- a
+>                                     liftIO $ pgDisconnect h
 >                                     return r)
->                      (outputException' c)
+>                      (outputException' h)
 
 Network.CGI provides |outputException| as a basic default error handler. This
 is a slightly modified version that logs errors.
@@ -84,11 +85,11 @@ By the time we output the error to the client we no longer need the database
 handle. This is the perfect place to close it, as it'll be the last thing we do
 in the CGI monad (and the thread).
 
-> outputException' ::  (MonadCGI m, MonadIO m, IConnection conn) =>
->                      conn -> SomeException -> m CGIResult
-> outputException' c ex = do
+> outputException' ::  (MonadCGI m, MonadIO m) =>
+>                      Handle -> SomeException -> m CGIResult
+> outputException' h ex = do
 >   liftIO $ logError "exception" (show ex)
->   liftIO $ disconnect c
+>   liftIO $ pgDisconnect h
 >   outputInternalServerError [show ex]
 
 Usually we use the |withRequired| functions when an action requires that the
@@ -217,4 +218,4 @@ characters and hyphens in the resulting string.
 > tryCGI' :: Exception e => CGI a -> CGI (Either e a)
 > tryCGI' (CGIT c) = CGIT (ReaderT (WriterT . f . runWriterT . runReaderT c ))
 >     where
->       f = liftM (either (\ex -> (Left ex,mempty)) (first Right)) . try
+>       f = fmap (either (\ex -> (Left ex,mempty)) (first Right)) . try

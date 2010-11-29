@@ -27,16 +27,14 @@ static page we currently display is an article.
 
 > import Vocabulink.App
 > import Vocabulink.CGI
-> import Vocabulink.DB
 > import Vocabulink.Utils hiding ((<$$>))
 
 > import Control.Monad (filterM)
-> import Data.Time.Format (parseTime)
 > import System.Directory (  getDirectoryContents, getPermissions, doesFileExist,
 >                            readable)
 > import qualified System.IO.UTF8 as IO.UTF8
 > import qualified Text.ParserCombinators.Parsec as P
-> import Text.ParserCombinators.Parsec.Perm ((<$$>), (<||>), (<|?>), permute)
+> import Text.ParserCombinators.Parsec.Perm ((<$$>), (<|?>), permute)
 
 All articles have some common metadata.
 
@@ -48,9 +46,9 @@ or articles with very long titles. The filepath however is just the relative
 filename in the articles directory, not an absolute path.
 
 > data Article = Article {  articleFilename     :: FilePath,
->                           articleAuthor       :: Maybe String,
+>                           articleAuthor       :: Integer,
 >                           articlePublishTime  :: UTCTime,
->                           articleUpdateTime   :: Maybe UTCTime,
+>                           articleUpdateTime   :: UTCTime,
 >                           articleSection      :: Maybe String,
 >                           articleTitle        :: String }
 
@@ -74,22 +72,22 @@ Filesystem'' button that POSTs here.
 
 > refreshArticles :: App CGIResult
 > refreshArticles = do
->   articles <- publishedArticles
->   c <- asks appDB
->   insert  <- liftIO $ prepare c
->                "INSERT INTO article (author, publish_time, update_time, \
->                                     \section, title, filename) \
->                             \VALUES ((SELECT member_no FROM member \
->                                      \WHERE username = ?), ?, ?, ?, ?, ?)"
->   liftIO $ withTransaction c (\_ ->
->     mapM_ (execute insert . rec) articles)
+>   h <- asks appDB
+>   as <- publishedArticles
+>   liftIO $ withTransaction h $ mapM_ (insertArticle h) as
 >   redirect =<< referrerOrVocabulink
->    where rec a = [  toSql $ articleAuthor       a,
->                     toSql $ articlePublishTime  a,
->                     toSql $ articleUpdateTime   a,
->                     toSql $ articleSection      a,
->                     toSql $ articleTitle        a,
->                     toSql $ articleFilename     a ]
+>  where insertArticle h a =
+>          case articleSection a of
+>            Nothing -> $(execute
+>                         "INSERT INTO article (author, \
+>                                              \title, filename) \
+>                                      \VALUES ({articleAuthor a}, \
+>                                              \{articleTitle a}, {articleFilename a})") h
+>            Just s  -> $(execute
+>                         "INSERT INTO article (author, \
+>                                              \section, title, filename) \
+>                                      \VALUES ({articleAuthor a}, \
+>                                              \{s}, {articleTitle a}, {articleFilename a})") h
 
 Articles are created and updated via the filesystem, but we need to have the
 metadata on articles available in the database before we can display them via
@@ -183,15 +181,12 @@ we're notified of errors (publishing articles is not (yet) member-facing).
 > articleHeader :: P.Parser Article
 > articleHeader = permute
 >   (mkArticle  <$$>  museDirective "title"
->               <|?>  (Nothing, museDir "author" >> authorP)
->               <||>  (museDir "date" >> dateTimeP)
->               <|?>  (Nothing, museDir "update" >> dateTimeP)
 >               <|?>  (Nothing, Just <$> museDirective "section"))
->     where mkArticle title author date update section =
+>     where mkArticle title section =
 >             Article {  articleFilename     = undefined,
->                        articleAuthor       = author,
->                        articlePublishTime  = fromJust date,
->                        articleUpdateTime   = update,
+>                        articleAuthor       = 1, -- currently only jekor can publish articles
+>                        articlePublishTime  = undefined,
+>                        articleUpdateTime   = undefined,
 >                        articleSection      = section,
 >                        articleTitle        = title }
 
@@ -203,48 +198,36 @@ A muse directive looks sort of like a C preprocessor directive.
 > museDir :: String -> P.Parser ()
 > museDir dir = P.try (P.string ('#' : dir)) >> P.spaces
 
-> authorP :: P.Parser (Maybe String)
-> authorP = Just <$> P.manyTill P.anyChar P.newline
-
-> dateTimeP :: P.Parser (Maybe UTCTime)
-> dateTimeP =  parseTime defaultTimeLocale "%F %T %z" <$>
->              P.manyTill P.anyChar P.newline
-
 \subsection{Retrieving Articles}
 
 To retrieve an article with need its (relative) filename (or path, or whatever
 you want to call it).
 
 > getArticle :: String -> App (Maybe Article)
-> getArticle filename =
->   (>>= articleFromTuple) <$>
->     queryTuple' "SELECT filename, author, publish_time, \
->                        \section, update_time, title \
->                 \FROM article WHERE filename = ?" [toSql filename]
+> getArticle filename = liftM articleFromTuple <$> $(queryTuple'
+>   "SELECT filename, author, publish_time, \
+>          \update_time, section, title \
+>   \FROM article WHERE filename = {filename}")
 
 As with links, we use a helper function to convert a raw SQL tuple.
 
-> articleFromTuple :: [SqlValue] -> Maybe Article
-> articleFromTuple [f,a,p,u,s,t]  = Just
->   Article {  articleFilename     = fromSql f,
->              articleAuthor       = fromSql a,
->              articlePublishTime  = fromSql p,
->              articleUpdateTime   = fromSql u,
->              articleSection      = fromSql s,
->              articleTitle        = fromSql t }
-> articleFromTuple _            = Nothing
+> articleFromTuple :: (FilePath, Integer, UTCTime, UTCTime, Maybe String, String) -> Article
+> articleFromTuple (f, a, p, u, s, t) =
+>   Article {  articleFilename     = f,
+>              articleAuthor       = a,
+>              articlePublishTime  = p,
+>              articleUpdateTime   = u,
+>              articleSection      = s,
+>              articleTitle        = t }
 
 To get a list of articles for display on the main articles page, we look for
 published articles in the database that are in the ``main'' section.
 
-> getArticles :: App (Maybe [Article])
-> getArticles = do
->   rs <- queryTuples' "SELECT filename, author, publish_time, \
->                             \update_time, section, title \
->                      \FROM article \
->                      \WHERE publish_time < CURRENT_TIMESTAMP \
->                        \AND section = 'main' \
->                      \ORDER BY publish_time DESC" []
->   case rs of
->     Nothing   -> return Nothing
->     Just rs'  -> return $ Just $ mapMaybe articleFromTuple rs'
+> getArticles :: App [Article]
+> getArticles = map articleFromTuple <$> $(queryTuples'
+>   "SELECT filename, author, publish_time, \
+>          \update_time, section, title \
+>   \FROM article \
+>   \WHERE publish_time < CURRENT_TIMESTAMP \
+>     \AND section = 'main' \
+>   \ORDER BY publish_time DESC")

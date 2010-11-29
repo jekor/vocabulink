@@ -1,4 +1,4 @@
-% Copyright 2009 Chris Forno
+% Copyright 2009, 2010 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -20,14 +20,13 @@
 > module Vocabulink.Config (getConfig, staticDeps, languagesFromDB) where
 
 > import Vocabulink.App
-> import Vocabulink.DB
 > import Vocabulink.Utils
 
-> import Control.Monad (join)
 > import Control.Monad.Error (runErrorT)
 > import Data.ConfigFile (readfile, emptyCP, ConfigParser, get, CPError, options)
 > import Data.List (intersect, (\\))
 > import System.Directory (getDirectoryContents)
+> import System.IO (Handle)
 
 The path to the configuration file is the one bit of configuration that's the
 same in all environments.
@@ -107,9 +106,6 @@ recursively; JS and CSS are in 2 flat directories.
 >   modTimes <- mapM (liftM modificationTime . getFileStatus . (dir </>)) files
 >   return $ zip files modTimes
 
-> languagesFromDB :: Connection -> IO [(String, String)]
-> languagesFromDB c = map langToPair <$>
->   quickQuery' c "SELECT abbr, name FROM language ORDER BY name" []
->     where  langToPair [a, n]  = (fromSql a, fromSql n)
->            langToPair _       = error "Failed to retrieve languages from the database."
+> languagesFromDB :: Handle -> IO [(String, String)]
+> languagesFromDB = $(queryTuples "SELECT abbr, name FROM language ORDER BY name")
 

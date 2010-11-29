@@ -28,7 +28,6 @@ For now, we have only 1 review algorithm (SuperMemo 2).
 
 > import Vocabulink.App
 > import Vocabulink.CGI
-> import Vocabulink.DB
 > import Vocabulink.Html
 > import Vocabulink.Link
 > import Vocabulink.Utils
@@ -49,11 +48,9 @@ asynchronous JavaScript call.
 
 > newReview :: Integer -> Integer -> App CGIResult
 > newReview memberNo linkNo = do
->   res <- quickStmt' "INSERT INTO link_to_review (member_no, link_no) \
->                     \VALUES (?, ?)" [toSql memberNo, toSql linkNo]
->   case res of
->     Nothing  -> error "Error scheduling link for review."
->     Just _   -> outputJSON [("", "")]
+>   $(execute' "INSERT INTO link_to_review (member_no, link_no) \
+>                                  \VALUES ({memberNo}, {linkNo})")
+>   outputJSON [("", "")]
 
 The client indicates a completed review with a @POST@ to @/review/linknumber@
 which will be dispatched to |linkReviewed|. Once we schedule the next review
@@ -63,10 +60,8 @@ time for the link, we move on to the next in their set.
 > linkReviewed memberNo linkNo = do
 >   recall      <- readRequiredInput "recall"
 >   recallTime  <- readRequiredInput "recall-time"
->   res <- scheduleNextReview memberNo linkNo recall recallTime
->   case res of
->     Nothing  -> error "Failed to schedule next review."
->     Just _   -> redirect "/review/next"
+>   scheduleNextReview memberNo linkNo recall recallTime
+>   redirect "/review/next"
 
 We need to schedule the next review based on the review algorithm in use. The
 algorithm needs to know how well the item was remembered. Also, we log the
@@ -84,31 +79,22 @@ last review (the actual time difference, not the scheduled time difference).
 
 All database updates during this process are wrapped in a transaction.
 
-> scheduleNextReview :: Integer -> Integer -> Double -> Integer -> App (Maybe ())
+> scheduleNextReview :: Integer -> Integer -> Float -> Integer -> App ()
 > scheduleNextReview memberNo linkNo recall recallTime = do
->   previous <- previousInterval memberNo linkNo
->   case previous of
->     Nothing  -> return Nothing
->     Just p   -> withTransaction' $ do
->       seconds <- SM2.reviewInterval memberNo linkNo p recall
->       case seconds of
->         Nothing  -> error "Failed to retrieve review interval."
->         Just s   -> do
->           n <- run'  "INSERT INTO link_review (member_no, link_no, recall, \
->                                               \recall_time, target_time) \
->                      \VALUES (?, ?, ?, ?, \
->                             \(SELECT target_time FROM link_to_review \
->                      \WHERE member_no = ? AND link_no = ?))"
->                      [  toSql memberNo, toSql linkNo, toSql recall,
->                         toSql recallTime, toSql memberNo, toSql linkNo]
->           m <- run' ("UPDATE link_to_review \
->                      \SET target_time = current_timestamp + interval \
->                      \'" ++ show s ++ " seconds" ++ "' \
->                      \WHERE member_no = ? AND link_no = ?")
->                     [toSql memberNo, toSql linkNo]
->           case [n, m] of
->             [1, 1] -> return ()
->             _      -> error "Failed to update study statistics."
+>   previous <- fromJust <$> previousInterval memberNo linkNo
+>   diff <- SM2.reviewInterval memberNo linkNo previous recall
+>   h <- asks appDB
+>   liftIO $ withTransaction h $ do
+>     $(execute
+>       "INSERT INTO link_review (member_no, link_no, recall, recall_time, \
+>                                \target_time) \
+>                        \VALUES ({memberNo}, {linkNo}, {recall}, {recallTime}, \
+>                                \(SELECT target_time FROM link_to_review \
+>                                 \WHERE member_no = {memberNo} AND link_no = {linkNo}))") h
+>     $(execute
+>       "UPDATE link_to_review \
+>       \SET target_time = current_timestamp + {diff} \
+>       \WHERE member_no = {memberNo} AND link_no = {linkNo}") h
 
 \subsection{Review Pages}
 
@@ -119,14 +105,13 @@ link for review, we send them to the review page.
 
 > nextReview :: Integer -> App CGIResult
 > nextReview memberNo = do
->   linkNo <- queryTuples'
+>   row <- $(queryTuple'
 >     "SELECT link_no FROM link_to_review \
->     \WHERE member_no = ? AND current_timestamp >= target_time \
->     \ORDER BY target_time ASC LIMIT 1" [toSql memberNo]
->   case linkNo of
->     Just []     -> noLinksToReviewPage memberNo
->     Just [[n]]  -> reviewLinkPage $ fromSql n
->     _           -> error "Failed to retrieve next link for review."
+>     \WHERE member_no = {memberNo} AND current_timestamp >= target_time \
+>     \ORDER BY target_time ASC LIMIT 1")
+>   case row of
+>     Nothing -> noLinksToReviewPage memberNo
+>     Just n  -> reviewLinkPage n
 
 The review page is pretty simple. It displays a link without the typical
 link-type decorations and with the destination node covered by a question mark.
@@ -171,7 +156,7 @@ You may get unpleasant results when passing a |total| that doesn't cleanly
 divide |i|.
 
 > recallButton :: Integer -> Integer -> Html
-> recallButton total i = let q = fromIntegral i / fromIntegral total :: Double in
+> recallButton total i = let q = fromIntegral i / fromIntegral total in
 >                        button ! [name "recall", value (show q)] << show i
 
 When a member has no more links to review for now, let's display a page letting
@@ -209,9 +194,9 @@ know when their next review is scheduled.
 The next review time can be in the future or in the past.
 
 > nextReviewTime :: Integer -> App (Maybe UTCTime)
-> nextReviewTime memberNo =
->   fromSql <$$> queryValue'  "SELECT MIN(target_time) FROM link_to_review \
->                             \WHERE member_no = ?" [toSql memberNo]
+> nextReviewTime memberNo = liftM join $(queryTuple'
+>   "SELECT MIN(target_time) FROM link_to_review \
+>   \WHERE member_no = {memberNo}")
 
 In order to determine the next review interval, the review scheduling algorithm
 may need to know how long the last review period was (in fact, any algorithm
@@ -222,16 +207,16 @@ Note that this will not work before the link has been reviewed. We expect that
 the review algorithm does not have to be used for determining the first review
 (immediate).
 
-> previousInterval :: Integer -> Integer -> App (Maybe Integer)
+> previousInterval :: Integer -> Integer -> App (Maybe DiffTime)
 > previousInterval memberNo linkNo = do
->   v <- queryValue'  "SELECT COALESCE(extract(epoch from \
->                                             \current_timestamp - \
->                                             \(SELECT actual_time FROM link_review \
->                                              \WHERE member_no = ? AND link_no = ? \
->                                              \ORDER BY actual_time DESC LIMIT 1)), \
->                                     \extract(epoch from current_timestamp - \
->                                             \(SELECT target_time FROM link_to_review \
->                                              \WHERE member_no = ? AND link_no = ?)))"
->                     [  toSql memberNo, toSql linkNo,
->                        toSql memberNo, toSql linkNo ]
->   return $ fmap fromSql v
+>   t <- $(queryTuple'
+>     "SELECT COALESCE(extract(epoch from current_timestamp - \
+>                             \(SELECT actual_time FROM link_review \
+>                              \WHERE member_no = {memberNo} AND link_no = {linkNo} \
+>                              \ORDER BY actual_time DESC LIMIT 1))::int, \
+>                     \extract(epoch from current_timestamp - \
+>                             \(SELECT target_time FROM link_to_review \
+>                              \WHERE member_no = {memberNo} AND link_no = {linkNo}))::int)")
+>   case t of
+>     Nothing -> return Nothing
+>     Just t' -> return $ liftM secondsToDiffTime t'

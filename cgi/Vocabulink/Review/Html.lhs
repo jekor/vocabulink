@@ -23,7 +23,6 @@ may end up being more work than it's worth.
 > module Vocabulink.Review.Html (reviewBox) where
 
 > import Vocabulink.App
-> import Vocabulink.DB
 > import Vocabulink.Utils
 
 > import Text.XHtml.Strict
@@ -55,9 +54,7 @@ while they are browsing another part of the site, we want them to be notified.
 
 This retrievs the number of links that a user has for review right now.
 
-> numLinksToReview :: Integer -> App (Maybe Integer)
-> numLinksToReview memberNo = do
->   v <- queryValue'  "SELECT COUNT(*) FROM link_to_review \
->                     \WHERE member_no = ? AND current_timestamp > target_time"
->                     [toSql memberNo]
->   return $ fmap fromSql v
+> numLinksToReview :: Integer -> App Integer
+> numLinksToReview memberNo = fromJust . fromJust <$> $(queryTuple'
+>   "SELECT COUNT(*) FROM link_to_review \
+>   \WHERE member_no = {memberNo} AND current_timestamp > target_time")

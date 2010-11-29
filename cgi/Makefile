@@ -17,7 +17,7 @@ configure : $(lhss)
 	mv ../$(cgi).new ../$(cgi)
 
 ../$(cgi).new : $(lhss)
-	cabal build
+	TPG_DB="vocabulink" TPG_USER="vocabulink" cabal build
 	cp dist/build/$(cgi)/$(cgi) ../$(cgi).new
 	strip ../$(cgi).new
 

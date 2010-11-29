@@ -1,4 +1,4 @@
-% Copyright 2009 Chris Forno
+% Copyright 2009, 2010 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -23,7 +23,6 @@ noticing it painfully myself lately, and I know where everything is!
 > module Vocabulink.Search (searchPage) where
 
 > import Vocabulink.App
-> import Vocabulink.DB
 > import Vocabulink.CGI
 > import Vocabulink.Html
 > import Vocabulink.Link
@@ -34,8 +33,8 @@ For now, we're making use of Google Custom Search.
 > searchPage :: App CGIResult
 > searchPage = do
 >   q <- getRequiredInput "q"
->   links   <- fromMaybe [] <$> linksContaining q
->   links'  <- mapM renderPartialLink links
+>   links <- linksContaining q
+>   links' <- mapM renderPartialLink links
 >   stdPage (q ++ " - Search Results") [CSS "search"] [] [
 >     thediv ! [identifier "main-content"] << [
 >       thediv ! [identifier "cse-search-results"] << noHtml ],
@@ -57,14 +56,13 @@ This is a close parallel to the original search for Vocabulink. We use it so
 that we can display a link to a specialized link search only when results are
 available.
 
-> linksContaining :: String -> App (Maybe [PartialLink])
-> linksContaining q = do
->   ts <- queryTuples'  "SELECT link_no, link_type, author, \
->                              \origin, destination, \
->                              \origin_language, destination_language \
->                       \FROM link \
->                       \WHERE NOT deleted \
->                         \AND (origin ILIKE ? OR destination ILIKE ?) \
->                       \LIMIT 20"
->                       [toSql q, toSql q]
->   return $ mapMaybe partialLinkFromValues `liftM` ts
+> linksContaining :: String -> App [PartialLink]
+> linksContaining q =
+>   map partialLinkFromTuple <$> $(queryTuples'
+>     "SELECT link_no, link_type, author, \
+>            \origin, destination, \
+>            \origin_language, destination_language \
+>     \FROM link \
+>     \WHERE NOT deleted \
+>       \AND (origin ILIKE {q} OR destination ILIKE {q}) \
+>     \LIMIT 20")

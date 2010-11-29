@@ -27,7 +27,6 @@ registered members only.
 
 > import Vocabulink.App
 > import Vocabulink.CGI
-> import Vocabulink.DB
 > import Vocabulink.Html
 > import Vocabulink.Member.AuthToken
 > import Vocabulink.Utils
@@ -46,13 +45,10 @@ member's password against the database as part of normal formlet validation.
 >                                   (xhtml +++ tfoot << tabularSubmit "Login"))
 >                  ((,) <$> username <*> passwd "Password") `checkM`
 >                    ensureM passMatch err
->   where passMatch (u, p) = do
->           valid <- queryValue'  "SELECT password_hash = crypt(?, password_hash) \
->                                 \FROM member WHERE username = ?"
->                                 [toSql p, toSql u]
->           return $ case valid of
->             Nothing  -> False
->             Just v   -> fromSql v
+>   where passMatch (u, p) =
+>           (fromJust . fromJust) <$> $(queryTuple'
+>             "SELECT password_hash = crypt({p}, password_hash) \
+>             \FROM member WHERE username = {u}")
 >         err = "Username and password do not match (or don't exist)."
 
 If a member authenticates correctly, we redirect them to either the frontpage
@@ -88,20 +84,17 @@ database before it can be packed into their auth token. There may be a way to
 put this step into password verification so that we don't need 2 queries.
 
 > getMemberNumber :: String -> App (Maybe Integer)
-> getMemberNumber memberName =
->   maybe Nothing fromSql <$> queryValue' "SELECT member_no FROM member \
->                                         \WHERE username = ?" [toSql memberName]
+> getMemberNumber memberName = $(queryTuple' "SELECT member_no FROM member \
+>                                            \WHERE username = {memberName}")
 
 > getMemberName :: Integer -> App (Maybe String)
-> getMemberName memberNo =
->   maybe Nothing fromSql <$> queryValue' "SELECT username FROM member \
->                                         \WHERE member_no = ?" [toSql memberNo]
+> getMemberName memberNo = $(queryTuple' "SELECT username FROM member \
+>                                        \WHERE member_no = {memberNo}")
 
 > getMemberEmail :: Integer -> App (Maybe String)
-> getMemberEmail memberNo =
->   maybe Nothing fromSql <$> queryValue' "SELECT email FROM member \
->                                         \WHERE member_no = ?" [toSql memberNo]
-
+> getMemberEmail memberNo = fromMaybe Nothing <$> $(queryTuple'
+>   "SELECT email FROM member \
+>   \WHERE member_no = {memberNo}")
 
 To logout a member, we simply clear their auth cookie and redirect them
 somewhere sensible. If you want to send a client somewhere other than the front
@@ -150,9 +143,8 @@ trying to register with isn't already in use.
 
 > uniqueUser :: AppForm String
 > uniqueUser = username `checkM` ensureM valid err where
->   valid user = do vs <- queryTuples'  "SELECT username FROM member \
->                                       \WHERE username ILIKE ?" [toSql user]
->                   return $ maybe False (== []) vs
+>   valid user = isNothing <$> $(queryTuple' "SELECT username FROM member \
+>                                            \WHERE username ILIKE {user}")
 >   err = "That username is unavailable."
 
 Our password input is as permissive as our username input.
@@ -198,17 +190,19 @@ well.
 
 > uniqueEmailAddress :: AppForm String
 > uniqueEmailAddress = emailAddress `checkM` ensureM valid err where
->   valid email = do  vs <- queryTuples'  "(SELECT email FROM member \
->                                          \WHERE email = ?) \
->                                         \UNION \
->                                         \(SELECT email FROM member_confirmation \
->                                          \WHERE email = ?)"
->                                         [toSql email, toSql email]
->                     return $ maybe False (== []) vs
+>   valid email = isNothing <$> $(queryTuple' "(SELECT email FROM member \
+>                                              \WHERE email = {email}) \
+>                                             \UNION \
+>                                             \(SELECT email FROM member_confirmation \
+>                                              \WHERE email = {email})")
 >   err = "That email address is unavailable."
 
 The registration process consists of a single form. Once the user has
 registered, we log them in and redirect them to the front page.
+
+-- > registerMemberPage :: App CGIResult
+-- > registerMemberPage = do
+-- >   
 
 > registerMember :: App CGIResult
 > registerMember = do
@@ -217,21 +211,17 @@ registered, we log them in and redirect them to the front page.
 >   case res of
 >     Left xhtml  -> simplePage "Sign Up for Vocabulink" [] [xhtml]
 >     Right reg   -> do
->       memberNo <- quickInsertNo'
+>       memberNo <- fromJust <$> $(queryTuple'
 >         "INSERT INTO member (username, password_hash) \
->         \VALUES (?, crypt(?, gen_salt('bf')))"
->         [toSql (regUser reg), toSql (regPass reg)]
->         "member_member_no_seq"
->       case memberNo of
->         Nothing  -> error "Registration failure (this is not your fault)."
->         Just n   -> do
->           ip <- remoteAddr
->           authTok <- liftIO $ authToken n (regUser reg) Nothing ip key
->           setAuthCookie authTok
->           res' <- sendConfirmationEmail n reg
->           case res' of
->             Nothing  -> error "Registration failure (this is not your fault)."
->             Just _   -> redirect "/"
+>                     \VALUES ({regUser reg}, crypt({regPass reg}, gen_salt('bf'))) \
+>         \RETURNING member_no")
+>       ip <- remoteAddr
+>       authTok <- liftIO $ authToken memberNo (regUser reg) Nothing ip key
+>       setAuthCookie authTok
+>       res' <- sendConfirmationEmail memberNo reg
+>       case res' of
+>         Nothing -> error "Registration failure (this is not your fault)."
+>         Just _  -> redirect "/"
 
 Once a user registers, they can log in. However, they won't be able to use most
 member-specific functions until they've confirmed their email address. This is
@@ -242,26 +232,21 @@ it to the member as a hyperlink. Once they click the hyperlink we consider the
 email address confirmed.
 
 > sendConfirmationEmail :: Integer -> Registration -> App (Maybe ())
-> sendConfirmationEmail memberNo r = do
->   _ <- quickStmt'  "INSERT INTO member_confirmation \
->                    \(member_no, hash, email) VALUES \
->                    \(?, md5(random()::text), ?)"
->                    [toSql memberNo, toSql (regEmail r)]
->   hash <- queryValue'  "SELECT hash FROM member_confirmation \
->                        \WHERE member_no = ?" [toSql memberNo]
->   case hash of
->     Nothing  -> return Nothing
->     Just h   -> do
->       let email = unlines [
->                     "Welcome to Vocabulink.",
->                     "",
->                     "Click http://www.vocabulink.com/member/confirmation/" ++
->                     fromSql h ++ " to confirm your email address." ]
->       res <- liftIO $ sendMail (regEmail r) "Welcome to Vocabulink" email
->       maybe (return Nothing) (\_ -> quickStmt'
->         "UPDATE member_confirmation \
->         \SET email_sent = current_timestamp \
->         \WHERE member_no = ?" [toSql memberNo]) res
+> sendConfirmationEmail memberNo reg = do
+>   hash <- fromJust <$> $(queryTuple'
+>     "INSERT INTO member_confirmation (member_no, hash, email) \
+>                              \VALUES ({memberNo}, md5(random()::text), {regEmail reg}) \
+>     \RETURNING hash")
+>   let email = unlines [
+>                "Welcome to Vocabulink.",
+>                "",
+>                "Click http://www.vocabulink.com/member/confirmation/" ++
+>                hash ++ " to confirm your email address." ]
+>   res <- liftIO $ sendMail (regEmail reg) "Welcome to Vocabulink" email
+>   maybe (return Nothing) (\_ -> do $(execute' "UPDATE member_confirmation \
+>                                               \SET email_sent = current_timestamp \
+>                                               \WHERE member_no = {memberNo}")
+>                                    return $ Just ()) res
 
 This is the place that the dispatcher will send the client to if they click the
 hyperlink in the email. If confirmation is successful it redirects them to some
@@ -276,28 +261,25 @@ cookie for them that contains their gravatar hash.
 >   case memberNo of
 >     Nothing  -> redirect =<< reversibleRedirect "/member/login"
 >     Just n   -> do
->       match <- queryValue'  "SELECT ? = hash FROM member_confirmation \
->                             \WHERE member_no = ?" [toSql hash, toSql n]
->       let match' = maybe False fromSql match
->       if match'
->         then do
->           res <- withTransaction' $ do
->             _ <- runStmt'  "UPDATE member SET email = \
+>       match <- maybe False fromJust <$> $(queryTuple'
+>         "SELECT hash = {hash} FROM member_confirmation \
+>         \WHERE member_no = {n}")
+>       if match
+>         then do h <- asks appDB
+>                 liftIO $ withTransaction h $ do
+>                   $(execute "UPDATE member SET email = \
 >                              \(SELECT email FROM member_confirmation \
->                              \WHERE member_no = ?) \
->                            \WHERE member_no = ?" [toSql n, toSql n]
->             runStmt'  "DELETE FROM member_confirmation \
->                       \WHERE member_no = ?" [toSql n]
->           case res of
->             Nothing  -> confirmEmailPage
->             Just _   -> do
->               email <- getMemberEmail n
->               memberName <- fromJust <$> asks appMemberName
->               ip <- remoteAddr
->               key <- fromJust <$> getOption "authtokenkey"
->               authTok <- liftIO $ authToken n memberName email ip key
->               setAuthCookie authTok
->               redirect =<< referrerOrVocabulink
+>                               \WHERE member_no = {n}) \
+>                             \WHERE member_no = {n}") h
+>                   $(execute "DELETE FROM member_confirmation \
+>                             \WHERE member_no = {n}") h
+>                 email <- getMemberEmail n
+>                 memberName <- fromJust <$> asks appMemberName
+>                 ip <- remoteAddr
+>                 key <- fromJust <$> getOption "authtokenkey"
+>                 authTok <- liftIO $ authToken n memberName email ip key
+>                 setAuthCookie authTok
+>                 redirect =<< referrerOrVocabulink
 >         else confirmEmailPage
 
 This is the page we redirect unconfirmed members to when they try to interact

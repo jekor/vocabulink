@@ -22,7 +22,9 @@ exist in any libraries I know of. We also use this module to export some
 oft-used functions for other modules.
 
 > module Vocabulink.Utils (         if', (?), safeHead, currentDay, currentYear,
->                                   formatSimpleTime, basename, translate, (<$$>),
+>                                   serverDay, serverDate, serverYear,
+>                                   formatSimpleTime, diffTimeToSeconds,
+>                                   basename, translate, (<$$>),
 >                                   sendMail, every2nd, every3rd, splitLines,
 >                                   convertLineEndings, logError,
 >  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
@@ -30,7 +32,7 @@ oft-used functions for other modules.
 >  {- Control.Applicative.Error -}  Failing(..), maybeRead,
 >  {- Control.Arrow -}              first, second,
 >  {- Control.Exception -}          SomeException,
->  {- Control.Monad -}              liftM,
+>  {- Control.Monad -}              liftM, Control.Monad.join, msum, when,
 >  {- Control.Monad.Trans -}        liftIO, MonadIO,
 >  {- Data.Char -}                  toLower,
 >  {- Data.Either.Utils -}          forceEither,
@@ -38,7 +40,7 @@ oft-used functions for other modules.
 >  {- Data.Maybe -}                 maybe, fromMaybe, fromJust, isJust, isNothing,
 >                                   mapMaybe, catMaybes,
 >  {- Data.Time.Calendar -}         Day,
->  {- Data.Time.Clock -}            UTCTime, getCurrentTime, diffUTCTime,
+>  {- Data.Time.Clock -}            UTCTime, DiffTime, getCurrentTime, diffUTCTime, secondsToDiffTime,
 >  {- Data.Time.Format -}           formatTime,
 >  {- Data.Time.LocalTime -}        ZonedTime,
 >  {- System.FilePath -}            (</>), (<.>), takeExtension,
@@ -62,12 +64,12 @@ more.
 
 We make particularly extensive use of |liftM| and the Maybe monad.
 
-> import Control.Monad (liftM)
+> import Control.Monad
 > import Control.Monad.Trans (liftIO, MonadIO)
 > import Data.Char (toLower)
 > import Data.Either.Utils (forceEither) -- MissingH
 > import Data.List (intercalate, partition)
-> import Data.List.Utils (join) -- MissingH
+> import Data.List.Utils as LU -- MissingH
 > import Data.Maybe (fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
 
 Time is notoriously difficult to deal with in Haskell. It gets especially
@@ -75,7 +77,7 @@ tricky when working with the database and libraries that expect different
 formats.
 
 > import Data.Time.Calendar (Day, toGregorian)
-> import Data.Time.Clock (UTCTime, getCurrentTime, diffUTCTime)
+> import Data.Time.Clock (UTCTime, DiffTime, getCurrentTime, diffUTCTime, secondsToDiffTime)
 > import Data.Time.Format (formatTime)
 > import Data.Time.LocalTime (  getCurrentTimeZone, utcToLocalTime,
 >                               LocalTime(..), ZonedTime)
@@ -106,27 +108,39 @@ I think I originally saw this defined on the Haskell wiki.
 
 \subsection{Time}
 
+> serverDay :: UTCTime -> IO Day
+> serverDay utc = do
+>   tz <- getCurrentTimeZone
+>   let (LocalTime day _) = utcToLocalTime tz utc
+>   return day
+
+> serverDate :: UTCTime -> IO (Integer, Int, Int)
+> serverDate utc = toGregorian <$> serverDay utc
+
+> serverYear :: UTCTime -> IO Integer
+> serverYear utc = do
+>   (year, _, _) <- serverDate utc
+>   return year
+
 Return the current day. I'm not sure that this is useful on its own.
 
 > currentDay :: IO Day
-> currentDay = do
->   now  <- getCurrentTime
->   tz   <- getCurrentTimeZone
->   let (LocalTime day _) = utcToLocalTime tz now
->   return day
+> currentDay = getCurrentTime >>= serverDay
 
 Return the current year as a 4-digit number.
 
 > currentYear :: IO Integer
 > currentYear = do
->   day <- currentDay
->   let (year, _, _) = toGregorian day
+>   (year, _, _) <- serverDate =<< getCurrentTime
 >   return year
 
 Displaying a time is a common enough task.
 
 > formatSimpleTime :: UTCTime -> String
 > formatSimpleTime = formatTime defaultTimeLocale "%a %b %d, %Y %R"
+
+> diffTimeToSeconds :: DiffTime -> Integer
+> diffTimeToSeconds = floor . toRational
 
 For files we receive via HTTP, we can't make assumptions about the path
 separator.
@@ -151,16 +165,18 @@ Sending mail is pretty easy. We just deliver it to a local MTA. Even if we have
 no MTA running locally, there are sendmail emulators that will handle the SMTP
 forwarding for us so that we don't have to deal with SMTP here.
 
+TODO: Check for errors.
+
 > sendMail :: String -> String -> String -> IO (Maybe ())
 > sendMail to subject body = do
->   let body' = unlines [  "From: Vocabulink <vocabulink@vocabulink.com>",
->                          "To: <" ++ to ++ ">",
->                          "Subject: " ++ subject,
->                          "",
->                          body ]
->   res <- try $ system
->            (  "echo -e \""   ++ body'  ++ "\" | \
->               \sendmail \""  ++ to     ++ "\"" )
+>   let body' = unlines [ "From: Vocabulink <vocabulink@vocabulink.com>"
+>                       , "To: <" ++ to ++ ">"
+>                       , "Subject: " ++ subject
+>                       , ""
+>                       , body
+>                       ]
+>   res <- try $ system ("echo -e \"" ++ body' ++ "\" | \
+>                        \sendmail \"" ++ to ++ "\"")
 >   case res of
 >     Right ExitSuccess  -> return $ Just ()
 >     _                  -> return Nothing
@@ -202,7 +218,7 @@ terminators. But we want to always work with just newlines.
 We use |join| instead of |unlines| because |unlines| adds a trailing newline.
 
 > convertLineEndings :: String -> String
-> convertLineEndings = join "\n" . splitLines
+> convertLineEndings = LU.join "\n" . splitLines
 
 This comes from Real World Haskell.
 

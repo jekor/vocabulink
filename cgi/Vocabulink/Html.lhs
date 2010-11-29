@@ -53,7 +53,6 @@ functions. An example of this is |linkList|.
 > import Vocabulink.App
 > import Vocabulink.Article
 > import Vocabulink.CGI
-> import Vocabulink.DB
 > import Vocabulink.Review.Html
 > import Vocabulink.Utils
 
@@ -189,20 +188,17 @@ hyperlinks for English speakers.
 
 > languageLinks :: App [Html]
 > languageLinks = do
->   ts <- queryTuples'  "SELECT abbr, name \
->                       \FROM language_frequency_to_english \
->                       \ORDER BY freq DESC LIMIT 7" []
->   return $ case ts of
->     Nothing   -> []
->     Just ts'  -> map languageLink ts' ++ [anchor ! [href "/languages"] << "more..."]
->       where languageLink [abbr', name']  =
->               anchor ! [href ("/links?ol=" ++ (fromSql abbr') ++ "&dl=en")] << ((fromSql name')::String)
->             languageLink _             = error "Malformed tuple."
+>   rows' <- $(queryTuples' "SELECT abbr, name \
+>                           \FROM language_frequency_to_english \
+>                           \ORDER BY freq DESC LIMIT 7")
+>   return $ map languageLink rows' ++ [a ! href "/languages" $ "more..."]
+>  where languageLink (abbr', name') =
+>          a ! href ("/links?ol=" ++ fromJust abbr' ++ "&dl=en") $ string $ fromJust name'
 
 > footerBar :: App Html
 > footerBar = do
 >   langLinks <- languageLinks
->   articles <- maybe [] (map articleLinkHtml . take 3) <$> getArticles
+>   articles <- (map articleLinkHtml . take 3) <$> getArticles
 >   forums <- footerForums
 >   copy <- liftIO $ copyrightNotice
 >   return $ concatHtml [
@@ -229,13 +225,11 @@ hyperlinks for English speakers.
 
 > footerForums :: App [Html]
 > footerForums = do
->   ts <- queryTuples'  "SELECT name, title FROM forum \
->                       \WHERE group_name = 'Vocabulink'" []
->   return $ case ts of
->     Nothing   -> []
->     Just ts'  -> map forumLink ts'
->       where forumLink [n', t']  = anchor ! [href ("/forum/" ++ fromSql n')] << ((fromSql t')::String)
->             forumLink _         = error "Malformed forum."
+>   rows' <- $(queryTuples' "SELECT name, title FROM forum \
+>                           \WHERE group_name = 'Vocabulink'")
+>   return $ map forumLink rows'
+>  where forumLink (name', title') =
+>          anchor ! [href ("/forum/" ++ name')] << title'
 
 We want a copyright notice at the bottom of every page. Since this is a
 copyright notice for dynamic content, we want it to be up-to-date with the

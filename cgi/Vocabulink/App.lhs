@@ -30,14 +30,12 @@ other conveniences.
 >                              Dependency(..), dependencyVersion,
 >                              withRequiredMemberNumber, loggedInVerified,
 >                              output404, reversibleRedirect,
->                              queryTuple', queryValue', queryAttribute',
->                              queryTuples', quickInsertNo', runStmt', quickStmt',
->                              withTransaction', run',
+>                              queryTuple', queryTuples', execute',
 >  {- Network.CGI -}           outputNothing,
->  {- Control.Monad.Reader -}  asks ) where
+>  {- Control.Monad.Reader -}  asks,
+>  {- Database.TemplatePG -}   withTransaction, execute, queryTuple, queryTuples ) where
 
 > import Vocabulink.CGI
-> import Vocabulink.DB
 
 We have to import the authorization token code using GHC's @SOURCE@ directive
 because of cyclic dependencies.
@@ -46,18 +44,20 @@ because of cyclic dependencies.
 > import Vocabulink.Utils
 
 > import Control.Applicative (Applicative)
-> import Control.Exception (try)
 > import Control.Monad (ap)
 > import Control.Monad.Error (runErrorT)
 > import Control.Monad.Reader (ReaderT(..), MonadReader, asks)
 > import Control.Monad.Trans (lift)
 
 > import Data.ConfigFile (ConfigParser, get)
+> import Database.TemplatePG
+> import Language.Haskell.TH (Q, Exp)
 > import Network.CGI.Monad (MonadCGI(..))
 > import Network.CGI (CGI, CGIT, outputNotFound, outputNothing)
 > import Network.URI (escapeURIString, isUnescapedInURI)
+> import System.IO (Handle)
 
-> data AppEnv = AppEnv {  appDB          :: Connection,
+> data AppEnv = AppEnv {  appDB          :: Handle,
 >                         appCP          :: ConfigParser,
 >                         appDir         :: FilePath,
 >                         appStaticDeps  :: [(Dependency, EpochTime)],
@@ -102,23 +102,21 @@ request came from a logged in member).
 We can't use the convenience of |getOption| here as we're not in the App monad
 yet.
 
-> runApp :: Connection -> ConfigParser -> FilePath -> [(Dependency, EpochTime)] -> [(String, String)] -> App CGIResult -> CGI CGIResult
-> runApp c cp dir sd ls (AppT a) = do
+> runApp :: Handle -> ConfigParser -> FilePath -> [(Dependency, EpochTime)] -> [(String, String)] -> App CGIResult -> CGI CGIResult
+> runApp h cp dir sd ls (AppT a) = do
 >   let key = forceEither $ get cp "DEFAULT" "authtokenkey"
 >   token <- verifiedAuthToken key
->   email <- liftIO $ maybe (return Nothing)
->                           (\n -> do
->                              e <- queryValue c  "SELECT email FROM member \
->                                                 \WHERE member_no = ?" [toSql n]
->                              return $ fromSql <$> e)
->                           (authMemberNo <$> token)
->   runReaderT a AppEnv {  appDB          = c,
+>   email <- case token of
+>              Nothing -> return Nothing
+>              Just t  -> liftIO $ join <$> $(queryTuple "SELECT email FROM member \
+>                                                        \WHERE member_no = {authMemberNo t}") h
+>   runReaderT a AppEnv {  appDB          = h,
 >                          appCP          = cp,
 >                          appDir         = dir,
 >                          appStaticDeps  = sd,
 >                          appLanguages   = ls,
->                          appMemberNo    = authMemberNo `liftM` token,
->                          appMemberName  = authUsername `liftM` token,
+>                          appMemberNo    = authMemberNo <$> token,
+>                          appMemberName  = authUsername <$> token,
 >                          appMemberEmail = email }
 
 \subsection{Convenience Functions}
@@ -143,7 +141,7 @@ should see it as a new file.
 >                   deriving (Eq, Show)
 
 > dependencyVersion :: Dependency -> App (Maybe String)
-> dependencyVersion d = (liftM show . lookup d) `liftM` asks appStaticDeps
+> dependencyVersion d = (fmap show . lookup d) <$> asks appStaticDeps
 
 \subsubsection{Identity}
 
@@ -183,92 +181,34 @@ what to do with it.
 
 > reversibleRedirect :: String -> App String
 > reversibleRedirect path = do
->   request <- fromMaybe "/" `liftM` getVar "REQUEST_URI"
+>   request <- fromMaybe "/" <$> getVar "REQUEST_URI"
 >   return $ path ++ "?redirect=" ++ escapeURIString isUnescapedInURI request
 
-I used to log all 404s, but the logs were overrun by favicon requests and the like.
+I used to log all 404s, but the logs were overrun by favicon requests and the
+like.
 
 > output404 :: [String] -> App CGIResult
 > output404 = outputNotFound . intercalate "/"
 
 \subsubsection{Database}
 
-When we're dealing with the database, there's always a chance we're going to
-have some sort of error (there's a seemingly infinite number of possible
-sources). We don't want the entire page to blow up if there are errors. Also,
-we don't really care what the cause of the error is at the time of execution.
-SQL errors are not something we can generally recover from. We just need to
-log the error, return some sort of error indicator to the calling function (in
-this case, Nothing), and get on with it.
+Here are some convenience functions for working with the database in the App
+monad.
 
-In many cases, the calling function will still need to do data validation
-anyway (make sure that a list of the expected size is returned, etc), so the
-extra Maybe wrapper shouldn't be much extra trouble. In fact, in some cases
-it's much easier than manually wrapping the query with |catchSql|.
+> withConnection :: (Handle -> IO a) -> App a
+> withConnection a = do h <- asks appDB
+>                       liftIO $ a h
 
-Don't worry about understanding these definitions until you've read through the
-DB module.
+> queryTuple' :: String -> Q Exp
+> queryTuple' sql = [| withConnection $(queryTuple sql) |]
 
-Maybe there's some way to cut down on this code with template Haskell or
-somesuch, but it works for now.
+> queryTuples' :: String -> Q Exp
+> queryTuples' sql = [| withConnection $(queryTuples sql) |]
 
-> queryTuple' :: String -> [SqlValue] -> App (Maybe [SqlValue])
-> queryTuple' sql vs = do
->   c <- asks appDB
->   liftIO $ liftM Just (queryTuple c sql vs) `catchSqlD` Nothing
+> execute' :: String -> Q Exp
+> execute' sql = [| withConnection $(execute sql) |]
 
-> queryTuples' :: String -> [SqlValue] -> App (Maybe [[SqlValue]])
-> queryTuples' sql vs = do
->   c <- asks appDB
->   liftIO $ liftM Just (quickQuery' c sql vs) `catchSqlD` Nothing
-
-> queryValue' :: String -> [SqlValue] -> App (Maybe SqlValue)
-> queryValue' sql vs = do
->   c <- asks appDB
->   liftIO $ queryValue c sql vs `catchSqlD` Nothing
-
-> queryAttribute' :: String -> [SqlValue] -> App (Maybe [SqlValue])
-> queryAttribute' sql vs = do
->   c <- asks appDB
->   liftIO $ liftM Just (queryAttribute c sql vs) `catchSqlD` Nothing
-
-> quickInsertNo' :: String -> [SqlValue] -> String -> App (Maybe Integer)
-> quickInsertNo' sql vs seqname = do
->   c <- asks appDB
->   liftIO $ quickInsertNo c sql vs seqname `catchSqlD` Nothing
-
-> runStmt' :: String -> [SqlValue] -> App (Maybe Integer)
-> runStmt' sql vs = do
->   c <- asks appDB
->   liftIO $ liftM Just (run c sql vs) `catchSqlD` Nothing
-
-It may seem strange to return Maybe (), but we want to know if the database
-change succeeded.
-
-> quickStmt' :: String -> [SqlValue] -> App (Maybe ())
-> quickStmt' sql vs = do
->   c <- asks appDB
->   liftIO $ liftM Just (quickStmt c sql vs) `catchSqlD` Nothing
-
-Working with transactions outside of the App monad can be done, but we might as
-well make a version that fits with the rest of the style of the program (logs
-the exception and returns Nothing).
-
-> withTransaction' :: App a -> App (Maybe a)
-> withTransaction' actions = do
->   c <- asks appDB
->   r <- tryApp actions
->   case r of
->     Right x  -> do  liftIO $ commit c
->                     return $ Just x
->     Left e   -> do  liftIO $ logError "exception" $ show e
->                     _ <- liftIO (try (rollback c) :: IO (Either SomeException ())) -- Discard any exception here
->                     return Nothing
-
-> run' :: String -> [SqlValue] -> App (Integer)
-> run' sql vs = do
->   c <- asks appDB
->   liftIO $ run c sql vs
+(ReaderT AppEnv (CGIT m) a)
 
 \subsubsection{Exceptions}
 

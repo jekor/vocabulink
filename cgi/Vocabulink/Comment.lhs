@@ -1,4 +1,4 @@
-% Copyright 2008, 2009 Chris Forno
+% Copyright 2008, 2009, 2010 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -22,11 +22,11 @@
 
 > import Vocabulink.App
 > import Vocabulink.CGI
-> import Vocabulink.DB
 > import Vocabulink.Html
 > import Vocabulink.Utils
 
 > import Network.Gravatar (gravatarWith, size)
+> import System.IO (Handle)
 
 > data Comment = Comment {  commentNo        :: Integer,
 >                           commentLevel     :: Integer,
@@ -56,30 +56,35 @@ Each comment uses (Pandoc-extended) Markdown syntax.
 
 Storing a comment establishes and returns its unique comment number.
 
-> storeComment :: Integer -> String -> Maybe Integer -> App (Maybe Integer)
-> storeComment memberNo body parent =
+TODO: Move back into the App monad once we can handle transactions in it.
+
+> storeComment :: Handle -> Integer -> String -> Maybe Integer -> IO Integer
+> storeComment h memberNo body parent =
 >   case body of
->     ""  -> error "Empty comment body"
->     _   -> quickInsertNo'  "INSERT INTO comment (author, body, parent_no) \
->                            \VALUES (?, ?, ?)" [toSql memberNo, toSql body, toSql parent]
->                            "comment_comment_no_seq"
+>     "" -> error "Empty comment body"
+>     _  -> case parent of
+>             Nothing -> fromJust <$> $(queryTuple
+>                          "INSERT INTO comment (author, body) \
+>                                       \VALUES ({memberNo}, {body}) \
+>                          \RETURNING comment_no") h
+>             Just p  -> fromJust <$> $(queryTuple
+>                          "INSERT INTO comment (author, body, parent_no) \
+>                                       \VALUES ({memberNo}, {body}, {p}) \
+>                          \RETURNING comment_no") h
 
-> getComments :: Integer -> App (Maybe [Comment])
-> getComments root = do
->   comments <- queryTuples' "SELECT * FROM comment_tree(?)" [toSql root]
->   case comments of
->     Nothing  -> error "Error retrieving comments."
->     Just cs  -> return $ Just $ mapMaybe commentFromValues cs
+> getComments :: Integer -> App [Comment]
+> getComments root = map commentFromValues <$> $(queryTuples'
+>   "SELECT * FROM comment_tree({root})")
 
-> commentFromValues :: [SqlValue] -> Maybe Comment
-> commentFromValues [n, l, u, e, t, b]  =
->   Just Comment {  commentNo        = fromSql n,
->                   commentLevel     = fromSql l,
->                   commentUsername  = fromSql u,
->                   commentEmail     = fromSql e,
->                   commentTime      = fromSql t,
->                   commentBody      = fromSql b }
-> commentFromValues _                   = Nothing
+> commentFromValues :: (Maybe Integer, Maybe Integer, Maybe String,
+>                       Maybe String, Maybe UTCTime, Maybe String) -> Comment
+> commentFromValues (n, l, u, e, t, b) =
+>   Comment {  commentNo        = fromJust n,
+>              commentLevel     = fromJust l,
+>              commentUsername  = fromJust u,
+>              commentEmail     = fromJust e,
+>              commentTime      = fromJust t,
+>              commentBody      = fromJust b }
 
 This handles rendering a proper tree of comments as well as comments branching
 from a fake root comment. We examine the level of the first comment coming back
@@ -87,17 +92,14 @@ from getComments to determine which we're dealing with.
 
 > renderComments :: Integer -> App Html
 > renderComments root = do
->   comments <- getComments root
->   case comments of
->     Nothing  -> return $ paragraph << "Unable to retrieve comments."
->     Just cs  -> do
->       let cs'  = if length cs > 0 && commentLevel (head cs) == 0
->                    then cs -- true root
->                    else map (\c -> c {commentLevel = commentLevel c - 1}) cs -- pseudo root
->       invitation <- invitationLink "Comment"
->       cs'' <- mapM commentBox cs'
->       return $ thediv ! [  identifier ("comments-" ++ show root),
->                            theclass "comments" ] << (cs'' +++ invitation)
+>   cs <- getComments root
+>   let cs'  = if length cs > 0 && commentLevel (head cs) == 0
+>                then cs -- true root
+>                else map (\c -> c {commentLevel = commentLevel c - 1}) cs -- pseudo root
+>   invitation <- invitationLink "Comment"
+>   cs'' <- mapM commentBox cs'
+>   return $ thediv ! [  identifier ("comments-" ++ show root),
+>                        theclass "comments" ] << (cs'' +++ invitation)
 
 Replying to a comment is also a complex matter (are you noticing a trend
 here?). The complexity is mainly because we need to update information in a
@@ -112,31 +114,30 @@ the cache so that it gets regenerated on the next request.
 > replyToComment :: Integer -> App CGIResult
 > replyToComment parent = withRequiredMemberNumber $ \memberNo -> do
 >   body <- getBody
->   commentNo' <- storeComment memberNo body (Just parent)
->   case commentNo' of
->     Nothing  -> error "Failed to store comment."
->     Just n   -> do
->       res' <- queryTuple'  "SELECT c.comment_no, 0 as level, \
->                                   \m.username, m.email, \
->                                   \c.time, c.body \
->                            \FROM comment c, member m \
->                            \WHERE m.member_no = c.author \
->                              \AND c.comment_no = ?"
->                            [toSql n]
->       case res' of
->         Nothing  -> error "Error posting comment."
->         Just c'  -> do
->           let c = fromJust $ commentFromValues c'
->           output' $ showHtmlFragment $ markdownToHtml (commentBody c)
+>   h <- asks appDB
+>   n <- liftIO $ storeComment h memberNo body (Just parent)
+>   row <- commentFromValues' <$$> $(queryTuple'
+>     "SELECT c.comment_no, 0 as level, m.username, m.email, \
+>            \c.time, c.body \
+>     \FROM comment c, member m \
+>     \WHERE m.member_no = c.author \
+>       \AND c.comment_no = {n}")
+>   case row of
+>     Nothing -> error "Error posting comment."
+>     Just c  -> output' $ showHtmlFragment $ markdownToHtml (commentBody c)
+>  where commentFromValues' (n, l, u, e, t, b) =
+>          Comment {  commentNo        = n,
+>                     commentLevel     = fromJust l,
+>                     commentUsername  = u,
+>                     commentEmail     = fromJust e,
+>                     commentTime      = t,
+>                     commentBody      = fromJust b }
 
 TODO: Make sure that the vote is in the proper format.
 
 > voteOnComment :: Integer -> App CGIResult
 > voteOnComment n = withRequiredMemberNumber $ \memberNo -> do
 >   vote <- getRequiredInput "vote"
->   res <- quickStmt'  "INSERT INTO comment_vote (comment, member, vote) \
->                                        \VALUES (?, ?, ?)"
->                      [toSql n, toSql memberNo, toSql vote]
->   case res of
->     Nothing  -> error "Failed to record vote."
->     _        -> output' ""
+>   $(execute' "INSERT INTO comment_vote (comment, member, upvote) \
+>                                \VALUES ({n}, {memberNo}, {vote == \"up\"})")
+>   output' ""

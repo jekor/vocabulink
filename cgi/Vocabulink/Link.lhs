@@ -23,7 +23,7 @@ them.
 > module Vocabulink.Link (  Link(..), PartialLink(..), LinkType(..),
 >                           getPartialLink, getLinkFromPartial, getLink,
 >                           memberLinks, latestLinks, linkPage, deleteLink,
->                           linksPage, newLink, partialLinkFromValues,
+>                           linksPage, newLink, partialLinkFromTuple,
 >                           renderLink, renderPartialLink, languagePairsPage,
 >                           languagePairLinks, languageNameFromAbbreviation,
 >                           updateLinkStory, LinkPack(..),
@@ -36,17 +36,14 @@ them.
 > import Vocabulink.App
 > import Vocabulink.CGI
 > import Vocabulink.Comment
-> import Vocabulink.DB
 > import Vocabulink.Html
 > import Vocabulink.Member
 > import Vocabulink.Rating
 > import Vocabulink.Utils
 
-> import Control.Exception (try)
+> import Control.Monad (when)
 > import System.Cmd (system)
-> import System.Exit (ExitCode(..))
-> import qualified Text.XHtml as H
-> import qualified Text.XHtml.Strict.Formlets as F (input, selectRaw, textarea, hidden)
+> import System.IO (Handle)
 
 \subsection{Link Data Types}
 
@@ -77,11 +74,12 @@ We'll eventually want to support private/unpublished links.
 >     edit <- canEdit link
 >     if edit
 >       then do
->         deleted <- queryValue'  "SELECT deleted FROM link \
->                                 \WHERE link_no = ?" [toSql $ linkNumber link]
+>         deleted <- $(queryTuple'
+>                      "SELECT deleted FROM link \
+>                      \WHERE link_no = {linkNumber link}")
 >         return $ case deleted of
->           Just d   -> not $ fromSql d
->           Nothing  -> False
+>           Just d  -> not d
+>           Nothing -> False
 >       else return False
 
 The |linkOriginLang| and |linkDestinationLang| are the language abbrevations.
@@ -129,19 +127,15 @@ destination of the link do not contain copyrightable material.
 > linkCopyright l =
 >   case linkType l of
 >     LinkWord _ _ -> do
->       t <- queryTuple'  "SELECT username, \
->                                \extract(year from created), \
->                                \extract(year from updated) \
->                         \FROM link, member \
->                         \WHERE member_no = author AND link_no = ?"
->                         [toSql $ linkNumber l]
+>       (a,c,u) <- fromJust <$> $(queryTuple'
+>         "SELECT username, created, updated \
+>         \FROM link, member \
+>         \WHERE member_no = author AND link_no = {linkNumber l}")
+>       c' <- liftIO $ serverYear c
+>       u' <- liftIO $ serverYear u
+>       let range = c' == u' ? show c' $ show c' ++ "–" ++ show u'
 >       return $ paragraph ! [theclass "copyright"] << stringToHtml (
->         "Copyright " ++ case t of
->                           Just [a,c,u]  ->  let c'  = show (fromSql c :: Integer)
->                                                 u'  = show (fromSql u :: Integer)
->                                                 r   = c' == u' ? c' $ c' ++ "–" ++ u' in
->                                             r ++ " " ++ fromSql a
->                           _             ->  "unknown")
+>         "Copyright " ++ range ++ " " ++ a)
 >     _            -> return noHtml
 
 Fully loading a link from the database requires joining 2 relations. The join
@@ -179,49 +173,36 @@ relation in the database.
 
 This returns the newly established link number.
 
-> establishLink :: Link -> Integer -> App (Maybe Integer)
+> establishLink :: Link -> Integer -> App (Integer)
 > establishLink l memberNo = do
->   r <- withTransaction' $ do
->     c <- asks appDB
->     linkNo <- liftIO $ insertNo c
+>   h <- asks appDB
+>   liftIO $ withTransaction h $ do
+>     linkNo <- fromJust <$> $(queryTuple
 >       "INSERT INTO link (origin, destination, \
 >                         \origin_language, destination_language, \
 >                         \link_type, author) \
->                 \VALUES (?, ?, ?, ?, ?, ?)"
->       [  toSql (linkOrigin l), toSql (linkDestination l),
->          toSql (linkOriginLang l), toSql (linkDestinationLang l),
->          toSql (linkTypeName l), toSql memberNo ]
->       "link_link_no_seq"
->     case linkNo of
->       Nothing  -> liftIO $ rollback c >> return Nothing
->       Just n   -> do  res <- establishLinkType (l {linkNumber = n})
->                       case res of
->                         Nothing  -> return Nothing
->                         Just _   -> return linkNo
->   return $ fromMaybe Nothing r
+>                 \VALUES ({linkOrigin l}, {linkDestination l}, \
+>                         \{linkOriginLang l}, {linkDestinationLang l}, \
+>                         \{linkTypeName l}, {memberNo}) \
+>       \RETURNING link_no") h
+>     establishLinkType h (l {linkNumber = linkNo})
+>     return linkNo
 
 The relation we insert additional details into depends on the type of the link
 and it's easiest to use a separate function for it.
 
-> establishLinkType :: Link -> App (Maybe ())
-> establishLinkType l = case linkType l of
->   Association                -> return $ Just ()
->   SoundAlike                 -> return $ Just ()
+> establishLinkType :: Handle -> Link -> IO ()
+> establishLinkType h l = case linkType l of
+>   Association                -> return ()
+>   SoundAlike                 -> return ()
 >   (LinkWord word story)      -> do
->     res <- run'  "INSERT INTO link_type_link_word (link_no, link_word, story) \
->                                          \VALUES (?, ?, ?)"
->                  [toSql (linkNumber l), toSql word, toSql story]
->     case res of
->       1  -> return $ Just ()
->       _  -> return Nothing
+>     $(execute "INSERT INTO link_type_link_word \
+>                      \(link_no, link_word, story) \
+>               \VALUES ({linkNumber l}, {word}, {story})") h
 >   (Relationship left right)  -> do
->     res <- run'  "INSERT INTO link_type_relationship \
->                         \(link_no, left_side, right_side) \
->                  \VALUES (?, ?, ?)"
->                  [toSql (linkNumber l), toSql left, toSql right]
->     case res of
->       1  -> return $ Just ()
->       _  -> return Nothing
+>     $(execute "INSERT INTO link_type_relationship \
+>                      \(link_no, left_side, right_side) \
+>               \VALUES ({linkNumber l}, {left}, {right})") h
 
 \subsection{Retrieving Links}
 
@@ -232,28 +213,26 @@ links).
 Retrieving a partial link is simple.
 
 > getPartialLink :: Integer -> App (Maybe PartialLink)
-> getPartialLink linkNo = do
->   t <- queryTuple'  "SELECT link_no, link_type, author, \
->                            \origin, destination, \
->                            \origin_language, destination_language \
->                     \FROM link \
->                     \WHERE link_no = ?" [toSql linkNo]
->   return $ partialLinkFromValues =<< t
+> getPartialLink linkNo = partialLinkFromTuple <$$> $(queryTuple'
+>   "SELECT link_no, link_type, author, \
+>          \origin, destination, \
+>          \origin_language, destination_language \
+>   \FROM link \
+>   \WHERE link_no = {linkNo}")
 
 We use a helper function to convert the raw SQL tuple to a partial link value.
 Note that we leave the link's |linkType| undefined.
 
-> partialLinkFromValues :: [SqlValue] -> Maybe PartialLink
-> partialLinkFromValues [n, t, a, o, d, ol, dl] = Just $
->   PartialLink Link {  linkNumber           = fromSql n,
->                       linkTypeName         = fromSql t,
->                       linkAuthor           = fromSql a,
->                       linkOrigin           = fromSql o,
->                       linkDestination      = fromSql d,
->                       linkOriginLang       = fromSql ol,
->                       linkDestinationLang  = fromSql dl,
+> partialLinkFromTuple :: (Integer, String, Integer, String, String, String, String) -> PartialLink
+> partialLinkFromTuple (n, t, a, o, d, ol, dl) =
+>   PartialLink Link {  linkNumber           = n,
+>                       linkTypeName         = t,
+>                       linkAuthor           = a,
+>                       linkOrigin           = o,
+>                       linkDestination      = d,
+>                       linkOriginLang       = ol,
+>                       linkDestinationLang  = dl,
 >                       linkType             = undefined }
-> partialLinkFromValues _  = Nothing
 
 Once we have a partial link, it's a simple matter to turn it into a full link.
 We just need to retrieve its type-level details from the database.
@@ -269,22 +248,16 @@ We just need to retrieve its type-level details from the database.
 >   (Link {  linkTypeName  = "sound-alike"})   -> return $ Just SoundAlike
 >   (Link {  linkTypeName  = "linkword",
 >            linkNumber    = n })              -> do
->     rs <- queryTuple'  "SELECT link_word, story FROM link_type_link_word \
->                        \WHERE link_no = ?" [toSql n]
->     case rs of
->       Just [linkWord, story]  -> return $ Just $
->         LinkWord (fromSql linkWord) (fromSql story)
->       _                       -> return Nothing
+>     row <- $(queryTuple' "SELECT link_word, story FROM link_type_link_word \
+>                          \WHERE link_no = {n}")
+>     return $ (\ (w, s) -> LinkWord w s) <$> row
 >   (Link {  linkTypeName  = "relationship",
 >            linkNumber    = n })              -> do
->     rs <- queryTuple'  "SELECT left_side, right_side \
->                        \FROM link_type_relationship \
->                        \WHERE link_no = ?" [toSql n]
->     case rs of
->       Just [left, right]  -> return $ Just $
->         Relationship (fromSql left) (fromSql right)
->       _                   -> return Nothing
->   _                                         -> error "Bad partial link."
+>     row <- $(queryTuple' "SELECT left_side, right_side \
+>                          \FROM link_type_relationship \
+>                          \WHERE link_no = {n}")
+>     return $ (\ (l, r) -> LinkWord l r) <$> row
+>   _                                          -> error "Bad partial link."
 
 We now have everything we need to retrieve a full link in 1 step.
 
@@ -307,11 +280,9 @@ appear in most contexts.
 
 > deleteLink :: Integer -> App CGIResult
 > deleteLink linkNo = do
->   res  <- quickStmt'  "UPDATE link SET deleted = TRUE \
->                       \WHERE link_no = ?" [toSql linkNo]
->   case res of
->     Nothing  -> error "Failed to delete link."
->     Just _   -> outputJSON [("", "")]
+>   $(execute' "UPDATE link SET deleted = TRUE \
+>              \WHERE link_no = {linkNo}")
+>   outputJSON [("", "")]
 
 \subsection{Displaying Links}
 
@@ -331,57 +302,51 @@ We really shouldn't need to allow for passing class names. However, the !
 function has a problem in that it will add another class attribute instead of
 extending the existing one, which at least jquery doesn't like.
 
+TODO: These queries might be better as functions.
+
 > renderLink :: Link -> App Html
 > renderLink link = do
->   oLang <- linkOriginLanguage link
->   dLang <- linkDestinationLanguage link
->   prevLink <- queryValue'  "(SELECT link_no FROM link \
->                             \WHERE origin_language = ? \
->                               \AND destination_language = ? \
->                               \AND link_no < ? \
->                               \AND NOT deleted \
->                             \ORDER BY link_no DESC LIMIT 1) \
->                            \UNION \
->                            \(SELECT link_no FROM link \
->                             \WHERE origin_language = ? \
->                               \AND destination_language = ? \
->                               \AND NOT link_no = ? \
->                               \AND NOT deleted \
->                             \ORDER BY link_no DESC LIMIT 1) \
->                            \ORDER BY link_no ASC"
->                            [  toSql $ linkOriginLang link,
->                               toSql $ linkDestinationLang link,
->                               toSql $ linkNumber link,
->                               toSql $ linkOriginLang link,
->                               toSql $ linkDestinationLang link,
->                               toSql $ linkNumber link ]
->   nextLink <- queryValue'  "(SELECT link_no FROM link \
->                             \WHERE origin_language = ? \
->                               \AND destination_language  = ? \
->                               \AND link_no > ? \
->                               \AND NOT deleted \
->                             \ORDER BY link_no ASC LIMIT 1) \
->                            \UNION \
->                            \(SELECT link_no FROM link \
->                             \WHERE origin_language = ? \
->                               \AND destination_language = ? \
->                               \AND NOT link_no = ? \
->                               \AND NOT deleted \
->                             \ORDER BY link_no ASC LIMIT 1) \
->                            \ORDER BY link_no DESC"
->                            [  toSql $ linkOriginLang link,
->                               toSql $ linkDestinationLang link,
->                               toSql $ linkNumber link,
->                               toSql $ linkOriginLang link,
->                               toSql $ linkDestinationLang link,
->                               toSql $ linkNumber link ]
+>   oLanguage <- linkOriginLanguage link
+>   dLanguage <- linkDestinationLanguage link
+>   let oLang = linkOriginLang link
+>       dLang = linkDestinationLang link
+>   prevLink <- $(queryTuple'
+>     "(SELECT link_no FROM link \
+>      \WHERE origin_language = {oLang} \
+>        \AND destination_language = {dLang} \
+>        \AND link_no < {linkNumber link} \
+>        \AND NOT deleted \
+>      \ORDER BY link_no DESC LIMIT 1) \
+>     \UNION \
+>     \(SELECT link_no FROM link \
+>      \WHERE origin_language = {oLang} \
+>      \AND destination_language = {dLang} \
+>      \AND NOT link_no = {linkNumber link} \
+>      \AND NOT deleted \
+>      \ORDER BY link_no DESC LIMIT 1) \
+>      \ORDER BY link_no ASC")
+>   nextLink <- $(queryTuple'
+>     "(SELECT link_no FROM link \
+>      \WHERE origin_language = {oLang} \
+>        \AND destination_language = {dLang} \
+>        \AND link_no > {linkNumber link} \
+>        \AND NOT deleted \
+>      \ORDER BY link_no ASC LIMIT 1) \
+>     \UNION \
+>     \(SELECT link_no FROM link \
+>      \WHERE origin_language = {oLang} \
+>        \AND destination_language = {dLang} \
+>        \AND NOT link_no = {linkNumber link} \
+>        \AND NOT deleted \
+>      \ORDER BY link_no ASC LIMIT 1) \
+>     \ORDER BY link_no DESC")
 >   return $ h1 ! [theclass ("link " ++ linkTypeName link)] << [
->     maybe noHtml (\l -> anchor ! [href $ fromSql l, title "Previous Link", theclass "prev"] << noHtml) prevLink,
->     thespan ! [theclass "orig", title oLang] << linkOrigin link,
+>     maybe noHtml (\n -> anchor ! [href $ show n, title "Previous Link", theclass "prev"] << noHtml) prevLink,
+>     thespan ! [theclass "orig", title oLanguage] << linkOrigin link,
 >     thespan ! [theclass "link", title (linkTypeName link)] <<
 >       (renderLinkType $ linkType link),
->     thespan ! [theclass "dest", title dLang] << linkDestination link,
->     maybe noHtml (\l -> anchor ! [href $ fromSql l, title "Next Link", theclass "next"] << noHtml) nextLink ]
+>     thespan ! [theclass "dest", title dLanguage] << linkDestination link,
+>     maybe noHtml (\n -> anchor ! [href $ show n, title "Next Link", theclass "next"] << noHtml) nextLink ]
 >  where renderLinkType :: LinkType -> Html
 >        renderLinkType (LinkWord word _)  = stringToHtml word
 >        renderLinkType _                  = noHtml
@@ -433,36 +398,35 @@ textarea for in-page editing.
 >     Just l'  -> do
 >       let owner' = maybe False (linkAuthor l' ==) memberNo
 >       ops <- linkOperations l'
->       rating <- queryTuple'  "SELECT COUNT(rating), SUM(rating) / COUNT(rating) \
->                              \FROM link_rating WHERE link_no = ?" [toSql linkNo]
->       ratingEnabled <- if isJust memberNo
->                           then  isNothing <$> queryValue'  "SELECT rating FROM link_rating \
->                                                            \WHERE link_no = ? AND member_no = ?"
->                                                            [toSql linkNo, toSql memberNo]
->                           else  return False
+>       (c, r) <- ((first fromJust) . fromJust) <$> $(queryTuple'
+>         "SELECT COUNT(rating), SUM(rating) / COUNT(rating) \
+>         \FROM link_rating WHERE link_no = {linkNo}")
+>       ratingEnabled <- case memberNo of
+>                          Just n  -> isNothing <$> $(queryTuple'
+>                            "SELECT rating FROM link_rating \
+>                            \WHERE link_no = {linkNo} AND member_no = {n}")
+>                          Nothing -> return False
 >       copyright <- linkCopyright l'
->       oLang <- linkOriginLanguage l'
->       dLang <- linkDestinationLanguage l'
+>       oLanguage <- linkOriginLanguage l'
+>       dLanguage <- linkDestinationLanguage l'
 >       let orig  = linkOrigin l'
 >           dest  = linkDestination l'
->       r <- queryValue'  "SELECT root_comment \
->                         \FROM link_comments \
->                         \WHERE link_no = ?" [toSql linkNo]
->       comments <- case r of
->                     Just root  -> renderComments $ fromSql root
+>       row <- $(queryTuple' "SELECT root_comment \
+>                            \FROM link_comments \
+>                            \WHERE link_no = {linkNo}")
+>       comments <- case row of
+>                     Just root  -> renderComments root
 >                     Nothing    -> return noHtml
 >       renderedLink <- renderLink l'
 >       stdPage (orig ++ " → " ++ dest) [CSS "link", JS "lib.link"] []
 >         [  thediv ! [identifier "link-head-bar"] << [
->              h2 << (oLang ++ " to " ++ dLang ++ ":"),
+>              h2 << (oLanguage ++ " to " ++ dLanguage ++ ":"),
 >              thediv ! [identifier "link-ops"] << [
 >                ops,
->                let (c', r') = case rating of
->                               Just [c'', r'']  -> (fromSql c'', fromSql r'')
->                               _                -> (0, Nothing) in
->                ratingBar ("/link" </> show linkNo </> "rating") c' r' ratingEnabled ] ],
+>                ratingBar ("/link" </> show linkNo </> "rating") c r ratingEnabled ] ],
 >            renderedLink,
 >            thediv ! [theclass "link-details"] << [
+>              noHtml,
 >              case (owner', linkType l') of
 >                (True, LinkWord _ story)  -> textarea ! [thestyle "display: none"] << story
 >                _                         -> noHtml,
@@ -498,9 +462,9 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 > --      pack    = linkAction "add to link pack"
 >   return $ concatHtml [
 >     case (memberNo, reviewing') of
->       (_,        Just True)  -> (review False)  ! [title "already reviewing this link"]
->       (Just _,   _)          -> (review True)   ! [identifier "link-op-review", title "add this link to be quizzed on it later"]
->       (Nothing,  _)          -> (review False)  ! [href "/member/login", title "login to review"],
+>       (_,        True)  -> (review False)  ! [title "already reviewing this link"]
+>       (Just _,   _)     -> (review True)   ! [identifier "link-op-review", title "add this link to be quizzed on it later"]
+>       (Nothing,  _)     -> (review False)  ! [href "/member/login", title "login to review"],
 >     case (editable, linkType link) of
 >       (True, LinkWord _ _) ->  (linkAction "edit link" True) ! [identifier "link-op-edit", title "edit the linkword story"]
 >       _                    ->  noHtml,
@@ -511,13 +475,15 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 >     if deletable
 >       then  (linkAction "delete link" True) ! [identifier "link-op-delete", title "delete this link (it will still be visibles to others who are reviewing it)"]
 >       else  noHtml ]
->  where reviewing :: Link -> App (Maybe Bool)
+>  where reviewing :: Link -> App Bool
 >        reviewing l = do
 >          memberNo <- asks appMemberNo
->          (/= []) <$$> queryTuples'  "SELECT link_no FROM link_to_review \
->                                     \WHERE member_no = ? AND link_no = ? \
->                                     \LIMIT 1"
->                                     [toSql memberNo, toSql (linkNumber l)]
+>          case memberNo of
+>            Nothing -> return False
+>            Just n  -> (/= []) <$> $(queryTuples'
+>              "SELECT link_no FROM link_to_review \
+>              \WHERE member_no = {n} AND link_no = {linkNumber l} \
+>              \LIMIT 1")
 
 > addToLinkPackForm :: Integer -> App Html
 > addToLinkPackForm n = do
@@ -527,24 +493,22 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 >     Just mn  -> do
 >       -- Find all of the packs created by this member that don't already contain
 >       -- this link.
->       packs <- queryTuples'
+>       packs <- $(queryTuples'
 >         "SELECT pack_no, name FROM link_pack \
->         \WHERE creator = ? \
+>         \WHERE creator = {mn} \
 >           \AND pack_no NOT IN (SELECT pack_no FROM link_pack_link \
->                               \WHERE link_no = ?) \
->         \ORDER BY pack_no DESC" [toSql mn, toSql n]
->       case packs of
->         Nothing  -> return noHtml
->         Just ps  -> do
->           let ps' = map (\x -> (fromSql $ head x, fromSql $ head $ tail x)) ps
->           return $ concatHtml [
->             button ! [theclass "reveal add-to-pack"] << "→ Pack",
->             form ! [  action "/pack/link/new", method "post",
->                       identifier "add-to-pack", thestyle "display: none" ] << [
->               hidden "link" $ show n,
->               menu "pack" (ps' ++ [("new", "New Pack")]) !
->                 [identifier "pack-select"], br,
->               submit "" "→ Pack" ] ]
+>                               \WHERE link_no = {n}) \
+>         \ORDER BY pack_no DESC")
+> --      let ps = map (\ (num, name) -> (show num, name)) packs
+>       let ps = map (first show) packs
+>       return $ concatHtml [
+>         button ! [theclass "reveal add-to-pack"] << "→ Pack",
+>         form ! [  action "/pack/link/new", method "post",
+>                   identifier "add-to-pack", thestyle "display: none" ] << [
+>           hidden "link" $ show n,
+>           menu "pack" (ps ++ [("new", "New Pack")]) !
+>             [identifier "pack-select"], br,
+>           submit "" "→ Pack" ] ]
 
 \subsection{Finding Links}
 
@@ -552,18 +516,15 @@ While Vocabulink is still small, it makes sense to have a page just for
 displaying all the (non-deleted) links in the system. This will probably go
 away eventually.
 
-> linksPage :: String -> (Int -> Int -> App (Maybe [PartialLink])) -> App CGIResult
+> linksPage :: String -> (Int -> Int -> App [PartialLink]) -> App CGIResult
 > linksPage title' f = do
 >   (pg, n, offset) <- currentPage
 >   ts <- f offset (n + 1)
->   case ts of
->     Nothing  -> error "Error while retrieving links."
->     Just ps  -> do
->       pagerControl <- pager pg n $ offset + length ps
->       partialLinks <- mapM renderPartialLink (take n ps)
->       simplePage title' [CSS "link"] [
->         unordList partialLinks ! [identifier "central-column", theclass "links"],
->         pagerControl ]
+>   pagerControl <- pager pg n $ offset + length ts
+>   partialLinks <- mapM renderPartialLink (take n ts)
+>   simplePage title' [CSS "link"] [
+>     unordList partialLinks ! [identifier "central-column", theclass "links"],
+>     pagerControl ]
 
 \subsection{Creating New Links}
 
@@ -603,9 +564,7 @@ result, and dispatching the creation of the link on successful form validation.
 >                   xhtml, actionBar ] ]
 >         Success link -> do
 >           linkNo <- establishLink link memberNo
->           case linkNo of
->             Just n   -> redirect $ "/link/" ++ show n
->             Nothing  -> error "Failed to establish link."
+>           redirect $ "/link/" ++ show linkNo
 >  where deps = [CSS "link", JS "lib.link"]
 >        actionBar = thediv ! [thestyle "margin-left: auto; margin-right: auto; \
 >                                       \width: 12em"] <<
@@ -660,24 +619,31 @@ This takes an either parameter to signify whether you want origin language
 
 > languagePicker :: Either () () -> App (AppForm String)
 > languagePicker side = do
->   let side' = case side of
->                 Left _   -> "origin"
->                 Right _  -> "destination"
 >   memberNo <- asks appMemberNo
->   langs <- map langPair `liftM` fromJust <$> queryTuples'
->              ("SELECT abbr, name \
->               \FROM link, language \
->               \WHERE language.abbr = link." ++ side' ++ "_language \
->                 \AND link.author = ? \
->               \GROUP BY " ++ side' ++ "_language, abbr, name \
->               \ORDER BY COUNT(" ++ side' ++ "_language) DESC")
->              [toSql memberNo]
+>   let side' = case side of
+>                 Left  _ -> "origin"
+>                 Right _ -> "destination"
+>   langs <- case memberNo of
+>     Nothing -> return []
+>     Just n  -> case side of
+>                  Left  _ -> $(queryTuples'
+>                    "SELECT abbr, name \
+>                    \FROM link, language \
+>                    \WHERE language.abbr = link.origin_language \
+>                      \AND link.author = {n} \
+>                    \GROUP BY origin_language, abbr, name \
+>                    \ORDER BY COUNT(origin_language) DESC")
+>                  Right _ -> $(queryTuples'
+>                    "SELECT abbr, name \
+>                    \FROM link, language \
+>                    \WHERE language.abbr = link.destination_language \
+>                      \AND link.author = {n} \
+>                    \GROUP BY destination_language, abbr, name \
+>                    \ORDER BY COUNT(destination_language) DESC")
 >   allLangs <- asks appLanguages
 >   let choices = langs ++ [("","")] ++ allLangs
 >   return $ F.selectRaw [] choices (Just $ fst . head $ choices) `check` ensures
->              [  ((/= "")  ,  side' ++ " language is required") ]
->     where langPair [a, b]  = (fromSql a, fromSql b)
->           langPair _       = error "Invalid language pair."
+>              [((/= ""), side' ++ " language is required") ]
 
 We have a bit of a challenge with link types. We want the form to adjust
 dynamically using JavaScript when a member chooses one of the link types from a
@@ -757,44 +723,42 @@ yet found a nice way to generalize these functions.
 The first way to retrieve links is to just grab all of them, starting at the
 most recent. This assumes the ordering of links is determined by link number.
 
-> latestLinks :: Int -> Int -> App (Maybe [PartialLink])
-> latestLinks offset limit = do
->   ts <- queryTuples'  "SELECT link_no, link_type, author, \
->                              \origin, destination, \
->                              \origin_language, destination_language \
->                       \FROM link \
->                       \WHERE NOT deleted \
->                       \ORDER BY link_no DESC \
->                       \OFFSET ? LIMIT ?" [toSql offset, toSql limit]
->   return $ mapMaybe partialLinkFromValues `liftM` ts
+> latestLinks :: Int -> Int -> App [PartialLink]
+> latestLinks offset limit =
+>   map partialLinkFromTuple <$> $(queryTuples'
+>     "SELECT link_no, link_type, author, \
+>            \origin, destination, \
+>            \origin_language, destination_language \
+>     \FROM link \
+>     \WHERE NOT deleted \
+>     \ORDER BY link_no DESC \
+>     \OFFSET {offset} LIMIT {limit}")
 
 Another way we retrieve links is by author (member). These just happen to be
 sorted by link number as well.
 
-> memberLinks :: Integer -> Int -> Int -> App (Maybe [PartialLink])
-> memberLinks memberNo offset limit = do
->   ts <- queryTuples'  "SELECT link_no, link_type, author, \
->                              \origin, destination, \
->                              \origin_language, destination_language \
->                       \FROM link \
->                       \WHERE NOT deleted AND author = ? \
->                       \ORDER BY link_no DESC \
->                       \OFFSET ? LIMIT ?"
->                       [toSql memberNo, toSql offset, toSql limit]
->   return $ mapMaybe partialLinkFromValues `liftM` ts
+> memberLinks :: Integer -> Int -> Int -> App [PartialLink]
+> memberLinks memberNo offset limit =
+>   map partialLinkFromTuple <$> $(queryTuples'
+>     "SELECT link_no, link_type, author, \
+>            \origin, destination, \
+>            \origin_language, destination_language \
+>     \FROM link \
+>     \WHERE NOT deleted AND author = {memberNo} \
+>     \ORDER BY link_no DESC \
+>     \OFFSET {offset} LIMIT {limit}")
 
-> languagePairLinks :: String -> String -> Int -> Int -> App (Maybe [PartialLink])
-> languagePairLinks oa da offset limit = do
->   ts <- queryTuples'  "SELECT link_no, link_type, author, \
->                              \origin, destination, \
->                              \origin_language, destination_language \
->                       \FROM link \
->                       \WHERE NOT deleted \
->                         \AND origin_language = ? AND destination_language = ? \
->                       \ORDER BY link_no DESC \
->                       \OFFSET ? LIMIT ?"
->                       [toSql oa, toSql da, toSql offset, toSql limit]
->   return $ mapMaybe partialLinkFromValues `liftM` ts
+> languagePairLinks :: String -> String -> Int -> Int -> App [PartialLink]
+> languagePairLinks ol dl offset limit = do
+>   map partialLinkFromTuple <$> $(queryTuples'
+>     "SELECT link_no, link_type, author, \
+>            \origin, destination, \
+>            \origin_language, destination_language \
+>     \FROM link \
+>     \WHERE NOT deleted \
+>       \AND origin_language = {ol} AND destination_language = {dl} \
+>     \ORDER BY link_no DESC \
+>     \OFFSET {offset} LIMIT {limit}")
 
 Once we have a significant number of links, browsing through latest becomes
 unreasonable for finding links for just the language we're interested in. To
@@ -806,23 +770,19 @@ in URLs and the name for display to the client), we return these as triples:
 (language, language, count).
 
 > linkLanguages :: App [((String, String), (String, String), Integer)]
-> linkLanguages = do
->   ts <- queryTuples'  "SELECT origin_language, orig.name, \
->                              \destination_language, dest.name, \
->                              \COUNT(*) \
->                       \FROM link \
->                       \INNER JOIN language orig ON (orig.abbr = origin_language) \
->                       \INNER JOIN language dest ON (dest.abbr = destination_language) \
->                       \WHERE NOT deleted \
->                       \GROUP BY origin_language, orig.name, \
->                                \destination_language, dest.name \
->                       \ORDER BY COUNT(*) DESC" []
->   return $ case ts of
->     Nothing   -> []
->     Just ts'  -> map linkLanguages' ts'
->       where linkLanguages' [oa, on, da, dn, c]  =
->               ((fromSql oa, fromSql on), (fromSql da, fromSql dn), fromSql c)
->             linkLanguages' _                    = error "Malformed tuple."
+> linkLanguages =
+>   map linkLanguages' <$> $(queryTuples'
+>     "SELECT origin_language, orig.name, \
+>            \destination_language, dest.name, \
+>            \COUNT(*) \
+>     \FROM link \
+>     \INNER JOIN language orig ON (orig.abbr = origin_language) \
+>     \INNER JOIN language dest ON (dest.abbr = destination_language) \
+>     \WHERE NOT deleted \
+>     \GROUP BY origin_language, orig.name, \
+>              \destination_language, dest.name \
+>     \ORDER BY COUNT(*) DESC")
+>  where linkLanguages' (oa, on, da, dn, c) = ((oa, on), (da, dn), fromJust c)
 
 Now we can use |linkLanguages| to create a page via which clients can browse
 the site.
@@ -867,12 +827,9 @@ TODO: Check that the new trimmed body is not empty.
 >       if linkTypeName (pLink l') == "linkword"
 >         then if linkAuthor (pLink l') == memberNo
 >                then do
->                  res <- quickStmt'  "UPDATE link_type_link_word SET story = ? \
->                                     \WHERE link_no = ?"
->                                     [toSql story, toSql linkNo]
->                  case res of
->                    Nothing  -> error "Failed to update link."
->                    Just _   -> output' $ showHtmlFragment $ markdownToHtml story
+>                  $(execute' "UPDATE link_type_link_word SET story = {story} \
+>                             \WHERE link_no = {linkNo}")
+>                  output' $ showHtmlFragment $ markdownToHtml story
 >                else error "Unauthorized."
 >         else error "Unsupported link type."
 
@@ -916,9 +873,7 @@ TODO: Check that the new trimmed body is not empty.
 >       case result of
 >         Success (linkPack, fl) -> do
 >           linkNo <- createLinkPack linkPack memberNo fl
->           case linkNo of
->             Just n   -> redirect $ "/pack/" ++ show n
->             Nothing  -> error "Failed to establish link."
+>           redirect $ "/pack/" ++ show linkNo
 >         Failure failures -> simplePage "Create a Link Pack" deps
 >           [  form ! [  thestyle "text-align: center",
 >                        action (uriPath uri), method "post" ] <<
@@ -963,77 +918,73 @@ TODO: Check that the new trimmed body is not empty.
 > linkPackIconLink lp =
 >   anchor ! [href (linkPackHyperlink lp)] << linkPackIcon lp
 
-> createLinkPack :: LinkPack -> Integer -> Integer -> App (Maybe Integer)
+> createLinkPack :: LinkPack -> Integer -> Integer -> App Integer
 > createLinkPack lp memberNo firstLink = do
->   r <- withTransaction' $ do
->     c <- asks appDB
->     packNo <- liftIO $ insertNo c
->       "INSERT INTO link_pack (name, description, image_ext, creator) \
->                      \VALUES (?, ?, ?, ?)"
->       [  toSql (linkPackName lp), toSql (linkPackDescription lp),
->          toSql (takeExtension <$> linkPackImage lp), toSql memberNo ]
->       "link_pack_pack_no_seq"
->     case packNo of
->       Nothing  -> liftIO $ rollback c >> return Nothing
->       Just n   -> do
->         liftIO $ quickStmt c  "INSERT INTO link_pack_link (pack_no, link_no) \
->                                                  \VALUES (?, ?)"
->                               [toSql n, toSql firstLink]
->         return packNo
->   case r of
->     Just (Just r')  -> case linkPackImage lp of
->                          Nothing  -> return $ Just r'
->                          Just i   -> moveImage i >> return (Just r')
->       where  moveImage :: FilePath -> App (Either SomeException ExitCode)
->              moveImage i' = do
->                dir  <- (</> "img" </> "pack") <$> asks appDir
->                let old  =  dir </> i'
->                    new  =  dir </> show r' <.> takeExtension i'
->                    cmd  =  "mv " ++ old ++ " " ++ new
->                liftIO $ try $ system cmd
->     _               -> return Nothing
+>   h <- asks appDB
+>   n <- liftIO $ withTransaction h $ do
+>     packNo <- liftIO $ fromJust <$> case linkPackImage lp of
+>       Nothing -> $(queryTuple
+>         "INSERT INTO link_pack (name, description, \
+>                                \creator) \
+>                        \VALUES ({linkPackName lp}, {linkPackDescription lp}, \
+>                                \{memberNo}) \
+>         \RETURNING pack_no") h
+>       Just i  -> $(queryTuple
+>         "INSERT INTO link_pack (name, description, \
+>                                \image_ext, creator) \
+>                        \VALUES ({linkPackName lp}, {linkPackDescription lp}, \
+>                                \{takeExtension i}, {memberNo}) \
+>         \RETURNING pack_no") h
+>     $(execute "INSERT INTO link_pack_link (pack_no, link_no) \
+>                                   \VALUES ({packNo}, {firstLink})") h
+>     return packNo
+>   when (isJust $ linkPackImage lp) (moveImage (fromJust $ linkPackImage lp) n)
+>   return n
+>  where moveImage :: FilePath -> Integer -> App ()
+>        moveImage i' r = do
+>          dir <- (</> "img" </> "pack") <$> asks appDir
+>          let old = dir </> i'
+>              new = dir </> show r <.> takeExtension i'
+>              cmd = "mv " ++ old ++ " " ++ new
+>          _ <- liftIO $ system cmd
+>          return ()
 
 > getLinkPack :: Integer -> App (Maybe LinkPack)
-> getLinkPack n = do
->   t <- queryTuple'  "SELECT pack_no, name, description, image_ext, creator \
->                     \FROM link_pack WHERE pack_no = ?" [toSql n]
->   case t of
->     Nothing  -> return Nothing
->     Just t'  -> return $ linkPackFromValues t'
+> getLinkPack n = linkPackFromTuple <$$> $(queryTuple'
+>   "SELECT pack_no, name, description, image_ext, creator \
+>   \FROM link_pack WHERE pack_no = {n}")
 
-> linkPackFromValues :: [SqlValue] -> Maybe LinkPack
-> linkPackFromValues [pn, n, d, i, c] =
->   Just LinkPack {  linkPackNumber       = fromSql pn,
->                    linkPackName         = fromSql n,
->                    linkPackDescription  = fromSql d,
->                    linkPackImage        = (fromSql pn ++) <$> fromSql i,
->                    linkPackCreator      = fromSql c }
-> linkPackFromValues _ = Nothing
+> linkPackFromTuple :: (Integer, String, String, Maybe String, Integer) -> LinkPack
+> linkPackFromTuple (pn, n, d, i, c) =
+>   LinkPack {  linkPackNumber       = pn,
+>               linkPackName         = n,
+>               linkPackDescription  = d,
+>               linkPackImage        = liftM (\ ext -> show pn ++ ext) i,
+>               linkPackCreator      = c }
 
-> linkPackLinks :: Integer -> App (Maybe [PartialLink])
-> linkPackLinks n = do
->   ts <- queryTuples'  "SELECT l.link_no, l.link_type, l.author, \
->                              \l.origin, l.destination, \
->                              \l.origin_language, l.destination_language \
->                       \FROM link_pack_link \
->                       \INNER JOIN link l USING (link_no) \
->                       \WHERE pack_no = ? AND NOT deleted \
->                       \ORDER BY added DESC"
->                       [toSql n]
->   return $ mapMaybe partialLinkFromValues `liftM` ts
+> linkPackLinks :: Integer -> App [PartialLink]
+> linkPackLinks n =
+>   map partialLinkFromTuple <$> $(queryTuples'
+>     "SELECT l.link_no, l.link_type, l.author, \
+>            \l.origin, l.destination, \
+>            \l.origin_language, l.destination_language \
+>     \FROM link_pack_link \
+>     \INNER JOIN link l USING (link_no) \
+>     \WHERE pack_no = {n} AND NOT deleted \
+>     \ORDER BY added DESC")
 
 > linkPackPage :: Integer -> App CGIResult
 > linkPackPage n = do
 >   linkPack <- getLinkPack n
 >   links <- linkPackLinks n
 >   case (linkPack, links) of
->     (Just lp, Just ls)  -> do
+>     (Just lp, ls)  -> do
 >       ls' <- mapM renderPartialLink ls
->       r <- queryValue'  "SELECT root_comment \
->                         \FROM link_pack_comments \
->                         \WHERE pack_no = ?" [toSql $ linkPackNumber lp]
->       comments <- case r of
->                     Just root  -> renderComments $ fromSql root
+>       row <- $(queryTuple' "SELECT root_comment \
+>                            \FROM link_pack_comments \
+>                            \WHERE pack_no = {linkPackNumber lp}")
+>       comments <- case row of
+>                     Just root  -> renderComments root
 >                     Nothing    -> return noHtml
 >       simplePage ("Link Pack: " ++ linkPackName lp) [CSS "link"] [
 >         thediv ! [theclass "two-column"] << [
@@ -1054,20 +1005,18 @@ TODO: Check that the new trimmed body is not empty.
 >     _      ->  do
 >       let  packNo = read pack :: Integer
 >            linkNo = read link :: Integer
->       res <- quickStmt' "INSERT INTO link_pack_link (pack_no, link_no) \
->                                             \VALUES (?, ?)" [toSql packNo, toSql linkNo]
->       case res of
->         Nothing  -> error "Failed to add link to pack."
->         Just _   -> redirect $ "/pack/" ++ pack
+>       $(execute' "INSERT INTO link_pack_link (pack_no, link_no) \
+>                                      \VALUES ({packNo}, {linkNo})")
+>       redirect $ "/pack/" ++ pack
 
-> latestLinkPacks :: App [Maybe LinkPack]
-> latestLinkPacks = maybe [] (map linkPackFromValues) <$>
->   queryTuples'  "SELECT pack_no, name, description, image_ext, creator \
->                 \FROM link_pack WHERE NOT deleted \
->                 \ORDER BY pack_no DESC" []
+> latestLinkPacks :: App [LinkPack]
+> latestLinkPacks =
+>   map linkPackFromTuple <$> $(queryTuples'
+>     "SELECT pack_no, name, description, image_ext, creator \
+>     \FROM link_pack WHERE NOT deleted \
+>     \ORDER BY pack_no DESC")
 
 > linkPacksPage :: App CGIResult
 > linkPacksPage = do
->   lps <- map (\x -> displayCompactLinkPack x True ! [thestyle "float: left"]) <$>
->            catMaybes <$> latestLinkPacks
+>   lps <- map (\x -> displayCompactLinkPack x True ! [thestyle "float: left"]) <$> latestLinkPacks
 >   simplePage "Latest Link Packs" [CSS "link"] lps

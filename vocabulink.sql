@@ -280,7 +280,7 @@ CREATE TABLE link_pack (
        name TEXT NOT NULL UNIQUE,
        description TEXT NOT NULL,
        image_ext TEXT,
-       creator INTEGER REFERENCES member (member_no),
+       creator INTEGER REFERENCES member (member_no) NOT NULL,
        created TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        updated TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        deleted BOOLEAN NOT NULL DEFAULT FALSE       
@@ -329,11 +329,11 @@ COMMENT ON COLUMN link_sm2.n IS 'This member is in review interval n. They may h
 
 CREATE TABLE article (
        filename TEXT PRIMARY KEY,
-       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
+       author INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE,
        publish_time TIMESTAMP (0) WITH TIME ZONE NOT NULL,
-       update_time TIMESTAMP (0) WITH TIME ZONE,
+       update_time TIMESTAMP (0) WITH TIME ZONE NOT NULL,
        section TEXT,
-       title TEXT
+       title TEXT NOT NULL
 );
 COMMENT ON COLUMN article.publish_time IS 'A blog post is published at this time. If it''s before this time, the post is only visible to the owner.';
 
@@ -372,7 +372,7 @@ COMMENT ON COLUMN forum_group.position IS 'The lower the position, the higher on
 CREATE TABLE forum (
        name TEXT PRIMARY KEY,
        title TEXT NOT NULL,
-       group_name TEXT REFERENCES forum_group (group_name) ON UPDATE CASCADE,
+       group_name TEXT REFERENCES forum_group (group_name) NOT NULL ON UPDATE CASCADE,
        position SMALLINT NOT NULL,
        icon_filename TEXT NOT NULL
 );
@@ -390,12 +390,10 @@ CREATE TABLE comment (
        downvotes INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE TYPE vote AS ENUM ('up', 'down');
-
 CREATE TABLE comment_vote (
   comment INTEGER REFERENCES comment (comment_no),
   member INTEGER REFERENCES member (member_no),
-  vote vote NOT NULL,
+  upvote BOOLEAN NOT NULL,
   PRIMARY KEY (comment, member)
 );
 
@@ -429,10 +427,10 @@ CREATE TYPE displayable_comment AS (
        comment TEXT
 );
 
-CREATE FUNCTION comment_tree(TEXT) RETURNS SETOF displayable_comment AS $$
+CREATE FUNCTION comment_tree(INTEGER) RETURNS SETOF displayable_comment AS $$
   SELECT c.comment_no, t.level, m.username, m.email, c.time, c.body
   FROM comment c, member m,
-       connectby('comment', 'comment_no', 'parent_no', $1, 0)
+       connectby('comment', 'comment_no', 'parent_no', $1::TEXT, 0)
        AS t(comment_no int, parent_no int, level int)
   WHERE c.comment_no = t.comment_no
     AND m.member_no = c.author AND c.body IS NOT NULL
