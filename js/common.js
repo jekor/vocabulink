@@ -5,8 +5,8 @@ function loginPopup() {
       '<form action="/member/login" method="post">' +
         '<table>' +
           '<tbody>' +
-            '<tr><th><label>Username:</label></th><td><input type="text" name="fval0"/></td></tr>' +
-            '<tr><th><label>Password:</label></th><td><input type="password" name="fval1"/></td></tr>' +
+            '<tr><th><label>Username:</label></th><td><input type="text" name="fval[0]"/></td></tr>' +
+            '<tr><th><label>Password:</label></th><td><input type="password" name="fval[1]"/></td></tr>' +
           '</tbody>' +
         '</table>' +
         '<input type="submit" value="Login"/>' +

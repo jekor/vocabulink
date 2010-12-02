@@ -20,12 +20,15 @@
 This is separate from the main Review module only to break cyclical imports. It
 may end up being more work than it's worth.
 
-> module Vocabulink.Review.Html (reviewBox) where
+> module Vocabulink.Review.Html (reviewBox, recallButton, noLinksToReviewPage) where
 
 > import Vocabulink.App
 > import Vocabulink.Utils
 
-> import Text.XHtml.Strict
+> import Text.Blaze.Html5
+> import qualified Text.Blaze.Html5 as H
+> import Text.Blaze.Html5.Attributes
+> import qualified Text.Blaze.Html5.Attributes as A
 
 We display the number of links that are waiting for review for logged in
 members in the standard page header. Reviewing is currently the primary
@@ -35,26 +38,22 @@ The idea is that a member will go to the site, and we want them to be instantly
 reminded that they have links to review. Or, if a link for review becomes due
 while they are browsing another part of the site, we want them to be notified.
 
-> reviewBox :: App Html
-> reviewBox = do
->   memberNo' <- asks appMemberNo
->   case memberNo' of
->     Nothing        -> return noHtml
->     Just memberNo  -> do
->       n <- numLinksToReview memberNo
->       return $ case n of
->         Just 0   -> anchor ! [  href "/review/next", theclass "review-box",
->                                 thestyle "color: black" ] <<
->                       "No links to review"
->         Just n'  -> anchor ! [href "/review/next", theclass "review-box"] <<
->                       [  strong << show n',
->                          stringToHtml (n' > 1 ? " links" $ " link"),
->                          stringToHtml " to review" ]
->         Nothing  -> stringToHtml "Error finding links for review."
+-- > reviewBox :: App Html
+-- > reviewBox = do
+-- >   memberNo' <- asks appMemberNo
+-- >   case memberNo' of
+-- >     Nothing        -> return noHtml
+-- >     Just memberNo  -> do
+-- >       n <- numLinksToReview memberNo
+-- >       return $ 
+-- >         if' (n == 0) "No links to review" ()
+-- >         case n of
+-- >           0  -> "No links to review"
+-- >           _  -> 
+-- >         _  -> a ! href "/review/next" ! class_ "review"
+-- >         Just n'  -> anchor ! [href "/review/next", theclass "review-box"] <<
+-- >                       [  strong << show n',
+-- >                          stringToHtml (n' > 1 ? " links" $ " link"),
+-- >                          stringToHtml " to review" ]
+-- >         Nothing  -> stringToHtml "Error finding links for review."
 
-This retrievs the number of links that a user has for review right now.
-
-> numLinksToReview :: Integer -> App Integer
-> numLinksToReview memberNo = fromJust . fromJust <$> $(queryTuple'
->   "SELECT COUNT(*) FROM link_to_review \
->   \WHERE member_no = {memberNo} AND current_timestamp > target_time")

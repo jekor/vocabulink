@@ -2,8 +2,11 @@
 
 > import Vocabulink.App
 > import Vocabulink.CGI
+> import Vocabulink.Form
 > import Vocabulink.Html
 > import Vocabulink.Utils
+
+> import Prelude hiding (div, span, id)
 
 > barWidth :: Integer
 > barWidth = 100
@@ -41,15 +44,12 @@ full star into the rating system.
 >                      Nothing  -> 0
 >        starColor = min (floor (r * fromIntegral numColors) + 1) 5
 >        starPosition = -1 * spriteHeight * (numColors + 1) + starColor * spriteHeight in
->   thediv ! [theclass $ "rating" ++ (allowRating ? " enabled" $ ""),
->             title (show numRatings ++ " rating" ++ (numRatings == 1 ? "" $ "s"))] << [
->     stringToHtml "rate: ",
->     thediv ! [theclass "stars-base"] <<
->       form ! [  theclass "stars",
->                 action baseUrl,
->                 method "post",
->                 thestyle (  "width: " ++ show starWidth ++ "px; \
->                             \background-position: left " ++ show starPosition ++ "px" ) ] << noHtml ]
+>   div ! class_ (stringValue $ "rating" ++ (allowRating ? " enabled" $ ""))
+>       ! title (stringValue $ show numRatings ++ " rating" ++ (numRatings == 1 ? "" $ "s")) $ do
+>     string "rate: "
+>     div ! class_ "stars-base" $ do
+>       form ! class_ "stars" ! action (stringValue baseUrl) ! method "post"
+>            ! style (stringValue $ "width: " ++ show starWidth ++ "px; background-position: left " ++ show starPosition ++ "px") $ mempty
 
 > rateLink :: Integer -> App CGIResult
 > rateLink ln = withRequiredMemberNumber $ \memberNo -> do

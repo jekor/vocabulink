@@ -28,9 +28,13 @@ For now, we have only 1 review algorithm (SuperMemo 2).
 
 > import Vocabulink.App
 > import Vocabulink.CGI
+> import Vocabulink.Form
 > import Vocabulink.Html
+> import Vocabulink.Page
 > import Vocabulink.Link
 > import Vocabulink.Utils
+
+> import Prelude hiding (div, span, id)
 
 \subsection{Review Scheduling}
 
@@ -50,7 +54,7 @@ asynchronous JavaScript call.
 > newReview memberNo linkNo = do
 >   $(execute' "INSERT INTO link_to_review (member_no, link_no) \
 >                                  \VALUES ({memberNo}, {linkNo})")
->   outputJSON [("", "")]
+>   outputJSON [(""::String, ""::String)]
 
 The client indicates a completed review with a @POST@ to @/review/linknumber@
 which will be dispatched to |linkReviewed|. Once we schedule the next review
@@ -128,68 +132,24 @@ the client to |nextReview| which begins the process all over again.
 > reviewLinkPage linkNo = do
 >   l <- getLink linkNo
 >   case l of
->     Nothing  -> simplePage "Error: Unable to retrieve link." [CSS "link"] []
+>     Nothing  -> simplePage "Error: Unable to retrieve link." [CSS "link"] mempty
 >     Just l'  -> do
 >       let source  = linkOrigin l'
 >           dest    = linkDestination l'
 >       sLang  <- linkOriginLanguage l'
 >       dLang  <- linkDestinationLanguage l'
 >       fullLink <- renderLink l'
->       stdPage ("Review: " ++ source ++ " → ?")
->               [CSS "link", JS "lib.link"] []
->         [  h1 ! [identifier "review-link", theclass "link review"] << [
->              thespan ! [theclass "orig", title sLang] << source,
->              thespan ! [theclass "link"] << noHtml,
->              anchor ! [theclass "dest hidden", title dLang] << "?" ],
->            fullLink ! [identifier "full-link", thestyle "display: none"],
->            form ! [action ("/review/" ++ show linkNo), method "post"] <<
->              [  hidden "recall-time" "",
->                 hidden "hidden-lexeme" dest,
->                 fieldset ! [identifier "recall-buttons", thestyle "display: none"] <<
->                   map (recallButton 5) [0..5] ] ]
-
-This creates a ``recall button''. It returns a button with a decimal recall
-value based on an integral button number. It hopefully allows us to make the
-recall options more flexible in the future.
-
-You may get unpleasant results when passing a |total| that doesn't cleanly
-divide |i|.
-
-> recallButton :: Integer -> Integer -> Html
-> recallButton total i = let q = fromIntegral i / fromIntegral total in
->                        button ! [name "recall", value (show q)] << show i
-
-When a member has no more links to review for now, let's display a page letting
-them know that.
-
-Here's a critical chance to:
-
-\begin{itemize}
-\item Give positive feedback to encourage the behavior of getting through the
-      review set.
-\item Point the member to other places of interest on the site.
-\end{itemize}
-
-But for now, the page is pretty plain. We congratulate the member and let them
-know when their next review is scheduled.
-
-> noLinksToReviewPage :: Integer -> App CGIResult
-> noLinksToReviewPage memberNo = do
->   t <- nextReviewTime memberNo
->   now <- liftIO getCurrentTime
->   simplePage "No Links to Review" [CSS "link", JS "lib.link"] [
->     thediv ! [identifier "central-column"] << [
->       paragraph ! [thestyle "text-align: center"] << "Take a break! \
->         \You don't have any links to review right now.",
->       case t of
->         Just t'  -> paragraph ! [thestyle "text-align: center"] << [
->                       stringToHtml "Your next review is due ",
->                       thespan ! [identifier "countdown"] << [
->                         stringToHtml "in ",
->                         thespan ! [theclass "seconds"] << show (round $ diffUTCTime t' now :: Integer),
->                         stringToHtml " seconds" ],
->                       stringToHtml "." ]
->         Nothing  -> noHtml ] ]
+>       stdPage ("Review: " ++ source ++ " → ?") [CSS "link", JS "lib.link"] mempty $ do
+>         h1 ! id "review-link" ! class_ "link review" $ do
+>           span ! class_ "orig" ! title (stringValue sLang) $ string source
+>           span ! class_ "link" $ mempty
+>           a ! class_ "dest hidden" ! title (stringValue dLang) $ "?"
+>         fullLink ! id "full-link" ! style "display: none"
+>         form ! action (stringValue $ "/review/" ++ show linkNo) ! method "post" $ do
+>           input ! type_ "hidden" ! id "recall-time" ! name "recall-time"
+>           input ! type_ "hidden" ! name "hidden-lexeme" ! value (stringValue dest)
+>           fieldset ! id "recall-buttons" ! style "display: none" $ do
+>             mconcat $ map (recallButton 5) [0..5]
 
 The next review time can be in the future or in the past.
 
@@ -220,3 +180,45 @@ the review algorithm does not have to be used for determining the first review
 >   case t of
 >     Nothing -> return Nothing
 >     Just t' -> return $ liftM secondsToDiffTime t'
+
+This creates a ``recall button''. It returns a button with a decimal recall
+value based on an integral button number. It hopefully allows us to make the
+recall options more flexible in the future.
+
+You may get unpleasant results when passing a |total| that doesn't cleanly
+divide |i|.
+
+> recallButton :: Integer -> Integer -> Html
+> recallButton total i = let q = fromIntegral i / fromIntegral total in
+>                        button ! name "recall" ! value (stringValue $ show q) $ string (show i)
+
+When a member has no more links to review for now, let's display a page letting
+them know that.
+
+Here's a critical chance to:
+
+\begin{itemize}
+\item Give positive feedback to encourage the behavior of getting through the
+      review set.
+\item Point the member to other places of interest on the site.
+\end{itemize}
+
+But for now, the page is pretty plain. We congratulate the member and let them
+know when their next review is scheduled.
+
+> noLinksToReviewPage :: Integer -> App CGIResult
+> noLinksToReviewPage memberNo = do
+>   t <- nextReviewTime memberNo
+>   now <- liftIO getCurrentTime
+>   simplePage "No Links to Review" [CSS "link", JS "lib.link"] $ do
+>     div ! id "central-column" $ do
+>       p ! style "text-align: center" $ "Take a break! You don't have any links to review right now."
+>       case t of
+>         Just t'  -> p ! style "text-align: center" $ do
+>                       string "Your next review is due "
+>                       span ! id "countdown" $ do
+>                         string "in "
+>                         span ! class_ "seconds" $ (string $ show (round $ diffUTCTime t' now))
+>                         string " seconds"
+>                       string "."
+>         Nothing  -> mempty

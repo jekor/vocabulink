@@ -469,7 +469,7 @@ a.button
   line-height: 28px
   text-align: center
   margin: 0
-  padding->
+  padding:
     left: 0.333em
     right: 0.333em
   font-size: 0.875em // and smaller
@@ -485,7 +485,7 @@ a.button
     background-position: 0 (-56px)
 
 // Search button. Once I add more buttons I'm going to abstract some of this.
-#sa, #login-popup input[type=submit], .close-button
+#sa, #login-popup input[type=submit], .close-button, #logout-button
   //@include vertical_gradient(#888888, #000000)
   @include vertical_half_gradient(#686868, #000000)
   @include drop_shadow(0, 1px, 2px, rgba(0, 0, 0, 0.2))
@@ -496,7 +496,7 @@ a.button
     color: darken(#6ACFD8, 20%)
     position: relative
     top: 1px
-#sa, #login-popup input[type=submit]
+#sa, #login-popup input[type=submit], #logout-button
   border: 1px solid #C4C4C4
   @include rounded(0.5em)
   color: #6ACFD8

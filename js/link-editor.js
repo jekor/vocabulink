@@ -68,7 +68,7 @@ function editLink() {
 }
 
 $(document).ready(function () {
-  var linkTypeSelector = $('select[name=fval4]:first');
+  var linkTypeSelector = $('select[name=fval[4]]:first');
   linkTypeSelector.change(showLinkEditor);
   linkTypeSelector.change();
   // Setup the link word editor right away.

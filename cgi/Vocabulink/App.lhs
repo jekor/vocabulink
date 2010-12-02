@@ -28,7 +28,8 @@ other conveniences.
 
 > module Vocabulink.App (      App, AppEnv(..), AppT, runApp, getOption,
 >                              Dependency(..), dependencyVersion,
->                              withRequiredMemberNumber, loggedInVerified,
+>                              withRequiredMemberNumber,
+>                              loggedInVerified, loggedInVerifiedButton,
 >                              output404, reversibleRedirect,
 >                              queryTuple', queryTuples', execute',
 >  {- Network.CGI -}           outputNothing,
@@ -36,6 +37,7 @@ other conveniences.
 >  {- Database.TemplatePG -}   withTransaction, execute, queryTuple, queryTuples ) where
 
 > import Vocabulink.CGI
+> import Vocabulink.Html
 
 We have to import the authorization token code using GHC's @SOURCE@ directive
 because of cyclic dependencies.
@@ -103,21 +105,21 @@ We can't use the convenience of |getOption| here as we're not in the App monad
 yet.
 
 > runApp :: Handle -> ConfigParser -> FilePath -> [(Dependency, EpochTime)] -> [(String, String)] -> App CGIResult -> CGI CGIResult
-> runApp h cp dir sd ls (AppT a) = do
+> runApp h cp dir sd ls (AppT action) = do
 >   let key = forceEither $ get cp "DEFAULT" "authtokenkey"
 >   token <- verifiedAuthToken key
 >   email <- case token of
 >              Nothing -> return Nothing
 >              Just t  -> liftIO $ join <$> $(queryTuple "SELECT email FROM member \
 >                                                        \WHERE member_no = {authMemberNo t}") h
->   runReaderT a AppEnv {  appDB          = h,
->                          appCP          = cp,
->                          appDir         = dir,
->                          appStaticDeps  = sd,
->                          appLanguages   = ls,
->                          appMemberNo    = authMemberNo <$> token,
->                          appMemberName  = authUsername <$> token,
->                          appMemberEmail = email }
+>   runReaderT action AppEnv {  appDB          = h,
+>                               appCP          = cp,
+>                               appDir         = dir,
+>                               appStaticDeps  = sd,
+>                               appLanguages   = ls,
+>                               appMemberNo    = authMemberNo <$> token,
+>                               appMemberName  = authUsername <$> token,
+>                               appMemberEmail = email }
 
 \subsection{Convenience Functions}
 
@@ -174,6 +176,13 @@ email address, return verified.
 >     (Just _,  _)       -> loggedIn
 >     (_     ,  _)       -> nothing
 
+> loggedInVerifiedButton :: String -> App Html
+> loggedInVerifiedButton text = do
+>   confirm  <- reversibleRedirect "/member/confirmation"
+>   login    <- reversibleRedirect "/member/login"
+>   url <- loggedInVerified "#" confirm login
+>   return $ a ! class_ "button" ! href (stringValue url) $ string text
+
 When we direct a user to some page, we might want to make sure that they can
 find their way back to where they were. To do so, we get the current URI and
 append it to the target page in the query string. The receiving page might know
@@ -196,8 +205,8 @@ Here are some convenience functions for working with the database in the App
 monad.
 
 > withConnection :: (Handle -> IO a) -> App a
-> withConnection a = do h <- asks appDB
->                       liftIO $ a h
+> withConnection action = do h <- asks appDB
+>                            liftIO $ action h
 
 > queryTuple' :: String -> Q Exp
 > queryTuple' sql = [| withConnection $(queryTuple sql) |]

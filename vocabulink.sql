@@ -399,7 +399,7 @@ CREATE TABLE comment_vote (
 
 CREATE FUNCTION update_comment_vote_count() RETURNS trigger AS $$
 BEGIN
-  IF NEW.vote = 'up' THEN
+  IF NEW.upvote THEN
     UPDATE comment SET upvotes = upvotes + 1 WHERE comment_no = NEW.comment;
   ELSE
     UPDATE comment SET downvotes = downvotes + 1 WHERE comment_no = NEW.comment;

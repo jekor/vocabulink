@@ -27,6 +27,7 @@ oft-used functions for other modules.
 >                                   basename, translate, (<$$>),
 >                                   sendMail, every2nd, every3rd, splitLines,
 >                                   convertLineEndings, logError,
+>                                   prettyPrint,
 >  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
 >  {- Control.Applicative -}        pure, (<$>), (<*>),
 >  {- Control.Applicative.Error -}  Failing(..), maybeRead,
@@ -39,6 +40,7 @@ oft-used functions for other modules.
 >  {- Data.List -}                  intercalate, partition,
 >  {- Data.Maybe -}                 maybe, fromMaybe, fromJust, isJust, isNothing,
 >                                   mapMaybe, catMaybes,
+>  {- Data.Monoid -}                mempty, mappend, mconcat,
 >  {- Data.Time.Calendar -}         Day,
 >  {- Data.Time.Clock -}            UTCTime, DiffTime, getCurrentTime, diffUTCTime, secondsToDiffTime,
 >  {- Data.Time.Format -}           formatTime,
@@ -71,6 +73,7 @@ We make particularly extensive use of |liftM| and the Maybe monad.
 > import Data.List (intercalate, partition)
 > import Data.List.Utils as LU -- MissingH
 > import Data.Maybe (fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
+> import Data.Monoid
 
 Time is notoriously difficult to deal with in Haskell. It gets especially
 tricky when working with the database and libraries that expect different
@@ -239,3 +242,11 @@ Log a message to standard error.
 
 > logError :: String -> String -> IO ()
 > logError typ msg = hPutStrLn stderr $ "[" ++ typ ++ "] " ++ msg
+
+> class PrettyPrint a where
+>   prettyPrint :: a -> String
+
+-- > instance (Integral a) => PrettyPrint a where
+
+> instance PrettyPrint Integer where
+>   prettyPrint = show -- TODO: Implement.

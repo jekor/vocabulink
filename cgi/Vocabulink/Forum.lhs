@@ -43,11 +43,16 @@ security problems.)
 > import Vocabulink.App
 > import Vocabulink.CGI
 > import Vocabulink.Comment
+> import Vocabulink.Form
 > import Vocabulink.Html
+> import Vocabulink.Page
 > import Vocabulink.Utils
 
-> import qualified Data.ByteString.Lazy as BS
-> import qualified Text.XHtml.Strict.Formlets as F
+> import Data.ByteString.Lazy (writeFile)
+> import Data.List (intersperse)
+> import qualified Text.Blaze.Html5.Formlets as HF (input)
+
+> import Prelude hiding (div, span, id, writeFile)
 
 The Forums page is a high-level look into Vocabulink's forums. Each forum is
 part of a group of similar forums. Also, we include an administrative interface
@@ -55,24 +60,22 @@ for creating new groups.
 
 > forumsPage :: App CGIResult
 > forumsPage = do
->   res <- runForm ("Forum Group Name" `formLabel` F.input Nothing) $ Left "Create"
+>   res <- runForm ("Forum Group Name" `formLabel` HF.input Nothing) $ Left "Create"
 >   memberName <- asks appMemberName
 >   case (res, memberName) of
->     (Right s, Just "jekor")  -> createForumGroup s
->     (Left xhtml, _)          -> do
+>     (Right s, Just "jekor") -> createForumGroup s
+>     (Left html, _)          -> do
 >       groups <- $(queryTuples' "SELECT group_name FROM forum_group \
 >                                \ORDER BY position ASC")
->       groups' <- concatHtml <$> mapM renderForumGroup groups
->       simplePage "Forums" forumDeps
->         [  groups',
->            if memberName == Just "jekor"
->              then button ! [theclass "reveal forum-group-creator"] <<
->                     "New Forum Group" +++
->                   thediv ! [  identifier "forum-group-creator",
->                               theclass "forum-group",
->                               thestyle "display: none" ] << xhtml
->              else noHtml ]
->     _                        -> outputError 403 "Access Denied" []
+>       groups' <- mconcat <$> mapM renderForumGroup groups
+>       simplePage "Forums" forumDeps $ do
+>         groups'
+>         when (memberName == Just "jekor") $ do
+>           button ! class_ "reveal forum-group-creator" $ "New Forum Group"
+>           div ! id "forum-group-creator"
+>               ! class_ "forum-group"
+>               ! style "display: none" $ html
+>     _                       -> outputError 403 "Access Denied" []
 
 The dependencies for forum pages are all the same.
 
@@ -99,28 +102,27 @@ forums within the group).
 >    \LEFT JOIN member m ON (m.member_no = c2.author) \
 >    \ORDER BY t.position ASC")
 >   let creator = case memberName of
->                   Just "jekor"  -> [button ! [theclass ("reveal forum-creator-" ++ g)] <<
->                                     "New Forum" +++ forumCreator]
->                   _             -> []
->       (left, right) = every2nd $ forums ++ creator
->   return $ thediv ! [theclass "forum-group rounded"] <<
->     [  h2 << g,
->        unordList left ! [theclass "first"],
->        unordList right,
->        clear ]
+>                   Just "jekor"  -> do button ! class_ (stringValue $ "reveal forum-creator-" ++ g) $
+>                                         "New Forum"
+>                                       forumCreator
+>                   _             -> mempty
+>       (left, right) = every2nd $ forums ++ [creator]
+>   return $ div ! class_ "forum-group rounded" $ do
+>     h2 $ string g
+>     unordList left ! class_ "first"
+>     unordList right
+>     clear
 >  where forumCreator =
->          form ! [  identifier ("forum-creator-" ++ g),
->                    thestyle "display: none",
->                    action "/forum/new",
->                    method "post",
->                    enctype "multipart/form-data" ] <<
->            fieldset <<
->              [  legend << "New Forum",
->                 hidden "forum-group" g,
->                 table <<
->                   [  tabularInput "Title" $ textfield "forum-title",
->                      tabularInput "Icon (64x64)" $ afile "forum-icon",
->                      tabularSubmit "Create" ] ]
+>          form ! id (stringValue $ "forum-creator-" ++ g)
+>               ! style "display: none"
+>               ! action "/forum/new" ! method "post" ! enctype "multipart/form-data" $ do
+>            fieldset $ do
+>              legend $ "New Forum"
+>              input ! type_ "hidden" ! name "forum-group" ! value (stringValue g)
+>              table $ do
+>                tabularInput "Title" $ input ! type_ "text" ! name "forum-title"
+>                tabularInput "Icon (64x64)" $ input ! type_ "file" ! name "forum-icon"
+>                tabularSubmit "Create"
 
 Displaying individual forums within the group is easier. Each forum requires an
 icon. This allows faster visual navigation to the forum of interest when first
@@ -129,15 +131,17 @@ arriving at the top-level forums page.
 > renderForum :: (String, String, FilePath, Maybe UTCTime, Maybe String) -> Html
 > renderForum (n, t, i, t', u) =
 >   let latest = case t' of
->                  Nothing  -> noHtml
->                  Just t'' -> paragraph ! [theclass "metadata"] <<
->                                [  stringToHtml $ formatSimpleTime t'', br,
->                                   stringToHtml $ fromJust u ] in
->   anchor ! [href $ "/forum/" ++ n] << [
->     image ! [  width "64", height "64",
->                src ("http://s.vocabulink.com/img/icon/forum/" ++ i)],
->     h3 << t,
->     latest, clear ]
+>                  Nothing  -> mempty
+>                  Just t'' -> p ! class_ "metadata" $ do
+>                                string $ formatSimpleTime t''
+>                                br
+>                                string $ fromJust u in
+>   a ! href (stringValue $ "/forum/" ++ n) $ do
+>     img ! width "64" ! height "64"
+>         ! src (stringValue $ "http://s.vocabulink.com/img/icon/forum/" ++ i)
+>     h3 $ string t
+>     latest
+>     clear
 
 Creating a forum group is a rare administrative action. For now, we're not
 concerned with error handling and such. Maybe later when bringing on volunteer
@@ -162,7 +166,7 @@ For now, we just upload to the icons directory in our static directory.
 >     (Just f, Just g, Just t) -> do
 >       icon <- fromJust <$> getInputFPS "forum-icon"
 >       let iconfile = iconDir </> basename f
->       liftIO $ BS.writeFile iconfile icon
+>       liftIO $ writeFile iconfile icon
 >       $(execute'
 >         "INSERT INTO forum (name, title, group_name, \
 >                            \position, icon_filename) \
@@ -173,6 +177,20 @@ For now, we just upload to the icons directory in our static directory.
 >       redirect =<< referrerOrVocabulink
 >     _ -> error "Please fill in the form completely. \
 >                \Make sure to include an icon."
+
+Breadcrumbs are a common navigation element. This only handles wrapping the
+provided elements in an appropriate ordered list and adding decorations. Adding
+the anchors is up to you.
+
+> breadcrumbs :: [Html] -> Html
+> breadcrumbs items = unordList items' ! class_ "breadcrumbs"
+>   where items' = intersperse (string " » ") items
+
+This automatically adds ``odd'' and ``even'' CSS classes to each table row.
+
+> tableRows :: [Html] -> [Html]
+> tableRows = map decorate . zip [1..]
+>   where decorate (x,y) = tr ! class_ (odd (x :: Integer) ? "odd" $ "even") $ y
 
 Each forum page is a table of topics. Each topic lists the title (a description
 of the topic), how many replies the topic has received, who created the topic,
@@ -186,19 +204,20 @@ and the time of the latest topic.
 >     Just title' -> do
 >       topics <- forumTopicRows forum
 >       newTopicButton <- loggedInVerifiedButton "New Topic"
->       let newTopicRow = tr << [  td << noHtml,
->                                  td ! [colspan 4] << newTopicButton ]
->       stdPage ("Forum - " ++ forum) forumDeps []
->         [  breadcrumbs [  anchor ! [href "../forums"] << "Forums",
->                           stringToHtml title' ],
->            thediv ! [identifier "topics"] << table << [
->              thead << tr << [
->                th ! [theclass "votes"]    << "",
->                th ! [theclass "topic"]    << "Topic",
->                th ! [theclass "replies"]  << "Replies",
->                th ! [theclass "author"]   << "Author",
->                th ! [theclass "last"]     << "Last Comment" ],
->              tbody << tableRows (newTopicRow:topics) ] ]
+>       let newTopicRow = tr $ do td $ mempty
+>                                 td ! colspan "4" $ newTopicButton
+>       stdPage ("Forum - " ++ forum) forumDeps mempty $ do
+>         breadcrumbs [a ! href "../forums" $ "Forums", string title']
+>         div ! id "topics" $ do
+>           table $ do
+>              thead $ do
+>                tr $ do
+>                  th ! class_ "votes"   $ ""
+>                  th ! class_ "topic"   $ "Topic"
+>                  th ! class_ "replies" $ "Replies"
+>                  th ! class_ "author"  $ "Author"
+>                  th ! class_ "last"    $ "Last Comment"
+>              tbody $ mconcat $ tableRows (newTopicRow:topics)
 
 This returns a list of forum topics, sorted by creation date, as HTML rows. It
 saves us some effort by avoiding any intermediate representation which we don't
@@ -241,27 +260,25 @@ bit more difficult and a task for later.
 >  where topicRow :: Maybe Integer -> (Integer, String, Integer, String, UTCTime, String, Integer, Maybe Integer, Maybe Bool) -> Html
 >        topicRow memberNo (tn, tt, nr, ta, lt, la, cn, v, uv) = 
 >          let enabled = isJust memberNo && isNothing uv in
->          concatHtml [
->            td ! [theclass $ "votes" ++ (enabled ? " enabled" $ "")] << [
->                    anchor !  ([  href $ "/comment" </> show cn,
->                                  theclass "vote-arrow up" ] ++
->                               case uv of
->                                 Just True -> [thestyle "background-position: 4px -24px"]
->                                 _         -> []) << noHtml,
->                    thespan << show (fromJust v),
->                    anchor !  ([  href $ "/comment" </> show cn,
->                                  theclass "vote-arrow down" ] ++
->                               case uv of
->                                 Just False -> [thestyle "background-position: 4px -37px"]
->                                 _          -> []) << noHtml ],
->                  td ! [theclass "topic"] <<
->                    anchor ! [href (name' ++ "/" ++ show tn)] << tt,
->                  td ! [theclass "replies"] << show nr,
->                  td ! [theclass "author"] << ta,
->                  td ! [theclass "last"] << [
->                    stringToHtml $ formatSimpleTime lt,
->                    br,
->                    stringToHtml la ] ]
+>          do
+>            td ! class_ (stringValue $ "votes" ++ (enabled ? " enabled" $ "")) $ do
+>              a ! href (stringValue $ "/comment" </> show cn) ! class_ "vote-arrow up"
+>                ! style (case uv of
+>                           Just True -> "background-position: 4px -24px"
+>                           _         -> mempty) $ mempty
+>              span $ string $ show $ fromJust v
+>              a ! href (stringValue $ "/comment" </> show cn) ! class_ "vote-arrow down"
+>                ! style (case uv of
+>                           Just False -> "background-position: 4px -37px"
+>                           _          -> mempty) $ mempty
+>            td ! class_ "topic" $ do
+>              a ! href (stringValue $ name' ++ "/" ++ show tn) $ string tt
+>            td ! class_ "replies" $ string $ show nr
+>            td ! class_ "author" $ string ta
+>            td ! class_ "last" $ do
+>               string $ formatSimpleTime lt
+>               br
+>               string la
 
 This creates the topic in the database given the title and root comment body.
 
@@ -292,9 +309,9 @@ probably need paging.
 >     Nothing                     -> output404 ["forum", fn, show i]
 >     Just (root, title', fTitle) -> do
 >       comments <- renderComments root
->       stdPage title' forumDeps [] [
->         breadcrumbs [
->           anchor ! [href "../../forums"] << "Forums",
->           anchor ! [href $ "../" ++ fn] << fTitle,
->           stringToHtml title' ],
->         comments ]
+>       stdPage title' forumDeps mempty $ do
+>         breadcrumbs [ a ! href "../../forums" $ "Forums"
+>                     , a ! href (stringValue $ "../" ++ fn) $ string fTitle
+>                     , string title'
+>                     ]
+>         comments

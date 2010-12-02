@@ -26,7 +26,10 @@ noticing it painfully myself lately, and I know where everything is!
 > import Vocabulink.CGI
 > import Vocabulink.Html
 > import Vocabulink.Link
+> import Vocabulink.Page
 > import Vocabulink.Utils
+
+> import Prelude hiding (div, span, id)
 
 For now, we're making use of Google Custom Search.
 
@@ -35,22 +38,24 @@ For now, we're making use of Google Custom Search.
 >   q <- getRequiredInput "q"
 >   links <- linksContaining q
 >   links' <- mapM renderPartialLink links
->   stdPage (q ++ " - Search Results") [CSS "search"] [] [
->     thediv ! [identifier "main-content"] << [
->       thediv ! [identifier "cse-search-results"] << noHtml ],
->     thediv ! [identifier "sidebar"] << [
->       thediv ! [identifier "new-link"] << [
->         anchor ! [href ("/link/new?fval0=" ++ q)] << ("→ Create a new link with \"" ++ q ++ "\"") ],
->       thediv ! [theclass "sidebox"] << [
->         h3 << ("Found " ++ show (length links) ++ " Links Containing \"" ++ q ++ "\""),
->         unordList links' ! [theclass "links"] ] ],
->     script ! [thetype "text/javascript"] << primHtml (unlines [
->       "var googleSearchIframeName = \"cse-search-results\";",
->       "var googleSearchFormName = \"cse-search-box\";",
->       "var googleSearchFrameWidth = 600;",
->       "var googleSearchDomain = \"www.google.com\";",
->       "var googleSearchPath = \"/cse\";" ]),
->     script ! [src "http://www.google.com/afsonline/show_afs_search.js"] << noHtml ]
+>   stdPage (q ++ " - Search Results") [CSS "search"] mempty $ do
+>     div ! id "main-content" $ do
+>       div ! id "cse-search-results" $ mempty
+>     div ! id "sidebar" $ do
+>       div ! id "new-link" $ do
+>         a ! href (stringValue $ "/link/new?fval[0]=" ++ q) $
+>           string ("→ Create a new link with \"" ++ q ++ "\"")
+>       div ! class_ "sidebox" $ do
+>         h3 $ string ("Found " ++ show (length links) ++ " Links Containing \"" ++ q ++ "\"")
+>         unordList links' ! class_ "links"
+>     script ! type_ "text/javascript" $ preEscapedString (unlines
+>       [ "var googleSearchIframeName = \"cse-search-results\";"
+>       , "var googleSearchFormName = \"cse-search-box\";"
+>       , "var googleSearchFrameWidth = 600;"
+>       , "var googleSearchDomain = \"www.google.com\";"
+>       , "var googleSearchPath = \"/cse\";"
+>       ])
+>     script ! src "http://www.google.com/afsonline/show_afs_search.js" $ mempty
 
 This is a close parallel to the original search for Vocabulink. We use it so
 that we can display a link to a specialized link search only when results are

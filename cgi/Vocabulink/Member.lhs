@@ -27,11 +27,15 @@ registered members only.
 
 > import Vocabulink.App
 > import Vocabulink.CGI
+> import Vocabulink.Form
 > import Vocabulink.Html
 > import Vocabulink.Member.AuthToken
+> import Vocabulink.Page
 > import Vocabulink.Utils
 
-> import qualified Text.XHtml.Strict.Formlets as F
+> import qualified Text.Blaze.Html5.Formlets as HF (input, textarea, checkbox, hidden, password)
+
+> import Prelude hiding (div, span, id)
 
 \subsection{Authentication}
 
@@ -40,15 +44,16 @@ first example of a formlet. The formlet nicely encapsulates validating the
 member's password against the database as part of normal formlet validation.
 
 > loginForm :: String -> AppForm (String, String)
-> loginForm ref = plug (\xhtml -> hidden "redirect" ref +++
->                                 table <<
->                                   (xhtml +++ tfoot << tabularSubmit "Login"))
+> loginForm ref = plug (\html -> do input ! type_ "hidden" ! name "redirect" ! value (stringValue ref)
+>                                   table $ do
+>                                     html
+>                                     tfoot $ tabularSubmit "Login")
 >                  ((,) <$> username <*> passwd "Password") `checkM`
 >                    ensureM passMatch err
->   where passMatch (u, p) =
+>   where passMatch (user, pwd) =
 >           (fromJust . fromJust) <$> $(queryTuple'
->             "SELECT password_hash = crypt({p}, password_hash) \
->             \FROM member WHERE username = {u}")
+>             "SELECT password_hash = crypt({pwd}, password_hash) \
+>             \FROM member WHERE username = {user}")
 >         err = "Username and password do not match (or don't exist)."
 
 If a member authenticates correctly, we redirect them to either the frontpage
@@ -60,14 +65,14 @@ and then continuing where it left off.
 > login = do
 >   ref    <- referrerOrVocabulink
 >   redir  <- getInputDefault ref "redirect"
->   res    <- runForm (loginForm redir) $ Right noHtml
+>   res    <- runForm (loginForm redir) $ Right mempty
 >   key    <- fromJust <$> getOption "authtokenkey"
 >   case res of
->     Left xhtml -> simplePage "Login" []
->       [  paragraph ! [thestyle "text-align: center"] <<
->            [  stringToHtml "Not a member? ",
->               anchor ! [href "/member/signup"] << "Sign Up for free!" ],
->          xhtml ]
+>     Left html -> simplePage "Login" [] $ do
+>       p ! style "text-align: center" $ do
+>         string "Not a member? "
+>         a ! href "/member/signup" $ "Sign Up for free!"
+>       html
 >     Right (user, _) -> do
 >       ip         <- remoteAddr
 >       memberNo   <- getMemberNumber user
@@ -118,13 +123,15 @@ optionally an email address.
 They must also agree to the Terms of Use.
 
 > register :: AppForm Registration
-> register = plug (\xhtml -> table << (xhtml +++ tfoot << tabularSubmit "Sign Up"))
+> register = plug (\html -> table $ do
+>                             html
+>                             tfoot $ tabularSubmit "Sign Up")
 >                 (reg  <$> uniqueUser
 >                       <*> uniqueEmailAddress
 >                       <*> passConfirmed
->                       <*> termsOfUse `check` ensure isJust
+>                       <*> termsOfUse `check` ensure (== True)
 >                             "You must agree to the Terms of Use.")
->   where reg u e p _ = Registration u e p
+>   where reg u e pwd _ = Registration u e pwd
 
 We're very permissive with usernames. They just need to be between 3 and 32
 characters long.
@@ -134,7 +141,7 @@ able to express themselves with their username. This may turn out to be a major
 pain to deal with for things like URIs, but there's 1 way to find out...
 
 > username :: AppForm String
-> username = plug (tabularInput "Username") (F.input Nothing) `check` ensures
+> username = plug (tabularInput "Username") (HF.input Nothing) `check` ensures
 >   [  ((>= 3)   . length  , "Your username must be 3 characters or longer."),
 >      ((<= 32)  . length  , "Your username must be 32 characters or shorter.") ]
 
@@ -150,7 +157,7 @@ trying to register with isn't already in use.
 Our password input is as permissive as our username input.
 
 > passwd :: String -> AppForm String
-> passwd l = plug (tabularInput l) (F.password Nothing) `check` ensures
+> passwd l = plug (tabularInput l) (HF.password Nothing) `check` ensures
 >   [  ((>=  4)   . length  , "Your password must be 4 characters or longer."),
 >      ((<=  72)  . length  , "Your password must be 72 characters or shorter.") ]
 
@@ -158,9 +165,8 @@ During registration, we want the client to confirm their password, if for no
 other reason than that it's common practice.
 
 > passConfirmed :: AppForm String
-> passConfirmed = fst <$> (passwords `check` ensure equal err) where
+> passConfirmed = fst <$> (passwords `check` ensure (\ (x, y) -> x == y) err) where
 >   passwords = (,) <$> passwd "Password" <*> passwd "Password (confirm)"
->   equal (a,b) = a == b
 >   err = "Passwords do not match."
 
 To indicate acceptance of the Terms of Use, the member checks a box. This is
@@ -168,13 +174,12 @@ still a little bit awkward because the checkbox doesn't maintain its state if
 validation fails. I'm hoping to fix that later when I understand formlets in
 more depth.
 
-> termsOfUse :: AppForm (Maybe String)
-> termsOfUse = plug (\xhtml -> tr << td ! [  colspan 2,
->                                            thestyle "text-align: center"] << [
->                xhtml,
->                stringToHtml " I agree to the ",
->                anchor ! [href "/terms-of-use"] << "Terms of Use",
->                stringToHtml "." ]) (checkbox' "")
+> termsOfUse :: AppForm Bool
+> termsOfUse = plug (\html -> tr $ td ! colspan "2" ! style "text-align: center" $ do
+>                               html
+>                               string " I agree to the "
+>                               a ! href "/terms-of-use" $ "Terms of Use"
+>                               string ".") (HF.checkbox Nothing)
 
 We don't currently do any validation on email addresses other than to check if
 the address is already in use. We need to check both the @member@ and
@@ -182,7 +187,7 @@ the address is already in use. We need to check both the @member@ and
 well.
 
 > emailAddress :: AppForm String
-> emailAddress = plug (tabularInput "Email address") (F.input Nothing) `check`
+> emailAddress = plug (tabularInput "Email address") (HF.input Nothing) `check`
 >   ensures
 >     [  ((/= ""), "Enter an email address."),
 >        ((<= 320) . length, "Your email address must be \
@@ -200,17 +205,13 @@ well.
 The registration process consists of a single form. Once the user has
 registered, we log them in and redirect them to the front page.
 
--- > registerMemberPage :: App CGIResult
--- > registerMemberPage = do
--- >   
-
 > registerMember :: App CGIResult
 > registerMember = do
->   res <- runForm register $ Right noHtml
+>   res <- runForm register $ Right mempty
 >   key <- fromJust <$> getOption "authtokenkey"
 >   case res of
->     Left xhtml  -> simplePage "Sign Up for Vocabulink" [] [xhtml]
->     Right reg   -> do
+>     Left html -> simplePage "Sign Up for Vocabulink" mempty html
+>     Right reg -> do
 >       memberNo <- fromJust <$> $(queryTuple'
 >         "INSERT INTO member (username, password_hash) \
 >                     \VALUES ({regUser reg}, crypt({regPass reg}, gen_salt('bf'))) \
@@ -290,16 +291,16 @@ with the site in a way that requires a confirmed email address.
 >   ref <- referrerOrVocabulink
 >   redirect' <- getInputDefault ref "redirect"
 >   support <- getSupportForm $ Just redirect'
->   simplePage "Email Confirmation Required" [] [
->     thediv ! [identifier "central-column"] << [
->       paragraph << "In order to interact with Vocabulink, \
->                    \you need to confirm your email address.",
->       paragraph << "If you haven't received a confirmation email \
->                    \or are having trouble, let us know.",
->       support,
->       paragraph << [
->         anchor ! [href redirect'] << "Click here to go back",
->         stringToHtml " to where you came from." ] ] ]
+>   simplePage "Email Confirmation Required" mempty $ do
+>     div ! id "central-column" $ do
+>       p $ "In order to interact with Vocabulink, \
+>           \you need to confirm your email address."
+>       p $ "If you haven't received a confirmation email \
+>           \or are having trouble, let us know."
+>       support
+>       p $ do
+>         a ! href (stringValue redirect') $ "Click here to go back"
+>         string " to where you came from."
 
 At some point members (or non-members) may have difficulties with the site. I
 debated about giving out an email address, but I suspect that filtering for
@@ -313,24 +314,25 @@ method.
 >   email <- asks appMemberEmail
 >   let  redirect'' = fromMaybe ref redirect'
 >        emailInput = case email of
->                       Nothing  -> plug (tabularInput "Email Address") (F.input Nothing) `check`
+>                       Nothing  -> plug (tabularInput "Email Address") (HF.input Nothing) `check`
 >                                     ensures
 >                                       [((/= ""), "We need an email address to contact you at.")]
->                       Just _   -> F.hidden email
->   return $ plug (\xhtml -> table << [
->                    xhtml, tfoot << tabularSubmit "Get Support" ])
+>                       Just _   -> HF.hidden email
+>   return $ plug (\html -> table $ do
+>                             html
+>                             tfoot $ tabularSubmit "Get Support")
 >              ((,,)  <$>  emailInput
->                     <*>  plug (tabularInput "Problem") (F.textarea Nothing Nothing Nothing) `check` ensures
+>                     <*>  plug (tabularInput "Problem") (HF.textarea Nothing Nothing Nothing) `check` ensures
 >                            [((/= ""),  "It would help us to know \
 >                                        \what the problem you're experiencing is ;).")]
->                     <*>  F.hidden (Just redirect''))
+>                     <*>  HF.hidden (Just redirect''))
 
 Get a fresh support form (don't attempt to run it).
 
 > getSupportForm :: Maybe String -> App Html
 > getSupportForm redirect' = do
->   (_, xhtml) <- runForm' =<< supportForm redirect'
->   return $ form ! [action "/member/support", method "post"] << xhtml
+>   (_, html) <- runForm' =<< supportForm redirect'
+>   return $ form ! action "/member/support" ! method "post" $ html
 
 And finally, here is the actual support page. It's not just for member support.
 If the client isn't logged in it will ask for a contact email address.
@@ -341,15 +343,15 @@ form we fall back to a secondary (disposable) support address.
 > memberSupport :: App CGIResult
 > memberSupport = do
 >   form' <- supportForm =<< getInput "redirect"
->   res <- runForm form' $ Right noHtml
+>   res <- runForm form' $ Right mempty
 >   case res of
->     Left xhtml -> simplePage "Need Help?" []
->       [  thediv ! [identifier "central-column"] << [
->            paragraph ! [thestyle "text-align: center"] <<
->              [  stringToHtml "Have you checked the ",
->                 anchor ! [href "/forum/help"] << "help forum",
->                 stringToHtml "?" ],
->            xhtml ] ]
+>     Left html -> simplePage "Need Help?" mempty $ do
+>       div ! id "central-column" $ do
+>         p ! style "text-align: center" $ do
+>           string "Have you checked the "
+>           a ! href "/forum/help" $ "help forum"
+>           string "?"
+>       html
 >     Right (email, problem, redirect') -> do
 >       supportAddress <- fromJust <$> getOption "supportaddress"
 >       res' <- liftIO $ sendMail supportAddress "Support Request" $
@@ -357,14 +359,13 @@ form we fall back to a secondary (disposable) support address.
 >                            "Problem: " ++ problem ]
 >       case res' of
 >         Nothing  -> error "Error sending support request. \
->                           \Please contact vocabulink.jekor@spamgourmet.com for support."
->         Just _   -> simplePage "Support Request Sent" []
->                       [  thediv ! [identifier "central-column"] << [
->                            paragraph <<  "Your support request \
->                                          \was sent successfully.",
->                            paragraph << [
->                              anchor ! [href redirect'] << "Click here to go back",
->                              stringToHtml " to where you came from." ] ] ]
+>                           \Please contact support@vocabulink.com for support."
+>         Just _   -> simplePage "Support Request Sent" mempty $ do
+>                       div ! id "central-column" $ do
+>                         p $ "Your support request was sent successfully."
+>                         p $ do
+>                           a ! href (stringValue redirect') $ "Click here to go back"
+>                           string " to where you came from."
 
 \subsection{Permissions}
 

@@ -109,14 +109,18 @@ Each of these modules will be described in its own section.
 > import Vocabulink.CGI
 > import Vocabulink.Comment
 > import Vocabulink.Config
+> import Vocabulink.Form hiding (method)
 > import Vocabulink.Forum
-> import Vocabulink.Html hiding (method, options)
+> import Vocabulink.Html
 > import Vocabulink.Link
 > import Vocabulink.Member
+> import Vocabulink.Page
 > import Vocabulink.Rating
 > import Vocabulink.Review
 > import Vocabulink.Search
 > import Vocabulink.Utils
+
+> import Prelude hiding (div, span, id)
 
 \section{Other Modules}
 
@@ -446,7 +450,7 @@ are allowed to do.
 
 Becoming a member is simply a matter of filling out a form.
 
-> dispatch "GET"   ["member","signup"]  = registerMemberPage
+> dispatch "GET"   ["member","signup"]  = registerMember
 > dispatch "POST"  ["member","signup"]  = registerMember
 
 But to use most of the site, we require email confirmation.
@@ -535,56 +539,57 @@ or curious.
 > frontPage :: App CGIResult
 > frontPage = do
 >   memberNo <- asks appMemberNo
->   my <- maybe (return noHtml) myLinks memberNo
+>   my <- maybe (return mempty) myLinks memberNo
 >   latest <- newLinks
 >   featured <- featuredPack
 >   let article = isJust memberNo ? "welcome-member" $ "welcome"
 >   article' <- getArticle article
->   body <- maybe (return $ h1 << "Welcome to Vocabulink") articleBody article'
->   stdPage "Welcome to Vocabulink" [] [] [
->     thediv ! [identifier "main-content"] << body,
->     thediv ! [identifier "sidebar"] << [
->       featured, latest, my ],
->     if isJust memberNo
->       then twitterScript
->       else noHtml ]
+>   body <- maybe (return $ h1 $ "Welcome to Vocabulink") articleBody article'
+>   stdPage "Welcome to Vocabulink" [] mempty $ do
+>     div ! id "main-content" $ body
+>     div ! id "sidebar" $ do
+>       featured
+>       latest
+>       my
+>     when (isJust memberNo) twitterScript
 >  where myLinks mn = do
 >          ls <- memberLinks mn 0 7
 >          partialLinks <- mapM renderPartialLink ls
->          return $ thediv ! [theclass "sidebox"] << [
->                     h3 << anchor ! [href ("/links/" ++ show mn)] <<
->                       "My Links",
->                     unordList partialLinks ! [theclass "links"] ]
+>          return $ div ! class_ "sidebox" $ do
+>                     h3 $ a ! href (stringValue $ "/links/" ++ show mn) $ "My Links"
+>                     unordList partialLinks ! class_ "links"
 >        newLinks = do
 >          ls <- latestLinks 0 7
 >          partialLinks <- mapM renderPartialLink ls
->          return $ thediv ! [theclass "sidebox"] << [
->                     h3 << anchor ! [href "/links"] <<
->                       "Latest Links",
->                     unordList partialLinks ! [theclass "links"] ]
+>          return $ div ! class_ "sidebox" $ do
+>                     h3 $ a ! href "/links" $ "Latest Links"
+>                     unordList partialLinks ! class_ "links"
 >        featuredPack = do
 >          lp <- getLinkPack 1
->          return $ maybe noHtml (\l -> thediv ! [theclass "sidebox"] << [
->                                         h3 << [  stringToHtml "Featured Link Pack:", br,
->                                                  linkPackTextLink l ],
->                                         displayCompactLinkPack l False ]) lp
+>          return $ maybe mempty (\l -> div ! class_ "sidebox" $ do
+>                                         h3 $ do
+>                                           string "Featured Link Pack:"
+>                                           br
+>                                           linkPackTextLink l
+>                                         displayCompactLinkPack l False) lp
 
 > twitterScript :: Html
-> twitterScript =
->   script ! [src "http://twitter.com/javascripts/blogger.js"] << noHtml +++
->   script ! [src "http://twitter.com/statuses/user_timeline/Vocabulink.json?\
->                 \callback=twitterCallback2&amp;count=7"] << noHtml
+> twitterScript = do
+>   script ! src "http://twitter.com/javascripts/blogger.js" $ mempty
+>   script ! src "http://twitter.com/statuses/user_timeline/Vocabulink.json?\
+>                \callback=twitterCallback2&amp;count=7" $ mempty
 
 %include Vocabulink/Config.lhs
 %include Vocabulink/Utils.lhs
 %include Vocabulink/CGI.lhs
 %include Vocabulink/App.lhs
 %include Vocabulink/Html.lhs
+%include Vocabulink/Form.lhs
+%include Vocabulink/Page.lhs
 %include Vocabulink/Member/AuthToken.lhs
 %include Vocabulink/Member.lhs
 %include Vocabulink/Link.lhs
 %include Vocabulink/Review.lhs
-%include Vocabulink/Review/Html.lhs
 %include Vocabulink/Review/SM2.lhs
 %include Vocabulink/Article.lhs
 %include Vocabulink/Article/Html.lhs

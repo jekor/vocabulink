@@ -36,14 +36,18 @@ them.
 > import Vocabulink.App
 > import Vocabulink.CGI
 > import Vocabulink.Comment
+> import Vocabulink.Form
 > import Vocabulink.Html
 > import Vocabulink.Member
+> import Vocabulink.Page
 > import Vocabulink.Rating
 > import Vocabulink.Utils
 
-> import Control.Monad (when)
 > import System.Cmd (system)
 > import System.IO (Handle)
+> import qualified Text.Blaze.Html5.Formlets as HF (input, textarea, hidden, selectRaw)
+
+> import Prelude hiding (div, span, id)
 
 \subsection{Link Data Types}
 
@@ -127,16 +131,15 @@ destination of the link do not contain copyrightable material.
 > linkCopyright l =
 >   case linkType l of
 >     LinkWord _ _ -> do
->       (a,c,u) <- fromJust <$> $(queryTuple'
+>       (u,c,up) <- fromJust <$> $(queryTuple'
 >         "SELECT username, created, updated \
 >         \FROM link, member \
 >         \WHERE member_no = author AND link_no = {linkNumber l}")
->       c' <- liftIO $ serverYear c
->       u' <- liftIO $ serverYear u
->       let range = c' == u' ? show c' $ show c' ++ "–" ++ show u'
->       return $ paragraph ! [theclass "copyright"] << stringToHtml (
->         "Copyright " ++ range ++ " " ++ a)
->     _            -> return noHtml
+>       c'  <- liftIO $ serverYear c
+>       up' <- liftIO $ serverYear up
+>       let range = c' == up' ? show c' $ show c' ++ "–" ++ show up'
+>       return $ p ! class_ "copyright" $ string $ "Copyright " ++ range ++ " " ++ u
+>     _            -> return mempty
 
 Fully loading a link from the database requires joining 2 relations. The join
 depends on the type of the link. But we don't always need the type-specific
@@ -224,10 +227,10 @@ We use a helper function to convert the raw SQL tuple to a partial link value.
 Note that we leave the link's |linkType| undefined.
 
 > partialLinkFromTuple :: (Integer, String, Integer, String, String, String, String) -> PartialLink
-> partialLinkFromTuple (n, t, a, o, d, ol, dl) =
+> partialLinkFromTuple (n, t, u, o, d, ol, dl) =
 >   PartialLink Link {  linkNumber           = n,
 >                       linkTypeName         = t,
->                       linkAuthor           = a,
+>                       linkAuthor           = u,
 >                       linkOrigin           = o,
 >                       linkDestination      = d,
 >                       linkOriginLang       = ol,
@@ -243,7 +246,7 @@ We just need to retrieve its type-level details from the database.
 >   return $ (\t -> Just $ partial {linkType = t}) =<< linkT
 
 > getLinkType :: PartialLink -> App (Maybe LinkType)
-> getLinkType (PartialLink p) = case p of
+> getLinkType (PartialLink pl) = case pl of
 >   (Link {  linkTypeName  = "association" })  -> return $ Just Association
 >   (Link {  linkTypeName  = "sound-alike"})   -> return $ Just SoundAlike
 >   (Link {  linkTypeName  = "linkword",
@@ -282,7 +285,7 @@ appear in most contexts.
 > deleteLink linkNo = do
 >   $(execute' "UPDATE link SET deleted = TRUE \
 >              \WHERE link_no = {linkNo}")
->   outputJSON [("", "")]
+>   outputJSON [(""::String, ""::String)]
 
 \subsection{Displaying Links}
 
@@ -340,27 +343,30 @@ TODO: These queries might be better as functions.
 >        \AND NOT deleted \
 >      \ORDER BY link_no ASC LIMIT 1) \
 >     \ORDER BY link_no DESC")
->   return $ h1 ! [theclass ("link " ++ linkTypeName link)] << [
->     maybe noHtml (\n -> anchor ! [href $ show n, title "Previous Link", theclass "prev"] << noHtml) prevLink,
->     thespan ! [theclass "orig", title oLanguage] << linkOrigin link,
->     thespan ! [theclass "link", title (linkTypeName link)] <<
->       (renderLinkType $ linkType link),
->     thespan ! [theclass "dest", title dLanguage] << linkDestination link,
->     maybe noHtml (\n -> anchor ! [href $ show n, title "Next Link", theclass "next"] << noHtml) nextLink ]
+>   return $ h1 ! class_ (stringValue $ "link " ++ linkTypeName link) $ do
+>     maybe mempty (\n -> a ! href (stringValue $ show n) ! class_ "prev"
+>                           ! title "Previous Link" $ mempty) prevLink
+>     span ! class_ "orig" ! title (stringValue oLanguage) $ string $ linkOrigin link
+>     span ! class_ "link" ! title (stringValue $ linkTypeName link) $
+>       (renderLinkType $ linkType link)
+>     span ! class_ "dest" ! title (stringValue dLanguage) $ string $ linkDestination link
+>     maybe mempty (\n -> a ! href (stringValue $ show n) ! class_ "next"
+>                           ! title "Next Link" $ mempty) nextLink
 >  where renderLinkType :: LinkType -> Html
->        renderLinkType (LinkWord word _)  = stringToHtml word
->        renderLinkType _                  = noHtml
+>        renderLinkType (LinkWord word _) = string word
+>        renderLinkType _                 = mempty
 
 > renderPartialLink :: PartialLink -> App Html
 > renderPartialLink (PartialLink l) = do
->   originLanguage       <- linkOriginLanguage l
->   destinationLanguage  <- linkDestinationLanguage l
->   return $ anchor ! [  theclass $ "partial-link " ++ linkTypeName l,
->                        href ("/link/" ++ show (linkNumber l)),
->                        H.title (originLanguage ++ " → " ++ destinationLanguage) ] << [
->              thespan ! [theclass "orig"] << linkOrigin l,
->              stringToHtml " → ",
->              thespan ! [theclass "dest"] << linkDestination l ]
+>   originLanguage      <- linkOriginLanguage l
+>   destinationLanguage <- linkDestinationLanguage l
+>   return $ do
+>     a ! class_ (stringValue $ "partial-link " ++ linkTypeName l)
+>       ! href (stringValue $ "/link/" ++ show (linkNumber l))
+>       ! title (stringValue $ originLanguage ++ " → " ++ destinationLanguage) $ do
+>       span ! class_ "orig" $ string $ linkOrigin l
+>       string " → "
+>       span ! class_ "dest" $ string $ linkDestination l
 
 Displaying an entire link involves not just drawing a graphical representation
 of the link but displaying its type-level details as well.
@@ -368,19 +374,38 @@ of the link but displaying its type-level details as well.
 > displayLink :: Link -> App Html
 > displayLink l = do
 >   renderedLink <- renderLink l
->   return $ concatHtml [
->     renderedLink,
->     thediv ! [theclass "link-details htmlfrag"] << linkTypeHtml (linkType l) ]
+>   return $ do
+>     renderedLink
+>     div ! class_ "link-details htmlfrag" $ linkTypeHtml (linkType l)
+
+Like displayLink, but don't try to do anything with the link number (since it's
+undefined).
+
+> previewLink :: Link -> App Html
+> previewLink link = do
+>   oLanguage <- linkOriginLanguage link
+>   dLanguage <- linkDestinationLanguage link
+>   return $ do
+>     h1 ! class_ (stringValue $ "link " ++ linkTypeName link) $ do
+>       span ! class_ "orig" ! title (stringValue oLanguage) $ string $ linkOrigin link
+>       span ! class_ "link" ! title (stringValue $ linkTypeName link) $
+>         (renderLinkType $ linkType link)
+>       span ! class_ "dest" ! title (stringValue dLanguage) $ string $ linkDestination link
+>     div ! class_ "link-details htmlfrag" $ linkTypeHtml (linkType link)
+>  where renderLinkType :: LinkType -> Html
+>        renderLinkType (LinkWord word _) = string word
+>        renderLinkType _                 = mempty
 
 > linkTypeHtml :: LinkType -> Html
-> linkTypeHtml Association = noHtml
-> linkTypeHtml SoundAlike = noHtml
+> linkTypeHtml Association = mempty
+> linkTypeHtml SoundAlike = mempty
 > linkTypeHtml (LinkWord _ story) =
 >   markdownToHtml story
 > linkTypeHtml (Relationship leftSide rightSide) =
->   paragraph ! [thestyle "text-align: center"] << [
->     stringToHtml "as", br,
->     stringToHtml $ leftSide ++ " → " ++ rightSide ]
+>   p ! style "text-align: center" $ do
+>     string "as"
+>     br
+>     string $ leftSide ++ " → " ++ rightSide
 
 Each link gets its own URI and page. Most of the extra code in the following is
 for handling the display of link operations (``review'', ``delete'', etc.),
@@ -416,23 +441,25 @@ textarea for in-page editing.
 >                            \WHERE link_no = {linkNo}")
 >       comments <- case row of
 >                     Just root  -> renderComments root
->                     Nothing    -> return noHtml
+>                     Nothing    -> return mempty
 >       renderedLink <- renderLink l'
->       stdPage (orig ++ " → " ++ dest) [CSS "link", JS "lib.link"] []
->         [  thediv ! [identifier "link-head-bar"] << [
->              h2 << (oLanguage ++ " to " ++ dLanguage ++ ":"),
->              thediv ! [identifier "link-ops"] << [
->                ops,
->                ratingBar ("/link" </> show linkNo </> "rating") c r ratingEnabled ] ],
->            renderedLink,
->            thediv ! [theclass "link-details"] << [
->              noHtml,
->              case (owner', linkType l') of
->                (True, LinkWord _ story)  -> textarea ! [thestyle "display: none"] << story
->                _                         -> noHtml,
->              thediv ! [identifier "link-details", theclass "htmlfrag"] << linkTypeHtml (linkType l') ],
->            copyright, clear, hr ! [thestyle "margin-top: 1.3em"],
->            h3 << "Comments", comments ]
+>       stdPage (orig ++ " → " ++ dest) [CSS "link", JS "lib.link"] mempty $ do
+>         div ! id "link-head-bar" $ do
+>           h2 $ string (oLanguage ++ " to " ++ dLanguage ++ ":")
+>           div ! id "link-ops" $ do
+>             ops
+>             ratingBar ("/link" </> show linkNo </> "rating") c r ratingEnabled
+>         renderedLink
+>         div ! class_ "link-details" $ do
+>           case (owner', linkType l') of
+>             (True, LinkWord _ story)  -> textarea ! style "display: none" $ string $ story
+>             _                         -> mempty
+>           div ! id "link-details" ! class_ "htmlfrag" $ linkTypeHtml (linkType l')
+>         copyright
+>         clear
+>         hr ! style "margin-top: 1.3em"
+>         h3 $ "Comments"
+>         comments
 
 Each link can be ``operated on''. It can be reviewed (added to the member's
 review set) and deleted (marked as deleted). In the future, I expect operations
@@ -443,13 +470,13 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 
 > linkAction :: String -> Bool -> Html
 > linkAction label' enabled =
->   let icon =  "http://s.vocabulink.com/img/icon/" ++
->               translate [(' ', '-')] label' ++
->               (enabled ? "" $ "-disabled") ++
->               ".png" in
->   anchor ! [theclass ("operation " ++ (enabled ? "enabled" $ "disabled"))] << [
->     image ! [src icon, theclass "icon"],
->     stringToHtml label' ]
+>   let icon = "http://s.vocabulink.com/img/icon/" ++
+>              translate [(' ', '-')] label' ++
+>              (enabled ? "" $ "-disabled") ++
+>              ".png" in
+>   a ! class_ (stringValue $ "operation " ++ (enabled ? "enabled" $ "disabled")) $ do
+>     img ! src (stringValue icon) ! class_ "icon"
+>     string label'
 
 > linkOperations :: Link -> App Html
 > linkOperations link = do
@@ -460,21 +487,21 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 >   reviewing'  <- reviewing link
 >   let review  = linkAction "add to review"
 > --      pack    = linkAction "add to link pack"
->   return $ concatHtml [
+>   return $ do
 >     case (memberNo, reviewing') of
->       (_,        True)  -> (review False)  ! [title "already reviewing this link"]
->       (Just _,   _)     -> (review True)   ! [identifier "link-op-review", title "add this link to be quizzed on it later"]
->       (Nothing,  _)     -> (review False)  ! [href "/member/login", title "login to review"],
+>       (_,        True) -> (review False) ! title "already reviewing this link"
+>       (Just _,   _)    -> (review True)  ! id "link-op-review"
+>                                          ! title "add this link to be quizzed on it later"
+>       (Nothing,  _)    -> (review False) ! href "/member/login" ! title "login to review"
 >     case (editable, linkType link) of
->       (True, LinkWord _ _) ->  (linkAction "edit link" True) ! [identifier "link-op-edit", title "edit the linkword story"]
->       _                    ->  noHtml,
+>       (True, LinkWord _ _) -> (linkAction "edit link" True) ! id "link-op-edit"
+>                                                             ! title "edit the linkword story"
+>       _                    -> mempty
 > --    case (memberNo, memberEmail) of
 > --      (_, Just _)        -> (pack True)  ! [identifier "link-op-pack", title "add this link to a collection of other links"]
 > --      (Just _, Nothing)  -> (pack False) ! [href "/member/confirmation", title "confirm your email to add this link to a link pack"]
 > --      (Nothing, _)       -> (pack False) ! [href "/member/login", title "login to add this link to a link pack"],
->     if deletable
->       then  (linkAction "delete link" True) ! [identifier "link-op-delete", title "delete this link (it will still be visibles to others who are reviewing it)"]
->       else  noHtml ]
+>     when deletable ((linkAction "delete link" True) ! id "link-op-delete" ! title "delete this link (it will still be visibles to others who are reviewing it)")
 >  where reviewing :: Link -> App Bool
 >        reviewing l = do
 >          memberNo <- asks appMemberNo
@@ -489,8 +516,8 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 > addToLinkPackForm n = do
 >   memberNo <- asks appMemberNo
 >   case memberNo of
->     Nothing  -> return noHtml
->     Just mn  -> do
+>     Nothing -> return mempty
+>     Just mn -> do
 >       -- Find all of the packs created by this member that don't already contain
 >       -- this link.
 >       packs <- $(queryTuples'
@@ -501,14 +528,13 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 >         \ORDER BY pack_no DESC")
 > --      let ps = map (\ (num, name) -> (show num, name)) packs
 >       let ps = map (first show) packs
->       return $ concatHtml [
->         button ! [theclass "reveal add-to-pack"] << "→ Pack",
->         form ! [  action "/pack/link/new", method "post",
->                   identifier "add-to-pack", thestyle "display: none" ] << [
->           hidden "link" $ show n,
->           menu "pack" (ps ++ [("new", "New Pack")]) !
->             [identifier "pack-select"], br,
->           submit "" "→ Pack" ] ]
+>       return $ do
+>         button ! class_ "reveal add-to-pack" $ string "→ Pack"
+>         form ! action "/pack/link/new" ! method "post" ! id "add-to-pack" ! style "display: none" $ do
+>           input ! type_ "hidden" ! name "link" ! value (stringValue $ show n)
+>           menu "pack" (ps ++ [("new", "New Pack")]) ! id "pack-select"
+>           br
+>           input ! type_ "submit" ! value "→ Pack"
 
 \subsection{Finding Links}
 
@@ -522,9 +548,9 @@ away eventually.
 >   ts <- f offset (n + 1)
 >   pagerControl <- pager pg n $ offset + length ts
 >   partialLinks <- mapM renderPartialLink (take n ts)
->   simplePage title' [CSS "link"] [
->     unordList partialLinks ! [identifier "central-column", theclass "links"],
->     pagerControl ]
+>   simplePage title' [CSS "link"] $ do
+>     unordList partialLinks ! id "central-column" ! class_ "links"
+>     pagerControl
 
 \subsection{Creating New Links}
 
@@ -541,47 +567,46 @@ result, and dispatching the creation of the link on successful form validation.
 >   meth  <- requestMethod
 >   preview <- getInput "preview"
 >   establishF <- establish activeLinkTypes
->   (status, xhtml) <- runForm' establishF
+>   (status, html) <- runForm' establishF
 >   case preview of
 >     Just _  -> do
 >       preview' <- case status of
->                     Failure failures  -> return $ unordList failures
+>                     Failure failures  -> return $ unordList $ map string failures
 >                     Success link      -> do
->                       displayedLink <- displayLink link
->                       return $ thediv ! [theclass "preview"] <<
->                         displayedLink
->       simplePage "Create a Link (preview)" deps
->         [  preview',
->            form ! [  thestyle "text-align: center",
->                      action (uriPath uri), method "post"] <<
->              [xhtml, actionBar] ]
+>                       displayedLink <- previewLink link
+>                       return $ div ! class_ "preview" $ displayedLink
+>       simplePage "Create a Link (preview)" deps $ do
+>         preview'
+>         form ! style "text-align: center" ! action (stringValue $ uriPath uri) ! method "post" $ do
+>           html
+>           actionBar
 >     Nothing ->
 >       case status of
->         Failure failures  -> simplePage "Create a Link" deps
->           [  form ! [  thestyle "text-align: center",
->                        action (uriPath uri), method "post"] <<
->                [  meth == "GET" ? noHtml $ unordList failures,
->                   xhtml, actionBar ] ]
+>         Failure failures  -> simplePage "Create a Link" deps $ do
+>           form ! style "text-align: center" ! action (stringValue $ uriPath uri) ! method "post" $ do
+>             when (meth /= "GET") (unordList $ map string failures)
+>             html
+>             actionBar
 >         Success link -> do
 >           linkNo <- establishLink link memberNo
 >           redirect $ "/link/" ++ show linkNo
 >  where deps = [CSS "link", JS "lib.link"]
->        actionBar = thediv ! [thestyle "margin-left: auto; margin-right: auto; \
->                                       \width: 12em"] <<
->                      [  submit "preview" "Preview" !
->                           [thestyle "float: left; width: 5.5em"],
->                         submit "" "Link" ! [thestyle "float: right; width: 5.5em"],
->                         paragraph ! [thestyle "clear: both"] << noHtml ]
+>        actionBar = div ! style "margin-left: auto; margin-right: auto; width: 12em" $ do
+>                      input ! type_ "submit" ! name "preview" ! value "Preview"
+>                            ! style "float: left; width: 5.5em"
+>                      input ! type_ "submit" ! name "" ! value "Link"
+>                            ! style "float: right; width: 5.5em"
+>                      p ! style "clear: both" $ mempty
 
 Here's a form for creating a link. It gathers all of the required details
 (origin, destination, and link type details).
 
 > establish :: [String] -> App (AppForm Link)
 > establish ts = do
->   originPicker       <- languagePicker $ Left ()
->   destinationPicker  <- languagePicker $ Right ()
+>   originPicker      <- languagePicker $ Left ()
+>   destinationPicker <- languagePicker $ Right ()
 >   return (mkLink  <$> lexemeInput "Foreign"
->                   <*> plug (+++ stringToHtml " ") originPicker
+>                   <*> plug (`mappend` (string " ")) originPicker
 >                   <*> lexemeInput "Native"
 >                   <*> destinationPicker
 >                   <*> linkTypeInput ts)
@@ -603,7 +628,7 @@ how I'm using them), we need to retrieve the link type name from the link type.
 The lexeme is the origin or destination of the link.
 
 > lexemeInput :: String -> AppForm String
-> lexemeInput l = l `formLabel` F.input Nothing `check` ensures
+> lexemeInput l = l `formLabel` HF.input Nothing `check` ensures
 >   [  ((/= "")           , l ++ " is required."),
 >      ((<= 64) . length  , l ++ " must be 64 characters or shorter.") ]
 
@@ -641,8 +666,8 @@ This takes an either parameter to signify whether you want origin language
 >                    \GROUP BY destination_language, abbr, name \
 >                    \ORDER BY COUNT(destination_language) DESC")
 >   allLangs <- asks appLanguages
->   let choices = langs ++ [("","")] ++ allLangs
->   return $ F.selectRaw [] choices (Just $ fst . head $ choices) `check` ensures
+>   let choices = map (second string) langs ++ [("","")] ++ map (second string) allLangs
+>   return $ HF.selectRaw choices (Just $ fst . head $ choices) `check` ensures
 >              [((/= ""), side' ++ " language is required") ]
 
 We have a bit of a challenge with link types. We want the form to adjust
@@ -670,9 +695,9 @@ I'm deferring a proper implementation until it's absolutely necessary.
 Hopefully by then I will know more than I do now.
 
 > linkTypeInput :: [String] -> AppForm LinkType
-> linkTypeInput ts = (linkTypeS  <$> plug (\xhtml ->
->                                            paragraph << [  xhtml,
->                         helpButton "/article/understanding-link-types" Nothing])
+> linkTypeInput ts = (linkTypeS  <$> plug (\html -> p $ do
+>                                                     html
+>                                                     helpButton "/article/understanding-link-types" Nothing)
 >                                      ("Link Type" `formLabel` linkSelect Nothing)
 >                                <*> pure Association
 >                                <*> pure SoundAlike
@@ -680,13 +705,12 @@ Hopefully by then I will know more than I do now.
 >                                <*> fieldset' "relationship" linkTypeRelationship)
 >                    `check` ensure complete
 >                      "Please fill in all the link type fields."
->   where linkSelect = F.selectRaw [] $ zip ts ts
+>   where linkSelect                   = HF.selectRaw $ zip ts (map string ts)
 >         complete Association         = True
 >         complete SoundAlike          = True
 >         complete (LinkWord w s)      = (w /= "") && (s /= "")
 >         complete (Relationship l r)  = (l /= "") && (r /= "")
->         fieldset' ident              = plug
->           (fieldset ! [identifier ident, thestyle "display: none"] <<)
+>         fieldset' ident              = plug (fieldset ! id ident ! style "display: none")
 
 > linkTypeS :: String -> LinkType -> LinkType -> LinkType -> LinkType -> LinkType
 > linkTypeS "association"   l _ _ _  = l
@@ -696,15 +720,15 @@ Hopefully by then I will know more than I do now.
 > linkTypeS _               _ _ _ _  = error "Unknown link type."
 
 > linkTypeLinkWord :: AppForm LinkType
-> linkTypeLinkWord = LinkWord  <$> "Link Word" `formLabel'` F.input Nothing
+> linkTypeLinkWord = LinkWord  <$> "Link Word" `formLabel'` HF.input Nothing
 >   <*> linkTypeLinkWordStory "Write a story linking the 2 words here."
 
 > linkTypeLinkWordStory :: String -> AppForm String
-> linkTypeLinkWordStory = F.textarea Nothing Nothing . Just
+> linkTypeLinkWordStory = HF.textarea Nothing Nothing . Just
 
 > linkTypeRelationship :: AppForm LinkType
 > linkTypeRelationship = Relationship <$>
->   plug (+++ stringToHtml " is to ") (F.input Nothing) <*> F.input Nothing
+>   plug (`mappend` (string " is to ")) (HF.input Nothing) <*> HF.input Nothing
 
 We want to be able to display links in various ways. It would be really nice to
 get lazy lists from the database. However, lazy HDBC results don't seem to work
@@ -790,16 +814,15 @@ the site.
 > languagePairsPage :: App CGIResult
 > languagePairsPage = do
 >   languages' <- linkLanguages
->   simplePage "Links by Language Pair" [CSS "link"] [
->     multiColumnList 3 $ map languagePairLink languages' ]
+>   simplePage "Links by Language Pair" [CSS "link"] $ do
+>     multiColumnList 3 $ map languagePairLink languages'
 
 Display a hyperlink for a language pair.
 
 > languagePairLink :: ((String, String), (String, String), Integer) -> Html
 > languagePairLink ((oa, on), (da, dn), c) =
->   anchor ! [  theclass "language-pair",
->               href ("/links?ol=" ++ oa ++ "&dl=" ++ da) ] <<
->     (on ++ " → " ++ dn ++ " (" ++ show c ++ ")")
+>   a ! class_ "language-pair" ! href (stringValue $"/links?ol=" ++ oa ++ "&dl=" ++ da) $ do
+>     string $ on ++ " → " ++ dn ++ " (" ++ show c ++ ")"
 
 > data LinkPack = LinkPack {  linkPackNumber       :: Integer,
 >                             linkPackName         :: String,
@@ -829,16 +852,16 @@ TODO: Check that the new trimmed body is not empty.
 >                then do
 >                  $(execute' "UPDATE link_type_link_word SET story = {story} \
 >                             \WHERE link_no = {linkNo}")
->                  output' $ showHtmlFragment $ markdownToHtml story
+>                  outputHtml $ markdownToHtml story
 >                else error "Unauthorized."
 >         else error "Unsupported link type."
 
 > linkPackForm :: Integer -> AppForm (LinkPack, Integer)
-> linkPackForm fl = plug (table <<) $ mkLinkPack
->   <$>  F.hidden (Just $ show fl) `check` ensure ((> 0) . length) "Missing first link number."
->   <*>  plug (tabularInput "Pack Name") (F.input Nothing) `check`
+> linkPackForm fl = plug table $ mkLinkPack
+>   <$>  HF.hidden (Just $ show fl) `check` ensure ((> 0) . length) "Missing first link number."
+>   <*>  plug (tabularInput "Pack Name") (HF.input Nothing) `check`
 >          ensures (nonEmptyAndLessThan 50 "Pack Name")
->   <*>  plug (tabularInput "Description") (F.textarea Nothing Nothing Nothing) `check`
+>   <*>  plug (tabularInput "Description") (HF.textarea Nothing Nothing Nothing) `check`
 >          ensures (nonEmptyAndLessThan 5000 "Pack Name")
 >   <*>  plug (tabularInput "Image") (nothingIfNull $ fileUpload "Upload Image")
 >  where mkLinkPack ::  String -> String -> String -> Maybe String ->
@@ -856,67 +879,65 @@ TODO: Check that the new trimmed body is not empty.
 >   meth  <- requestMethod
 >   preview <- getInput "preview"
 >   firstLink <- readRequiredInput "link"
->   (result, xhtml) <- runForm' $ linkPackForm firstLink
+>   (result, html) <- runForm' $ linkPackForm firstLink
 >   case preview of
 >     Just _  -> do
 >       let preview' = case result of
->                        Failure failures  -> unordList failures
->                        Success (linkPack, _)  -> thediv ! [theclass "preview"] << [
->                                                    h2 << linkPackName linkPack,
->                                                    displayLinkPack linkPack ]
->       simplePage "Create a Link Pack (preview)" deps
->         [  preview',
->            form ! [  thestyle "text-align: center",
->                      action (uriPath uri), method "post" ] <<
->              [xhtml, actionBar] ]
+>                        Failure failures      -> unordList $ map string failures
+>                        Success (linkPack, _) -> div ! class_ "preview" $ do
+>                                                   h2 $ string $ linkPackName linkPack
+>                                                   displayLinkPack linkPack
+>       simplePage "Create a Link Pack (preview)" deps $ do
+>         preview'
+>         form ! style "text-align: center" ! action (stringValue $ uriPath uri) ! method "post" $ do
+>           html
+>           actionBar
 >     Nothing ->
 >       case result of
 >         Success (linkPack, fl) -> do
 >           linkNo <- createLinkPack linkPack memberNo fl
 >           redirect $ "/pack/" ++ show linkNo
->         Failure failures -> simplePage "Create a Link Pack" deps
->           [  form ! [  thestyle "text-align: center",
->                        action (uriPath uri), method "post" ] <<
->                [  meth == "GET" ? noHtml $ unordList failures,
->                   xhtml, actionBar ] ]
+>         Failure failures -> simplePage "Create a Link Pack" deps $ do
+>           form ! style "text-align: center" ! action (stringValue $ uriPath uri) ! method "post" $ do
+>             when (meth /= "GET") (unordList $ map string failures)
+>             html
+>             actionBar
 >  where deps = [CSS "link", JS "lib.link", JS "lib.upload"]
->        actionBar = thediv ! [thestyle "margin-left: auto; margin-right: auto; \
->                                       \margin-top: 1.3em; width: 12em"] <<
->                      [  submit "preview" "Preview" !
->                           [thestyle "float: left; width: 5.5em"],
->                         submit "" "Create" ! [thestyle "float: right; width: 5.5em"],
->                         paragraph ! [thestyle "clear: both"] << noHtml ]
+>        actionBar = div ! style "margin-left: auto; margin-right: auto; margin-top: 1.3em; width: 12em" $ do
+>                      input ! type_ "submit" ! name "preview" ! value "Preview"
+>                            ! style "float: left; width: 5.5em"
+>                      input ! type_ "submit" ! value "Create"
+>                            ! style "float: right; width: 5.5em"
+>                      p ! style "clear: both" $ mempty
 
 > displayLinkPack :: LinkPack -> Html
 > displayLinkPack lp =
->   thediv ! [theclass "link-pack"] << [
->     linkPackIcon lp,
->     markdownToHtml $ linkPackDescription lp, clear ]
+>   div ! class_ "link-pack" $ do
+>     linkPackIcon lp
+>     markdownToHtml $ linkPackDescription lp
+>     clear
 
 > displayCompactLinkPack :: LinkPack -> Bool -> Html
 > displayCompactLinkPack lp displayTitle =
->   thediv ! [theclass "link-pack compact"] << [
->     displayTitle ? h3 << linkPackTextLink lp $ noHtml,
->     linkPackIconLink lp, clear ]
+>   div ! class_ "link-pack compact" $ do
+>     when displayTitle (h3 $ linkPackTextLink lp)
+>     linkPackIconLink lp
+>     clear
 
 > linkPackIcon :: LinkPack -> Html
 > linkPackIcon lp =
->   image ! [  src (  "http://s.vocabulink.com/img/pack/" ++
->                     case linkPackImage lp of
->                       Just i   -> i
->                       Nothing  -> "default.png" ),
->              alt (linkPackName lp) ]
+>   img ! src (stringValue $ "http://s.vocabulink.com/img/pack/" ++ icon)
+>       ! alt (stringValue $ linkPackName lp)
+>  where icon = fromMaybe "default.png" (linkPackImage lp)
 
 > linkPackHyperlink :: LinkPack -> String
 > linkPackHyperlink lp = "/pack/" ++ show (linkPackNumber lp)
 
 > linkPackTextLink :: LinkPack -> Html
-> linkPackTextLink lp =
->   anchor ! [href (linkPackHyperlink lp)] << linkPackName lp
+> linkPackTextLink lp = a ! href (stringValue $ linkPackHyperlink lp) $ string $ linkPackName lp
 
 > linkPackIconLink :: LinkPack -> Html
-> linkPackIconLink lp =
->   anchor ! [href (linkPackHyperlink lp)] << linkPackIcon lp
+> linkPackIconLink lp = a ! href (stringValue $ linkPackHyperlink lp) $ linkPackIcon lp
 
 > createLinkPack :: LinkPack -> Integer -> Integer -> App Integer
 > createLinkPack lp memberNo firstLink = do
@@ -985,24 +1006,26 @@ TODO: Check that the new trimmed body is not empty.
 >                            \WHERE pack_no = {linkPackNumber lp}")
 >       comments <- case row of
 >                     Just root  -> renderComments root
->                     Nothing    -> return noHtml
->       simplePage ("Link Pack: " ++ linkPackName lp) [CSS "link"] [
->         thediv ! [theclass "two-column"] << [
->           thediv ! [theclass "column"] << displayLinkPack lp,
->           thediv ! [theclass "column"] << (unordList ls' ! [theclass "links pack-links"]) ],
->         hr ! [theclass "clear"], h3 << "Comments", comments ]
->     _                   -> output404 ["pack",show n]
+>                     Nothing    -> return mempty
+>       simplePage ("Link Pack: " ++ linkPackName lp) [CSS "link"] $ do
+>         div ! class_ "two-column" $ do
+>           div ! class_ "column" $  displayLinkPack lp
+>           div ! class_ "column" $ (unordList ls' ! class_ "links pack-links")
+>         hr ! class_ "clear"
+>         h3 $ "Comments"
+>         comments
+>     _              -> output404 ["pack", show n]
 
 > deleteLinkPack :: Integer -> App CGIResult
 > deleteLinkPack _ = error "Unimplemented."
 
 > addToLinkPack :: App CGIResult
 > addToLinkPack = do
->   pack  <- getRequiredInput "pack"
->   link  <- getRequiredInput "link"
+>   pack <- getRequiredInput "pack"
+>   link <- getRequiredInput "link"
 >   case pack of
->     "new"  ->  redirect $ "/pack/new?link=" ++ link
->     _      ->  do
+>     "new" -> redirect $ "/pack/new?link=" ++ link
+>     _     -> do
 >       let  packNo = read pack :: Integer
 >            linkNo = read link :: Integer
 >       $(execute' "INSERT INTO link_pack_link (pack_no, link_no) \
@@ -1018,5 +1041,17 @@ TODO: Check that the new trimmed body is not empty.
 
 > linkPacksPage :: App CGIResult
 > linkPacksPage = do
->   lps <- map (\x -> displayCompactLinkPack x True ! [thestyle "float: left"]) <$> latestLinkPacks
->   simplePage "Latest Link Packs" [CSS "link"] lps
+>   lps <- map (\x -> displayCompactLinkPack x True ! style "float: left") <$> latestLinkPacks
+>   simplePage "Latest Link Packs" [CSS "link"] $ mconcat lps
+
+It's nice to have little help buttons and such where necessary. Making them
+easier to create means that we're more likely to do so, which leads to a more
+helpful user interface.
+
+Currently this uses an icon from the
+\href{http://www.famfamfam.com/lab/icons/mini/}{FamFamFam ``Mini''} set.
+
+> helpButton :: String -> Maybe String -> Html
+> helpButton url label' = a ! href (stringValue url) ! class_ "help-button" $ do
+>   img ! src "http://s.vocabulink.com/icon_info.gif"
+>   maybe mempty (string . (' ' :)) label'

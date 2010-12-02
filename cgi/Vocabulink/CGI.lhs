@@ -27,7 +27,8 @@ not the end of the world if we generate an error or don't catch an exception.
 > module Vocabulink.CGI (  getInput, getRequiredInput, getInputDefault,
 >                          readInput, readRequiredInput, readInputDefault,
 >                          getInputs, getBody, handleErrors', referrerOrVocabulink,
->                          urlify, outputUnauthorized, outputText, outputJSON,
+>                          urlify, outputUnauthorized,
+>                          outputHtml, outputText, outputJSON,
 >                          output', getTextOrFileInput, tryCGI',
 >  {- Network.CGI -}       getInputFPS, getInputFilename,
 >                          MonadCGI, CGIResult, requestURI, requestMethod,
@@ -46,7 +47,6 @@ not the end of the world if we generate an error or don't catch an exception.
 > import Database.TemplatePG (pgDisconnect)
 > import Data.ByteString.Lazy.UTF8 (fromString, toString)
 > import Data.Char (isAlphaNum)
-> import Data.Monoid (mempty)
 > import Network.URI (uriPath, uriQuery)
 > import System.IO (Handle)
 > import Text.Formlets as F
@@ -55,10 +55,12 @@ not the end of the world if we generate an error or don't catch an exception.
 We're going to hide some Network.CGI functions so that we can override them
 with versions that automatically handle UTF-8-encoded input.
 
-> import Network.CGI hiding (getInput, readInput, getInputs, getBody)
+> import Network.CGI hiding (getInput, readInput, getInputs, getBody, Html)
 > import Network.CGI.Monad (CGIT(..))
 > import Network.CGI.Protocol (CGIResult(..))
 > import qualified Network.CGI as CGI
+> import Text.Blaze.Html5 (Html)
+> import Text.Blaze.Renderer.Utf8 (renderHtml)
 
 It's quite probable that we're going to trigger an unexpected exception
 somewhere in the program. This is especially likely because we're interfacing
@@ -109,6 +111,11 @@ Also, we do not always output HTML. Sometimes we output JSON or HTML fragments.
 
 > outputText :: (MonadCGI m, MonadIO m) => String -> m CGIResult
 > outputText s = setHeader "Content-Type" "text/plain; charset=utf-8" >> output' s
+
+> outputHtml :: MonadCGI m => Html -> m CGIResult
+> outputHtml html = do
+>   setHeader "Content-Type" "text/html; charset=utf-8"
+>   return $ CGIOutput $ renderHtml html
 
 To output JSON, we just need an associative list.
 

@@ -38,7 +38,7 @@ you are.
 > import Text.ParserCombinators.Parsec (  Parser, parse, noneOf, many1, try,
 >                                         char, string, optional)
 > import Text.ParserCombinators.Parsec.Perm ((<$$>), (<||>), (<|?>), permute)
-> import Text.Regex.Posix ((=~))
+> import Text.Regex
 
 \subsection{Creating the Auth Token}
 
@@ -224,7 +224,12 @@ receive from the gravatar library.
 > gravatarHash :: String -> Maybe String
 > gravatarHash email =
 >   let url = gravatar email
->       (_, _, _, matches) = url =~ "gravatar_id=([0-9a-f]+)" :: (String, String, String, [String]) in
+>       matches = matchRegex (mkRegex "gravatar_id=([0-9a-f]+)") url in
 >   case matches of
->     [hash]  -> Just hash
->     _       -> Nothing
+>     Just [hash] -> Just hash
+>     _           -> Nothing
+
+-- >       (_, _, _, matches) = url =~ "gravatar_id=([0-9a-f]+)" :: (String, String, String, [String]) in
+-- >   case matches of
+-- >     [hash]  -> Just hash
+-- >     _       -> Nothing

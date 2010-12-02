@@ -28,6 +28,8 @@
 > import Network.Gravatar (gravatarWith, size)
 > import System.IO (Handle)
 
+> import Prelude hiding (div, span, id)
+
 > data Comment = Comment {  commentNo        :: Integer,
 >                           commentLevel     :: Integer,
 >                           commentUsername  :: String,
@@ -39,18 +41,18 @@
 > commentBox c = do
 >   reply <- loggedInVerifiedButton "Reply"
 >   let indent = show (fromIntegral (commentLevel c) * (1.3 :: Double)) ++ "em"
->   return $ thediv ! [  identifier ("comment-" ++ show (commentNo c)),
->                        theclass "comment-box",
->                        thestyle ("margin-left: " ++ indent)] << [
->     image ! [  width "60", height "60", theclass "avatar",
->                src $ gravatarWith  (map toLower $ commentEmail c)
->                                    Nothing (size 60) (Just "wavatar") ],
->     paragraph ! [theclass "metadata"] << [
->       thespan ! [theclass "membername"] << commentUsername c,
->       thespan ! [theclass "timestamp"] << formatSimpleTime (commentTime c)],
->     thediv ! [theclass "body"] <<
->       thediv ! [theclass "comment htmlfrag"] << markdownToHtml (commentBody c),
->     reply ]
+>   return $ div ! id (stringValue $ "comment-" ++ show (commentNo c))
+>                ! class_ "comment-box"
+>                ! style (stringValue $ "margin-left: " ++ indent) $ do
+>     img ! width "60" ! height "60" ! class_ "avatar"
+>         ! src (stringValue $ gravatarWith (map toLower $ commentEmail c)
+>                                           Nothing (size 60) (Just "wavatar"))
+>     p ! class_ "metadata" $ do
+>       span ! class_ "membername" $ string $ commentUsername c
+>       span ! class_ "timestamp" $ string $ formatSimpleTime (commentTime c)
+>     div ! class_ "body" $
+>       div ! class_ "comment htmlfrag" $ markdownToHtml (commentBody c)
+>     reply
 
 Each comment uses (Pandoc-extended) Markdown syntax.
 
@@ -67,9 +69,9 @@ TODO: Move back into the App monad once we can handle transactions in it.
 >                          "INSERT INTO comment (author, body) \
 >                                       \VALUES ({memberNo}, {body}) \
 >                          \RETURNING comment_no") h
->             Just p  -> fromJust <$> $(queryTuple
+>             Just p' -> fromJust <$> $(queryTuple
 >                          "INSERT INTO comment (author, body, parent_no) \
->                                       \VALUES ({memberNo}, {body}, {p}) \
+>                                       \VALUES ({memberNo}, {body}, {p'}) \
 >                          \RETURNING comment_no") h
 
 > getComments :: Integer -> App [Comment]
@@ -98,8 +100,8 @@ from getComments to determine which we're dealing with.
 >                else map (\c -> c {commentLevel = commentLevel c - 1}) cs -- pseudo root
 >   invitation <- invitationLink "Comment"
 >   cs'' <- mapM commentBox cs'
->   return $ thediv ! [  identifier ("comments-" ++ show root),
->                        theclass "comments" ] << (cs'' +++ invitation)
+>   return $ div ! id (stringValue $ "comments-" ++ show root) ! class_ "comments" $
+>     mconcat (cs'' ++ [invitation])
 
 Replying to a comment is also a complex matter (are you noticing a trend
 here?). The complexity is mainly because we need to update information in a
@@ -124,7 +126,7 @@ the cache so that it gets regenerated on the next request.
 >       \AND c.comment_no = {n}")
 >   case row of
 >     Nothing -> error "Error posting comment."
->     Just c  -> output' $ showHtmlFragment $ markdownToHtml (commentBody c)
+>     Just c  -> outputHtml $ markdownToHtml (commentBody c)
 >  where commentFromValues' (n, l, u, e, t, b) =
 >          Comment {  commentNo        = n,
 >                     commentLevel     = fromJust l,
@@ -141,3 +143,19 @@ TODO: Make sure that the vote is in the proper format.
 >   $(execute' "INSERT INTO comment_vote (comment, member, upvote) \
 >                                \VALUES ({n}, {memberNo}, {vote == \"up\"})")
 >   output' ""
+
+It's common to add a little hyperlink teaser for actions that require
+verification. For example "login to reply" or "verify email to reply".
+
+> invitationLink :: String -> App Html
+> invitationLink text = do
+>   memberNo <- asks appMemberNo
+>   memberEmail <- asks appMemberEmail
+>   case (memberNo, memberEmail) of
+>     (Just _,  Just _)  -> return mempty
+>     (Just _,  _)       -> do
+>       url <- reversibleRedirect "/member/confirmation"
+>       return $ a ! class_ "invitation" ! href (stringValue url) $ string ("Verify Email to " ++ text)
+>     (_     ,  _)       -> do
+>       url <- reversibleRedirect "/member/login"
+>       return $ a ! class_ "invitation" ! href (stringValue url) $ string ("Login to " ++ text)
