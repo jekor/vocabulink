@@ -1,4 +1,4 @@
-% Copyright 2008, 2009, 2010 Chris Forno
+% Copyright 2008, 2009, 2010, 2011 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -51,7 +51,7 @@ member's password against the database as part of normal formlet validation.
 >                  ((,) <$> username <*> passwd "Password") `checkM`
 >                    ensureM passMatch err
 >   where passMatch (user, pwd) =
->           (fromJust . fromJust) <$> $(queryTuple'
+>           maybe False fromJust <$> $(queryTuple'
 >             "SELECT password_hash = crypt({pwd}, password_hash) \
 >             \FROM member WHERE username = {user}")
 >         err = "Username and password do not match (or don't exist)."
@@ -207,22 +207,26 @@ registered, we log them in and redirect them to the front page.
 
 > registerMember :: App CGIResult
 > registerMember = do
->   res <- runForm register $ Right mempty
->   key <- fromJust <$> getOption "authtokenkey"
->   case res of
->     Left html -> simplePage "Sign Up for Vocabulink" mempty html
->     Right reg -> do
->       memberNo <- fromJust <$> $(queryTuple'
->         "INSERT INTO member (username, password_hash) \
->                     \VALUES ({regUser reg}, crypt({regPass reg}, gen_salt('bf'))) \
->         \RETURNING member_no")
->       ip <- remoteAddr
->       authTok <- liftIO $ authToken memberNo (regUser reg) Nothing ip key
->       setAuthCookie authTok
->       res' <- sendConfirmationEmail memberNo reg
->       case res' of
->         Nothing -> error "Registration failure (this is not your fault)."
->         Just _  -> redirect "/"
+>   mn <- asks appMemberNo
+>   case mn of
+>     Just _  -> simplePage "You're Already Logged In" mempty mempty
+>     Nothing -> do
+>       res <- runForm register $ Right mempty
+>       key <- fromJust <$> getOption "authtokenkey"
+>       case res of
+>         Left html -> simplePage "Sign Up for Vocabulink" mempty html
+>         Right reg -> do
+>           memberNo <- fromJust <$> $(queryTuple'
+>             "INSERT INTO member (username, password_hash) \
+>                         \VALUES ({regUser reg}, crypt({regPass reg}, gen_salt('bf'))) \
+>             \RETURNING member_no")
+>           ip <- remoteAddr
+>           authTok <- liftIO $ authToken memberNo (regUser reg) Nothing ip key
+>           setAuthCookie authTok
+>           res' <- sendConfirmationEmail memberNo reg
+>           case res' of
+>             Nothing -> error "Registration failure (this is not your fault)."
+>             Just _  -> redirect "/"
 
 Once a user registers, they can log in. However, they won't be able to use most
 member-specific functions until they've confirmed their email address. This is
