@@ -1,0 +1,80 @@
+@import lib.sass
+
+#intro
+  width: 60%
+  margin:
+    left: 36%
+    bottom: 2em
+
+body #body
+  margin: 0
+  .top, .bottom .three-column
+    width: 66em
+    margin:
+      left: auto
+      right: auto
+  .top > *
+    font-size: 1.125em
+  .bottom
+    background-color: $bar_and_box_background
+    .three-column
+      > .column
+        width: 27%
+        margin:
+          left: 3%
+          right: 3%
+
+#word-cloud
+  float: left
+  width: 27%
+  height: 15em
+  margin:
+    left: 3%
+    top: 2em
+    bottom: 1em
+  position: relative
+  a
+    position: absolute
+    font-weight: bold
+    &:hover
+      z-index: 1000
+    &.class-1
+      color: #3097A0
+    &.class-2
+      color: #4FC7D2
+    &.class-3
+      color: #80C033
+    &.class-4
+      color: #B5E97B
+    &.class-5
+      color: #B9B9B9
+    &.class-6
+      color: #D0D0D0
+
+#body h2
+  font-weight: normal
+  strong
+    font-size: 200%
+    vertical-align: middle
+    margin-right: 0.33em
+    color: #4FC7D2
+    text-shadow: #28A3A4 2px 2px 1px
+
+#try-now
+  display: block
+  float: right
+  @include vertical_gradient(#A6DE66, #79BB27)
+  border: 2px solid #000000
+  padding: 0.33em 1em
+  font-size: 1.125em
+  font-weight: bold
+  color: white
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3)
+  &:active
+    @include vertical_gradient(#79BB27, #A6DE66)
+    // color: darken(#6ACFD8, 20%)
+    position: relative
+    top: 1px
+
+h1, h2, p
+  color: #525252

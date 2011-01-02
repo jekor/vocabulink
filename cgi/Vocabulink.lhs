@@ -530,7 +530,7 @@ Finally, we get to an actual page of the site: the front page.
 
 > frontPage :: App CGIResult
 > frontPage = do
->   cloud <- wordCloud 40 375 240 12 32 6
+>   cloud <- wordCloud 40 261 248 12 32 6
 >   let page = $(hamletFileDebug "../hamlet/frontpage.hamlet") hamletUrl
 >   stdPage "Welcome to Vocabulink" [CSS "front"] mempty page
 

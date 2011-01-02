@@ -34,8 +34,7 @@ To demonstrate, let's learn the word "lerni" ("to learn" in Esperanto).
     you're satisfied...
  9. Don't actually do the following, as a link for =lerni= already exists: click
     =Link=. This will establish the link.
- 10. Add the link to your review set by clicking the =Review= button on the page
-     of a newly created link.
+ 10. Add the link to your review set by clicking the =Review= button on the page of a newly created link.
 
 Congratulations! Continue on to see how to review your newly created link.
 
