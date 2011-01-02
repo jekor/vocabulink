@@ -1,4 +1,4 @@
-% Copyright 2008, 2009, 2010 Chris Forno
+% Copyright 2008, 2009, 2010, 2011 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -526,58 +526,13 @@ was designed (pattern matching is limited). We output a qualified 404 error.
 
 > dispatch _ path = output404 path
 
-Finally, we get to an actual page of the site: the front page. Currently, it's
-doing a lot more than I'd like it to do. But it'll have to stay this way until
-we have some sort of widget/layout system. It gets the common header, footer,
-and associated functionality by using the |stdPage| function.
-
-Logged-in members are presented with a different ``article'' in the main body
-as well as a ``My Links'' box showing them the links that they've created. The
-page also shows a list of recent articles should the reader feel a little lost
-or curious.
+Finally, we get to an actual page of the site: the front page.
 
 > frontPage :: App CGIResult
 > frontPage = do
->   memberNo <- asks appMemberNo
->   my <- maybe (return mempty) myLinks memberNo
->   latest <- newLinks
->   featured <- featuredPack
->   let article = isJust memberNo ? "welcome-member" $ "welcome"
->   article' <- getArticle article
->   body <- maybe (return $ h1 $ "Welcome to Vocabulink") articleBody article'
->   stdPage "Welcome to Vocabulink" [] mempty $ do
->     div ! id "main-content" $ body
->     div ! id "sidebar" $ do
->       featured
->       latest
->       my
->     when (isJust memberNo) twitterScript
->  where myLinks mn = do
->          ls <- memberLinks mn 0 7
->          partialLinks <- mapM renderPartialLink ls
->          return $ div ! class_ "sidebox" $ do
->                     h3 $ a ! href (stringValue $ "/links/" ++ show mn) $ "My Links"
->                     unordList partialLinks ! class_ "links"
->        newLinks = do
->          ls <- latestLinks 0 7
->          partialLinks <- mapM renderPartialLink ls
->          return $ div ! class_ "sidebox" $ do
->                     h3 $ a ! href "/links" $ "Latest Links"
->                     unordList partialLinks ! class_ "links"
->        featuredPack = do
->          lp <- getLinkPack 1
->          return $ maybe mempty (\l -> div ! class_ "sidebox" $ do
->                                         h3 $ do
->                                           string "Featured Link Pack:"
->                                           br
->                                           linkPackTextLink l
->                                         displayCompactLinkPack l False) lp
-
-> twitterScript :: Html
-> twitterScript = do
->   script ! src "http://twitter.com/javascripts/blogger.js" $ mempty
->   script ! src "http://twitter.com/statuses/user_timeline/Vocabulink.json?\
->                \callback=twitterCallback2&amp;count=7" $ mempty
+>   cloud <- wordCloud 40 375 240 12 32 6
+>   let page = $(hamletFileDebug "../hamlet/frontpage.hamlet") hamletUrl
+>   stdPage "Welcome to Vocabulink" [CSS "front"] mempty page
 
 %include Vocabulink/Config.lhs
 %include Vocabulink/Utils.lhs

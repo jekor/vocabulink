@@ -228,8 +228,3 @@ receive from the gravatar library.
 >   case matches of
 >     Just [hash] -> Just hash
 >     _           -> Nothing
-
--- >       (_, _, _, matches) = url =~ "gravatar_id=([0-9a-f]+)" :: (String, String, String, [String]) in
--- >   case matches of
--- >     [hash]  -> Just hash
--- >     _       -> Nothing

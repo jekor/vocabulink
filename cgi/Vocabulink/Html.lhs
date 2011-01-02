@@ -30,7 +30,8 @@ functions. An example of this is |linkList|.
 >                         id, class_, href, type_, src, style, title,
 >                         width, height, alt, accesskey, colspan,
 >                         unordList, multiColumn, multiColumnList,
->                         clear, markdownToHtml) where
+>                         clear, markdownToHtml,
+>                         hamletFile, hamletFileDebug, hamletUrl) where
 
 > import Vocabulink.Utils
 
@@ -40,6 +41,7 @@ functions. An example of this is |linkList|.
 > import Text.Blaze.Html5.Attributes (id, class_, href, type_, src, style,
 >                                     width, height, title, alt, accesskey,
 >                                     colspan)
+> import Text.Hamlet (hamletFile, hamletFileDebug)
 > import Text.Pandoc (readMarkdown, writeHtmlString, defaultParserState,
 >                     defaultWriterOptions, stateSanitizeHTML)
 
@@ -82,3 +84,6 @@ attacks.
 
 > markdownToHtml :: String -> Html
 > markdownToHtml = preEscapedString . writeHtmlString defaultWriterOptions . readMarkdown defaultParserState {stateSanitizeHTML = True}
+
+> hamletUrl :: a -> [(String, String)] -> String
+> hamletUrl _ _ = ""

@@ -1,9 +1,9 @@
 Name:          Vocabulink
-Version:       2010.11.27
+Version:       2011.1.2
 Cabal-Version: >= 1.2
 License:       OtherLicense
 License-File:  COPYING
-Copyright:     2008, 2009, 2010 Chris Forno
+Copyright:     2008, 2009, 2010, 2011 Chris Forno
 Author:        Chris Forno (jekor)
 Maintainer:    jekor@jekor.com
 Stability:     stable
@@ -32,6 +32,7 @@ Executable vocabulink.cgi
                  filepath,
                  formlets >= 0.7,
                  gravatar,
+                 hamlet >= 0.7,
                  json,
                  MissingH,
                  mtl,
@@ -42,12 +43,13 @@ Executable vocabulink.cgi
                  pandoc,
                  parsec,
                  process,
+                 random,
                  regex-compat,
                  regex-tdfa,
                  scgi >= 0.3.1,
                  split,
                  template-haskell,
-                 TemplatePG,
+                 templatepg,
                  time,
                  unix,
                  utf8-string

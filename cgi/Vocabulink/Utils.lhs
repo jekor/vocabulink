@@ -33,7 +33,7 @@ oft-used functions for other modules.
 >  {- Control.Applicative.Error -}  Failing(..), maybeRead,
 >  {- Control.Arrow -}              first, second,
 >  {- Control.Exception -}          SomeException,
->  {- Control.Monad -}              liftM, Control.Monad.join, msum, when,
+>  {- Control.Monad -}              liftM, Control.Monad.join, msum, when, replicateM,
 >  {- Control.Monad.Trans -}        liftIO, MonadIO,
 >  {- Data.Char -}                  toLower,
 >  {- Data.Either.Utils -}          forceEither,

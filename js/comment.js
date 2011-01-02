@@ -1,4 +1,4 @@
-// Copyright 2008, 2009 Chris Forno
+// Copyright 2008, 2009, 2010 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -17,35 +17,24 @@
 
 // TODO: Move all forum-related functionality out to a separate file.
 
-// TODO: This should go into a more general AJAX/effects file.
-function overlay(elem) {
-  var oldPosition = elem.css('position');
-  elem.css('position', 'relative');
-  var over = $('<div style="opacity: 0.5; width: 100%; height: 100%; top: 0; left: 0; position: absolute; background: black url(\'http://s.vocabulink.com/wait.gif\') no-repeat center center;"></div>').appendTo(elem);
-  return function () {
-    over.remove();
-    elem.css('position', oldPosition);
-  };
-}
-
 function sendReply(box, commentNumber, sendButton, e) {
   var body = $.trim(box.find('textarea').val());
   if (body === '') {
     alert('Please enter a comment.');
     return false;
   }
-  var removeOverlay = overlay(box);
+  box.mask('Sending...');
   $.ajax({'type': 'POST', 'url': '/comment/' + commentNumber + '/reply',
           'contentType': 'text/plain',
           'data': body,
           'dataType': 'html',
           'success': function (data) {
             sendButton.remove();
-            removeOverlay();
+            box.unmask();
             box.find('.body').html('<div class="comment htmlfrag">' + data + '</div>');
           },
           'error':   function (data) {
-            removeOverlay();
+            box.unmask();
             alert('Error sending reply.');
           }});
   return false;

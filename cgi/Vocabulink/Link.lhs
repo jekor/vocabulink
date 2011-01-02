@@ -1,4 +1,4 @@
-% Copyright 2008, 2009, 2010 Chris Forno
+% Copyright 2008, 2009, 2010, 2011 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -31,7 +31,8 @@ them.
 >                           addToLinkPack, linkPacksPage, getLinkPack,
 >                           displayCompactLinkPack, linkPackTextLink,
 >                           linkPackIconLink,
->                           linkOriginLanguage, linkDestinationLanguage ) where
+>                           linkOriginLanguage, linkDestinationLanguage,
+>                           wordCloud ) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -43,11 +44,14 @@ them.
 > import Vocabulink.Rating
 > import Vocabulink.Utils
 
+> import Control.Monad.State
+> import Data.List (find, genericLength)
 > import System.Cmd (system)
 > import System.IO (Handle)
+> import System.Random
 > import qualified Text.Blaze.Html5.Formlets as HF (input, textarea, hidden, selectRaw)
 
-> import Prelude hiding (div, span, id)
+> import Prelude hiding (div, span, id, words)
 
 \subsection{Link Data Types}
 
@@ -344,13 +348,13 @@ TODO: These queries might be better as functions.
 >      \ORDER BY link_no ASC LIMIT 1) \
 >     \ORDER BY link_no DESC")
 >   return $ h1 ! class_ (stringValue $ "link " ++ linkTypeName link) $ do
->     maybe mempty (\n -> a ! href (stringValue $ show n) ! class_ "prev"
+>     maybe mempty (\n -> a ! href (stringValue $ show $ fromJust n) ! class_ "prev"
 >                           ! title "Previous Link" $ mempty) prevLink
 >     span ! class_ "orig" ! title (stringValue oLanguage) $ string $ linkOrigin link
 >     span ! class_ "link" ! title (stringValue $ linkTypeName link) $
 >       (renderLinkType $ linkType link)
 >     span ! class_ "dest" ! title (stringValue dLanguage) $ string $ linkDestination link
->     maybe mempty (\n -> a ! href (stringValue $ show n) ! class_ "next"
+>     maybe mempty (\n -> a ! href (stringValue $ show $ fromJust n) ! class_ "next"
 >                           ! title "Next Link" $ mempty) nextLink
 >  where renderLinkType :: LinkType -> Html
 >        renderLinkType (LinkWord word _) = string word
@@ -1053,5 +1057,73 @@ Currently this uses an icon from the
 
 > helpButton :: String -> Maybe String -> Html
 > helpButton url label' = a ! href (stringValue url) ! class_ "help-button" $ do
->   img ! src "http://s.vocabulink.com/icon_info.gif"
+>   img ! src "http://s.vocabulink.com/img/icon/info.png"
 >   maybe mempty (string . (' ' :)) label'
+
+Generate a cloud of words from links in the database.
+
+> data WordStyle = WordStyle (Float, Float) (Float, Float) Int Int
+>   deriving (Show, Eq)
+
+> wordCloud :: Int -> Int -> Int -> Int -> Int -> Int -> App Html
+> wordCloud n width' height' fontMin fontMax numClasses = do
+>   words <- $(queryTuples'
+>     "SELECT origin, link_no FROM link \
+>     \WHERE NOT deleted \
+>     \ORDER BY random() LIMIT {n}")
+>   gen <- liftIO getStdGen
+>   let (styles, (newGen, _)) = runState (mapM (wordStyle . fst) words) (gen, [])
+>   liftIO $ setStdGen newGen
+>   return $ mconcat $ catMaybes $ zipWith (\ w s -> liftM (wordTag w) s) words styles
+>  where wordTag :: (String, Integer) -> WordStyle -> Html
+>        wordTag (word, linkNo) (WordStyle (x, y) _ classNum fontSize) =
+>          let style' = "font-size: " ++ (show fontSize) ++ "px; "
+>                    ++ "left: " ++ (show x) ++ "%; " ++ "top: " ++ (show y) ++ "%;" in
+>          a ! href (stringValue $ "/link/" ++ show linkNo)
+>            ! class_ (stringValue $ "class-" ++ show classNum)
+>            ! style (stringValue style')
+>            $ string word
+>        wordStyle :: String -> State (StdGen, [WordStyle]) (Maybe WordStyle)
+>        wordStyle word = do
+>          let fontRange = fontMax - fontMin
+>          fontSize <- (\ s -> fontMax - round (logBase 1.15 ((s * (1.15 ^ fontRange)::Float) + 1))) <$> getRandomR 0.0 1.0
+>          -- fontSize <- getRandomR fontMin fontMax
+>          let widthP  = (100.0 / (fromIntegral width')::Float)  * genericLength word * fromIntegral fontSize
+>              heightP = (100.0 / (fromIntegral height')::Float) * fromIntegral fontSize
+>          x        <- getRandomR 0 (max (100 - widthP) 1)
+>          y        <- getRandomR 0 (max (100 - heightP) 1)
+>          class'   <- getRandomR 1 numClasses
+>          (gen, prev) <- get
+>          let spiral' = spiral 30.0 (x, y)
+>              styles  = filter inBounds $ map (\ pos -> WordStyle pos (widthP, heightP) class' fontSize) spiral'
+>              style'  = find (\ s -> not $ any (flip overlap $ s) prev) styles
+>          case style' of
+>            Nothing -> return Nothing
+>            Just style'' -> do
+>              put (gen, style'':prev)
+>              return $ Just style''
+>        getRandomR :: Random a => a -> a -> State (StdGen, [WordStyle]) a
+>        getRandomR min' max' = do
+>          (gen, styles) <- get
+>          let (n', newGen) = randomR (min', max') gen
+>          put (newGen, styles)
+>          return n'
+>        inBounds :: WordStyle -> Bool
+>        inBounds (WordStyle (x, y) (w, h) _ _) = x >= 0 && y >= 0 && x + w <= 100 && y + h <= 100
+>        overlap :: WordStyle -> WordStyle -> Bool
+>        -- We can't really be certain of when a word is overlapping,
+>        -- since the words will be rendered by the user's browser.
+>        -- However, we can make a guess.
+>        overlap (WordStyle (x1, y1) (w1', h1') _ _) (WordStyle (x2, y2) (w2', h2') _ _) =
+>          let hInter = (x2 > x1 && x2 < x1 + w1') || (x2 + w2' > x1 && x2 + w2' < x1 + w1') || (x2 < x1 && x2 + w2' > x1 + w1')
+>              vInter = (y2 > y1 && y2 < y1 + h1') || (y2 + h2' > y1 && y2 + h2' < y1 + h1') || (y2 < y1 && y2 + h2' > y1 + h1') in
+>          hInter && vInter
+>        spiral :: Float -> (Float, Float) -> [(Float, Float)]
+>        spiral maxTheta = spiral' 0.0
+>         where spiral' theta (x, y) =
+>                 if theta > maxTheta
+>                   then []
+>                   else let r  = theta * 3
+>                            x' = (r * cos theta) + x
+>                            y' = (r * sin theta) + y in
+>                        (x', y'):(spiral' (theta + 0.1) (x, y))
