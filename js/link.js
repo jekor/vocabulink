@@ -1,4 +1,4 @@
-// Copyright 2009, 2010 Chris Forno
+// Copyright 2009, 2010, 2011 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -33,8 +33,16 @@ function annotateLink(link) {
   });
 }
 
+function linkNumber() {
+    return window.location.pathname.split('/').pop();
+}
+
 $(document).ready(function () {
   annotateLink($('h1.link:visible'));
+
+  $('#pronounce').click(function () {
+    $(this).find('audio')[0].play();
+  });
 
   // "add to review"
   $('#link-op-review.enabled').click(function () {
@@ -53,12 +61,41 @@ $(document).ready(function () {
     });
   });
 
+  $('#link-op-add-pronunciation.enabled').click(function () {
+    var box = $('<div class="operation-box">'
+              + '</div>').hide().appendTo('#link-ops');
+    var uploader = new qq.FileUploader({
+      'element': box[0],
+      'action': '/link/' + linkNumber() + '/pronunciation',
+      'allowedExtensions': ['flac', 'wav', 'ogg', 'mp3'],
+      'onComplete': function (id, fileName, responseJSON) {
+        box.slideUp('fast');
+        box.remove();
+        location.reload();
+      }
+    });
+    box.slideDown('fast');
+  });
+
+  $('#link-op-delete-pronunciation.enabled').click(function () {
+    var button = $(this);
+    button.text("deleting...");
+    $.ajax({'type': 'DELETE'
+           ,'url': '/link/' + linkNumber() + '/pronunciation'
+           ,'success': function () {
+              button.text("Deleted.");
+            }
+           ,'error': function () {
+              button.text("Failed to delete.");
+            }
+           });
+  });
+
   // "delete link"
   $('#link-op-delete.enabled').click(function () {
     var op = $(this);
     op.mask("Deleting...");
-    var linkNum = window.location.pathname.split('/').pop();
-    $.postJSON('/link/' + linkNum + '/delete', null, function (successful, data) {
+    $.postJSON('/link/' + linkNumber() + '/delete', null, function (successful, data) {
       op.unmask();
       op.removeClass("enabled").addClass("disabled");
       if (successful) {

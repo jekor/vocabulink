@@ -3,17 +3,18 @@
 
 sources := $(shell ls *.sass | grep -v lib.sass)
 csses := $(sources:.sass=.css)
+libs := lib.common.css lib.member.css
 
-all : $(csses) lib.common.css lib.member.css
+all : $(csses) $(libs)
 
 lib.common.css : common.css comment.css
 	cat $^ > $@
 
-lib.member.css : link-editor.css markitup-set.css markitup-skin.css jquery-loadmask.css
+lib.member.css : link-editor.css markitup-set.css markitup-skin.css jquery-loadmask.css fileuploader.css
 	cat $^ > $@
 
 %.css : %.sass lib.sass
 	sass $< > $@
 
 clean :
-	rm $(csses) lib.common.css lib.member.css
+	rm $(csses) $(libs)

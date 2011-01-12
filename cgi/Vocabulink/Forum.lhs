@@ -1,4 +1,4 @@
-% Copyright 2008, 2009, 2010 Chris Forno
+% Copyright 2008, 2009, 2010, 2011 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -48,7 +48,6 @@ security problems.)
 > import Vocabulink.Page
 > import Vocabulink.Utils
 
-> import Data.ByteString.Lazy (writeFile)
 > import Data.List (intersperse)
 > import qualified Text.Blaze.Html5.Formlets as HF (input)
 
@@ -75,7 +74,7 @@ for creating new groups.
 >           div ! id "forum-group-creator"
 >               ! class_ "forum-group"
 >               ! style "display: none" $ html
->     _                       -> outputError 403 "Access Denied" []
+>     _                       -> outputUnauthorized
 
 The dependencies for forum pages are all the same.
 
@@ -200,7 +199,7 @@ and the time of the latest topic.
 > forumPage forum = do
 >   row <- $(queryTuple' "SELECT title FROM forum WHERE name = {forum}")
 >   case row of
->     Nothing     -> output404 ["forum", forum]
+>     Nothing     -> outputNotFound
 >     Just title' -> do
 >       topics <- forumTopicRows forum
 >       newTopicButton <- loggedInVerifiedButton "New Topic"
@@ -306,7 +305,7 @@ probably need paging.
 >                        \WHERE f.name = t.forum_name \
 >                          \AND t.topic_no = {i}")
 >   case row of
->     Nothing                     -> output404 ["forum", fn, show i]
+>     Nothing                     -> outputNotFound
 >     Just (root, title', fTitle) -> do
 >       comments <- renderComments root
 >       stdPage title' forumDeps mempty $ do

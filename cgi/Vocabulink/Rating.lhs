@@ -56,4 +56,4 @@ full star into the rating system.
 >   rating <- readRequiredInput "rating" :: App Double
 >   $(execute' "INSERT INTO link_rating (link_no, member_no, rating) \
 >                               \VALUES ({ln}, {memberNo}, {rating})")
->   output' ""
+>   outputNothing

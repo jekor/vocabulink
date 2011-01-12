@@ -1,4 +1,4 @@
-% Copyright 2008, 2009, 2010 Chris Forno
+% Copyright 2008, 2009, 2010, 2011 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -30,9 +30,8 @@ other conveniences.
 >                              Dependency(..), dependencyVersion,
 >                              withRequiredMemberNumber,
 >                              loggedInVerified, loggedInVerifiedButton,
->                              output404, reversibleRedirect,
+>                              reversibleRedirect,
 >                              queryTuple', queryTuples', execute',
->  {- Network.CGI -}           outputNothing,
 >  {- Control.Monad.Reader -}  asks,
 >  {- Database.TemplatePG -}   withTransaction, execute, queryTuple, queryTuples ) where
 
@@ -55,7 +54,7 @@ because of cyclic dependencies.
 > import Database.TemplatePG
 > import Language.Haskell.TH (Q, Exp)
 > import Network.CGI.Monad (MonadCGI(..))
-> import Network.CGI (CGI, CGIT, outputNotFound, outputNothing)
+> import Network.CGI (CGI, CGIT)
 > import Network.URI (escapeURIString, isUnescapedInURI)
 > import System.IO (Handle)
 
@@ -192,12 +191,6 @@ what to do with it.
 > reversibleRedirect path = do
 >   request <- fromMaybe "/" <$> getVar "REQUEST_URI"
 >   return $ path ++ "?redirect=" ++ escapeURIString isUnescapedInURI request
-
-I used to log all 404s, but the logs were overrun by favicon requests and the
-like.
-
-> output404 :: [String] -> App CGIResult
-> output404 = outputNotFound . intercalate "/"
 
 \subsubsection{Database}
 

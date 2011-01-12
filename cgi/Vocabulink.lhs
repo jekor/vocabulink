@@ -268,7 +268,7 @@ a 404?}
 >     ("":xs)  -> case find (== "") xs of
 >                   Nothing  -> dispatch method xs
 >                   Just _   -> redirect $ '/' : intercalate "/" (filter (/= "") xs)
->     _        -> output404 path
+>     _        -> outputNotFound
 
 Here is where we dispatch each request to a function. We can match the request
 on method and path components. This means that we can dispatch a @GET@ request
@@ -340,22 +340,24 @@ establish the link. (Previewing is done through the @GET@ as well.)
 > dispatch "GET"   ["link","new"] = newLink
 > dispatch "POST"  ["link","new"] = newLink
 
-> dispatch method path@("link":x:method') =
+> dispatch method ("link":x:method') =
 >   case maybeRead x of
->     Nothing  -> output404 path
+>     Nothing  -> outputNotFound
 >     Just n   -> case (method, method') of
->                   ("GET"   ,[])          -> linkPage n
->                   ("POST"  ,["delete"])  -> deleteLink n
+>                   ("GET"   ,[])                -> linkPage n
+>                   ("POST"  ,["delete"])        -> deleteLink n
 >                   -- The next is not technically a method.
->                   ("POST"  ,["rating"])  -> rateLink n
->                   ("POST"  ,["story"])   -> updateLinkStory n
->                   (_       ,_)           -> output404 path
+>                   ("POST"  ,["rating"])        -> rateLink n
+>                   ("POST"  ,["story"])         -> updateLinkStory n
+>                   ("POST"  ,["pronunciation"]) -> addPronunciation n
+>                   ("DELETE",["pronunciation"]) -> deletePronunciation n
+>                   (_       ,_)                 -> outputNotFound
 
 \subsection{Searching}
 
 Retrieving a listing of links is easier.
 
-> dispatch "GET" path@["links"] = do
+> dispatch "GET" ["links"] = do
 >   ol <- getInput "ol"
 >   dl <- getInput "dl"
 >   case (ol, dl) of
@@ -365,15 +367,15 @@ Retrieving a listing of links is easier.
 >       case (ol'', dl'') of
 >         (Just ol''', Just dl''')  -> linksPage  ("Links from " ++ ol''' ++ " to " ++ dl''')
 >                                                 (languagePairLinks ol' dl')
->         _                         -> output404 path
+>         _                         -> outputNotFound
 >     _                        -> linksPage "Latest Links" latestLinks
-> dispatch "GET" path@["links",x] =
+> dispatch "GET" ["links",x] =
 >   case maybeRead x of
->     Nothing  -> output404 path
+>     Nothing  -> outputNotFound
 >     Just n   -> do
 >       memberName <- getMemberName n
 >       case memberName of
->         Nothing  -> output404 path
+>         Nothing  -> outputNotFound
 >         Just n'  -> linksPage ("Links by " ++ n') (memberLinks n)
 
 Site-wide search is done separately for now.
@@ -393,13 +395,13 @@ The process of creating link packs is similar to that for creating links.
 
 > dispatch "POST"  ["pack","link","new"] = addToLinkPack
 
-> dispatch method path@("pack":x:method') =
+> dispatch method ("pack":x:method') =
 >   case maybeRead x of
->     Nothing  -> output404 path
+>     Nothing  -> outputNotFound
 >     Just n   -> case (method, method') of
 >                   ("GET"   ,[])          -> linkPackPage n
 >                   ("POST"  ,["delete"])  -> deleteLinkPack n
->                   (_       ,_)           -> output404 path
+>                   (_       ,_)           -> outputNotFound
 
 \subsection{Languages}
 
@@ -429,7 +431,7 @@ add a link for review             & $\rightarrow$ & @POST /review/n/add@
 Reviewing links is one of the only things that logged-in-but-unverified members
 are allowed to do.
 
-> dispatch method path@("review":rpath) = do
+> dispatch method ("review":rpath) = do
 >   memberNo' <- asks appMemberNo
 >   case memberNo' of
 >     Nothing        -> redirect =<< reversibleRedirect "/member/login"
@@ -438,13 +440,12 @@ are allowed to do.
 >         ("GET"   ,["next"])   -> nextReview memberNo
 >         ("POST"  ,(x:xs))     ->
 >            case maybeRead x of
->              Nothing  -> outputError 400
->                          "Links are identified by numbers only." []
+>              Nothing  -> outputNotFound
 >              Just n   -> case xs of
 >                            ["add"]  -> newReview memberNo n
 >                            []       -> linkReviewed memberNo n
->                            _        -> output404 path
->         (_       ,_)          -> output404 path
+>                            _        -> outputNotFound
+>         (_       ,_)          -> outputNotFound
 
 \subsection{Membership}
 
@@ -497,41 +498,45 @@ including the forum topic text could lead to some very long URIs.
 
 > dispatch "POST"  ["forum",x,"new"] = createForumTopic x
 
-> dispatch "GET"   path@["forum",x,y] =
+> dispatch "GET"   ["forum",x,y] =
 >   case maybeRead y of
->     Nothing  -> output404 path
+>     Nothing  -> outputNotFound
 >     Just n   -> forumTopicPage x n
 
 ``reply'' is used here as a noun.
 
-> dispatch method path@("comment":x:method') =
+> dispatch method ("comment":x:method') =
 >   case maybeRead x of
->     Nothing  -> output404 path
+>     Nothing  -> outputNotFound
 >     Just n   -> case (method, method') of
 >                   ("POST"  ,["reply"])  -> replyToComment n
 >                   ("POST"  ,["votes"])  -> voteOnComment n
->                   (_       ,_)          -> output404 path
+>                   (_       ,_)          -> outputNotFound
 
 \subsection{Everything Else}
 
 For Google Webmaster Tools, we need to respond to a certain URI that acts as a
 kind of ``yes, we really do run this site''.
 
-> dispatch "GET" ["google46b9909165f12901.html"] = output' ""
+> dispatch "GET" ["google46b9909165f12901.html"] = outputNothing
+
+> dispatch "GET" ["robots.txt"] = outputText $ unlines [ "User-agent: *"
+>                                                      , "Disallow:"
+>                                                      ]
 
 It would be nice to automatically respond with ``Method Not Allowed'' on URIs
 that exist but don't make sense for the requested method (presumably @POST@).
 However, we need to take a simpler approach because of how the dispatch method
 was designed (pattern matching is limited). We output a qualified 404 error.
 
-> dispatch _ path = output404 path
+> dispatch _ _ = outputNotFound
 
 Finally, we get to an actual page of the site: the front page.
 
 > frontPage :: App CGIResult
 > frontPage = do
 >   cloud <- wordCloud 40 261 248 12 32 6
->   let page = $(hamletFileDebug "../hamlet/frontpage.hamlet") hamletUrl
+>   let page = $(hamletFile "../hamlet/frontpage.hamlet") hamletUrl
 >   stdPage "Welcome to Vocabulink" [CSS "front"] mempty page
 
 %include Vocabulink/Config.lhs

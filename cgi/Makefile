@@ -3,23 +3,18 @@
 cgi := vocabulink.cgi
 lhss := $(shell find . -name "*.lhs" -print)
 date := $(shell date +%Y-%m-%d)
+binary := dist/build/$(cgi)/$(cgi)
 DIST := vocabulink--$(date)
 
-all : ../$(cgi).new
+all : $(binary)
 
 doc : vocabulink.pdf
 
 configure : $(lhss)
 	cabal configure
 
-../$(cgi) : ../$(cgi).new
-	cp ../$(cgi) ../$(cgi).bak
-	mv ../$(cgi).new ../$(cgi)
-
-../$(cgi).new : $(lhss)
+$(binary) : $(lhss)
 	TPG_DB="vocabulink" TPG_USER="vocabulink" cabal build
-	cp dist/build/$(cgi)/$(cgi) ../$(cgi).new
-	strip ../$(cgi).new
 
 vocabulink.pdf : vocabulink.tex
 	pdflatex $<
@@ -27,9 +22,12 @@ vocabulink.pdf : vocabulink.tex
 vocabulink.tex : $(lhss)
 	lhs2TeX Vocabulink.lhs > $@
 
-install : ../$(cgi).new
+install : $(binary)
 	mv ../$(cgi) ../$(cgi).old
-	mv ../$(cgi).new ../$(cgi)
+	cp $(binary) ../$(cgi)
+	strip ../$(cgi)
+	chown http:http ../$(cgi)
+	chmod +s ../$(cgi)
 	-killall $(cgi)
 
 tags : $(lhss)
@@ -56,13 +54,13 @@ metrics : $(lhss)
 
 dist : $(DIST).tar.gz
 
-$(DIST).tar.gz: vocabulink.pdf
+$(DIST).tar.gz :
 #	`darcs dist` would be nice, but the darcs repository is the parent directory
 #	of this one and needs to be cleaned up a bit. For now, we'll have to do it
 #	ourselves.
-	echo README COPYING Makefile vocabulink.cabal vocabulink.pdf ../vocabulink.sql ../js/{comment,form,link-editor,review,star-rating}.js ../js/Makefile ../js/{functional,jquery.markitup,markdown.set,showdown,ajaxupload}.js ../css/*.ccss ../css/Makefile ../etc/vocabulink.conf.example ../xhtml-unicode.patch ../tests/{Makefile,web.lhs,web.pdf} `find -name "*.lhs" -o -name "*.lhs-boot"` | xargs tar --transform 's,^(\./)?,$(DIST)/,x' -czvf $(DIST).tar.gz
+	echo README COPYING Makefile vocabulink.cabal ../vocabulink.sql ../js/{comment,form,link-editor,review,star-rating}.js ../js/Makefile ../css/*.sass ../css/Makefile ../etc/vocabulink.conf.example ../tests/{Makefile,web.lhs} `find -name "*.lhs" -o -name "*.lhs-boot"` | xargs tar --transform 's,^(\./)?,$(DIST)/,x' -czvf $(DIST).tar.gz
 
 publish : $(DIST).tar.gz
-	cp $(DIST).tar.gz vocabulink.pdf ~/project/jekor.com/vocabulink/
+	cp $(DIST).tar.gz ~/project/jekor.com/vocabulink/
 	rm -f ~/project/jekor.com/vocabulink/vocabulink.tar.gz
 	pushd ~/project/jekor.com/vocabulink && ln -s $(DIST).tar.gz vocabulink.tar.gz

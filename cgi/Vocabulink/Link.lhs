@@ -30,7 +30,7 @@ them.
 >                           newLinkPack, linkPackPage, deleteLinkPack,
 >                           addToLinkPack, linkPacksPage, getLinkPack,
 >                           displayCompactLinkPack, linkPackTextLink,
->                           linkPackIconLink,
+>                           linkPackIconLink, addPronunciation, deletePronunciation,
 >                           linkOriginLanguage, linkDestinationLanguage,
 >                           wordCloud ) where
 
@@ -49,9 +49,11 @@ them.
 > import System.Cmd (system)
 > import System.IO (Handle)
 > import System.Random
+> import Text.Blaze.Html5 (audio, source)
+> import Text.Blaze.Html5.Attributes (preload)
 > import qualified Text.Blaze.Html5.Formlets as HF (input, textarea, hidden, selectRaw)
 
-> import Prelude hiding (div, span, id, words)
+> import Prelude hiding (div, span, id, words, writeFile)
 
 \subsection{Link Data Types}
 
@@ -311,8 +313,8 @@ extending the existing one, which at least jquery doesn't like.
 
 TODO: These queries might be better as functions.
 
-> renderLink :: Link -> App Html
-> renderLink link = do
+> renderLink :: Link -> Bool -> App Html
+> renderLink link pronounceable' = do
 >   oLanguage <- linkOriginLanguage link
 >   dLanguage <- linkDestinationLanguage link
 >   let oLang = linkOriginLang link
@@ -350,7 +352,9 @@ TODO: These queries might be better as functions.
 >   return $ h1 ! class_ (stringValue $ "link " ++ linkTypeName link) $ do
 >     maybe mempty (\n -> a ! href (stringValue $ show $ fromJust n) ! class_ "prev"
 >                           ! title "Previous Link" $ mempty) prevLink
->     span ! class_ "orig" ! title (stringValue oLanguage) $ string $ linkOrigin link
+>     span ! class_ "orig" ! title (stringValue oLanguage) $ do
+>       string $ linkOrigin link
+>       pronunciation
 >     span ! class_ "link" ! title (stringValue $ linkTypeName link) $
 >       (renderLinkType $ linkType link)
 >     span ! class_ "dest" ! title (stringValue dLanguage) $ string $ linkDestination link
@@ -359,6 +363,14 @@ TODO: These queries might be better as functions.
 >  where renderLinkType :: LinkType -> Html
 >        renderLinkType (LinkWord word _) = string word
 >        renderLinkType _                 = mempty
+>        pronunciation = if pronounceable'
+>                          then do
+>                            a ! id "pronounce" ! class_ "button" $ do
+>                              audio ! preload "auto" $ do
+>                                source ! src (stringValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".ogg") $ mempty
+>                                source ! src (stringValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".mp3") $ mempty
+>                              img ! src "http://s.vocabulink.com/img/icon/audio.png"
+>                          else mempty
 
 > renderPartialLink :: PartialLink -> App Html
 > renderPartialLink (PartialLink l) = do
@@ -377,7 +389,7 @@ of the link but displaying its type-level details as well.
 
 > displayLink :: Link -> App Html
 > displayLink l = do
->   renderedLink <- renderLink l
+>   renderedLink <- renderLink l False
 >   return $ do
 >     renderedLink
 >     div ! class_ "link-details htmlfrag" $ linkTypeHtml (linkType l)
@@ -423,7 +435,7 @@ textarea for in-page editing.
 >   memberNo <- asks appMemberNo
 >   l <- getLink linkNo
 >   case l of
->     Nothing  -> output404 ["link", show linkNo]
+>     Nothing  -> outputNotFound
 >     Just l'  -> do
 >       let owner' = maybe False (linkAuthor l' ==) memberNo
 >       ops <- linkOperations l'
@@ -435,6 +447,7 @@ textarea for in-page editing.
 >                            "SELECT rating FROM link_rating \
 >                            \WHERE link_no = {linkNo} AND member_no = {n}")
 >                          Nothing -> return False
+>       hasPronunciation <- pronounceable l'
 >       copyright <- linkCopyright l'
 >       oLanguage <- linkOriginLanguage l'
 >       dLanguage <- linkDestinationLanguage l'
@@ -446,7 +459,7 @@ textarea for in-page editing.
 >       comments <- case row of
 >                     Just root  -> renderComments root
 >                     Nothing    -> return mempty
->       renderedLink <- renderLink l'
+>       renderedLink <- renderLink l' hasPronunciation
 >       stdPage (orig ++ " → " ++ dest) [CSS "link", JS "lib.link"] mempty $ do
 >         div ! id "link-head-bar" $ do
 >           h2 $ string (oLanguage ++ " to " ++ dLanguage ++ ":")
@@ -472,10 +485,10 @@ such as ``tag'', ``rate'', etc.
 The |Bool| parameter indicates whether or not the currently logged-in member
 (if the client is logged in) is the owner of the link.
 
-> linkAction :: String -> Bool -> Html
-> linkAction label' enabled =
+> linkAction :: String -> String -> Bool -> Html
+> linkAction label' icon' enabled =
 >   let icon = "http://s.vocabulink.com/img/icon/" ++
->              translate [(' ', '-')] label' ++
+>              icon' ++
 >              (enabled ? "" $ "-disabled") ++
 >              ".png" in
 >   a ! class_ (stringValue $ "operation " ++ (enabled ? "enabled" $ "disabled")) $ do
@@ -489,8 +502,9 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 >   editable    <- canEdit link
 >   deletable   <- canDelete link
 >   reviewing'  <- reviewing link
->   let review  = linkAction "add to review"
-> --      pack    = linkAction "add to link pack"
+>   hasPron     <- pronounceable link
+>   let review  = linkAction "add to review" "add"
+> --      pack    = linkAction "add to link pack" "add-to-link-pack"
 >   return $ do
 >     case (memberNo, reviewing') of
 >       (_,        True) -> (review False) ! title "already reviewing this link"
@@ -498,14 +512,25 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 >                                          ! title "add this link to be quizzed on it later"
 >       (Nothing,  _)    -> (review False) ! href "/member/login" ! title "login to review"
 >     case (editable, linkType link) of
->       (True, LinkWord _ _) -> (linkAction "edit link" True) ! id "link-op-edit"
->                                                             ! title "edit the linkword story"
+>       (True, LinkWord _ _) -> do
+>         case hasPron of
+>           False -> (linkAction "add pronunciation" "audio-add" True)
+>                      ! id "link-op-add-pronunciation"
+>                      ! title "add an audio file showing pronunciation"
+>           True  -> (linkAction "delete pronunciation" "audio-delete" True)
+>                      ! id "link-op-delete-pronunciation"
+>                      ! title "delete the audio file showing pronunciation"
+>         (linkAction "edit link" "edit" True)
+>           ! id "link-op-edit"
+>           ! title "edit the linkword story"
 >       _                    -> mempty
 > --    case (memberNo, memberEmail) of
 > --      (_, Just _)        -> (pack True)  ! [identifier "link-op-pack", title "add this link to a collection of other links"]
 > --      (Just _, Nothing)  -> (pack False) ! [href "/member/confirmation", title "confirm your email to add this link to a link pack"]
 > --      (Nothing, _)       -> (pack False) ! [href "/member/login", title "login to add this link to a link pack"],
->     when deletable ((linkAction "delete link" True) ! id "link-op-delete" ! title "delete this link (it will still be visibles to others who are reviewing it)")
+>     when deletable ((linkAction "delete link" "delete" True)
+>            ! id "link-op-delete"
+>            ! title "delete this link (it will still be visibles to others who are reviewing it)")
 >  where reviewing :: Link -> App Bool
 >        reviewing l = do
 >          memberNo <- asks appMemberNo
@@ -849,7 +874,7 @@ TODO: Check that the new trimmed body is not empty.
 >   story <- getBody
 >   link <- getPartialLink linkNo
 >   case link of
->     Nothing  -> output404 ["link", show linkNo, "story"]
+>     Nothing  -> outputNotFound
 >     Just l'  ->
 >       if linkTypeName (pLink l') == "linkword"
 >         then if linkAuthor (pLink l') == memberNo
@@ -1018,7 +1043,7 @@ TODO: Check that the new trimmed body is not empty.
 >         hr ! class_ "clear"
 >         h3 $ "Comments"
 >         comments
->     _              -> output404 ["pack", show n]
+>     _              -> outputNotFound
 
 > deleteLinkPack :: Integer -> App CGIResult
 > deleteLinkPack _ = error "Unimplemented."
@@ -1047,6 +1072,79 @@ TODO: Check that the new trimmed body is not empty.
 > linkPacksPage = do
 >   lps <- map (\x -> displayCompactLinkPack x True ! style "float: left") <$> latestLinkPacks
 >   simplePage "Latest Link Packs" [CSS "link"] $ mconcat lps
+
+> pronounceable :: Link -> App Bool
+> pronounceable link = isJust <$> $(queryTuple'
+>   "SELECT format FROM link_pronunciation \
+>   \WHERE link_no = {linkNumber link}")
+
+TODO: Would this be safe from race conditions with a transaction?
+
+> addPronunciation :: Integer -> App CGIResult
+> addPronunciation linkNo = do
+>   link <- getLink linkNo
+>   case link of
+>     Nothing -> outputNotFound
+>     Just l  -> do
+>       editable <- canEdit l
+>       if not editable
+>         then outputUnauthorized
+>         else do
+>           -- Make sure that a pronunciation doesn't already exist.
+>           exists <- pronounceable l
+>           if exists
+>             then error "Pronunciation already exists."
+>             else do
+>               formFile <- getInputFilename "qqfile"
+>               (filename, content) <- case formFile of
+>                                        -- Old browsers will send as a file input.
+>                                        Just f   -> do
+>                                          content' <- fromJust <$> getInputFPS "qqfile"
+>                                          return (f, content')
+>                                        -- New browsers will send as the POST body.
+>                                        Nothing  -> do
+>                                          f <- getRequiredInput "qqfile"
+>                                          content' <- getBodyFPS
+>                                          return (f, content')
+>               let format = map toLower $ safeTail $ takeExtension filename
+>               if format `notElem` allowedExtensions
+>                 then error $ "Unsupported file format: " ++ format
+>                 else do
+>                   dir <- (</> "upload" </> "audio" </> "pronunciation") <$> asks appDir
+>                   let filepath = dir </> (show linkNo) <.> format
+>                   liftIO $ writeFile filepath content
+>                   liftIO $ prepAudio format filepath
+>                   $(execute' "INSERT INTO link_pronunciation (link_no, format) \
+>                                                      \VALUES ({linkNo}, {format})")
+>                   outputJSON [("success", True)]
+>  where allowedExtensions = ["flac", "wav", "ogg", "mp3"]
+
+> deletePronunciation :: Integer -> App CGIResult
+> deletePronunciation linkNo = do
+>   $(execute' "DELETE FROM link_pronunciation WHERE link_no = {linkNo}")
+>   dir <- (</> "upload" </> "audio" </> "pronunciation") <$> asks appDir
+>   liftIO $ unsafeSystem $ "rm " ++ dir ++ "/" ++ show linkNo ++ ".*"
+>   outputNothing
+
+TODO: Move this to another module.
+
+> prepAudio :: String -> FilePath -> IO ()
+> prepAudio "flac" f = do
+>   unsafeSystem $ "flac -d " ++ f ++ " &> /dev/null"
+>   prepAudio "wav" $ replaceExtension f ".wav"
+>   unsafeSystem $ "rm " ++ replaceExtension f ".wav"
+> prepAudio "wav"  f = do
+>   unsafeSystem $ "oggenc " ++ f ++ " &> /dev/null"
+>   unsafeSystem $ "lame " ++ f ++ " " ++ (replaceExtension f ".mp3") ++ " &> /dev/null"
+> prepAudio "ogg"  f = do
+>   unsafeSystem $ "oggdec " ++ f ++ " &> /dev/null"
+>   unsafeSystem $ "lame " ++ replaceExtension f ".wav" ++ " " ++ replaceExtension f ".mp3" ++ " &> /dev/null"
+>   unsafeSystem $ "rm " ++ replaceExtension f ".wav"
+> prepAudio "mp3"  f = do
+>   unsafeSystem $ "lame --decode " ++ f ++ " " ++ replaceExtension f ".wav" ++ " &> /dev/null"
+>   unsafeSystem $ "oggenc " ++ replaceExtension f ".wav" ++ " &> /dev/null"
+>   unsafeSystem $ "rm " ++ replaceExtension f ".wav"
+> prepAudio _      _ = error "Unsupported file format"
 
 It's nice to have little help buttons and such where necessary. Making them
 easier to create means that we're more likely to do so, which leads to a more

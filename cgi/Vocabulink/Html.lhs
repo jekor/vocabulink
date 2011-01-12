@@ -25,6 +25,7 @@ importantly, it allows us to use abstraction to get higher-level HTML-based
 functions. An example of this is |linkList|.
 
 > module Vocabulink.Html (Html, (!), string, stringValue, preEscapedString,
+>                         customAttribute,
 >                         div, span, p, a, img, h1, h2, h3, hr, br,
 >                         table, thead, tbody, tfoot, tr, td, th,
 >                         id, class_, href, type_, src, style, title,
@@ -37,7 +38,8 @@ functions. An example of this is |linkList|.
 
 > import Text.Blaze.Html5 ((!), Html, string, stringValue, preEscapedString,
 >                          div, span, p, a, img, h1, h2, h3, hr, br,
->                          ul, li, table, tr, th, td, thead, tbody, tfoot)
+>                          ul, li, table, tr, th, td, thead, tbody, tfoot,
+>                          customAttribute)
 > import Text.Blaze.Html5.Attributes (id, class_, href, type_, src, style,
 >                                     width, height, title, alt, accesskey,
 >                                     colspan)

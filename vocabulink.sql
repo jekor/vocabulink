@@ -263,6 +263,12 @@ COMMENT ON COLUMN link.deleted IS 'We need a way to delete links, but we don''t 
 CREATE INDEX link_origin_index ON link (origin);
 CREATE INDEX link_destination_index ON link (destination);
 
+CREATE TABLE link_pronunciation (
+       link_no INTEGER REFERENCES link (link_no) NOT NULL,
+       format CHARACTER VARYING (4) NOT NULL
+);
+COMMENT ON TABLE link_pronunciation IS 'The single definitive audio file for a link''s pronunciation. I debated adding support for multiple files, but I''m keeping it simple for now.';
+
 CREATE TABLE link_type_link_word (
        link_no INTEGER REFERENCES link (link_no),
        link_word TEXT NOT NULL,

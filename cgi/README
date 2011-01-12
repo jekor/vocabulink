@@ -11,7 +11,9 @@ How to Build
 ============
 run `make configure && make` or `cabal install`
 
-Note that you'll need GHC 6.10 or greater.
+Note that you'll need GHC 7.0 or greater. Additionally, you'll need a modified
+version haskell-src-meta that compiles on GHC 7.0 (I myself have just loosened
+the requirements in haskell-src-meta's cabal file).
 
 Contact
 =======

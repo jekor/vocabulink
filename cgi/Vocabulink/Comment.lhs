@@ -1,4 +1,4 @@
-% Copyright 2008, 2009, 2010 Chris Forno
+% Copyright 2008, 2009, 2010, 2011 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -142,7 +142,7 @@ TODO: Make sure that the vote is in the proper format.
 >   vote <- getRequiredInput "vote"
 >   $(execute' "INSERT INTO comment_vote (comment, member, upvote) \
 >                                \VALUES ({n}, {memberNo}, {vote == \"up\"})")
->   output' ""
+>   outputNothing
 
 It's common to add a little hyperlink teaser for actions that require
 verification. For example "login to reply" or "verify email to reply".

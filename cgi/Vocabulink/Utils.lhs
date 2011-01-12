@@ -1,4 +1,4 @@
-% Copyright 2008, 2009, 2010 Chris Forno
+% Copyright 2008, 2009, 2010, 2011 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -21,13 +21,13 @@ Here are some functions that aren't specific to Vocabulink, but that don't
 exist in any libraries I know of. We also use this module to export some
 oft-used functions for other modules.
 
-> module Vocabulink.Utils (         if', (?), safeHead, currentDay, currentYear,
+> module Vocabulink.Utils (         if', (?), safeHead, safeTail, currentDay, currentYear,
 >                                   serverDay, serverDate, serverYear,
 >                                   formatSimpleTime, diffTimeToSeconds,
 >                                   basename, translate, (<$$>),
 >                                   sendMail, every2nd, every3rd, splitLines,
 >                                   convertLineEndings, logError,
->                                   prettyPrint,
+>                                   prettyPrint, unsafeSystem,
 >  {- Codec.Binary.UTF8.String -}   encodeString, decodeString,
 >  {- Control.Applicative -}        pure, (<$>), (<*>),
 >  {- Control.Applicative.Error -}  Failing(..), maybeRead,
@@ -36,6 +36,7 @@ oft-used functions for other modules.
 >  {- Control.Monad -}              liftM, Control.Monad.join, msum, when, replicateM,
 >  {- Control.Monad.Trans -}        liftIO, MonadIO,
 >  {- Data.Char -}                  toLower,
+>  {- Data.ByteString.Lazy -}       readFile, writeFile,
 >  {- Data.Either.Utils -}          forceEither,
 >  {- Data.List -}                  intercalate, partition,
 >  {- Data.Maybe -}                 maybe, fromMaybe, fromJust, isJust, isNothing,
@@ -45,6 +46,7 @@ oft-used functions for other modules.
 >  {- Data.Time.Clock -}            UTCTime, DiffTime, getCurrentTime, diffUTCTime, secondsToDiffTime,
 >  {- Data.Time.Format -}           formatTime,
 >  {- Data.Time.LocalTime -}        ZonedTime,
+>  {- Debug.Trace -}                trace,
 >  {- System.FilePath -}            (</>), (<.>), takeExtension,
 >                                   replaceExtension, takeBaseName, takeFileName,
 >  {- System.Locale -}              defaultTimeLocale, rfc822DateFormat,
@@ -68,12 +70,14 @@ We make particularly extensive use of |liftM| and the Maybe monad.
 
 > import Control.Monad
 > import Control.Monad.Trans (liftIO, MonadIO)
+> import Data.ByteString.Lazy (readFile, writeFile)
 > import Data.Char (toLower)
 > import Data.Either.Utils (forceEither) -- MissingH
 > import Data.List (intercalate, partition)
 > import Data.List.Utils as LU -- MissingH
 > import Data.Maybe (fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
 > import Data.Monoid
+> import Debug.Trace (trace)
 
 Time is notoriously difficult to deal with in Haskell. It gets especially
 tricky when working with the database and libraries that expect different
@@ -93,6 +97,8 @@ formats.
 > import System.Locale (defaultTimeLocale, rfc822DateFormat)
 > import System.Posix.Files (getFileStatus, modificationTime)
 > import System.Posix.Types (EpochTime)
+
+> import Prelude hiding (readFile, writeFile)
 
 It's often useful to have the compactness of the traditional tertiary operator
 rather than an if then else. The |(?)| operator can be used like:
@@ -164,6 +170,16 @@ just makes too much sense as 2 |<$>|s.
 > (<$$>) :: (Monad m1, Monad m) => (a -> r) -> m (m1 a) -> m (m1 r)
 > (<$$>) = liftM . liftM
 
+When being lazy, I want the program to fail spectacularly when a system command
+returns a non-zero exit code.
+
+> unsafeSystem :: String -> IO ()
+> unsafeSystem command = do
+>   status <- system command
+>   case status of
+>     ExitFailure _ -> error $ "command failed: " ++ command
+>     ExitSuccess   -> return ()
+
 Sending mail is pretty easy. We just deliver it to a local MTA. Even if we have
 no MTA running locally, there are sendmail emulators that will handle the SMTP
 forwarding for us so that we don't have to deal with SMTP here.
@@ -192,6 +208,10 @@ empty list, we need to provide a default:
 > safeHead :: a -> [a] -> a
 > safeHead d []     = d
 > safeHead _ (x:_)  = x
+
+> safeTail :: [a] -> [a]
+> safeTail []     = []
+> safeTail (_:xs) = xs
 
 If we want to layout items from left to right in HTML columns, we need to break
 1 list down into smaller lists. |everyNth| is not a great name, but |cycleN| is
@@ -249,4 +269,4 @@ Log a message to standard error.
 -- > instance (Integral a) => PrettyPrint a where
 
 > instance PrettyPrint Integer where
->   prettyPrint = show -- TODO: Implement.
+>   prettyPrint = show -- TODO: Implement with commas separating groups of thousands.

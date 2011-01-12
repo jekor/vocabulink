@@ -1,4 +1,4 @@
-% Copyright 2008, 2009, 2010 Chris Forno
+% Copyright 2008, 2009, 2010, 2011 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -138,7 +138,7 @@ the client to |nextReview| which begins the process all over again.
 >           dest    = linkDestination l'
 >       sLang  <- linkOriginLanguage l'
 >       dLang  <- linkDestinationLanguage l'
->       fullLink <- renderLink l'
+>       fullLink <- renderLink l' False
 >       stdPage ("Review: " ++ source ++ " → ?") [CSS "link", JS "lib.link"] mempty $ do
 >         h1 ! id "review-link" ! class_ "link review" $ do
 >           span ! class_ "orig" ! title (stringValue sLang) $ string source
