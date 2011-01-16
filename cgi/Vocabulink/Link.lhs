@@ -511,18 +511,18 @@ The |Bool| parameter indicates whether or not the currently logged-in member
 >       (Just _,   _)    -> (review True)  ! id "link-op-review"
 >                                          ! title "add this link to be quizzed on it later"
 >       (Nothing,  _)    -> (review False) ! href "/member/login" ! title "login to review"
+>     case (editable, hasPron) of
+>       (True, False) -> (linkAction "add pronunciation" "audio-add" True)
+>                          ! id "link-op-add-pronunciation"
+>                          ! title "add an audio file showing pronunciation"
+>       (True, True)  -> (linkAction "delete pronunciation" "audio-delete" True)
+>                          ! id "link-op-delete-pronunciation"
+>                          ! title "delete the audio file showing pronunciation"
+>       _             -> mempty
 >     case (editable, linkType link) of
->       (True, LinkWord _ _) -> do
->         case hasPron of
->           False -> (linkAction "add pronunciation" "audio-add" True)
->                      ! id "link-op-add-pronunciation"
->                      ! title "add an audio file showing pronunciation"
->           True  -> (linkAction "delete pronunciation" "audio-delete" True)
->                      ! id "link-op-delete-pronunciation"
->                      ! title "delete the audio file showing pronunciation"
->         (linkAction "edit link" "edit" True)
->           ! id "link-op-edit"
->           ! title "edit the linkword story"
+>       (True, LinkWord _ _) -> (linkAction "edit link" "edit" True)
+>                                 ! id "link-op-edit"
+>                                 ! title "edit the linkword story"
 >       _                    -> mempty
 > --    case (memberNo, memberEmail) of
 > --      (_, Just _)        -> (pack True)  ! [identifier "link-op-pack", title "add this link to a collection of other links"]

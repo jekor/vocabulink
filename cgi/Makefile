@@ -26,9 +26,6 @@ install : $(binary)
 	mv ../$(cgi) ../$(cgi).old
 	cp $(binary) ../$(cgi)
 	strip ../$(cgi)
-	chown http:http ../$(cgi)
-	chmod +s ../$(cgi)
-	-killall $(cgi)
 
 tags : $(lhss)
 	hasktags -e $^

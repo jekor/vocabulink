@@ -513,6 +513,14 @@ including the forum topic text could lead to some very long URIs.
 >                   ("POST"  ,["votes"])  -> voteOnComment n
 >                   (_       ,_)          -> outputNotFound
 
+\subsection{Administrative Pages}
+
+> dispatch "GET" ["stats"] = do
+>   memberNo <- asks appMemberNo
+>   case memberNo of
+>     Just 1 -> outputNothing
+>     _      -> outputUnauthorized
+
 \subsection{Everything Else}
 
 For Google Webmaster Tools, we need to respond to a certain URI that acts as a
