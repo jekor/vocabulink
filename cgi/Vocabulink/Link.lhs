@@ -74,7 +74,16 @@ type (for partially constructed links, which you'll see later).
 We'll eventually want to support private/unpublished links.
 
 > instance UserContent Link where
->   canView _       = return True
+>   canView link    = do
+>     memberNo <- asks appMemberNo
+>     deleted <- fromJust <$> $(queryTuple'
+>                  "SELECT deleted FROM link \
+>                  \WHERE link_no = {linkNumber link}")
+>     return $ if not deleted
+>       then True
+>       else case memberNo of
+>         Nothing -> False
+>         Just n  -> n == linkAuthor link || n == 1
 >   canEdit link    = do
 >     memberNo <- asks appMemberNo
 >     return $ case memberNo of
@@ -435,48 +444,52 @@ textarea for in-page editing.
 >   memberNo <- asks appMemberNo
 >   l <- getLink linkNo
 >   case l of
->     Nothing  -> outputNotFound
->     Just l'  -> do
->       let owner' = maybe False (linkAuthor l' ==) memberNo
->       ops <- linkOperations l'
->       (c, r) <- ((first fromJust) . fromJust) <$> $(queryTuple'
->         "SELECT COUNT(rating), SUM(rating) / COUNT(rating) \
->         \FROM link_rating WHERE link_no = {linkNo}")
->       ratingEnabled <- case memberNo of
->                          Just n  -> isNothing <$> $(queryTuple'
->                            "SELECT rating FROM link_rating \
->                            \WHERE link_no = {linkNo} AND member_no = {n}")
->                          Nothing -> return False
->       hasPronunciation <- pronounceable l'
->       copyright <- linkCopyright l'
->       oLanguage <- linkOriginLanguage l'
->       dLanguage <- linkDestinationLanguage l'
->       let orig  = linkOrigin l'
->           dest  = linkDestination l'
->       row <- $(queryTuple' "SELECT root_comment \
->                            \FROM link_comments \
->                            \WHERE link_no = {linkNo}")
->       comments <- case row of
->                     Just root  -> renderComments root
->                     Nothing    -> return mempty
->       renderedLink <- renderLink l' hasPronunciation
->       stdPage (orig ++ " → " ++ dest) [CSS "link", JS "lib.link"] mempty $ do
->         div ! id "link-head-bar" $ do
->           h2 $ string (oLanguage ++ " to " ++ dLanguage ++ ":")
->           div ! id "link-ops" $ do
->             ops
->             ratingBar ("/link" </> show linkNo </> "rating") c r ratingEnabled
->         renderedLink
->         div ! class_ "link-details" $ do
->           case (owner', linkType l') of
->             (True, LinkWord _ story)  -> textarea ! style "display: none" $ string $ story
->             _                         -> mempty
->           div ! id "link-details" ! class_ "htmlfrag" $ linkTypeHtml (linkType l')
->         copyright
->         clear
->         hr ! style "margin-top: 1.3em"
->         h3 $ "Comments"
->         comments
+>     Nothing -> outputNotFound
+>     Just l' -> do
+>       viewable <- canView l'
+>       if not viewable
+>         then outputNotFound
+>         else do
+>           let owner' = maybe False (linkAuthor l' ==) memberNo
+>           ops <- linkOperations l'
+>           (c, r) <- ((first fromJust) . fromJust) <$> $(queryTuple'
+>             "SELECT COUNT(rating), SUM(rating) / COUNT(rating) \
+>             \FROM link_rating WHERE link_no = {linkNo}")
+>           ratingEnabled <- case memberNo of
+>                              Just n  -> isNothing <$> $(queryTuple'
+>                                "SELECT rating FROM link_rating \
+>                                \WHERE link_no = {linkNo} AND member_no = {n}")
+>                              Nothing -> return False
+>           hasPronunciation <- pronounceable l'
+>           copyright <- linkCopyright l'
+>           oLanguage <- linkOriginLanguage l'
+>           dLanguage <- linkDestinationLanguage l'
+>           let orig  = linkOrigin l'
+>               dest  = linkDestination l'
+>           row <- $(queryTuple' "SELECT root_comment \
+>                                \FROM link_comments \
+>                                \WHERE link_no = {linkNo}")
+>           comments <- case row of
+>                         Just root  -> renderComments root
+>                         Nothing    -> return mempty
+>           renderedLink <- renderLink l' hasPronunciation
+>           stdPage (orig ++ " → " ++ dest) [CSS "link", JS "lib.link"] mempty $ do
+>             div ! id "link-head-bar" $ do
+>               h2 $ string (oLanguage ++ " to " ++ dLanguage ++ ":")
+>               div ! id "link-ops" $ do
+>                 ops
+>                 ratingBar ("/link" </> show linkNo </> "rating") c r ratingEnabled
+>             renderedLink
+>             div ! class_ "link-details" $ do
+>               case (owner', linkType l') of
+>                 (True, LinkWord _ story)  -> textarea ! style "display: none" $ string $ story
+>                 _                         -> mempty
+>               div ! id "link-details" ! class_ "htmlfrag" $ linkTypeHtml (linkType l')
+>             copyright
+>             clear
+>             hr ! style "margin-top: 1.3em"
+>             h3 $ "Comments"
+>             comments
 
 Each link can be ``operated on''. It can be reviewed (added to the member's
 review set) and deleted (marked as deleted). In the future, I expect operations

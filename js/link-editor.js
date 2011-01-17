@@ -1,4 +1,4 @@
-// Copyright 2008, 2009, 2010 Chris Forno
+// Copyright 2008, 2009, 2010, 2011 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -14,6 +14,8 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
+
+(function ($) {
 
 // This is for the original link creation page.
 function showLinkEditor() {
@@ -32,7 +34,7 @@ function saveChanges() {
   }
   button.text('Saving...');
   button.attr('disabled', 'disabled');
-  var removeOverlay = overlay(linkDetailsBox);
+  linkDetailsBox.mask('Saving...');
   // We get the link number from the URL.
   var linkNumber = parseInt(window.location.pathname.split('/').pop(), 10);
   $.ajax({'type': 'POST', 'url': '/link/' + linkNumber + '/story',
@@ -41,7 +43,7 @@ function saveChanges() {
           'dataType': 'html',
           'success': function (data) {
             button.text('Saved!');
-            removeOverlay();
+            linkDetailsBox.unmask();
             $('#link-details').html(data).show();
             linkDetailsBox.find('.markItUp').remove();
           },
@@ -49,7 +51,7 @@ function saveChanges() {
             alert('Error saving link story.');
             button.text('Save Changes');
             button.attr('disabled', null);
-            removeOverlay();
+            linkDetailsBox.unmask();
           }});
   return false;
 }
@@ -67,7 +69,7 @@ function editLink() {
   return false;
 }
 
-$(document).ready(function () {
+$(function () {
   var linkTypeSelector = $('select[name=fval[4]]:first');
   linkTypeSelector.change(showLinkEditor);
   linkTypeSelector.change();
@@ -75,3 +77,5 @@ $(document).ready(function () {
   $('#link-word textarea').markItUp(mySettings);
   $('#link-op-edit').click(editLink);
 });
+
+})(jQuery);

@@ -49,7 +49,7 @@ Executable vocabulink.cgi
                  scgi >= 0.3.1,
                  split,
                  template-haskell,
-                 templatepg,
+                 templatepg >= 0.2,
                  time,
                  unix,
                  utf8-string
@@ -71,4 +71,4 @@ Executable vocabulink.cgi
                  GeneralizedNewtypeDeriving,
                  TemplateHaskell,
                  OverloadedStrings
-  GHC-Options:   -Wall -fno-warn-type-defaults
+  GHC-Options:   -Wall -fno-warn-type-defaults -threaded

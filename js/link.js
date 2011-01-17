@@ -15,14 +15,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-function annotateLink(link) {
+(function ($) {
+
+V.annotateLink = function (link) {
   link.children('.orig, .link, .dest').each(function () {
     var word = $(this);
     var caption = $('<span class="caption">' + word.attr('title') + '</span>');
     // We have to calculate these before we add content to them and screw up
     // the dimensions.
     var width = word.outerWidth();
-    if (word.hasClass('.orig') || word.hasClass('.dest')) {
+    if (word.hasClass('orig') || word.hasClass('dest')) {
       var y = word.outerHeight() + 4;
     } else {
       var y = word.height() + 8;
@@ -37,8 +39,8 @@ function linkNumber() {
     return window.location.pathname.split('/').pop();
 }
 
-$(document).ready(function () {
-  annotateLink($('h1.link:visible'));
+$(function () {
+  V.annotateLink($('h1.link:visible'));
 
   $('#pronounce').click(function () {
     $(this).find('audio')[0].play();
@@ -107,3 +109,5 @@ $(document).ready(function () {
     });
   });
 });
+
+})(jQuery);

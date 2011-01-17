@@ -1,4 +1,4 @@
-// Copyright 2008, 2009 Chris Forno
+// Copyright 2008, 2009, 2011 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -15,11 +15,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
+(function ($) {
+
 function revealAnswer(link, startTime) {
   var stopTime = new Date();
   link.hide();
   $('#full-link').show();
-  annotateLink($('#full-link'));
+  V.annotateLink($('#full-link'));
   var recallTime = stopTime.getTime() - startTime.getTime();
   $('#recall-time').val(recallTime);
   $('#recall-buttons').show();
@@ -56,9 +58,9 @@ function formatSeconds(seconds) {
   return output;
 }
 
-$(document).ready(function () {
+$(function () {
   if ($('#review-link').length) {
-    annotateLink($('#review-link'));
+    V.annotateLink($('#review-link'));
     var startTime = new Date();
     $('#review-link a').one('click', function () {
       revealAnswer($(this).parent(), startTime);
@@ -86,3 +88,5 @@ $(document).ready(function () {
     updateCountdown.timer = setInterval(updateCountdown, 1000);
   });
 });
+
+})(jQuery);

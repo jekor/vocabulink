@@ -114,6 +114,7 @@ Each of these modules will be described in its own section.
 > import Vocabulink.Html
 > import Vocabulink.Link
 > import Vocabulink.Member
+> import Vocabulink.Metrics
 > import Vocabulink.Page
 > import Vocabulink.Rating
 > import Vocabulink.Review
@@ -515,10 +516,12 @@ including the forum topic text could lead to some very long URIs.
 
 \subsection{Administrative Pages}
 
-> dispatch "GET" ["stats"] = do
+> dispatch "GET" ("admin":xs) = do
 >   memberNo <- asks appMemberNo
 >   case memberNo of
->     Just 1 -> outputNothing
+>     Just 1 -> case xs of
+>                 ["metrics"] -> metricsPage
+>                 _           -> outputNotFound
 >     _      -> outputUnauthorized
 
 \subsection{Everything Else}

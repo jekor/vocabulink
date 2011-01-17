@@ -1,4 +1,4 @@
-// Copyright 2008, 2009 Chris Forno
+// Copyright 2008, 2009, 2011 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -17,6 +17,8 @@
 
 // Allow for in-page editing and administrative tasks.
 
+(function ($) {
+
 function connectButton() {
   var classes = $(this).attr('class').split(' ');
   $(this).click(function () {
@@ -25,6 +27,8 @@ function connectButton() {
   });
 }
 
-$(document).ready(function () {
+$(function () {
   $('button.reveal').each(connectButton);
 });
+
+})(jQuery);

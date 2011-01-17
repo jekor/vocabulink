@@ -42,7 +42,7 @@ oft-used functions for other modules.
 >  {- Data.Maybe -}                 maybe, fromMaybe, fromJust, isJust, isNothing,
 >                                   mapMaybe, catMaybes,
 >  {- Data.Monoid -}                mempty, mappend, mconcat,
->  {- Data.Time.Calendar -}         Day,
+>  {- Data.Time.Calendar -}         Day, addDays, showGregorian,
 >  {- Data.Time.Clock -}            UTCTime, DiffTime, getCurrentTime, diffUTCTime, secondsToDiffTime,
 >  {- Data.Time.Format -}           formatTime,
 >  {- Data.Time.LocalTime -}        ZonedTime,
@@ -83,7 +83,7 @@ Time is notoriously difficult to deal with in Haskell. It gets especially
 tricky when working with the database and libraries that expect different
 formats.
 
-> import Data.Time.Calendar (Day, toGregorian)
+> import Data.Time.Calendar (Day, toGregorian, showGregorian, addDays)
 > import Data.Time.Clock (UTCTime, DiffTime, getCurrentTime, diffUTCTime, secondsToDiffTime)
 > import Data.Time.Format (formatTime)
 > import Data.Time.LocalTime (  getCurrentTimeZone, utcToLocalTime,

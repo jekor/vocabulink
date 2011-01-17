@@ -1,4 +1,4 @@
-// Copyright 2008, 2009 Chris Forno
+// Copyright 2008, 2009, 2011 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -16,6 +16,8 @@
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
 // This is for star-ratings. It currently only happens on link pages.
+
+(function ($) {
 
 function trackRating(x, stars, details, e) {
   var percentage = (e.pageX - x) / details.width;
@@ -74,6 +76,8 @@ function setupRating() {
   starsBase.mouseleave(endRating.curry(stars, originalWidth, originalPosition));
 }
 
-$(document).ready(function () {
+$(function () {
   $('.rating.enabled').each(setupRating);
 });
+
+})(jQuery);

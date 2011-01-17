@@ -1,4 +1,4 @@
-// Copyright 2008, 2009, 2010 Chris Forno
+// Copyright 2008, 2009, 2010, 2011 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -16,6 +16,8 @@
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
 // TODO: Move all forum-related functionality out to a separate file.
+
+(function ($) {
 
 function sendReply(box, commentNumber, sendButton, e) {
   var body = $.trim(box.find('textarea').val());
@@ -54,7 +56,7 @@ function createTopic(box, e) {
   }
   // We get the forum name from the URL.
   var forumName = window.location.pathname.split('/').pop();
-  var removeOverlay = overlay(box);
+  box.mask('Creating...');
   $.ajax({'type': 'POST', 'url': '/forum/' + forumName + '/new',
           'data': {'title': title, 'body': body},
           'dataType': 'json',
@@ -62,7 +64,7 @@ function createTopic(box, e) {
             window.location.reload();
           },
           'error':   function (data) {
-            removeOverlay();
+            box.unmask();
             alert('Error creating topic.');
           }});  
   return false;
@@ -103,9 +105,9 @@ function vote(e) {
 
 function createCommentBox() {
   var box = $('<div class="comment-box">' +
-                '<img class="avatar" width="60" height="60" src="' + memberGravatar() + '"/>' +
+                '<img class="avatar" width="60" height="60" src="' + V.memberGravatar() + '"/>' +
                 '<p class="metadata">' +
-                  '<span class="membername">' + memberName() + '</span>' +
+                  '<span class="membername">' + V.memberName() + '</span>' +
                 '</p>' +
                 '<div class="body">' +
                   '<textarea></textarea>' +
@@ -189,9 +191,11 @@ function setupCreateTopic() {
   });
 }
 
-$(document).ready(function () {
+$(function () {
   $('.comment-box').each(setupReply);
   $('.comments').each(setupRootReply);
   $('.vote-arrow').click(vote);
   $('#topics').each(setupCreateTopic);
 });
+
+})(jQuery);

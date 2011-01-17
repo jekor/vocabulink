@@ -1,7 +1,7 @@
 # Vocabulink CGI
 
 cgi := vocabulink.cgi
-lhss := $(shell find . -name "*.lhs" -print)
+lhss := Vocabulink.lhs $(shell find Vocabulink -regex ".*l?hs" -print)
 date := $(shell date +%Y-%m-%d)
 binary := dist/build/$(cgi)/$(cgi)
 DIST := vocabulink--$(date)

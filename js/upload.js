@@ -1,4 +1,4 @@
-// Copyright 2009 Chris Forno
+// Copyright 2009, 2011 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -18,6 +18,8 @@
 // This is kludgy. It's a hold-over from pre-jQuery days. This will only work
 // on the "Create Link Pack" page.
 
+(function ($) {
+
 function submitFile(fileInput, fileButton) {
   fileInput.css('background',
                 "url('http://s.vocabulink.com/img/wait-bar.gif') no-repeat center center");
@@ -35,7 +37,7 @@ function fileSubmitted(fileInput, fileButton, file, response) {
   }
 }
 
-$(document).ready(function () {
+$(function () {
   var fileInput = $('.upload-file');
   var fileButton = $('#upload-file-button');
   new AjaxUpload('upload-file-button', {'action': '/pack/image',
@@ -43,3 +45,5 @@ $(document).ready(function () {
                                         'onComplete': fileSubmitted.curry(fileInput, fileButton)});
   fileButton.removeAttr('disabled');
 });
+
+})(jQuery);
