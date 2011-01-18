@@ -26,19 +26,19 @@ functions. An example of this is |linkList|.
 
 > module Vocabulink.Html (Html, (!), string, stringValue, preEscapedString,
 >                         customAttribute,
->                         div, span, p, a, img, h1, h2, h3, hr, br,
+>                         div, span, p, a, img, h1, h2, h3, hr, br, strong, blockquote,
 >                         table, thead, tbody, tfoot, tr, td, th,
 >                         id, class_, href, type_, src, style, title,
 >                         width, height, alt, accesskey, colspan,
 >                         unordList, multiColumn, multiColumnList,
->                         clear, markdownToHtml,
+>                         definitionList, clear, markdownToHtml,
 >                         hamletFile, hamletFileDebug, hamletUrl) where
 
 > import Vocabulink.Utils
 
 > import Text.Blaze.Html5 ((!), Html, string, stringValue, preEscapedString,
->                          div, span, p, a, img, h1, h2, h3, hr, br,
->                          ul, li, table, tr, th, td, thead, tbody, tfoot,
+>                          div, span, p, a, img, h1, h2, h3, hr, br, strong, blockquote,
+>                          ul, li, dl, dt, dd, table, tr, th, td, thead, tbody, tfoot,
 >                          customAttribute)
 > import Text.Blaze.Html5.Attributes (id, class_, href, type_, src, style,
 >                                     width, height, title, alt, accesskey,
@@ -52,9 +52,10 @@ functions. An example of this is |linkList|.
 \section{List Helpers}
 
 > unordList :: [Html] -> Html
-> unordList items =
->   let lis = mconcat $ map li items in
->   ul $ lis
+> unordList items = ul $ mconcat $ map li items
+
+> definitionList :: [(Html, Html)] -> Html
+> definitionList items = dl $ mconcat $ map (\ (x, y) -> dt x >> dd y) items
 
 > multiColumn :: [Html] -> Html
 > multiColumn cls =

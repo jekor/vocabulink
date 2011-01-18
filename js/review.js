@@ -20,8 +20,8 @@
 function revealAnswer(link, startTime) {
   var stopTime = new Date();
   link.hide();
-  $('#full-link').show();
-  V.annotateLink($('#full-link'));
+  $('#recall-check').show();
+  V.annotateLink($('#recall-check .link'));
   var recallTime = stopTime.getTime() - startTime.getTime();
   $('#recall-time').val(recallTime);
   $('#recall-buttons').show();

@@ -484,7 +484,8 @@ textarea for in-page editing.
 >           renderedLink <- renderLink l' hasPronunciation True
 >           stdPage (orig ++ " → " ++ dest) [CSS "link", JS "lib.link"] mempty $ do
 >             div ! id "link-head-bar" $ do
->               h2 $ string (oLanguage ++ " to " ++ dLanguage ++ ":")
+>               h2 $ a ! href (stringValue $ "/links?ol=" ++ linkOriginLang l' ++ "&dl=" ++ linkDestinationLang l') $
+>                 string (oLanguage ++ " to " ++ dLanguage ++ ":")
 >               div ! id "link-ops" $ do
 >                 ops
 >                 ratingBar ("/link" </> show linkNo </> "rating") c r ratingEnabled

@@ -144,12 +144,23 @@ the client to |nextReview| which begins the process all over again.
 >           span ! class_ "orig" ! title (stringValue sLang) $ string source
 >           span ! class_ "link" $ mempty
 >           a ! class_ "dest hidden" ! title (stringValue dLang) $ "?"
->         fullLink ! id "full-link" ! style "display: none"
->         form ! action (stringValue $ "/review/" ++ show linkNo) ! method "post" $ do
->           input ! type_ "hidden" ! id "recall-time" ! name "recall-time"
->           input ! type_ "hidden" ! name "hidden-lexeme" ! value (stringValue dest)
->           fieldset ! id "recall-buttons" ! style "display: none" $ do
->             mconcat $ map (recallButton 5) [0..5]
+>         div ! id "recall-check" ! style "display: none" $ do
+>           fullLink
+>           form ! action (stringValue $ "/review/" ++ show linkNo) ! method "post" $ do
+>             input ! type_ "hidden" ! id "recall-time" ! name "recall-time"
+>             input ! type_ "hidden" ! name "hidden-lexeme" ! value (stringValue dest)
+>             fieldset ! id "recall-buttons" ! style "display: none" $ do
+>               mconcat $ map (recallButton 5) [0..5]
+>           p $ do
+>             string "On a scale from 0 to 5, rate how well you remembered the word."
+>             definitionList [ ("5", "I remembered it perfectly and instantly.")
+>                            , ("4", "I remembered it well, but not instantly.")
+>                            , ("3", "I remembered, but only after a struggle.")
+>                            , ("2", "I was pretty close.")
+>                            , ("1", "I thought I remembered, but I was wrong.")
+>                            , ("0", "I couldn't remember anything.")
+>                            ]
+>             clear
 
 The next review time can be in the future or in the past.
 
