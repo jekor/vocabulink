@@ -120,15 +120,11 @@ h1
     bottom: 0.578em
 
 h2
-  // font-size: 1.5em
   font-size: 1.3em
-  // line-height: 0.867
   line-height: 1.154
   margin:
     top: 1em
     bottom: 1em
-//    top: 0.867em
-//    bottom: 0.867em
 
 h3
   font-size: 1.125em
@@ -209,24 +205,19 @@ tr.odd:hover, tr.even:hover
     margin-right: 1.3em
     margin-top: -3px
     color: white
-    .clear
-      clear: right
     a
       color: white
       &:hover
         text-decoration: underline
     .auth-box, .search-box, .review-box
-      display: inline
+      display: inline-block
       line-height: 1.3
     .search-box, .review-box
-      float: left
       margin-right: 1em
     .auth-box.logout input
       margin-left: 1em
   #login-popup
     position: absolute
-    // @include rounded(5px)
-    // border: 3px solid #61C6CF
     color: #BABABA
     text-align: right
     form
@@ -241,30 +232,43 @@ tr.odd:hover, tr.even:hover
 #foot
   clear: both
   text-align: center
-  padding:
-    bottom: 0.5em
   background-color: #1F1F1F
   color: #696969
   a
     color: #186A6B
-  *
+  h2
+    margin-bottom: 0.667em
+  ul
     margin:
-      top: 0.125em
-      bottom: 0.125em
-  ul.hyperlinks li
-    margin:
-      left: 0.5em
-      right: 0.5em
-    clear: left
-    a
-      color: #29BBBD
+      top: 0
+      bottom: 0
+    li
+      margin:
+        top: 0.125em
+        bottom: 0.125em
   #handy-links
     background-color: #2D2D2D
+    padding-bottom: 1em
     h2
       color: #9D9C9C
       font-size: 1em
     a
       color: #86CF6A
+  .hyperlinks
+    margin:
+      top: 0.25em
+      bottom: 0
+    li
+      display: inline
+      margin:
+        left: 0.5em
+        right: 0.5em
+      clear: left
+      a
+        color: #29BBBD
+  p
+    padding-bottom: 0.333em
+    margin-top: 0.125em
   #design-attribution
     margin-left: 1.3em
 
@@ -294,16 +298,6 @@ tr.odd:hover, tr.even:hover
     margin:
       top: 0
       bottom: 0.667em
-
-// #central-column.links li a, .column .links li a:
-//   line-height: 2.6
-
-// And these are web links.
-ul.hyperlinks
-  margin-left: 0
-  padding-left: 0
-  li
-    display: inline
 
 .link-pack
   width: 33em
@@ -338,6 +332,7 @@ p.copyright
     bottom: 1.3em
   // Group controls in a box so that they can be logically associated.
   .controls
+    display: inline-block
     border: 1px solid $bar_and_box_border
     background-color: $bar_and_box_background
     padding: 0.5em
@@ -427,6 +422,11 @@ blockquote
 button, input
   line-height: 1.3em
   vertical-align: middle
+
+.one-column
+  > .column
+    width: 100%
+    float: left
 
 .two-column
   > .column

@@ -1,4 +1,4 @@
-% Copyright 2008, 2009, 2010 Chris Forno
+% Copyright 2008, 2009, 2010, 2011 Chris Forno
 
 % This file is part of Vocabulink.
 
@@ -67,6 +67,7 @@ functions. An example of this is |linkList|.
 >     (map (div ! class_ "column") cls ++ [clear])
 
 > multiColumnList :: Int -> [Html] -> Html
+> multiColumnList 1 xs  = multiColumn [unordList xs]
 > multiColumnList 2 xs  =
 >   let (col1, col2) = every2nd xs in
 >   multiColumn [unordList col1, unordList col2]

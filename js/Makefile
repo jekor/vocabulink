@@ -23,3 +23,6 @@ lib.upload.js : ajaxupload.js upload.js
 
 lib.raphael.js : raphael.js
 	cat $^ | yuicompress --type js > $@
+
+chartviz.js : /home/jekor/project/chartviz/chartviz.js
+	cp $^ $@

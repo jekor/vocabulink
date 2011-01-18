@@ -322,10 +322,10 @@ extending the existing one, which at least jquery doesn't like.
 
 TODO: These queries might be better as functions.
 
-> renderLink :: Link -> Bool -> App Html
-> renderLink link pronounceable' = do
->   oLanguage <- linkOriginLanguage link
->   dLanguage <- linkDestinationLanguage link
+An adjacent link is the nearest (by link number) in the given language pair.
+
+> adjacentLinkNumbers :: Link -> App (Maybe Integer, Maybe Integer)
+> adjacentLinkNumbers link = do
 >   let oLang = linkOriginLang link
 >       dLang = linkDestinationLang link
 >   prevLink <- $(queryTuple'
@@ -358,17 +358,26 @@ TODO: These queries might be better as functions.
 >        \AND NOT deleted \
 >      \ORDER BY link_no ASC LIMIT 1) \
 >     \ORDER BY link_no DESC")
+>   return (fromJust <$> prevLink, fromJust <$> nextLink)
+
+> renderLink :: Link -> Bool -> Bool -> App Html
+> renderLink link pronounceable' paging = do
+>   oLanguage <- linkOriginLanguage link
+>   dLanguage <- linkDestinationLanguage link
+>   (prevLink, nextLink) <- if paging
+>                             then adjacentLinkNumbers link
+>                             else return (Nothing, Nothing)
 >   return $ h1 ! class_ (stringValue $ "link " ++ linkTypeName link) $ do
->     maybe mempty (\n -> a ! href (stringValue $ show $ fromJust n) ! class_ "prev"
->                           ! title "Previous Link" $ mempty) prevLink
+>     maybe mempty (\n -> a ! href (stringValue $ show n) ! class_ "prev"
+>                           ! title (stringValue $ "Previous " ++ oLanguage ++ "→" ++ dLanguage ++ " Link") $ mempty) prevLink
 >     span ! class_ "orig" ! title (stringValue oLanguage) $ do
 >       string $ linkOrigin link
 >       pronunciation
 >     span ! class_ "link" ! title (stringValue $ linkTypeName link) $
 >       (renderLinkType $ linkType link)
 >     span ! class_ "dest" ! title (stringValue dLanguage) $ string $ linkDestination link
->     maybe mempty (\n -> a ! href (stringValue $ show $ fromJust n) ! class_ "next"
->                           ! title "Next Link" $ mempty) nextLink
+>     maybe mempty (\n -> a ! href (stringValue $ show n) ! class_ "next"
+>                           ! title (stringValue $ "Next " ++ oLanguage ++ "→" ++ dLanguage ++ " Link") $ mempty) nextLink
 >  where renderLinkType :: LinkType -> Html
 >        renderLinkType (LinkWord word _) = string word
 >        renderLinkType _                 = mempty
@@ -398,7 +407,7 @@ of the link but displaying its type-level details as well.
 
 > displayLink :: Link -> App Html
 > displayLink l = do
->   renderedLink <- renderLink l False
+>   renderedLink <- renderLink l False True
 >   return $ do
 >     renderedLink
 >     div ! class_ "link-details htmlfrag" $ linkTypeHtml (linkType l)
@@ -472,7 +481,7 @@ textarea for in-page editing.
 >           comments <- case row of
 >                         Just root  -> renderComments root
 >                         Nothing    -> return mempty
->           renderedLink <- renderLink l' hasPronunciation
+>           renderedLink <- renderLink l' hasPronunciation True
 >           stdPage (orig ++ " → " ++ dest) [CSS "link", JS "lib.link"] mempty $ do
 >             div ! id "link-head-bar" $ do
 >               h2 $ string (oLanguage ++ " to " ++ dLanguage ++ ":")
