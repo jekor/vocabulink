@@ -7,9 +7,9 @@
   #intro
     %h1 What Is Vocabulink?
 
-    %p Vocabulink is devoted to helping you learn foreign languages as quickly and effortlessly as possible. We do this by focusing only on vocabulary building.
+    %p We're devoted to helping you learn the words of a foreign language as quickly and effortlessly as possible.
 
-    %p We believe that building a vocabulary is the most important and most time-consuming part of learning a language. But the good news is that you can learn vocabulary more quickly and easily than you imagined. We'll show you how, using 3 simple principles.
+    %p Vocabulary building is the most important and most time-consuming part of learning a language. But the good news is that you can learn foreign words more quickly and easily than you imagined. We'll show you how, using 3 simple principles.
 
     %a.button#try-now!href=/languages Get Started
 
@@ -27,9 +27,9 @@
 
         %p Vocabulink uses imaginative stories to make new words stick. This use of stories is a language-learning technique called <a href="http://en.wikipedia.org/wiki/Linkword">Linkword mnemonics</a>.
 
-        %p Your memory is especially receptive to stories. We pass our history down from generation to generation through stories. We teach lessons to children with stories. Experienced speakers knows that stories are essential for getting a point across and making it stick with an audience.
+        %p Your memory is especially receptive to stories. We pass verbal history down from generation to generation through stories. We teach lessons to children with stories. And experienced public speakers know that stories are essential for getting a point across and making it stick with an audience.
 
-        %p Vocabulink exploits this unique feature of the human brain to make learning more natural. It may seem silly at first, but it's effective.
+        %p Vocabulink exploits this unique feature of the human brain to make learning more natural. It might seem silly at first, but it's effective.
 
     .column
       %h2
@@ -38,18 +38,16 @@
 
       %p The <a href="http://www.oxforddictionaries.com/page/93">Oxford English Dictionary</a> defines 171,476 words currently in use. That seems like a daunting amount until you realize that the word "the" makes up 7% of the total words we read. Next, the word "of" accounts for 3.5%, "and" makes up another 2.8%, and so on. You only need to know about 135 words to recognize half the words in common written English.
 
-      %p This uneven spread is similar in every language that statisticians have studied. In fact, it has a name: <a href="http://en.wikipedia.org/wiki/Zipf%27s_law">Zipf's law</a>. We can take advantage of this law in order to build vocabulary scientifically. You can use your study time more effectively by ignoring words that you'll rarely, if ever, use.
+      %p This uneven spread is similar in every language that statisticians have studied. In fact, it has a name: <a href="http://en.wikipedia.org/wiki/Zipf%27s_law">Zipf's law</a>. You can take advantage of this law in order to build vocabulary scientifically. Use your study time more effectively by ignoring words that you'll rarely, if ever, use.
 
     .column
       %h2
         %strong 3
         Spaced Repetition
 
-      %p Sometimes we forget words, even when we've used memorable stories. But it's a tedious waste of time to keep studying the same words day after day.
+      %p Sometimes you forget words, even when you've used memorable stories. The traditional solution to this is flashcards. But it's a tedious waste of time to keep drilling the same words day after day. Luckily, there's a better way.
 
-      %p The traditional solution to this is flashcards. But there's a better way.
-
-      %p We've taken some of the latest scientific research about how memory works and made it an integrated part of Vocabulink. It's called <a href="http://www.supermemo.com/english/ol/background.htm">spaced repetition</a> and it helps you spend as little time as possible reviewing words. You can think of it as your own personal language trainer, keeping detailed stats on what you've learned and drilling you only on the ones it thinks you're about to forget.
+      %p We've taken some of the latest research about how memory works and made it an integrated part of Vocabulink. It's called <a href="http://www.supermemo.com/english/ol/background.htm">spaced repetition</a> and it helps you spend only as much time as necessary reviewing words. You can think of Vocabulink as your own personal language trainer. We keep detailed stats on what you've learned and drill you only on the ones we think you're about to forget.
 
     .clear
 
