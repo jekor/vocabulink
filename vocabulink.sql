@@ -268,7 +268,7 @@ CREATE TABLE link_pronunciation (
 );
 COMMENT ON TABLE link_pronunciation IS 'The single definitive audio file for a link''s pronunciation. I debated adding support for multiple files, but I''m keeping it simple for now.';
 
-CREATE TABLE link_type_linkword (
+CREATE TABLE link_linkword (
        link_no INTEGER REFERENCES link (link_no) PRIMARY KEY,
        linkword TEXT NOT NULL
 );

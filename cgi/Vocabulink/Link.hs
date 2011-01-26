@@ -162,16 +162,20 @@ establishLink :: Link -> Integer -> App (Integer)
 establishLink l memberNo = do
   h <- asks appDB
   liftIO $ withTransaction h $ do
-    linkNo <- fromJust <$> $(queryTuple
-      "INSERT INTO link (origin, destination, \
-                        \origin_language, destination_language, \
-                        \link_type, author) \
-                \VALUES ({linkOrigin l}, {linkDestination l}, \
-                        \{linkOriginLang l}, {linkDestinationLang l}, \
-                        \{linkTypeName l}, {memberNo}) \
-      \RETURNING link_no") h
-    establishLinkType h (l {linkNumber = linkNo})
-    return linkNo
+    exists <- linkExists h l
+    case exists of
+      True -> error "Link already exists."
+      False -> do
+        linkNo <- fromJust <$> $(queryTuple
+          "INSERT INTO link (origin, destination, \
+                            \origin_language, destination_language, \
+                            \link_type, author) \
+                    \VALUES ({linkOrigin l}, {linkDestination l}, \
+                            \{linkOriginLang l}, {linkDestinationLang l}, \
+                            \{linkTypeName l}, {memberNo}) \
+          \RETURNING link_no") h
+        establishLinkType h (l {linkNumber = linkNo})
+        return linkNo
 
 -- The relation we insert additional details into depends on the type of the
 -- link and it's easiest to use a separate function for it.
@@ -179,10 +183,33 @@ establishLink l memberNo = do
 establishLinkType :: Handle -> Link -> IO ()
 establishLinkType h l = case linkType l of
   (LinkWord word) -> do
-    $(execute "INSERT INTO link_type_linkword \
+    $(execute "INSERT INTO link_linkword \
                      \(link_no, linkword) \
               \VALUES ({linkNumber l}, {word})") h
   _ -> return ()
+
+-- | Check to see if a link already exists in the database. This is here to
+-- ensure uniqueness, as storing links of multiple types in the same table
+-- means that we can't use PostgreSQL constaints.
+linkExists :: Handle -> Link -> IO Bool
+linkExists h l = case linkType l of
+  -- Associations cannot be created if any better link type exists for the words.
+  Association     -> isJust <$> $(queryTuple
+    "SELECT link_no FROM link \
+    \WHERE origin = {linkOrigin l} AND destination = {linkDestination l} \
+      \AND origin_language = {linkOriginLang l} AND destination_language = {linkDestinationLang l}") h
+  -- Sound-alikes cannot be created if a sound-alike already exists for the words.
+  SoundAlike      -> isJust <$> $(queryTuple
+    "SELECT link_no FROM link \
+    \WHERE origin = {linkOrigin l} AND destination = {linkDestination l} \
+      \AND origin_language = {linkOriginLang l} AND destination_language = {linkDestinationLang l} \
+      \AND link_type = {linkTypeNameFromType SoundAlike}") h
+  -- Linkwords can duplicate everything, as long as they are different linkwords.
+  (LinkWord word) -> isJust <$> $(queryTuple
+    "SELECT link_no FROM link INNER JOIN link_linkword USING (link_no) \
+    \WHERE origin = {linkOrigin l} AND destination = {linkDestination l} \
+      \AND origin_language = {linkOriginLang l} AND destination_language = {linkDestinationLang l} \
+      \AND linkword = {word}") h
 
 -- Retrieving Links
 
@@ -229,7 +256,7 @@ getLinkType (PartialLink pl) = case pl of
   (Link { linkTypeName  = "linkword"
         , linkNumber    = n })             -> do
     LinkWord <$$> $(queryTuple'
-      "SELECT linkword FROM link_type_linkword \
+      "SELECT linkword FROM link_linkword \
       \WHERE link_no = {n}")
   _                                        -> error "Bad partial link."
 

@@ -33,7 +33,7 @@ addStory :: Integer -- ^ link number
          -> App ()
 addStory n s = withRequiredMember $ \ m -> do
   $(execute' "INSERT INTO linkword_story (link_no, author, story) \
-                                 \VALUES ((SELECT link_no FROM link_type_linkword \
+                                 \VALUES ((SELECT link_no FROM link_linkword \
                                           \WHERE link_no = {n}), {memberNumber m}, {s})")
 
 -- | Fetch all of the stories available for a given link.
