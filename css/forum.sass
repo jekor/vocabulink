@@ -1,4 +1,4 @@
-// Copyright 2008, 2009, 2010 Chris Forno
+// Copyright 2008, 2009, 2010, 2011 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -16,6 +16,11 @@
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
 @import lib.sass
+
+#body
+  margin:
+    left: 1em
+    right: 1em
 
 .forum-group
   margin:
@@ -65,14 +70,11 @@
   width: 100%
   border: 1px solid $bar_and_box_border
   @include rounded(5px)
-  background-color: $bar_and_box_background
   table
     width: 100%
     thead
-      background: url(#{$images}header-gradient.gif) repeat-x bottom
+      @include vertical_gradient($bar_and_box_background, $bar_and_box_border)
       border-bottom: 1px solid $bar_and_box_border
-    tbody
-      background-color: #FFF
     th, td
       padding: 0.5em
       vertical-align: middle

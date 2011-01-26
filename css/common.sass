@@ -34,10 +34,6 @@ html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockq
     family: inherit
   vertical-align: baseline
 
-// remember to define focus styles!
-\:focus
-  outline: 0
-
 body
   font-size: 11pt
 
@@ -46,11 +42,6 @@ h1, h2, h3, h4, h5, h6, p, ol, ul, dl, table, a, div, span
 
 a
   color: #28A3A4
-  cursor: pointer
-  &:focus
-    outline: 1px dotted black
-
-input[type=submit]
   cursor: pointer
 
 body
@@ -172,14 +163,15 @@ tr.odd:hover, tr.even:hover
 // Top-Level Page Elements
 
 #body
-  margin: 1.3em
+  margin:
+    top: 1.3em
+    bottom: 1.3em
 
 #head, #foot
   margin: 0
 
 #head
   width: 100%
-  font-family: Verdana, sans-serif
   .logo
     display: block
     float: left
@@ -219,14 +211,17 @@ tr.odd:hover, tr.even:hover
   #login-popup
     position: absolute
     color: #BABABA
-    text-align: right
-    form
-      margin-top: -0.25em
-    input[type=text], input[type=password]
+    label
+      float: right
+    td input
       width: 10em
     input[type=submit]
-      margin: 0 0.5em 0.5em
-    .close-button
+      float: left
+      margin:
+        left: 1.5em
+        bottom: 0.667em
+    .cancel
+      float: right
       color: #BABABA
 
 #foot
@@ -278,51 +273,6 @@ tr.odd:hover, tr.even:hover
   float: left
   h1
     margin-top: 0
-
-#sidebar
-  width: 30%
-  float: right
-
-.sidebox
-  padding: 0.667em
-  margin-bottom: 1.3em
-  background-color: $bar_and_box_background
-  @include rounded(5px)
-  ul, ol
-    margin: 0
-    li
-      text-align: center
-      &:last-child
-        margin-bottom: 0
-  h3
-    text-align: center
-    margin:
-      top: 0
-      bottom: 0.667em
-
-.link-pack
-  width: 33em
-  margin: 1.3em auto
-  img
-    width: 240px
-    height: 336px
-    float: left
-    border: 1px solid $bar_and_box_border
-    margin-right: 1.3em
-
-.link-pack.compact
-  width: 240px
-  margin: 1.3em
-  h3
-    text-align: center
-    margin-bottom: 0.25em
-  .sidebox &
-    margin: 0 auto
-
-p.copyright
-  margin: 0
-  text-align: center
-  clear: both
 
 // The Pager is used to page results that won't fit on a single page.
 
@@ -415,79 +365,51 @@ button, input
     width: 33%
     float: left
 
-.rating
+button, input[type=submit]
+  cursor: pointer
   display: inline-block
-  .stars-base
-    display: inline-block
-    vertical-align: -20%
-    width: 100px
-    height: 20px
-    margin:
-      left: auto
-      right: auto
-    background: url(#{$images}stars.png) repeat-x
-    position: relative
-    padding: 0
-    .stars
-      height: 20px
-      position: absolute
-      margin: 0
-      background-image: url(#{$images}stars.png)
-      background-repeat: repeat-x
-  p
-    margin-top: 0
-
-.rating.enabled
-  .stars-base
-    cursor: pointer
-
-// Buttons made from anchors:
-a.button
-  display: inline-block
-  text-decoration: none // should not be underlined
-  height: 28px // don't look good unless they're a little bit taller
-  line-height: 28px
-  text-align: center
-  margin: 0
-  padding:
-    left: 0.333em
-    right: 0.333em
-  font-size: 0.875em // and smaller
-  color: #666
-  background: url(#{$images}button-bevel.png) repeat-x
-  border: 1px solid $bar_and_box_border
-  @include rounded(5px)
-  &:hover
-    text-decoration: none // should not be underlined when hovering either
-    background-position: 0 (-28px)
-  &:active
-    text-decoration: none
-    background-position: 0 (-56px) // TODO: Only makes sense with a background image.
-    // TODO: Shift down 1px when clicked on. I can't add this globally yet since
-    // adding "position: relative" throws off some markup (such as in comment boxes).
-
-// Search button. Once I add more buttons I'm going to abstract some of this.
-#sa, #login-popup input[type=submit], .close-button, #logout-button
-  //@include vertical_gradient(#888888, #000000)
-  @include vertical_half_gradient(#686868, #000000)
+  text-decoration: none
+  @include rounded(0.5em)
+  font-size: 9pt
+  padding: 0.333em 1em 0.333em
+  // text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3)
   @include drop_shadow(0, 1px, 2px, rgba(0, 0, 0, 0.2))
+  &::-moz-focus-inner
+    border: 0
   &:hover
-    @include vertical_half_gradient(#444444, #000000)
+    text-decoration: none
   &:active
-    @include vertical_half_gradient(#000000, #444444)
-    color: darken(#6ACFD8, 20%)
     position: relative
     top: 1px
-#sa, #login-popup input[type=submit], #logout-button
-  border: 1px solid #C4C4C4
-  @include rounded(0.5em)
-  color: #6ACFD8
-  font-size: 9pt
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3)
-  padding: 0.2em 1.25em 0.25em
-  margin-left: 0.5em
+  &:focus
+    outline: 0
+  &.dark
+    color: #6ACFD8
+    border: 1px solid #C4C4C4
+    @include vertical_half_gradient(#686868, #000000)
+    &:hover
+      @include vertical_half_gradient(#444444, #000000)
+    &:active
+      @include vertical_half_gradient(#000000, #444444)
+      color: darken(#6ACFD8, 20%)
+  &.light
+    color: #666666
+    border: 1px solid #BFBFBF
+    @include vertical_half_gradient(#FFFFFF, #DFDFDF)
+    &:hover
+      @include vertical_half_gradient(#F6F6F6, #DFDFDF)
+    &:active
+      @include vertical_half_gradient(#DFDFDF, #F6F6F6)
+      color: darken(#666666, 20%)
+  // Cancel buttons are like button except that they're downplayed (drawn without
+  // button decorations)
+  &.cancel
+    border: none
+    background-color: transparent
+    @include rounded(0)
+    @include drop_shadow(0, 0, 0, rgba(0, 0, 0, 0))
 
-#q, #login-popup input
+#q
   font-size: 9pt
   @include rounded(0.5em)
   padding: 0.33em
@@ -509,11 +431,7 @@ a.button
 // Some blocks are generated by markdown parsing. They are an HTML fragment and
 // in order to keep them contained more cleanly in a box, we need to remove
 // some margins and clean up some indents.
-.htmlfrag
-  *:first-child
-    margin-top: 0
-  *:last-child
-    margin-bottom: 0
+blockquote
   ul
     list-style-type: disc
     margin-left: 1em
@@ -548,3 +466,13 @@ ul.links
 
 .failed
   color: red !important
+
+.collapsed
+  overflow: hidden
+
+.placeheld
+  color: #A0A0A0
+  font-style: italic
+
+.disabled
+  opacity: 0.5

@@ -19,29 +19,6 @@
 
 (function ($) {
 
-function sendReply(box, commentNumber, sendButton, e) {
-  var body = $.trim(box.find('textarea').val());
-  if (body === '') {
-    alert('Please enter a comment.');
-    return false;
-  }
-  box.mask('Sending...');
-  $.ajax({'type': 'POST', 'url': '/comment/' + commentNumber + '/reply',
-          'contentType': 'text/plain',
-          'data': body,
-          'dataType': 'html',
-          'success': function (data) {
-            sendButton.remove();
-            box.unmask();
-            box.find('.body').html('<div class="comment htmlfrag">' + data + '</div>');
-          },
-          'error':   function (data) {
-            box.unmask();
-            alert('Error sending reply.');
-          }});
-  return false;
-}
-
 // Here's yet another one to move out to a forum file.
 function createTopic(box, e) {
   var title = $.trim(box.find('input[name=title]').val());
@@ -103,39 +80,36 @@ function vote(e) {
   return false;
 }
 
-function createCommentBox() {
-  var box = $('<div class="comment-box">' +
-                '<img class="avatar" width="60" height="60" src="' + V.memberGravatar() + '"/>' +
-                '<p class="metadata">' +
-                  '<span class="membername">' + V.memberName() + '</span>' +
-                '</p>' +
-                '<div class="body">' +
-                  '<textarea></textarea>' +
-                '</div>' +
-              '</div>');  
-  box.find('textarea').markItUp(mySettings);
+function createCommentBox(parentID) {
+  var box = $(
+    '<form method="post" action="/comment/' + parentID + '/reply" class="comment">'
+    + '<div class="metadata">'
+      + '<span class="username">' + V.memberName() + '</span>'
+    + '</div>'
+    + '<img class="avatar" width="48" height="48" src="' + V.memberGravatar() + '"/>'
+    + '<input type="submit" value="Send" class="send light"></input>'
+    + '<div class="speech-bubble left body">'
+      + '<textarea name="body" required placeholder="Add your comment here."></textarea>'
+    + '</div>'
+    + '<div class="clear"></div>'
+  + '</form>');
+  box.html5form();
   return box;  
 }
 
 // This box is for replying to comments.
 function createReplyBox(parentNumber) {
-  var box = createCommentBox();
-  var sendButton = $('<a class="button" href="#">Send</a>');
-  sendButton.appendTo(box);
-  sendButton.click(sendReply.curry(box, parentNumber, sendButton));
-  return box;
+  return createCommentBox(parentNumber);
 }
 
 // TODO: Move to forum JS file.
 // This box is for creating new topics (new root comments).
 function createTopicBox() {
   var box = createCommentBox();
-  var createButton = $('<a class="button" href="#">Create</a>');
-  createButton.appendTo(box);
+  box.attr('action', '/forum/' + window.location.pathname.split('/').pop());
   $('<div class="title">' +
-      '<label>Title:</label> <input type="text" name="title"></input>' +
+      '<label>Title:</label> <input name="title" required></input>' +
     '</div>').prependTo(box.find('.body'));
-  createButton.click(createTopic.curry(box));
   return box;
 }
 
@@ -146,13 +120,13 @@ function createTopicBox() {
 // The commentBox passed is the one we're replying to. We'll use it to get the
 // target comment number and for relative placement of the new box. commentBox
 // should be a jQuery object.
-function addReplyCommentBox(commentBox, e) {
+function addReplyCommentBox(commentBox) {
   var parentIndent = parseFloat(commentBox.attr('style').match(/margin-left: ([0-9.]+)em/i)[1]);
   if (parentIndent === undefined || isNaN(parentIndent)) {
     alert('Unexpected error. Unable to determine comment level.');
     return false;
   }
-  var commentNumber = parseInt(commentBox.attr('id').match(/comment-(\d+)/i)[1], 10);
+  var commentNumber = parseInt(commentBox.attr('comment'), 10);
   if (commentNumber === undefined || isNaN(commentNumber)) {
     alert('Unexpected error. Unable to determine comment number.');
     return false;
@@ -164,38 +138,26 @@ function addReplyCommentBox(commentBox, e) {
   return false;
 }
 
-// Add reply buttons to each comment box on the page.
-// This should only be called for authenticated members.
-function setupReply() {
-  var replyButton = $(this).find('a.button');
-  replyButton.click(addReplyCommentBox.curry($(this)));
-  // Adjust the comment box's height so that it looks good.
-  // $(this).find('.body:first').css('min-height', (88 - ($(this).find('.metadata').height())) + 'px');
-}
-
 // Pages that allow comments have a root comment to which new comments are sent
 // in reply to by default. Sometimes the root comment is visible, sometimes
 // it's an invisible blank comment. In any case, we want to create a comment box
 // in those cases. We'll look for a rootComment variable to do so.
 function setupRootReply() {
   var rootComment = parseInt($(this).attr('id').match(/comments-(\d+)/i)[1], 10);
-  createReplyBox(rootComment).appendTo($(this));
-}
-
-function setupCreateTopic() {
-  var newTopicButton = $(this).find('a.button');
-  newTopicButton.click(function () {
-    var box = createTopicBox();
-    newTopicButton.replaceWith(box);
-    return false;
-  });
+  createCommentBox(rootComment).appendTo($(this));
 }
 
 $(function () {
-  $('.comment-box').each(setupReply);
+  $('.comment .reply').click(function () {
+    addReplyCommentBox($(this).parent());
+  });
   $('.comments').each(setupRootReply);
   $('.vote-arrow').click(vote);
-  $('#topics').each(setupCreateTopic);
+  $('#topics tr:nth-child(2) button').click(function () {
+    var box = createTopicBox();
+    $(this).replaceWith(box);
+    return false;
+  });
 });
 
 })(jQuery);

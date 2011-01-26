@@ -17,65 +17,21 @@
 
 (function ($) {
 
-// This is for the original link creation page.
-function showLinkEditor() {
-  var linkType = this.options[this.selectedIndex].text.replace(/ /g, '-');
-  $('fieldset').hide();
-  $('#' + linkType).show();
-}
-
-function saveChanges() {
-  var button = $(this);
-  var linkDetailsBox = $('.link-details');
-  var body = $.trim(linkDetailsBox.find('textarea').val());
-  if (body === '') {
-    alert('Please enter some text.');
-    return false;
+var changeLinkType = function () {
+  var newType = $(this).val();
+  $(this).parents('h1').removeClass('linkword').removeClass('sound-alike').removeClass('association')
+         .addClass(newType);
+  var linkword = $(this).parent().find('input');
+  if (newType === 'linkword') {
+    linkword.attr('required', null).css('visibility', 'visible');
+  } else {
+    linkword.removeAttr('required').css('visibility', 'hidden');
   }
-  button.text('Saving...');
-  button.attr('disabled', 'disabled');
-  linkDetailsBox.mask('Saving...');
-  // We get the link number from the URL.
-  var linkNumber = parseInt(window.location.pathname.split('/').pop(), 10);
-  $.ajax({'type': 'POST', 'url': '/link/' + linkNumber + '/story',
-          'contentType': 'text/plain',
-          'data': body,
-          'dataType': 'html',
-          'success': function (data) {
-            button.text('Saved!');
-            linkDetailsBox.unmask();
-            $('#link-details').html(data).show();
-            linkDetailsBox.find('.markItUp').remove();
-          },
-          'error':   function (data) {
-            alert('Error saving link story.');
-            button.text('Save Changes');
-            button.attr('disabled', null);
-            linkDetailsBox.unmask();
-          }});
-  return false;
-}
-
-// This is for editing in-place on an already-created link page.
-function editLink() {
-  $(this).unbind('click');
-  $(this).click(saveChanges);
-  $(this).text('Save Changes');
-  var linkDetails = $('#link-details');
-  var box = linkDetails.parent().find('textarea:first');
-  box.show();
-  linkDetails.hide();
-  box.markItUp(mySettings);
-  return false;
 }
 
 $(function () {
-  var linkTypeSelector = $('select[name=fval[4]]:first');
-  linkTypeSelector.change(showLinkEditor);
-  linkTypeSelector.change();
-  // Setup the link word editor right away.
-  $('#link-word textarea').markItUp(mySettings);
-  $('#link-op-edit').click(editLink);
+  $('h1.link.edit .link select').change(changeLinkType);
+  $('#body form').html5form();
 });
 
 })(jQuery);

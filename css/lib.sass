@@ -51,6 +51,12 @@ $images: "#{$static}img/"
   background: -moz-linear-gradient(top, $from, $to, $to, $to)
   background: -webkit-gradient(linear, center top, center bottom, from($from), color-stop(33%, $to), to($to))
 
+@mixin vertical_fade_to($color)
+  $from: rgba($color, 0)
+  $to: rgba($color, 1)
+  background: -moz-linear-gradient(top, $from, $to, $to, $to)
+  background: -webkit-gradient(linear, center top, center bottom, from($from), color-stop(33%, $to), to($to))
+
 // This is the background color for major blocks in the interface.
 $bar_and_box_background: #F7F7F7
 $bar_and_box_border: #DFDFDF

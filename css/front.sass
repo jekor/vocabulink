@@ -64,12 +64,16 @@ body #body
   display: block
   float: right
   @include vertical_gradient(#A6DE66, #79BB27)
+  @include rounded(5px)
   border: 2px solid #000000
-  padding: 0.33em 1em
+  padding: 0.5em 1em
   font-size: 1.125em
   font-weight: bold
   color: white
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3)
+  &:hover
+    text-decoration: none
+    @include vertical_gradient(darken(#A6DE66, 5%), #79BB27)
   &:active
     @include vertical_gradient(#79BB27, #A6DE66)
     // color: darken(#6ACFD8, 20%)

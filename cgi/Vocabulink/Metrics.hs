@@ -33,22 +33,27 @@ metricsPage = do
   today <- liftIO currentDay
   let start = addDays (-30) today
       end   = today
-  signups <- signupCounts start end
+  signups  <- signupCounts start end
+  links    <- linkCounts start end
+  stories  <- storyCounts start end
+  comments <- commentCounts start end
   simplePage "Metrics" [JS "lib.raphael", JS "metrics", CSS "metrics"] $ do
     h2 "Sign Ups"
     dateSeriesChart signups
       ! customAttribute "start" (stringValue $ showGregorian start)
       ! customAttribute "end"   (stringValue $ showGregorian end)
-
--- | # of signups each day in a given date range
-signupCounts :: Day -- ^ start date
-             -> Day -- ^ end date
-             -> App [(Day, Integer)] -- ^ counts for each date
-signupCounts start end = (\(d, i) -> (fromJust d, fromJust i)) <$$> $(queryTuples'
-  "SELECT CAST(join_date AS date), COUNT(*) FROM member \
-  \WHERE CAST(join_date AS date) BETWEEN {start} AND {end} \
-  \GROUP BY CAST(join_date AS date) \
-  \ORDER BY join_date")
+    h2 "Links"
+    dateSeriesChart links
+      ! customAttribute "start" (stringValue $ showGregorian start)
+      ! customAttribute "end"   (stringValue $ showGregorian end)
+    h2 "Stories"
+    dateSeriesChart stories
+      ! customAttribute "start" (stringValue $ showGregorian start)
+      ! customAttribute "end"   (stringValue $ showGregorian end)
+    h2 "Comments"
+    dateSeriesChart comments
+      ! customAttribute "start" (stringValue $ showGregorian start)
+      ! customAttribute "end"   (stringValue $ showGregorian end)
 
 dateSeriesChart :: [(Day, Integer)] -> Html
 dateSeriesChart data' =
@@ -60,3 +65,40 @@ dateSeriesChart data' =
  where row datum = tr $ do
                      td $ string $ show $ fst datum
                      td $ string $ show $ snd datum
+
+-- | # of signups each day in a given date range
+signupCounts :: Day -- ^ start date
+             -> Day -- ^ end date
+             -> App [(Day, Integer)] -- ^ counts for each date
+signupCounts start end = (\(d, i) -> (fromJust d, fromJust i)) <$$> $(queryTuples'
+  "SELECT CAST(join_date AS date), COUNT(*) FROM member \
+  \WHERE CAST(join_date AS date) BETWEEN {start} AND {end} \
+  \GROUP BY CAST(join_date AS date) \
+  \ORDER BY join_date")
+
+linkCounts :: Day -- ^ start date
+           -> Day -- ^ end date
+           -> App [(Day, Integer)] -- ^ counts for each date
+linkCounts start end = (\(d, i) -> (fromJust d, fromJust i)) <$$> $(queryTuples'
+  "SELECT CAST(created AS date), COUNT(*) FROM link \
+  \WHERE CAST(created AS date) BETWEEN {start} AND {end} \
+  \GROUP BY CAST(created AS date) \
+  \ORDER BY created")
+
+storyCounts :: Day -- ^ start date
+            -> Day -- ^ end date
+            -> App [(Day, Integer)] -- ^ counts for each date
+storyCounts start end = (\(d, i) -> (fromJust d, fromJust i)) <$$> $(queryTuples'
+  "SELECT CAST(created AS date), COUNT(*) FROM linkword_story \
+  \WHERE CAST(created AS date) BETWEEN {start} AND {end} \
+  \GROUP BY CAST(created AS date) \
+  \ORDER BY created")
+
+commentCounts :: Day -- ^ start date
+              -> Day -- ^ end date
+              -> App [(Day, Integer)] -- ^ counts for each date
+commentCounts start end = (\(d, i) -> (fromJust d, fromJust i)) <$$> $(queryTuples'
+  "SELECT CAST(time AS date), COUNT(*) FROM comment \
+  \WHERE CAST(time AS date) BETWEEN {start} AND {end} \
+  \GROUP BY CAST(time AS date) \
+  \ORDER BY time")

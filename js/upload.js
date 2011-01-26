@@ -41,8 +41,8 @@ $(function () {
   var fileInput = $('.upload-file');
   var fileButton = $('#upload-file-button');
   new AjaxUpload('upload-file-button', {'action': '/pack/image',
-                                        'onSubmit': submitFile.curry(fileInput, fileButton),
-                                        'onComplete': fileSubmitted.curry(fileInput, fileButton)});
+                                        'onSubmit': function () {submitFile(fileInput, fileButton);},
+                                        'onComplete': function () {fileSubmitted(fileInput, fileButton);}});
   fileButton.removeAttr('disabled');
 });
 

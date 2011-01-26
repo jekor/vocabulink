@@ -51,6 +51,10 @@ V.memberName = function () {
   return authTokenPart('name');
 };
 
+V.loggedIn = function () {
+  return V.memberName() !== null;
+};
+
 V.memberGravatar = function () {
   var gravHash = authTokenPart('grav');
   if (gravHash) {
@@ -62,28 +66,25 @@ V.memberGravatar = function () {
 
 function loginPopup() {
   var headBar = $('#head-bar');
-  $('<div id="login-popup">' +
-      '<a class="close-button"><span>×</span></a>' +
-      '<form action="/member/login" method="post">' +
-        '<table>' +
-          '<tbody>' +
-            '<tr><th><label>Username:</label></th><td><input type="text" name="fval[0]"/></td></tr>' +
-            '<tr><th><label>Password:</label></th><td><input type="password" name="fval[1]"/></td></tr>' +
-          '</tbody>' +
-        '</table>' +
-        '<input type="submit" value="Login"/>' +
-      '</form>' +
-    '</div>').insertAfter(headBar)
-    .css('top', headBar.offset().top + headBar.outerHeight())
-    .css('left', headBar.offset().left + headBar.outerWidth() - $('#login-popup').outerWidth() - 3)
-    .find('.close-button').click(function () {
-      $(this).parent().remove();
-    });
+  var popup = $(
+    '<form id="login-popup" action="/member/login" method="post">'
+    + '<table>'
+      + '<tr><td><label>Username:</label></td><td><input name="fval[0]" required autofocus></td></tr>'
+      + '<tr><td><label>Password:</label></td><td><input type="password" name="fval[1]" required></td></tr>'
+    + '</table>'
+    + '<input type="submit" value="Login" class="dark">'
+    + '<button class="cancel">cancel</button>'
+  + '</form>').appendTo(headBar);
+  popup.css('top', headBar.offset().top + headBar.outerHeight())
+       .css('left', headBar.offset().left + headBar.outerWidth() - $('#login-popup').outerWidth() - 3)
+       .find('.cancel').click(function () {
+         $(this).parent().remove();
+       });
+  popup.html5form();
 }
 
 // initialization for every page
 $(function () {
-  Functional.install();
   try {
     var pageTracker = _gat._getTracker("UA-73938-2");
     pageTracker._trackPageview();

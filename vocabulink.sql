@@ -235,13 +235,12 @@ CREATE TABLE link_type (
        description TEXT NOT NULL,
        relation TEXT
 );
-COMMENT ON TABLE link_type IS 'There are different types of links between lexemes. From simple associations (just asserting that a link exists) to full-blown stories with pictures that use a native-language link word.';
+COMMENT ON TABLE link_type IS 'There are different types of links between lexemes. From simple associations (just asserting that a link exists) to full-blown stories with pictures that use a native-language linkword.';
 COMMENT ON COLUMN link_type.relation IS 'For most link types, an individual link carries with it extra information. We use a separate table for each to store the extra information for each link. I considered using PostgreSQL''s inheritance features, but they seem to be problematic and I don''t know how well they perform. More than 1 link type can share the same table.';
 INSERT INTO link_type (name, description, relation)
      VALUES ('association', 'A simple association with no attached meaning', NULL),
             ('sound-alike', 'A sound-alike or borrowed word', NULL),
-            ('link word', 'A story derived from a native-language link word', 'link_type_link_word');
---            ('relationship', 'A relationship between 2 native words and a corresponding pair in a foreign language', 'link_type_relationship');
+            ('linkword', 'A story derived from a native-language linkword', 'link_type_linkword');
 
 CREATE TABLE link (
        link_no SERIAL PRIMARY KEY,
@@ -269,34 +268,18 @@ CREATE TABLE link_pronunciation (
 );
 COMMENT ON TABLE link_pronunciation IS 'The single definitive audio file for a link''s pronunciation. I debated adding support for multiple files, but I''m keeping it simple for now.';
 
-CREATE TABLE link_type_link_word (
-       link_no INTEGER REFERENCES link (link_no),
-       link_word TEXT NOT NULL,
-       story TEXT NOT NULL
+CREATE TABLE link_type_linkword (
+       link_no INTEGER REFERENCES link (link_no) PRIMARY KEY,
+       linkword TEXT NOT NULL
 );
 
-CREATE TABLE link_type_relationship (
-       link_no INTEGER REFERENCES link (link_no),
-       left_side TEXT NOT NULL,
-       right_side TEXT NOT NULL
-);
-
-CREATE TABLE link_pack (
-       pack_no SERIAL PRIMARY KEY,
-       name TEXT NOT NULL UNIQUE,
-       description TEXT NOT NULL,
-       image_ext TEXT,
-       creator INTEGER REFERENCES member (member_no) NOT NULL,
+CREATE TABLE linkword_story (
+       story_no SERIAL PRIMARY KEY,
+       link_no INTEGER REFERENCES link_type_linkword (link_no) NOT NULL,
+       author INTEGER REFERENCES member (member_no) NOT NULL,
        created TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-       updated TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-       deleted BOOLEAN NOT NULL DEFAULT FALSE       
-);
-
-CREATE TABLE link_pack_link (
-       pack_no INTEGER REFERENCES link_pack (pack_no) ON DELETE CASCADE,
-       link_no INTEGER REFERENCES link (link_no),
-       added TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-       PRIMARY KEY (pack_no, link_no)
+       edited  TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       story TEXT NOT NULL
 );
 
 CREATE TABLE link_to_review (
@@ -492,29 +475,6 @@ END; $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER add_root_comment AFTER INSERT ON link FOR EACH ROW
 EXECUTE PROCEDURE create_link_root_comment();
-
-CREATE TABLE link_pack_comments (
-  pack_no INTEGER REFERENCES link_pack (pack_no),
-  root_comment INTEGER REFERENCES comment (comment_no),
-  PRIMARY KEY (pack_no, root_comment)
-);
-
-CREATE FUNCTION create_link_pack_root_comment() RETURNS trigger AS $$
-BEGIN
-  INSERT INTO link_pack_comments (pack_no, root_comment)
-                          VALUES (NEW.pack_no, create_virtual_root_comment());
-  RETURN NEW;
-END; $$ LANGUAGE plpgsql;
-
-CREATE TRIGGER add_root_comment AFTER INSERT ON link_pack FOR EACH ROW
-EXECUTE PROCEDURE create_link_pack_root_comment();
-
-CREATE TABLE link_rating (
-  link_no INTEGER REFERENCES link (link_no),
-  member_no INTEGER REFERENCES member (member_no),
-  rating REAL NOT NULL,
-  PRIMARY KEY (link_no, member_no)
-);
 
 -- What are the most popular languages on vocabulink? Count the number of times
 -- the language appears on either side of a link to find out.

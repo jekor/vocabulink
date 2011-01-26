@@ -104,9 +104,6 @@
 				// add the footer after the textarea
 				footer = $('<div class="markItUpFooter"></div>').insertAfter($$);
 
-        // Add another wrapper for a border.
-        $$.wrap('<div class="markItUpWrapper"></div>');
-
 				// add the resize handle after textarea
 				if (options.resizeHandle === true && $.browser.safari !== true) {
 					resizeHandle = $('<div class="markItUpResizeHandle"></div>')
