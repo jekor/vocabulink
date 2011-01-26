@@ -55,7 +55,7 @@ articlePage path = do
     Nothing -> outputNotFound
     Just a' -> do
       row <- $(queryTuple' "SELECT root_comment \
-                           \FROM article_comments \
+                           \FROM article_comment \
                            \WHERE filename = {path}")
       comments <- case row of
                     Just root -> renderComments root

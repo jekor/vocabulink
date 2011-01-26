@@ -334,7 +334,7 @@ CREATE RULE "replace article" AS
                                    section = NEW.section
                 WHERE filename = NEW.filename);
 
-CREATE TABLE article_comments (
+CREATE TABLE article_comment (
   filename TEXT REFERENCES article (filename),
   root_comment INTEGER REFERENCES comment (comment_no),
   PRIMARY KEY (filename, root_comment)
@@ -342,8 +342,8 @@ CREATE TABLE article_comments (
 
 CREATE FUNCTION create_article_root_comment() RETURNS trigger AS $$
 BEGIN
-  INSERT INTO article_comments (filename, root_comment)
-                        VALUES (NEW.filename, create_virtual_root_comment());
+  INSERT INTO article_comment (filename, root_comment)
+                       VALUES (NEW.filename, create_virtual_root_comment());
   RETURN NEW;
 END; $$ LANGUAGE plpgsql;
 
@@ -460,7 +460,7 @@ END; $$ LANGUAGE plpgsql;
 CREATE TRIGGER update_root AFTER INSERT ON comment FOR EACH ROW
 EXECUTE PROCEDURE update_forum_topic();
 
-CREATE TABLE link_comments (
+CREATE TABLE link_comment (
        link_no INTEGER REFERENCES link (link_no),
        root_comment INTEGER REFERENCES comment (comment_no),
        PRIMARY KEY (link_no, root_comment)
@@ -468,8 +468,8 @@ CREATE TABLE link_comments (
 
 CREATE FUNCTION create_link_root_comment() RETURNS trigger AS $$
 BEGIN
-  INSERT INTO link_comments (link_no, root_comment)
-                     VALUES (NEW.link_no, create_virtual_root_comment());
+  INSERT INTO link_comment (link_no, root_comment)
+                    VALUES (NEW.link_no, create_virtual_root_comment());
   RETURN NEW;
 END; $$ LANGUAGE plpgsql;
 

@@ -87,7 +87,7 @@ linkPage linkNo = do
           let orig = linkOrigin l'
               dest = linkDestination l'
           row <- $(queryTuple' "SELECT root_comment \
-                               \FROM link_comments \
+                               \FROM link_comment \
                                \WHERE link_no = {linkNo}")
           comments <- case row of
                         Just root  -> renderComments root
