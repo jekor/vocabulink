@@ -17,7 +17,7 @@
 
 -- | System-level metrics (not individual)
 
-module Vocabulink.Metrics (metricsPage) where
+module Vocabulink.Metrics (metricsPage, dateSeriesChart) where
 
 import Vocabulink.App
 import Vocabulink.CGI
@@ -37,9 +37,14 @@ metricsPage = do
   links    <- linkCounts start end
   stories  <- storyCounts start end
   comments <- commentCounts start end
+  reviews  <- reviewCounts start end
   simplePage "Metrics" [JS "lib.raphael", JS "metrics", CSS "metrics"] $ do
     h2 "Sign Ups"
     dateSeriesChart signups
+      ! customAttribute "start" (stringValue $ showGregorian start)
+      ! customAttribute "end"   (stringValue $ showGregorian end)
+    h2 "Reviews"
+    dateSeriesChart reviews
       ! customAttribute "start" (stringValue $ showGregorian start)
       ! customAttribute "end"   (stringValue $ showGregorian end)
     h2 "Links"
@@ -102,3 +107,12 @@ commentCounts start end = (\(d, i) -> (fromJust d, fromJust i)) <$$> $(queryTupl
   \WHERE CAST(time AS date) BETWEEN {start} AND {end} \
   \GROUP BY CAST(time AS date) \
   \ORDER BY time")
+
+reviewCounts :: Day -- ^ start date
+             -> Day -- ^ end date
+             -> App [(Day, Integer)] -- ^ counts for each date
+reviewCounts start end = (\(d, i) -> (fromJust d, fromJust i)) <$$> $(queryTuples'
+  "SELECT CAST(actual_time AS date), COUNT(*) FROM link_review \
+  \WHERE CAST(actual_time AS date) BETWEEN {start} AND {end} \
+  \GROUP BY CAST(actual_time AS date) \
+  \ORDER BY actual_time")
