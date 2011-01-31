@@ -1,0 +1,36 @@
+@import lib.sass
+
+.loadmask
+  z-index: 100
+  position: absolute
+  top: 0
+  left: 0
+  -moz-opacity: 0.5
+  opacity: .50
+  filter: alpha(opacity=50)
+  background-color: #CCC
+  width: 100%
+  height: 100%
+  zoom: 1
+
+.loadmask-msg
+  z-index: 20001
+  position: absolute
+  top: 0
+  left: 0
+  color: #28A3A4
+  border: 1px solid #28A3A4
+  background: #2D2D2D url('/img/loading.gif') no-repeat 5px 5px
+  font-size: 11pt
+  @include rounded(0.5em)
+  padding: 6px 6px 6px 25px
+  cursor: wait
+
+.masked
+  overflow: hidden !important
+
+.masked-relative
+  position: relative !important
+
+.masked-hidden
+  visibility: hidden !important
