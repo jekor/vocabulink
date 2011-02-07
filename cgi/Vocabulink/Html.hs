@@ -55,7 +55,7 @@ import Text.Blaze.Html5.Attributes ( id, class_, href, type_, src, style, title
                                    )
 import Text.Hamlet (hamletFile, hamletFileDebug)
 import Text.Pandoc ( readMarkdown, writeHtmlString, defaultParserState
-                   , defaultWriterOptions, stateSanitizeHTML
+                   , defaultWriterOptions, writerHtml5
                    )
 
 import Prelude hiding (div, id, span)
@@ -107,7 +107,7 @@ clear = div ! class_ "clear" $ mempty
 -- XSS attacks.
 
 markdownToHtml :: String -> Html
-markdownToHtml = preEscapedString . writeHtmlString defaultWriterOptions . readMarkdown defaultParserState {stateSanitizeHTML = True}
+markdownToHtml = preEscapedString . writeHtmlString defaultWriterOptions {writerHtml5 = True} . readMarkdown defaultParserState
 
 hamletUrl :: a -> [(String, String)] -> String
 hamletUrl _ _ = ""

@@ -12,9 +12,8 @@ How to Build
 cd cgi
 make configure && make install
 
-Note that you'll need GHC 7.0 or greater. Additionally, you'll need a modified
-version haskell-src-meta that compiles on GHC 7.0 (I myself have just loosened
-the requirements in haskell-src-meta's cabal file).
+Note: If you build with GHC 7.0 or 7.0.1, you will get runtime crashes due to a bug in the GHC IO manager.
+Note: You might have to install nano-hmac manually due to its compilation parameters aborting on warning.
 
 Contact
 =======

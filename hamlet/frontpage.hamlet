@@ -1,55 +1,33 @@
-.top
-
-  #word-cloud
-    $cloud$
-    .clear
-
-  #intro
-    %h1 What Is Vocabulink?
-
-    %p We're devoted to helping you learn the words of a foreign language as quickly and effortlessly as possible.
-
-    %p Vocabulary building is the most important and most time-consuming part of learning a language. But the good news is that you can learn foreign words more quickly and easily than you imagined. We'll show you how, using 3 simple principles.
-
-    %a.button#try-now!href=/languages Get Started
-
-    .clear
-
-  .clear
-
-.bottom
-
-  .three-column
-    .column
-        %h2
-          %strong 1
+<div .top>
+  <div id="word-cloud">
+    #{cloud}
+    <div .clear>
+  <div id="intro">
+    <h1>What Is Vocabulink?
+    <p>We're devoted to helping you learn the words of a foreign language as quickly and effortlessly as possible.
+    <p>Vocabulary building is the most important and most time-consuming part of learning a language. But the good news is that you can learn foreign words more quickly and easily than you imagined. We'll show you how, using 3 simple principles.
+    <a id="try-now" href="/languages" .button>Get Started
+    <div .clear>
+  <div .clear>
+<div .bottom>
+  <div .three-column>
+    <div .column>
+        <h2>
+          <strong>1
           Outrageous Stories
-
-        %p Vocabulink uses imaginative stories to make new words stick. This use of stories is a language-learning technique called <a href="http://en.wikipedia.org/wiki/Linkword">Linkword mnemonics</a>.
-
-        %p Your memory is especially receptive to stories. We pass verbal history down from generation to generation through stories. We teach lessons to children with stories. And experienced public speakers know that stories are essential for getting a point across and making it stick with an audience.
-
-        %p Vocabulink exploits this unique feature of the human brain to make learning more natural. It might seem silly at first, but it's effective.
-
-    .column
-      %h2
-        %strong 2
+        <p>Vocabulink uses imaginative stories to make new words stick. This use of stories is a language-learning technique called <a href="http://en.wikipedia.org/wiki/Linkword">Linkword mnemonics</a>.
+        <p>Your memory is especially receptive to stories. We pass verbal history down from generation to generation through stories. We teach lessons to children with stories. And experienced public speakers know that stories are essential for getting a point across and making it stick with an audience.
+        <p>Vocabulink exploits this unique feature of the human brain to make learning more natural. It might seem silly at first, but it's effective.
+    <div .column>
+      <h2>
+        <strong>2
         Important Words
-
-      %p The <a href="http://www.oxforddictionaries.com/page/93">Oxford English Dictionary</a> defines 171,476 words currently in use. That seems like a daunting amount until you realize that the word "the" makes up 7% of the total words we read. Next, the word "of" accounts for 3.5%, "and" makes up another 2.8%, and so on. You only need to know about 135 words to recognize half the words in common written English.
-
-      %p This uneven spread is similar in every language that statisticians have studied. In fact, it has a name: <a href="http://en.wikipedia.org/wiki/Zipf%27s_law">Zipf's law</a>. You can take advantage of this law in order to build vocabulary scientifically. Use your study time more effectively by ignoring words that you'll rarely, if ever, use.
-
-    .column
-      %h2
-        %strong 3
+      <p>The <a href="http://www.oxforddictionaries.com/page/93">Oxford English Dictionary</a> defines 171,476 words currently in use. That seems like a daunting amount until you realize that the word "the" makes up 7% of the total words we read. Next, the word "of" accounts for 3.5%, "and" makes up another 2.8%, and so on. You only need to know about 135 words to recognize half the words in common written English.
+      <p>This uneven spread is similar in every language that statisticians have studied. In fact, it has a name: <a href="http://en.wikipedia.org/wiki/Zipf%27s_law">Zipf's law</a>. You can take advantage of this law in order to build vocabulary scientifically. Use your study time more effectively by ignoring words that you'll rarely, if ever, use.
+    <div .column>
+      <h2>
+        <strong>3
         Spaced Repetition
-
-      %p Sometimes you forget words, even when you've used memorable stories. The traditional solution to this is flashcards. But it's a tedious waste of time to keep drilling the same words day after day. Luckily, there's a better way.
-
-      %p We've taken some of the latest research about how memory works and made it an integrated part of Vocabulink. It's called <a href="http://www.supermemo.com/english/ol/background.htm">spaced repetition</a> and it helps you spend only as much time as necessary reviewing words. You can think of Vocabulink as your own personal language trainer. We keep detailed stats on what you've learned and drill you only on the ones we think you're about to forget.
-
-    .clear
-
-  .footnotes
-    %a#fn1 
+      <p>Sometimes you forget words, even when you've used memorable stories. The traditional solution to this is flashcards. But it's a tedious waste of time to keep drilling the same words day after day. Luckily, there's a better way.
+      <p>We've taken some of the latest research about how memory works and made it an integrated part of Vocabulink. It's called <a href="http://www.supermemo.com/english/ol/background.htm">spaced repetition</a> and it helps you spend only as much time as necessary reviewing words. You can think of Vocabulink as your own personal language trainer. We keep detailed stats on what you've learned and drill you only on the ones we think you're about to forget.
+    <div .clear>

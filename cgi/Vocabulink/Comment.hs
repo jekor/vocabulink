@@ -126,7 +126,7 @@ replyToComment parent = withRequiredMember $ \m -> do
       \AND c.comment_no = {n}")
   case row of
     Nothing -> error "Error posting comment."
-    Just c  -> redirect =<< referrerOrVocabulink -- outputHtml $ markdownToHtml (commentBody c)
+    Just _  -> redirect =<< referrerOrVocabulink
  where commentFromValues' (n, l, u, e, t, b) =
          Comment {  commentNo        = n,
                     commentLevel     = fromJust l,
