@@ -1,7 +1,7 @@
 # Vocabulink CGI
 
 cgi := vocabulink.cgi
-lhss := Vocabulink.hs $(shell find Vocabulink -regex ".*l?hs" -print)
+hss := Vocabulink.hs $(shell find Vocabulink -regex ".*l?hs" -print)
 date := $(shell date +%Y-%m-%d)
 binary := dist/build/$(cgi)/$(cgi)
 DIST := vocabulink--$(date)
@@ -10,16 +10,16 @@ all : $(binary)
 
 doc : vocabulink.pdf
 
-configure : $(lhss)
+configure : $(hss)
 	cabal configure
 
-$(binary) : $(lhss) ../hamlet/*.hamlet
+$(binary) : $(hss) ../hamlet/*.hamlet
 	TPG_DB="vocabulink" TPG_USER="vocabulink" cabal build
 
 vocabulink.pdf : vocabulink.tex
 	pdflatex $<
 
-vocabulink.tex : $(lhss)
+vocabulink.tex : $(hss)
 	lhs2TeX Vocabulink.lhs > $@
 
 install : $(binary)
@@ -27,16 +27,16 @@ install : $(binary)
 	cp $(binary) ../$(cgi)
 	strip ../$(cgi)
 
-tags : $(lhss)
+tags : $(hss)
 	hasktags -e $^
 
-lint : $(lhss)
+lint : $(hss)
 	hlint $^
 
 clean :
 	cabal clean
 
-metrics : $(lhss)
+metrics : $(hss)
 	@echo -e -n "\tSLOC: "
 	@lhs2TeX --code Vocabulink.lhs | wc --lines | tr -d "\n"
 	@echo -e -n "\tgzipped bytes: "
