@@ -52,9 +52,6 @@ metrics : $(hss)
 dist : $(DIST).tar.gz
 
 $(DIST).tar.gz :
-#	`darcs dist` would be nice, but the darcs repository is the parent directory
-#	of this one and needs to be cleaned up a bit. For now, we'll have to do it
-#	ourselves.
 	echo README COPYING Makefile vocabulink.cabal ../vocabulink.sql ../js/{comment,form,link-editor,review,star-rating}.js ../js/Makefile ../css/*.sass ../css/Makefile ../etc/vocabulink.conf.example ../tests/{Makefile,web.lhs} `find -name "*.lhs" -o -name "*.lhs-boot"` | xargs tar --transform 's,^(\./)?,$(DIST)/,x' -czvf $(DIST).tar.gz
 
 publish : $(DIST).tar.gz
