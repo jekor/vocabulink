@@ -10,6 +10,13 @@
 *.gpg
 *.org
 *.org_archive
+*.aux
+*.idx
+*.ilg
+*.ind
+*.log
+*.out
+*.toc
 
 /cgi/dist
 /css/.sass-cache

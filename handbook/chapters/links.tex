@@ -1,65 +1,21 @@
 \chapter{Links}
 
-\section{Lexemes}
+Links were originally made between pairs of lexemes. However, they are now more
+free-form. A link can be made to a group of words (if there is no strict
+equivalent) and to graphemes (such as a hiragana letter or Kanji).
 
-Links are made from pairs of lexemes. The name ``lexeme'' was chosen because
-links are not associated to words or phrases. A link could be between a word
-and a grapheme (such as a hiragana letter or Kanji).
+Each link has a ``foreign'' and ``familiar'' side. Links are directed, and go
+from the foreign to the familiar side. This is to reduce ambiguity, both for
+the user and in the code. Reviews should always drill from foreign word to
+familiar equivalent.
 
-Lexemes don't exist in our database\footnote{This isn't exactly true. We do
-keep track of lexeme aliases.}. They would eventually be too numerous to
-enumerate comfortably. All possible lexemes are assumed to exist. They act as
-nodes in a network of links (in graph theory, the links would be the edges).
+I use the term ``familiar'' instead of ``native'' since there's no reason to
+limit yourself to native equivalents during language learning. If someone's
+created a link to a word you've learned in a non-native language, why not make
+use of it? The more associations, the better.
 
-This makes Vocabulink rather interesting (although probably not unique) in that
-all of the information stored in our database is about connections. We attach
-no significance to individual lexemes. They are assumed to exist without
-meaning, or at least without a single or universally acceptable meaning. They
-are defined entirely by their links to other lexemes (and the information
-associated with that link).
-
-Although this may seem obvious or simple, it's a fundamental decision that
-shaped the design and philosophy of Vocabulink from a very early stage. The
-effects of this decision are not entirely understood yet.
-
-Even though lexemes may be graphemes, they cannot be arbitrary graphics. They
-must be representable by a Unicode string.
-
-\section{Association Types}
-
-We can associate lexemes many different ways. The most obvious is for 2 lexemes
-that have a direct translation between 2 languages. We'd call this link type a
-``translation''. This is what most people think of when they imagine studying
-vocabulary from from a foreign language. These are the semantic relationships
-between lexemes.
-
-We don't (yet) bother with association types. Other projects such as WordNet
-focus on this. Perhaps we'll be able to leverage them someday. But for language
-study, I suspect that the benefit is small, especially compared to the work
-required to maintain proper associations.
-
-\section{Link Types}
-
-Regardless of the association type of a link, there exists at least 1 way to
-remember the link (at least for the links in our database). We refer to this as
-the ``link type''. Examples of link types include:
-
-\begin{description}
-\item[Association] The simplest of links. This is a general association. It is
-  what you're commonly dealing with when studying with flashcards.
-\item[Sound-alike] This is a word that's very similar to its foreign
-  equivalent. Sound-alikes usually occur through borrowing. They're generally
-  easy to learn and require little if any mnemonic device. Vocabulink currently
-  does not support annotating a sound-alike with additional information, but
-  that may change in the future.
-\item[Link Word] This well known method of linking words was the basis for the
-  creation of Vocabulink (the ``link'' in ``Vocabulink''). The idea is to find
-  a native language word or phrase that sounds similar to the foreign lexeme
-  and use it for creating a story associating it with the native lexeme.
-\item[Relationship] This is an experimental method of linking 2 foreign lexemes
-  based on the relationship between 2 native lexemes. Anyone familiar with word
-  association used on SAT tests will recognize this method.
-\end{description}
+Even though link nodes may be graphemes, they cannot be arbitrary graphics.
+They must be representable by a Unicode string.
 
 \section{Search}
 
