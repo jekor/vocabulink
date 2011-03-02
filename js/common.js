@@ -17,6 +17,12 @@
 
 var V = V || {};
 
+if (!window.console) {
+  window.console = {
+    log: function () {}
+  };
+}
+
 (function ($) {
 
 // Crockford's prototypal inheritance operator
