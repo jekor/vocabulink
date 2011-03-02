@@ -53,7 +53,8 @@ renderStory :: Integer -- ^ story number
             -> Html -- ^ output block
 renderStory n s member edited =
   div ! class_ "linkword-story-container" $ do
-    div ! class_ "linkword-story" ! customAttribute "story" (stringValue $ show n) $ do
+    a ! id (stringValue $ show n) $ mempty
+    div ! class_ "linkword-story" $ do
       blockquote $ markdownToHtml s
       div ! class_ "signature" $ do
         -- button ! class_ "light" $ do
@@ -61,7 +62,8 @@ renderStory n s member edited =
         --   string "favorite"
         fromJust $ memberAvatar 32 member
         div ! class_ "details" $ do
-          span ! class_ "username" $ string (memberName member)
+          a ! class_ "username" ! href (stringValue $ "/member/" ++ memberName member)
+            $ string (memberName member)
           br
           span ! class_ "date" $ string $ prettyPrint edited
         clear

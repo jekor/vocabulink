@@ -59,7 +59,7 @@ function collapseStory(q, h, mh) {
 }
 
 function showNewStory() {
-  var newStory = 
+  var newStory =
     $('<div class="linkword-story-container">'
       + '<div class="linkword-story">'
         + '<form method="post" action="/link/' + linkNumber() + '/stories">'
@@ -110,8 +110,7 @@ $(function () {
         var editButton = $('<button class="light">Edit</button>');
         editButton.click(function () {
           var story = $(this).parents('.linkword-story');
-          console.log(story);
-          var storyNumber = parseInt(story.attr('story'), 10);
+          var storyNumber = parseInt(story.parent().find('a:first').attr('id'), 10);
           story.mask('Loading...');
           var body = $.ajax({ 'type': 'GET'
                             , 'url': '/link/story/' + storyNumber
@@ -138,7 +137,7 @@ $(function () {
                               story.unmask();
                               alert('Error retrieving story.');
                             }
-                           });  
+                           });
         });
         sig.prepend(editButton);
       }

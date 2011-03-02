@@ -1,0 +1,40 @@
+@import lib.sass
+
+#body
+  margin:
+    left: 1em
+    right: 1em
+
+#avatar
+  img
+    float: left
+    vertical-align: top
+    margin-right: 1em
+  .username
+    font-size: 24pt
+    font-weight: bold
+    line-height: 1.3em
+
+h2
+  text-align: center
+
+#body .two-column
+  clear: left
+  .column:first-child *
+    margin-right: 0.5em
+  .column:last-child *
+    margin-left: 0.5em
+
+ul.stories
+  li
+    height: 5em
+    margin-bottom: 0.25em
+    overflow: hidden
+    &:nth-child(2n+1)
+      background-color: $linkword_bg_color
+    &:nth-child(2n)
+      background-color: $soundalike_bg_color
+    p
+      color: $text_color
+      &:first-child
+        margin-top: 0

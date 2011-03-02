@@ -67,7 +67,8 @@ memberFromTuple (n, u, e) = Member { memberNumber = n
 memberAvatar :: Int -- ^ size (square) in pixels
              -> Member
              -> Maybe Html
-memberAvatar size' member = gravatar size' <$> memberEmail member
+memberAvatar size' member = (\ e -> a ! href (stringValue $  "/member/" ++ memberName member)
+                                      $ gravatar size' e) <$> memberEmail member
 
 -- | Only perform the given action if the user is authenticated and has
 -- verified their email address. This provides a ``logged out default'' of
