@@ -195,7 +195,7 @@ loginBox = span ! class_ "auth-box login" $ do
 
 logoutBox :: Member -> Html
 logoutBox member = form ! class_ "auth-box logout" ! action "/member/logout" ! method "post" $ do
-  string $ memberName member
+  a ! href (stringValue $ "/member/" ++ memberName member) $ (string $ memberName member)
   input ! type_ "submit" ! id "logout-button" ! class_ "button dark" ! value "Log Out"
 
 -- Students with a goal in mind will want to search for words they're studying
