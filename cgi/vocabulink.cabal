@@ -57,4 +57,4 @@ Executable vocabulink.cgi
                  GeneralizedNewtypeDeriving,
                  TemplateHaskell,
                  OverloadedStrings
-  GHC-Options:   -Wall -fno-warn-type-defaults -threaded
+  GHC-Options:   -Wall -fno-warn-type-defaults -threaded -O2
