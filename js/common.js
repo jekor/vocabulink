@@ -86,7 +86,7 @@ function loginPopup() {
        .find('.cancel').click(function () {
          $(this).parent().remove();
        });
-  popup.html5form();
+  popup.minform();
 }
 
 // initialization for every page

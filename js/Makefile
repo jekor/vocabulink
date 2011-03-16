@@ -7,7 +7,7 @@ all : $(libs)
 clean :
 	rm $(libs)
 
-lib.common.js : jquery-1.4.4.js jquery.cookie.js jquery.html5form.js common.js
+lib.common.js : jquery-1.4.4.js jquery.cookie.js minform.js common.js
 	cat $^ | yuicompress --type js > $@
 
 # link viewing and reviewing, not editing
@@ -25,4 +25,7 @@ lib.raphael.js : raphael.js
 	cat $^ | yuicompress --type js > $@
 
 chartviz.js : /home/jekor/project/chartviz/chartviz.js
+	cp $^ $@
+
+minform.js : /home/jekor/project/minform/minform.js
 	cp $^ $@

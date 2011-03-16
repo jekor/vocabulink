@@ -93,8 +93,7 @@ function createCommentBox(parentID) {
     + '</div>'
     + '<div class="clear"></div>'
   + '</form>');
-  box.html5form();
-  return box;  
+  return box.minform();
 }
 
 // This box is for replying to comments.

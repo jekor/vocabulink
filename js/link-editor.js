@@ -31,7 +31,7 @@ var changeLinkType = function () {
 
 $(function () {
   $('h1.link.edit .link select').change(changeLinkType);
-  $('#body form').html5form();
+  $('#body form').minform();
 });
 
 })(jQuery);

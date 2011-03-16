@@ -86,7 +86,7 @@ function showNewStory() {
       });
     });
   });
-  newStory.find('form').html5form();
+  $('form', newStory).minform();
 }
 
 $(function () {
@@ -126,7 +126,7 @@ $(function () {
                                   + '<input type="submit" value="Save" class="light">'
                                   + '<button class="cancel">cancel</button>'
                                 + '</div>'
-                              + '</form>').insertAfter(story).html5form();
+                              + '</form>').insertAfter(story).minform();
                               form.find('textarea').css('height', '10em').markItUp(mySettings);
                               form.find('.cancel').click(function () {
                                 form.remove();
