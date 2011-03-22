@@ -64,7 +64,7 @@ articlePage path = do
       stdPage (articleTitle a') [CSS "article"] mempty $ do
         div ! class_ "article" $ body
         div ! id "comments" $ do
-          h3 $ "Comments"
+          h3 "Comments"
           comments
 
 -- This page is for displaying a listing of published articles.

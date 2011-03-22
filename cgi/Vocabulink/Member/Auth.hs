@@ -108,7 +108,7 @@ authToken :: Integer -- ^ member number
           -> Maybe String -- ^ email
           -> String -- ^ IP address
           -> String -- ^ auth token key (from the config file)
-          -> IO (AuthToken)
+          -> IO AuthToken
 authToken memberNo username email ip key = do
   now <- currentDay
   let expires = addDays cookieShelfLife now
@@ -133,7 +133,7 @@ authToken memberNo username email ip key = do
 -- this, authentication is less secure.
 tokenDigest :: AuthToken
             -> String -- ^ auth token key (from the config file)
-            -> IO (String)
+            -> IO String
 tokenDigest a key = hmac sha1 (pack key) (pack token)
   where token = showGregorian (authExpiry a)
              ++ show (authMemberNo a)
@@ -165,7 +165,7 @@ setAuthCookie authTok = do
                    }
 
 deleteAuthCookie :: MonadCGI m => m ()
-deleteAuthCookie = do
+deleteAuthCookie =
   deleteCookie Cookie { cookieName    = "auth"
                       , cookieDomain  = Just "www.vocabulink.com"
                       , cookiePath    = Just "/"

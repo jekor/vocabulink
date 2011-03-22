@@ -75,7 +75,7 @@ dateSeriesChart data' =
 signupCounts :: Day -- ^ start date
              -> Day -- ^ end date
              -> App [(Day, Integer)] -- ^ counts for each date
-signupCounts start end = (\(d, i) -> (fromJust d, fromJust i)) <$$> $(queryTuples'
+signupCounts start end = (fromJust *** fromJust) <$$> $(queryTuples'
   "SELECT CAST(join_date AS date), COUNT(*) FROM member \
   \WHERE CAST(join_date AS date) BETWEEN {start} AND {end} \
   \GROUP BY CAST(join_date AS date) \
@@ -84,7 +84,7 @@ signupCounts start end = (\(d, i) -> (fromJust d, fromJust i)) <$$> $(queryTuple
 linkCounts :: Day -- ^ start date
            -> Day -- ^ end date
            -> App [(Day, Integer)] -- ^ counts for each date
-linkCounts start end = (\(d, i) -> (fromJust d, fromJust i)) <$$> $(queryTuples'
+linkCounts start end = (fromJust *** fromJust) <$$> $(queryTuples'
   "SELECT CAST(created AS date), COUNT(*) FROM link \
   \WHERE CAST(created AS date) BETWEEN {start} AND {end} \
   \GROUP BY CAST(created AS date) \
@@ -93,7 +93,7 @@ linkCounts start end = (\(d, i) -> (fromJust d, fromJust i)) <$$> $(queryTuples'
 storyCounts :: Day -- ^ start date
             -> Day -- ^ end date
             -> App [(Day, Integer)] -- ^ counts for each date
-storyCounts start end = (\(d, i) -> (fromJust d, fromJust i)) <$$> $(queryTuples'
+storyCounts start end = (fromJust *** fromJust) <$$> $(queryTuples'
   "SELECT CAST(created AS date), COUNT(*) FROM linkword_story \
   \WHERE CAST(created AS date) BETWEEN {start} AND {end} \
   \GROUP BY CAST(created AS date) \
@@ -102,7 +102,7 @@ storyCounts start end = (\(d, i) -> (fromJust d, fromJust i)) <$$> $(queryTuples
 commentCounts :: Day -- ^ start date
               -> Day -- ^ end date
               -> App [(Day, Integer)] -- ^ counts for each date
-commentCounts start end = (\(d, i) -> (fromJust d, fromJust i)) <$$> $(queryTuples'
+commentCounts start end = (fromJust *** fromJust) <$$> $(queryTuples'
   "SELECT CAST(time AS date), COUNT(*) FROM comment \
   \WHERE CAST(time AS date) BETWEEN {start} AND {end} \
   \GROUP BY CAST(time AS date) \
@@ -111,7 +111,7 @@ commentCounts start end = (\(d, i) -> (fromJust d, fromJust i)) <$$> $(queryTupl
 reviewCounts :: Day -- ^ start date
              -> Day -- ^ end date
              -> App [(Day, Integer)] -- ^ counts for each date
-reviewCounts start end = (\(d, i) -> (fromJust d, fromJust i)) <$$> $(queryTuples'
+reviewCounts start end = (fromJust *** fromJust) <$$> $(queryTuples'
   "SELECT CAST(actual_time AS date), COUNT(*) FROM link_review \
   \WHERE CAST(actual_time AS date) BETWEEN {start} AND {end} \
   \GROUP BY CAST(actual_time AS date) \

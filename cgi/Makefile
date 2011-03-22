@@ -31,7 +31,7 @@ tags : $(hss)
 	hasktags -e $^
 
 lint : $(hss)
-	hlint $^
+	hlint -i "Redundant do" $^
 
 clean :
 	cabal clean

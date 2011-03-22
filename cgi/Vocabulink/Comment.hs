@@ -39,7 +39,7 @@ data Comment = Comment { commentNo       :: Integer
 commentBox :: Comment -> App Html
 commentBox c = do
   let indent = show (fromIntegral (commentLevel c) * (1.3 :: Double)) ++ "em"
-  return $ do
+  return $
     div ! id (stringValue $ "comment-" ++ show (commentNo c))
         ! class_ "comment"
         ! customAttribute "comment" (stringValue $ show $ commentNo c)

@@ -88,7 +88,7 @@ getConfig = runErrorT $ do
 -- times of all JS and CSS files. We don't need to walk any directories
 -- recursively; JS and CSS are in 2 flat directories.
 
-staticDeps :: ConfigParser -> IO ([(Dependency, EpochTime)])
+staticDeps :: ConfigParser -> IO [(Dependency, EpochTime)]
 staticDeps cp = do
   let dir = forceEither $ get cp "DEFAULT" "maindir"
   jsDeps  <- map (first (JS  . takeBaseName)) `liftM` modificationTimes (dir </> "js")  ".js"

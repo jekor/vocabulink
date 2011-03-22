@@ -76,8 +76,8 @@ multiColumn cls =
               2 -> "two"
               3 -> "three"
               _ -> "unsupported" in
-  div ! class_ (stringValue $ num ++ "-column") $ mconcat $
-    (map (div ! class_ "column") cls ++ [clear])
+  div ! class_ (stringValue $ num ++ "-column") $
+    mconcat (map (div ! class_ "column") cls ++ [clear])
 
 multiColumnList :: Int -> [Html] -> Html
 multiColumnList 1 xs  = multiColumn [unordList xs]

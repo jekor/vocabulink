@@ -68,7 +68,7 @@ stdPage title' deps head' body' = outputHtml =<< (do
       script ! src "http://www.google-analytics.com/ga.js" $ mempty
       mconcat jsDeps'
       div ! id "head" $ headerB
-      when (jsDeps /= []) (noscript $ p $ "This page requires JavaScript for some functionality.")
+      when (jsDeps /= []) (noscript $ p "This page requires JavaScript for some functionality.")
       div ! id "body" $ body'
       div ! id "foot" $ footerB)
 
@@ -139,7 +139,7 @@ footerBar = do
   langLinks <- languageLinks
   articles <- (map articleLinkHtml . take 3) <$> getArticles
   forums <- footerForums
-  copy <- liftIO $ copyrightNotice
+  copy <- liftIO copyrightNotice
   return $ do
     multiColumn [ do h2 $ a ! href "/languages" $ "Browse Links by Language"
                      multiColumnList 2 langLinks
@@ -278,7 +278,7 @@ pager pg n total = do
       q    = maybe "" decodeString q'
       prev = pageQueryString n (pg - 1) q
       next = pageQueryString n (pg + 1) q
-  return $ p ! class_ "pager" $ do
+  return $ p ! class_ "pager" $
     span ! class_ "controls" $ do
       if pg > 1
         then a ! href (stringValue $ path ++ prev) ! class_ "prev" $ "Previous"

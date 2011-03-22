@@ -34,7 +34,7 @@ module Vocabulink.Utils ( (?), if', (<$$>)
                         {- Control.Applicative.Error -}
                         , maybeRead
                         {- Control.Arrow -}
-                        , first, second
+                        , first, second, (***)
                         {- Control.Monad -}
                         , liftM, Control.Monad.join, msum, when, replicateM
                         {- Control.Monad.Trans -}
@@ -70,7 +70,7 @@ module Vocabulink.Utils ( (?), if', (<$$>)
 import Codec.Binary.UTF8.String (encodeString, decodeString)
 import Control.Applicative (pure, (<$>), (<*>))
 import Control.Applicative.Error (maybeRead)
-import Control.Arrow (first, second)
+import Control.Arrow (first, second, (***))
 import Control.Monad
 import Control.Monad.Trans (liftIO, MonadIO)
 import Data.ByteString.Lazy (readFile, writeFile)
@@ -168,7 +168,7 @@ translate sr = map (\s -> fromMaybe s $ lookup s sr)
 -- | whitespace characters.
 ltrim :: String -> String
 ltrim = dropWhile (`elem` whitespace)
- where whitespace = [' ', '\n', '\r', '\t']
+ where whitespace = " \n\r\t"
 
 -- We might get data from various sources that use different end-of-line
 -- terminators. But we want to always work with just newlines.
@@ -191,7 +191,7 @@ splitLines cs =
           _                -> []
 
 isLineTerminator :: Char -> Bool
-isLineTerminator c = c == '\r' || c == '\n'
+isLineTerminator = (`elem` "\r\n")
 
 -- Time
 

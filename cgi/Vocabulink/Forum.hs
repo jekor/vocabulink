@@ -109,9 +109,9 @@ renderForumGroup g = do
  where forumCreator =
          form ! id (stringValue $ "forum-creator-" ++ g)
               ! style "display: none"
-              ! action "/forum/new" ! method "post" ! enctype "multipart/form-data" $ do
+              ! action "/forum/new" ! method "post" ! enctype "multipart/form-data" $
            fieldset $ do
-             legend $ "New Forum"
+             legend "New Forum"
              input ! type_ "hidden" ! name "forum-group" ! value (stringValue g)
              table $ do
                tabularInput "Title" $ input ! type_ "text" ! name "forum-title"
@@ -198,13 +198,13 @@ forumPage forum = do
     Just title' -> do
       topics <- forumTopicRows forum
       newTopicButton <- loggedInVerifiedButton "New Topic"
-      let newTopicRow = tr $ do td $ mempty
+      let newTopicRow = tr $ do td mempty
                                 td ! colspan "4" $ newTopicButton
       stdPage ("Forum - " ++ forum) forumDeps mempty $ do
         breadcrumbs [a ! href "../forums" $ "Forums", string title']
         div ! id "topics" $ do
           table $ do
-             thead $ do
+             thead $
                tr $ do
                  th ! class_ "votes"   $ ""
                  th ! class_ "topic"   $ "Topic"
@@ -265,7 +265,7 @@ forumTopicRows name' = do
                ! style (case uv of
                           Just False -> "background-position: 4px -37px"
                           _          -> mempty) $ mempty
-           td ! class_ "topic" $ do
+           td ! class_ "topic" $
              a ! href (stringValue $ name' ++ "/" ++ show tn) $ string tt
            td ! class_ "replies" $ string $ show nr
            td ! class_ "author" $ string ta

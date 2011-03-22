@@ -42,7 +42,7 @@ searchPage = do
       div ! id "cse-search-results" $ mempty
     div ! id "sidebar" $ do
       div ! id "new-link" $ do
-        a ! href (stringValue $ "/link/new") $
+        a ! href (stringValue "/link/new") $
           string ("→ Create a new link with \"" ++ q ++ "\"")
       div ! class_ "sidebox" $ do
         h3 $ string ("Found " ++ show (length links) ++ " Links Containing \"" ++ q ++ "\"")

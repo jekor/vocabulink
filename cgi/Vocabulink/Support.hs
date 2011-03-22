@@ -91,7 +91,7 @@ memberSupport = do
                           \Please contact support@vocabulink.com for support."
         Just _   -> simplePage "Support Request Sent" mempty $ do
                       div ! id "central-column" $ do
-                        p $ "Your support request was sent successfully."
+                        p "Your support request was sent successfully."
                         p $ do
                           a ! href (stringValue redirect') $ "Click here to go back"
                           string " to where you came from."

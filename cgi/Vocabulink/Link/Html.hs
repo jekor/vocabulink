@@ -53,7 +53,7 @@ newLinkPage = do
         span ! class_ "link" $ do
           input ! name "linkword" ! required mempty ! placeholder "Link Word" ! tabindex "2"
           br
-          (menu $ zip activeLinkTypes activeLinkTypes) ! name "link-type" ! required mempty
+          menu (zip activeLinkTypes activeLinkTypes) ! name "link-type" ! required mempty
         span ! class_ "familiar" $ do
           input ! name "familiar" ! required mempty ! placeholder "Familiar Word" ! tabindex "3"
           br
@@ -102,16 +102,15 @@ linkPage linkNo = do
             div ! id "link-head-bar" $ do
               h2 $ a ! href (stringValue $ "/links?ol=" ++ linkOriginLang l' ++ "&dl=" ++ linkDestinationLang l') $
                 string (oLanguage ++ " to " ++ dLanguage ++ ":")
-              div ! id "link-ops" $ do
-                ops
+              div ! id "link-ops" $ ops
             renderedLink
-            when (isLinkword l') $ do
+            when (isLinkword l') $
               div ! id "linkword-stories" $ do
                 div ! class_ "header" $ h2 "Linkword Stories:"
                 stories
             clear
             div ! id "comments" $ do
-              h3 $ "Comments"
+              h3 "Comments"
               comments
 
 linksPage :: String -> (Int -> Int -> App [PartialLink]) -> App CGIResult
@@ -138,13 +137,13 @@ linkOperations link = do
   let review  = linkAction "add to review" "add"
   return $ do
     case (member, reviewing') of
-      (_,       True) -> (review False) ! title "already reviewing this link"
-      (Just _,  _)    -> (review True)  ! id "link-op-review"
-                                        ! title "add this link to be quizzed on it later"
-      (Nothing, _)    -> (review False) ! href "/member/login" ! title "login to review"
-    when deletable ((linkAction "delete link" "delete" True)
-           ! id "link-op-delete"
-           ! title "delete this link (it will still be visibles to others who are reviewing it)")
+      (_,       True) -> review False ! title "already reviewing this link"
+      (Just _,  _)    -> review True  ! id "link-op-review"
+                                      ! title "add this link to be quizzed on it later"
+      (Nothing, _)    -> review False ! href "/member/login" ! title "login to review"
+    when deletable $ linkAction "delete link" "delete" True
+                       ! id "link-op-delete"
+                       ! title "delete this link (it will still be visibles to others who are reviewing it)"
  where reviewing :: Link -> App Bool
        reviewing l = do
          member <- asks appMember
@@ -220,7 +219,7 @@ renderLink link pronounceable' paging = do
       string $ linkOrigin link
       pronunciation
     span ! class_ "link" ! title (stringValue $ linkTypeName link) $
-      (renderLinkType $ linkType link)
+      renderLinkType (linkType link)
     span ! class_ "familiar" ! title (stringValue dLanguage) $ string $ linkDestination link
     maybe mempty (\n -> a ! href (stringValue $ show n) ! class_ "next"
                           ! title (stringValue $ "Next " ++ oLanguage ++ "→" ++ dLanguage ++ " Link") $ mempty) nextLink
@@ -228,19 +227,18 @@ renderLink link pronounceable' paging = do
        renderLinkType (LinkWord word) = string word
        renderLinkType _               = mempty
        pronunciation = if pronounceable'
-                         then do
-                           button ! id "pronounce" ! class_ "button light" $ do
-                             audio ! preload "auto" $ do
-                               source ! src (stringValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".ogg") $ mempty
-                               source ! src (stringValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".mp3") $ mempty
-                             img ! src "http://s.vocabulink.com/img/icon/audio.png"
+                         then button ! id "pronounce" ! class_ "button light" $ do
+                                audio ! preload "auto" $ do
+                                  source ! src (stringValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".ogg") $ mempty
+                                  source ! src (stringValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".mp3") $ mempty
+                                img ! src "http://s.vocabulink.com/img/icon/audio.png"
                          else mempty
 
 renderPartialLink :: PartialLink -> App Html
 renderPartialLink (PartialLink l) = do
   originLanguage      <- linkOriginLanguage l
   destinationLanguage <- linkDestinationLanguage l
-  return $ do
+  return $
     a ! class_ (stringValue $ "partial-link " ++ linkTypeName l)
       ! href (stringValue $ "/link/" ++ show (linkNumber l))
       ! title (stringValue $ originLanguage ++ " → " ++ destinationLanguage) $ do
@@ -264,7 +262,7 @@ linkTypeHtml _ = mempty
 -- | Display a hyperlink for a language pair.
 languagePairLink :: ((String, String), (String, String), Integer) -> Html
 languagePairLink ((oa, on), (da, dn), c) =
-  a ! class_ "language-pair" ! href (stringValue $"/links?ol=" ++ oa ++ "&dl=" ++ da) $ do
+  a ! class_ "language-pair" ! href (stringValue $"/links?ol=" ++ oa ++ "&dl=" ++ da) $
     string $ on ++ " → " ++ dn ++ " (" ++ show c ++ ")"
 
 -- Each link can be ``operated on''. It can be reviewed (added to the member's
@@ -301,8 +299,8 @@ wordCloud n width' height' fontMin fontMax numClasses = do
   return $ mconcat $ catMaybes $ zipWith (\ w s -> liftM (wordTag w) s) words styles
  where wordTag :: (String, Integer) -> WordStyle -> Html
        wordTag (word, linkNo) (WordStyle (x, y) _ classNum fontSize) =
-         let style' = "font-size: " ++ (show fontSize) ++ "px; "
-                   ++ "left: " ++ (show x) ++ "%; " ++ "top: " ++ (show y) ++ "%;" in
+         let style' = "font-size: " ++ show fontSize ++ "px; "
+                   ++ "left: " ++ show x ++ "%; " ++ "top: " ++ show y ++ "%;" in
          a ! href (stringValue $ "/link/" ++ show linkNo)
            ! class_ (stringValue $ "class-" ++ show classNum)
            ! style (stringValue style')
@@ -319,7 +317,7 @@ wordCloud n width' height' fontMin fontMax numClasses = do
          (gen, prev) <- get
          let spiral' = spiral 30.0 (x, y)
              styles  = filter inBounds $ map (\ pos -> WordStyle pos (widthP, heightP) class' fontSize) spiral'
-             style'  = find (\ s -> not $ any (flip overlap $ s) prev) styles
+             style'  = find (\ s -> not $ any (`overlap` s) prev) styles
          case style' of
            Nothing -> return Nothing
            Just style'' -> do
@@ -349,4 +347,4 @@ wordCloud n width' height' fontMin fontMax numClasses = do
                   else let r  = theta * 3
                            x' = (r * cos theta) + x
                            y' = (r * sin theta) + y in
-                       (x', y'):(spiral' (theta + 0.1) (x, y))
+                       (x', y') : spiral' (theta + 0.1) (x, y)

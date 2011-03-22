@@ -39,8 +39,7 @@ addStory n s = withRequiredMember $ \ m -> do
 -- | Fetch all of the stories available for a given link.
 linkWordStories :: Integer -- ^ link number
                 -> App [(Integer, String, Member, Day)] -- ^ list of (story number, story, author, edited) pairs
-linkWordStories linkNo = do
-  map tuplify <$> $(queryTuples'
+linkWordStories linkNo = map tuplify <$> $(queryTuples'
     "SELECT story_no, story, edited, member_no, username, email \
     \FROM linkword_story s INNER JOIN member m ON (m.member_no = s.author) \
     \WHERE link_no = {linkNo}")

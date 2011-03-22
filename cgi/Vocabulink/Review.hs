@@ -151,7 +151,7 @@ reviewLinkPage linkNo = do
           form ! action (stringValue $ "/review/" ++ show linkNo) ! method "post" $ do
             input ! type_ "hidden" ! id "recall-time" ! name "recall-time"
             input ! type_ "hidden" ! name "hidden-lexeme" ! value (stringValue dest)
-            fieldset ! id "recall-buttons" ! style "display: none" $ do
+            fieldset ! id "recall-buttons" ! style "display: none" $
               mconcat $ map (recallButton 5) [0..5]
           p $ do
             string "On a scale from 0 to 5, rate how well you remembered the word."

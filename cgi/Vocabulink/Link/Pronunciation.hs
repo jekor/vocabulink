@@ -36,7 +36,7 @@ pronunciationFile linkNo filetype = do
   -- This pronunciation has not technically been uploaded, but we'll keep it
   -- the upload directory for now.
   dir <- (</> "upload" </> "audio" </> "pronunciation") <$> asks appDir
-  return $ dir </> (show linkNo) <.> filetype
+  return $ dir </> show linkNo <.> filetype
 
 addPronunciation :: Integer -> String -> String -> App (Either String ())
 addPronunciation linkNo url filetype = do

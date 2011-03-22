@@ -288,7 +288,7 @@ dispatch meth ("review":rpath) = do
     Just memberNo ->
       case (meth,rpath) of
         ("GET",  ["next"]) -> nextReview memberNo
-        ("POST", (x:xs))   ->
+        ("POST", x:xs)   ->
            case maybeRead x of
              Nothing -> outputNotFound
              Just n  -> case xs of
@@ -323,6 +323,10 @@ dispatch "POST" ["member","logout"] = logout
 
 dispatch "GET"  ["member","support"] = memberSupport
 dispatch "POST" ["member","support"] = memberSupport
+
+-- Member Pages
+
+dispatch "GET" ("member":[username]) = memberPage username
 
 -- Forums
 
@@ -360,10 +364,6 @@ dispatch meth ("comment":x:meth') =
                  ("POST", ["reply"]) -> replyToComment n
                  ("POST", ["votes"]) -> voteOnComment n
                  (_     , _)         -> outputNotFound
-
--- Member Pages
-
-dispatch "GET" ("member":[username]) = memberPage username
 
 -- Administrative Pages
 

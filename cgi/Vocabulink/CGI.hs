@@ -186,7 +186,7 @@ getTextOrFileInput name = do
 -- characters and hyphens in the resulting string.
 
 urlify :: String -> String
-urlify = map toLower . filter (\e -> isAlphaNum e || (e == '-') || (e == '.')) . translate [(' ', '-')]
+urlify = map toLower . filter (\e -> isAlphaNum e || e `elem` "-.") . translate [(' ', '-')]
 
 -- When we direct a user to some page, we might want to make sure that they can
 -- find their way back to where they were. To do so, we get the current URI and

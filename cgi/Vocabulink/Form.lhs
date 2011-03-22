@@ -100,9 +100,9 @@ doesn't currently set a @for@ attribute either.
 Here's an alterate version of the above which also adds a paragraph.
 
 > formLabel' :: Monad m => String -> Html5Form m a -> Html5Form m a
-> formLabel' text = plug (\html -> do p $ do
->                                       label $ string (text ++ ": ")
->                                       html)
+> formLabel' text = plug (\html -> p $ do
+>                                    label $ string (text ++ ": ")
+>                                    html)
 
 > nonEmptyAndLessThan :: Int -> String -> [(String -> Bool, String)]
 > nonEmptyAndLessThan i t =
@@ -121,7 +121,7 @@ the ``for'' attribute.
 > tabularInput :: String -> Html -> Html
 > tabularInput l i = tr $ do
 >   th $ label $ string (l ++ ":")
->   td $ i
+>   td i
 
 We want any submit button centered on a row of its own.
 

@@ -85,7 +85,7 @@ passwd l = plug (tabularInput l) (HF.password Nothing) `check` ensures
 -- other reason than that it's common practice.
 
 passConfirmed :: AppForm String
-passConfirmed = fst <$> (passwords `check` ensure (\ (x, y) -> x == y) err) where
+passConfirmed = fst <$> (passwords `check` ensure (uncurry (==)) err) where
   passwords = (,) <$> passwd "Password" <*> passwd "Password (confirm)"
   err = "Passwords do not match."
 
@@ -201,7 +201,7 @@ confirmEmail hash = do
                 -- We can't just look at the App's member object, since we just
                 -- updated it.
                 -- TODO: The logic isn't quite right on this.
-                email <- (fromJust . memberEmail) <$$> (memberByNumber $ memberNumber m)
+                email <- (fromJust . memberEmail) <$$> memberByNumber (memberNumber m)
                 ip <- remoteAddr
                 key <- fromJust <$> getOption "authtokenkey"
                 authTok <- liftIO $ authToken (memberNumber m) (memberName m) email ip key
@@ -219,10 +219,10 @@ confirmEmailPage = do
   support <- getSupportForm $ Just redirect'
   simplePage "Email Confirmation Required" mempty $ do
     div ! id "central-column" $ do
-      p $ "In order to interact with Vocabulink, \
-          \you need to confirm your email address."
-      p $ "If you haven't received a confirmation email \
-          \or are having trouble, let us know."
+      p "In order to interact with Vocabulink, \
+        \you need to confirm your email address."
+      p "If you haven't received a confirmation email \
+        \or are having trouble, let us know."
       support
       p $ do
         a ! href (stringValue redirect') $ "Click here to go back"
