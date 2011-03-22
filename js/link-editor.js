@@ -27,11 +27,58 @@ var changeLinkType = function () {
   } else {
     linkword.removeAttr('required').css('visibility', 'hidden');
   }
-}
+};
+
+var fetchPronunciation = function (lang, word, callback, notFound) {
+  if (fetchPronunciation.request) {
+    fetchPronunciation.request.abort();
+  }
+  fetchPronunciation.request = $.ajax({url: '/pronunciations/' + lang + '/' + word
+                                      ,dataType: 'json'
+                                      ,success: function (data) {
+                                        if (data.items.length === 0) {
+                                          notFound();
+                                        } else {
+                                          callback(data.items);
+                                        }
+                                      }
+                                      ,error: notFound
+                                      });
+};
+
+var changePronunciation = function () {
+  var foreign = $('h1.link.edit .foreign');
+  var word = foreign.find('input');
+  var lang = foreign.find('select');
+  if (!word.isEmpty() && !lang.isEmpty()) {
+    $('#pronounce', foreign).remove();
+    var pronunciation = $(
+      '<button id="pronounce" class="button light">'
+      + '<audio>'
+      + '</audio>'
+      + '<img src="http://s.vocabulink.lan/img/loading.gif">'
+    + '</button>').insertAfter(word);
+    fetchPronunciation(lang.val(), word.val(), function (ps) {
+      // For now, take the first pronunciation.
+      var p = ps[0];
+      pronunciation.find('audio').empty()
+        .append('<source src="' + p.pathogg + '"></source>'
+              + '<source src="' + p.pathmp3 + '"></source>');
+      pronunciation.find('img').attr('src', 'http://s.vocabulink.lan/img/icon/audio.png');
+      pronunciation.append('<input type="hidden" name="ogg" value="' + p.pathogg + '">'
+                         + '<input type="hidden" name="mp3" value="' + p.pathmp3 + '">');
+    }, function () {
+      pronunciation.remove();
+    });
+  }
+};
 
 $(function () {
   $('h1.link.edit .link select').change(changeLinkType);
   $('#body form').minform();
+  $('[name="foreign"], [name="foreign-lang"]').change(changePronunciation);
+  changePronunciation();
+  $('#pronounce').live('click', function () {$('audio', this)[0].play();});
 });
 
 })(jQuery);

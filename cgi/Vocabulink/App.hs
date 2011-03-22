@@ -53,6 +53,7 @@ data AppEnv = AppEnv { appDB         :: Handle
                      , appStaticDeps :: [(Dependency, EpochTime)]
                      , appLanguages  :: [(String, String)]
                      , appMember     :: Maybe Member
+                     , appForvoKey   :: String
                      }
 
 -- The App monad is a combination of the CGI and Reader monads.
@@ -93,13 +94,14 @@ instance MonadCGI App where
 
 runApp :: Handle -- ^ this thread's database connection
        -> ConfigParser -- ^ configuration file
-       -> FilePath -- ^ the application's root directory
        -> [(Dependency, EpochTime)] -- ^ a list of external dependencies with last modified timestamps
        -> [(String, String)] -- ^ a list of language (abbrevations, names)
        -> App CGIResult -- ^ this thread's action
        -> CGI CGIResult -- ^ the resulting CGI action
-runApp h cp dir sd ls (AppT a) = do
-  let key = forceEither $ get cp "DEFAULT" "authtokenkey"
+runApp h cp sd ls (AppT a) = do
+  let dir   = forceEither $ get cp "DEFAULT" "maindir"
+      key   = forceEither $ get cp "DEFAULT" "authtokenkey"
+      forvo = forceEither $ get cp "DEFAULT" "forvokey"
   token <- verifiedAuthToken key
   member <- case token of
               Nothing -> return Nothing
@@ -117,6 +119,7 @@ runApp h cp dir sd ls (AppT a) = do
                       , appStaticDeps  = sd
                       , appLanguages   = ls
                       , appMember      = member
+                      , appForvoKey    = forvo
                       }
 
 -- Here are some functions that abstract away even having to ask for values

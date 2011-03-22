@@ -15,82 +15,45 @@
 -- You should have received a copy of the GNU Affero General Public License
 -- along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-module Vocabulink.Link.Pronunciation (pronounceable, addPronunciation, deletePronunciation) where
+module Vocabulink.Link.Pronunciation (pronounceable, addPronunciation, getPronunciations) where
 
 import Vocabulink.App
 import Vocabulink.CGI
-import Vocabulink.Link
-import Vocabulink.Member
 import Vocabulink.Utils
+
+import Network.Curl.Download.Lazy (openLazyURI)
+import Network.Curl.Download (openURIString)
 
 import Prelude hiding (writeFile)
 
-pronounceable :: Link -> App Bool
-pronounceable l = isJust <$> $(queryTuple'
-  "SELECT format FROM link_pronunciation \
-  \WHERE link_no = {linkNumber l}")
+pronounceable :: Integer -> App Bool
+pronounceable linkNo = do
+  f <- pronunciationFile linkNo "ogg"
+  liftIO $ isFileReadable f
 
--- TODO: Would this be safe from race conditions with a transaction?
-addPronunciation :: Integer -> App CGIResult
-addPronunciation linkNo = do
-  link <- getLink linkNo
-  case link of
-    Nothing -> outputNotFound
-    Just l  -> do
-      editable <- canEdit l
-      if not editable
-        then outputUnauthorized
-        else do
-          -- Make sure that a pronunciation doesn't already exist.
-          exists <- pronounceable l
-          if exists
-            then error "Pronunciation already exists."
-            else do
-              formFile <- getInputFilename "qqfile"
-              (filename, content) <- case formFile of
-                                       -- Old browsers will send as a file input.
-                                       Just f   -> do
-                                         content' <- getRequiredInputFPS "qqfile"
-                                         return (f, content')
-                                       -- New browsers will send as the POST body.
-                                       Nothing  -> do
-                                         f <- getRequiredInput "qqfile"
-                                         content' <- getBodyFPS
-                                         return (f, content')
-              let format = map toLower $ safeTail $ takeExtension filename
-              if format `notElem` allowedExtensions
-                then error $ "Unsupported file format: " ++ format
-                else do
-                  dir <- (</> "upload" </> "audio" </> "pronunciation") <$> asks appDir
-                  let filepath = dir </> (show linkNo) <.> format
-                  liftIO $ writeFile filepath content
-                  liftIO $ prepAudio format filepath
-                  $(execute' "INSERT INTO link_pronunciation (link_no, format) \
-                                                     \VALUES ({linkNo}, {format})")
-                  outputJSON [("success", True)]
- where allowedExtensions = ["flac", "wav", "ogg", "mp3"]
-
-deletePronunciation :: Integer -> App CGIResult
-deletePronunciation linkNo = do
-  $(execute' "DELETE FROM link_pronunciation WHERE link_no = {linkNo}")
+pronunciationFile :: Integer -> String -> App FilePath
+pronunciationFile linkNo filetype = do
+  -- This pronunciation has not technically been uploaded, but we'll keep it
+  -- the upload directory for now.
   dir <- (</> "upload" </> "audio" </> "pronunciation") <$> asks appDir
-  liftIO $ unsafeSystem $ "rm " ++ dir ++ "/" ++ show linkNo ++ ".*"
-  outputNothing
+  return $ dir </> (show linkNo) <.> filetype
 
-prepAudio :: String -> FilePath -> IO ()
-prepAudio "flac" f = do
-  unsafeSystem $ "flac -d " ++ f ++ " &> /dev/null"
-  prepAudio "wav" $ replaceExtension f ".wav"
-  unsafeSystem $ "rm " ++ replaceExtension f ".wav"
-prepAudio "wav"  f = do
-  unsafeSystem $ "oggenc " ++ f ++ " &> /dev/null"
-  unsafeSystem $ "lame " ++ f ++ " " ++ (replaceExtension f ".mp3") ++ " &> /dev/null"
-prepAudio "ogg"  f = do
-  unsafeSystem $ "oggdec " ++ f ++ " &> /dev/null"
-  unsafeSystem $ "lame " ++ replaceExtension f ".wav" ++ " " ++ replaceExtension f ".mp3" ++ " &> /dev/null"
-  unsafeSystem $ "rm " ++ replaceExtension f ".wav"
-prepAudio "mp3"  f = do
-  unsafeSystem $ "lame --decode " ++ f ++ " " ++ replaceExtension f ".wav" ++ " &> /dev/null"
-  unsafeSystem $ "oggenc " ++ replaceExtension f ".wav" ++ " &> /dev/null"
-  unsafeSystem $ "rm " ++ replaceExtension f ".wav"
-prepAudio _      _ = error "Unsupported file format"
+addPronunciation :: Integer -> String -> String -> App (Either String ())
+addPronunciation linkNo url filetype = do
+  audio <- liftIO $ openLazyURI url
+  case audio of
+    Left s  -> return $ Left s
+    Right a -> saveFile a >> return (Right ())
+ where saveFile s = do
+         f <- pronunciationFile linkNo filetype
+         liftIO $ writeFile f s
+
+getPronunciations :: String -> String -> App CGIResult
+getPronunciations lang word = do
+  key <- asks appForvoKey
+  s <- liftIO $ openURIString ("http://apifree.forvo.com/key/" ++ key
+                            ++ "/format/json/action/word-pronunciations/word/" ++ word
+                            ++ "/language/" ++ lang ++ "/order/rate-desc")
+  case s of
+    Left _   -> error "Unable to retrieve pronunciations"
+    Right s' -> outputText s'

@@ -37,7 +37,7 @@ configFile = "/etc/vocabulink.conf"
 -- |forceEither $ get|.
 
 requiredConfigVars :: [String]
-requiredConfigVars = [ "dbpassword", "authtokenkey"
+requiredConfigVars = [ "dbpassword", "authtokenkey", "forvokey"
                      , "threads", "maindir", "supportaddress" ]
 
 -- This retrieves the config file and makes sure that it contains all of the

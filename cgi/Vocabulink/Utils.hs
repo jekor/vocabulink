@@ -25,7 +25,8 @@ module Vocabulink.Utils ( (?), if', (<$$>)
                         , safeHead, safeTail, every2nd, every3rd
                         , translate, ltrim, convertLineEndings
                         , currentDay, currentYear, diffTimeToSeconds
-                        , basename, unsafeSystem, sendMail, logError, prettyPrint
+                        , basename, isFileReadable, unsafeSystem, sendMail
+                        , logError, prettyPrint
                         {- Codec.Binary.UTF8.String -}
                         , encodeString, decodeString
                         {- Control.Applicative -}
@@ -52,7 +53,7 @@ module Vocabulink.Utils ( (?), if', (<$$>)
                         , withTransaction, execute, queryTuple, queryTuples
                         {- Data.Time.Calendar -}
                         , Day, addDays, diffDays, showGregorian
-                        {- Data.Time.Clock -}            
+                        {- Data.Time.Clock -}
                         , UTCTime, DiffTime, getCurrentTime, diffUTCTime, secondsToDiffTime
                         {- Debug.Trace -}
                         , trace
@@ -88,6 +89,7 @@ import Data.Time.Clock (UTCTime, DiffTime, getCurrentTime, diffUTCTime, secondsT
 import Data.Time.Format (formatTime)
 import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, LocalTime(..))
 import System.Cmd (system)
+import System.Directory (getPermissions, doesFileExist, readable)
 import System.Exit (ExitCode(..))
 import System.FilePath ( (</>), (<.>), takeExtension, replaceExtension
                        , takeBaseName, takeFileName )
@@ -219,6 +221,13 @@ diffTimeToSeconds = floor . toRational
 
 basename :: FilePath -> FilePath
 basename = reverse . takeWhile (`notElem` "/\\") . reverse
+
+isFileReadable :: FilePath -> IO Bool
+isFileReadable f = do
+  exists' <- doesFileExist f
+  if exists'
+    then readable <$> getPermissions f
+    else return False
 
 -- When being lazy, I want the program to fail spectacularly when a system
 -- command returns a non-zero exit code.

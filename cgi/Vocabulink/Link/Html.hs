@@ -47,19 +47,19 @@ newLinkPage = do
     form ! method "post" ! action "/link/new" $ do
       h1 ! class_ "link edit linkword" $ do
         span ! class_ "foreign" $ do
-          input ! name "foreign" ! required mempty ! placeholder "Foreign Word"
+          input ! name "foreign" ! required mempty ! placeholder "Foreign Word" ! tabindex "1"
           br
           foreignLangs ! name "foreign-lang" ! required mempty
         span ! class_ "link" $ do
-          input ! name "linkword" ! required mempty ! placeholder "Link Word"
+          input ! name "linkword" ! required mempty ! placeholder "Link Word" ! tabindex "2"
           br
           (menu $ zip activeLinkTypes activeLinkTypes) ! name "link-type" ! required mempty
         span ! class_ "familiar" $ do
-          input ! name "familiar" ! required mempty ! placeholder "Familiar Word"
+          input ! name "familiar" ! required mempty ! placeholder "Familiar Word" ! tabindex "3"
           br
           familiarLangs ! name "familiar-lang" ! required mempty
       p ! style "text-align: center" $
-        input ! type_ "submit" ! class_ "light" ! value "Save"
+        input ! type_ "submit" ! class_ "light" ! value "Save" ! tabindex "4"
 
 -- Each link gets its own URI and page. Most of the extra code in the following is
 -- for handling the display of link operations (``review'', ``delete'', etc.),
@@ -81,7 +81,7 @@ linkPage linkNo = do
         else do
           let owner' = maybe False (linkAuthor l' ==) memberNo
           ops <- linkOperations l'
-          hasPronunciation <- pronounceable l'
+          hasPronunciation <- pronounceable linkNo
           oLanguage <- linkOriginLanguage l'
           dLanguage <- linkDestinationLanguage l'
           let orig = linkOrigin l'
@@ -133,10 +133,8 @@ languagePairsPage = do
 linkOperations :: Link -> App Html
 linkOperations link = do
   member <- asks appMember
-  editable   <- canEdit link
   deletable  <- canDelete link
   reviewing' <- reviewing link
-  hasPron    <- pronounceable link
   let review  = linkAction "add to review" "add"
   return $ do
     case (member, reviewing') of
@@ -144,14 +142,6 @@ linkOperations link = do
       (Just _,  _)    -> (review True)  ! id "link-op-review"
                                         ! title "add this link to be quizzed on it later"
       (Nothing, _)    -> (review False) ! href "/member/login" ! title "login to review"
-    case (editable, hasPron) of
-      (True, False) -> (linkAction "add pronunciation" "audio-add" True)
-                         ! id "link-op-add-pronunciation"
-                         ! title "add an audio file showing pronunciation"
-      (True, True)  -> (linkAction "delete pronunciation" "audio-delete" True)
-                         ! id "link-op-delete-pronunciation"
-                         ! title "delete the audio file showing pronunciation"
-      _             -> mempty
     when deletable ((linkAction "delete link" "delete" True)
            ! id "link-op-delete"
            ! title "delete this link (it will still be visibles to others who are reviewing it)")

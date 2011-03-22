@@ -35,7 +35,7 @@ module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList
                        {- Text.Blaze.Html5.Attributes -}
                        , id, class_, href, type_, src, style, title
                        , width, height, alt, accesskey, colspan
-                       , method, action, name, value, required, placeholder, autofocus
+                       , method, action, name, value, required, placeholder, autofocus, tabindex
                        {- Text.Hamlet -}
                        , hamletFile, hamletFileDebug
                        ) where
@@ -52,6 +52,7 @@ import Text.Blaze.Html5 ( Html, (!), string, stringValue, preEscapedString, cust
 import Text.Blaze.Html5.Attributes ( id, class_, href, type_, src, style, title
                                    , width, height , alt, accesskey, colspan
                                    , method, action, name, value, required, placeholder, autofocus
+                                   , tabindex
                                    )
 import Text.Hamlet (hamletFile, hamletFileDebug)
 import Text.Pandoc ( readMarkdown, writeHtmlString, defaultParserState

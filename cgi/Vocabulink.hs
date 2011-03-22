@@ -91,12 +91,11 @@ main = do
   cp <- liftM forceEither getConfig
   let threads = forceEither $ get cp "DEFAULT" "threads"
       pw      = forceEither $ get cp "DEFAULT" "dbpassword"
-      dir     = forceEither $ get cp "DEFAULT" "maindir"
   sd <- staticDeps cp
   runSCGIConcurrent' forkIO threads (PortNumber 10033) (do
     h <- liftIO $ pgConnect "localhost" (PortNumber 5432) "vocabulink" "vocabulink" pw
     ls <- liftIO $ languagesFromDB h
-    handleErrors h (runApp h cp dir sd ls handleRequest))
+    handleErrors h (runApp h cp sd ls handleRequest))
 
 -- |handleRequest| ``digests'' the requested URI before passing it to the
 --  dispatcher.
@@ -226,13 +225,13 @@ dispatch meth ("link":x:meth') =
     Just n  -> case (meth, meth') of
                  ("GET"   , [])                -> linkPage n
                  ("DELETE", [])                -> deleteLink n
-                 ("POST"  , ["pronunciation"]) -> addPronunciation n
-                 ("DELETE", ["pronunciation"]) -> deletePronunciation n
                  ("POST"  , ["stories"])       -> do
                    story <- getRequiredInput "story"
                    addStory n story
                    redirect $ "/link/" ++ show n
                  (_       , _)                 -> outputNotFound
+
+dispatch "GET" ["pronunciations",lang,word] = getPronunciations lang word
 
 -- Searching
 

@@ -29,6 +29,7 @@ module Vocabulink.Link ( Link(..), PartialLink(..), LinkType(..), isLinkword
 
 import Vocabulink.App
 import Vocabulink.CGI
+import Vocabulink.Link.Pronunciation
 import Vocabulink.Member
 import Vocabulink.Utils
 
@@ -343,8 +344,16 @@ createLink = withRequiredMember $ \m -> do
                  "sound-alike" -> return SoundAlike
                  "association" -> return Association
                  _             -> error "Invalid link type"
+  ogg <- getInput "ogg"
+  mp3 <- getInput "mp3"
   let link = mkLink foreign foreignLang familiar familiarLang linkType'
   n <- establishLink link (memberNumber m)
+  case (ogg, mp3) of
+    (Just ogg', Just mp3') -> do
+      _ <- addPronunciation n ogg' "ogg"
+      _ <- addPronunciation n mp3' "mp3"
+      return ()
+    _                      -> return ()
   redirect $ "/link/" ++ show n
 
 -- When creating a link from a form, the link number must be undefined until

@@ -1,5 +1,5 @@
 Name:          Vocabulink
-Version:       2011.2.6
+Version:       2011.3.21
 Cabal-Version: >= 1.2
 License:       OtherLicense
 License-File:  COPYING
@@ -29,6 +29,7 @@ Executable vocabulink.cgi
                  cgi,
                  ConfigFile,
                  directory,
+                 download-curl,
                  filepath,
                  formlets >= 0.7,
                  gravatar,

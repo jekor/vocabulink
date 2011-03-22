@@ -161,36 +161,6 @@ $(function () {
     });
   });
 
-  $('#link-op-add-pronunciation.enabled').click(function () {
-    var box = $('<div class="operation-box">'
-              + '</div>').hide().appendTo('#link-ops');
-    var uploader = new qq.FileUploader({
-      'element': box[0],
-      'action': '/link/' + linkNumber() + '/pronunciation',
-      'allowedExtensions': ['flac', 'wav', 'ogg', 'mp3'],
-      'onComplete': function (id, fileName, responseJSON) {
-        box.slideUp('fast');
-        box.remove();
-        location.reload();
-      }
-    });
-    box.slideDown('fast');
-  });
-
-  $('#link-op-delete-pronunciation.enabled').click(function () {
-    var button = $(this);
-    button.text('deleting...');
-    $.ajax({'type': 'DELETE'
-           ,'url': '/link/' + linkNumber() + '/pronunciation'
-           ,'success': function () {
-              button.text("Deleted.");
-            }
-           ,'error': function () {
-              button.text("Failed to delete.");
-            }
-           });
-  });
-
   // "delete link"
   $('#link-op-delete.enabled').click(function () {
     var op = $(this);

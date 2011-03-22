@@ -26,7 +26,7 @@ import Vocabulink.CGI
 import Vocabulink.Utils hiding ((<$$>))
 
 import Control.Monad (filterM)
-import System.Directory (getDirectoryContents, getPermissions, doesFileExist, readable)
+import System.Directory (getDirectoryContents)
 import qualified System.IO.UTF8 as IO.UTF8
 import qualified Text.ParserCombinators.Parsec as P
 import Text.ParserCombinators.Parsec.Perm ((<$$>), (<|?>), permute)
@@ -115,16 +115,9 @@ isPublished :: FilePath -> IO Bool
 isPublished f =
   if takeExtension f == ".muse"
     then do
-      r1 <- isReadable f
-      r2 <- isReadable $ replaceExtension f ".html"
+      r1 <- isFileReadable f
+      r2 <- isFileReadable $ replaceExtension f ".html"
       return $ r1 && r2
-    else return False
-
-isReadable :: FilePath -> IO Bool
-isReadable f = do
-  exists' <- doesFileExist f
-  if exists'
-    then readable <$> getPermissions f
     else return False
 
 -- To retrieve an article from the filesystem we just need the path to the
