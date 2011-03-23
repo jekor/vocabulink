@@ -38,7 +38,7 @@ module Vocabulink.CGI ( output, outputText, outputHtml, outputJSON
                       , outputNothing, outputError, outputMethodNotAllowed
                       , Cookie(..), getCookie, setCookie, deleteCookie
                       {- Network.URI -}
-                      , uriPath, uriQuery
+                      , uriPath, uriQuery, escapeURIString, isUnescapedInURI
                       ) where
 
 import Vocabulink.Utils

@@ -34,7 +34,7 @@ import Data.Time.Format (parseTime)
 import System.Locale (iso8601DateFormat)
 import System.Time (TimeDiff(..), getClockTime, addToClockTime, toCalendarTime)
 import qualified Network.Gravatar as Gravatar (gravatar)
-import Network.URI (escapeURIString, unEscapeString, isUnescapedInURI)
+import Network.URI (unEscapeString)
 import Text.ParserCombinators.Parsec (Parser, parse, noneOf, many1, try, char, string, optional)
 import Text.ParserCombinators.Parsec.Perm ((<$$>), (<||>), (<|?>), permute)
 import Text.Regex

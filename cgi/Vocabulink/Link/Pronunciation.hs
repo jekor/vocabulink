@@ -51,9 +51,11 @@ addPronunciation linkNo url filetype = do
 getPronunciations :: String -> String -> App CGIResult
 getPronunciations lang word = do
   key <- asks appForvoKey
-  s <- liftIO $ openURIString ("http://apifree.forvo.com/key/" ++ key
-                            ++ "/format/json/action/word-pronunciations/word/" ++ word
-                            ++ "/language/" ++ lang ++ "/order/rate-desc")
+  let url = ("http://apifree.forvo.com/key/" ++ key
+          ++ "/format/json/action/word-pronunciations/word/"
+          ++ escapeURIString (\ _ -> False) (encodeString word)
+          ++ "/language/" ++ lang ++ "/order/rate-desc")
+  s <- liftIO $ openURIString url
   case s of
     Left _   -> error "Unable to retrieve pronunciations"
     Right s' -> outputText s'
