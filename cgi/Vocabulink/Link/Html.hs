@@ -186,7 +186,12 @@ languageMenu side = do
           \AND link.author = {memberNumber m} \
         \GROUP BY destination_language, abbr, name \
         \ORDER BY COUNT(destination_language) DESC")
-  return $ menu $ langs ++ [("", "Pick a language")] ++ allLangs
+  -- Default to English as the familiar language to make things easier and more
+  -- obvious for new users.
+  let langs' = case (langs, side) of
+                 ([], Right _) -> [("en", "English")]
+                 _             -> langs
+  return $ menu $ langs' ++ [("", "Pick a language")] ++ allLangs
 
 -- Displaying Links
 
