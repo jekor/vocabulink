@@ -191,7 +191,10 @@ languageMenu side = do
   let langs' = case (langs, side) of
                  ([], Right _) -> [("en", "English")]
                  _             -> langs
-  return $ menu $ langs' ++ [("", "Pick a language")] ++ allLangs
+      prompt = case side of
+                 Left _  -> "Pick foreign language"
+                 Right _ -> "Pick familiar language"
+  return $ menu $ langs' ++ [("", prompt)] ++ allLangs
 
 -- Displaying Links
 
