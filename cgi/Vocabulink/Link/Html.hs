@@ -43,11 +43,12 @@ newLinkPage :: App CGIResult
 newLinkPage = do
   foreignLangs  <- languageMenu $ Left ()
   familiarLangs <- languageMenu $ Right ()
+  foreignWord <- getInputDefault "" "foreign"
   simplePage "Create a New Link" [CSS "link", JS "lib.link"] $ do
     form ! method "post" ! action "/link/new" $ do
       h1 ! class_ "link edit linkword" $ do
         span ! class_ "foreign" $ do
-          input ! name "foreign" ! required mempty ! placeholder "Foreign Word" ! tabindex "1"
+          input ! name "foreign" ! required mempty ! placeholder "Foreign Word" ! tabindex "1" ! value (stringValue foreignWord)
           br
           foreignLangs ! name "foreign-lang" ! required mempty
         span ! class_ "link" $ do
