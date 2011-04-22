@@ -101,7 +101,7 @@ renderForumGroup g = do
                                forumCreator
                   _      -> mempty
       (left, right) = every2nd $ forums ++ [creator]
-  return $ div ! class_ "forum-group rounded" $ do
+  return $ div ! class_ "forum-group" $ do
     h2 $ string g
     unordList left ! class_ "first"
     unordList right

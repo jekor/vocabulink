@@ -32,7 +32,7 @@ import Vocabulink.Page
 import Vocabulink.Utils
 
 import Control.Monad.State (State, runState, get, put)
-import Data.List (find, genericLength)
+import Data.List (find, genericLength, sortBy, groupBy)
 import System.Random
 import Text.Blaze.Html5 (audio, source)
 import Text.Blaze.Html5.Attributes (preload)
@@ -126,9 +126,23 @@ linksPage title' f = do
 
 languagePairsPage :: App CGIResult
 languagePairsPage = do
-  languages' <- linkLanguages
-  simplePage "Links by Language Pair" [CSS "link"] $ do
-    multiColumnList 3 $ map languagePairLink languages'
+  languages' <- (groupBy groupByName . sortBy compareNames) <$> linkLanguages
+  simplePage "Available Languages" [CSS "link"] $ do
+    mconcat $ map renderLanguageGroup $ sortBy compareSize languages'
+ where compareNames ((_, ol1), (_, dl1), _) ((_, ol2), (_, dl2), _) =
+         if dl1 == dl2
+            then compare ol1 ol2
+            else compare dl1 dl2
+       compareSize g1 g2 = compare (languageSize g2) (languageSize g1)
+       languageSize = sum . map (\(_, _, c) -> c)
+       groupByName ((_, _), (_, dl1), _) ((_, _), (_, dl2), _) = dl1 == dl2
+       renderLanguageGroup g = div ! class_ "group-box languages" $ do
+         h2 $ string $ "in " ++ (groupLanguage g) ++ ":"
+         multiColumnList 3 $ map renderLanguage g
+       groupLanguage = (\((_, _), (_, n), _) -> n) . head
+       renderLanguage ((oa, on), (da, _), _) =
+         a ! class_ "faint-gradient-button blue language-button" ! href (stringValue $ "/links?ol=" ++ oa ++ "&dl=" ++ da) $
+           string $ on
 
 linkOperations :: Link -> App Html
 linkOperations link = do
@@ -267,12 +281,6 @@ displayLink l = do
 
 linkTypeHtml :: LinkType -> Html
 linkTypeHtml _ = mempty
-
--- | Display a hyperlink for a language pair.
-languagePairLink :: ((String, String), (String, String), Integer) -> Html
-languagePairLink ((oa, on), (da, dn), c) =
-  a ! class_ "language-pair" ! href (stringValue $"/links?ol=" ++ oa ++ "&dl=" ++ da) $
-    string $ on ++ " → " ++ dn ++ " (" ++ show c ++ ")"
 
 -- Each link can be ``operated on''. It can be reviewed (added to the member's
 -- review set) and deleted (marked as deleted). In the future, I expect

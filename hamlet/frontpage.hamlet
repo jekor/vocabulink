@@ -6,7 +6,7 @@
     <h1>What Is Vocabulink?
     <p>We're devoted to helping you learn the words of a foreign language as quickly and effortlessly as possible.
     <p>Vocabulary building is the most important and most time-consuming part of learning a language. But the good news is that you can learn foreign words more quickly and easily than you imagined. We'll show you how, using 3 simple principles.
-    <a id="try-now" href="/languages" .button>Get Started
+    <a id="try-now" href="/languages" .faint-gradient-button .green>Get Started
     <div .clear>
   <div .clear>
 <div .bottom>

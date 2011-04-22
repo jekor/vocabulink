@@ -82,10 +82,10 @@ multiColumn cls =
 multiColumnList :: Int -> [Html] -> Html
 multiColumnList 1 xs  = multiColumn [unordList xs]
 multiColumnList 2 xs  =
-  let (col1, col2) = every2nd xs in
+  let (col1, col2) = partitionHalves xs in
   multiColumn [unordList col1, unordList col2]
 multiColumnList 3 xs  =
-  let (col1, col2, col3) = every3rd xs in
+  let (col1, col2, col3) = partitionThirds xs in
   multiColumn [unordList col1, unordList col2, unordList col3]
 multiColumnList _ _   = error "Unsupported number of columns."
 

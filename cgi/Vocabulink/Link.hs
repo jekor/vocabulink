@@ -286,8 +286,7 @@ linkLanguages =
     \INNER JOIN language dest ON (dest.abbr = destination_language) \
     \WHERE NOT deleted \
     \GROUP BY origin_language, orig.name, \
-             \destination_language, dest.name \
-    \ORDER BY COUNT(*) DESC")
+             \destination_language, dest.name")
  where linkLanguages' (oa, on, da, dn, c) = ((oa, on), (da, dn), fromJust c)
 
 -- An adjacent link is the nearest (by link number) in the given language pair.

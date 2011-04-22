@@ -23,6 +23,7 @@
 
 module Vocabulink.Utils ( (?), if', (<$$>)
                         , safeHead, safeTail, every2nd, every3rd
+                        , partitionHalves, partitionThirds
                         , translate, ltrim, convertLineEndings
                         , currentDay, currentYear, diffTimeToSeconds
                         , basename, isFileReadable, unsafeSystem, sendMail
@@ -157,6 +158,14 @@ every2nd = foldr (\a ~(x,y) -> (a:y,x)) ([],[])
 
 every3rd :: [a] -> ([a], [a], [a])
 every3rd = foldr (\a ~(x,y,z) -> (a:z,x,y)) ([],[],[])
+
+partitionHalves :: [a] -> ([a], [a])
+partitionHalves x = (take len x, drop len x)
+ where len = ceiling $ (fromIntegral $ length x) / 2
+
+partitionThirds :: [a] -> ([a], [a], [a])
+partitionThirds x = (take len x, take len (drop len x), drop (len * 2) x)
+ where len = ceiling $ (fromIntegral $ length x) / 3
 
 -- This is like the Unix tr utility. It takes a list of search/replacements and
 -- then performs them on the list.
