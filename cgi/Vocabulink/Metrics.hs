@@ -104,7 +104,7 @@ commentCounts :: Day -- ^ start date
               -> App [(Day, Integer)] -- ^ counts for each date
 commentCounts start end = (fromJust *** fromJust) <$$> $(queryTuples'
   "SELECT CAST(time AS date), COUNT(*) FROM comment \
-  \WHERE CAST(time AS date) BETWEEN {start} AND {end} \
+  \WHERE author <> 0 AND CAST(time AS date) BETWEEN {start} AND {end} \
   \GROUP BY CAST(time AS date) \
   \ORDER BY time")
 
