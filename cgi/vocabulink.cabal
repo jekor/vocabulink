@@ -1,5 +1,5 @@
 Name:          Vocabulink
-Version:       2011.3.21
+Version:       2011.5.14
 Cabal-Version: >= 1.2
 License:       OtherLicense
 License-File:  COPYING
@@ -9,7 +9,6 @@ Maintainer:    jekor@jekor.com
 Stability:     stable
 Bug-Reports:   jekor@jekor.com
 Homepage:      http://www.vocabulink.com/source
-Package-URL:   http://jekor.com/vocabulink/vocabulink--2009-08-14.tar.gz
 Category:      Education
 Synopsis:      a web application for learning languages through fiction (mnemonics)
 Description:   This is Vocabulink, the SCGI program that handles all web

@@ -26,7 +26,7 @@ module Vocabulink.Utils ( (?), if', (<$$>)
                         , partitionHalves, partitionThirds
                         , translate, ltrim, convertLineEndings
                         , currentDay, currentYear, diffTimeToSeconds
-                        , basename, isFileReadable, unsafeSystem, sendMail
+                        , basename, isFileReadable, sendMail
                         , logError, prettyPrint
                         {- Codec.Binary.UTF8.String -}
                         , encodeString, decodeString
@@ -89,15 +89,14 @@ import Data.Time.Calendar (Day, toGregorian, showGregorian, addDays, diffDays)
 import Data.Time.Clock (UTCTime, DiffTime, getCurrentTime, diffUTCTime, secondsToDiffTime)
 import Data.Time.Format (formatTime)
 import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, LocalTime(..))
-import System.Cmd (system)
 import System.Directory (getPermissions, doesFileExist, readable)
 import System.Exit (ExitCode(..))
 import System.FilePath ( (</>), (<.>), takeExtension, replaceExtension
                        , takeBaseName, takeFileName )
-import System.IO (Handle, hPutStrLn, stderr)
-import System.IO.Error (try)
+import System.IO (Handle, hPutStr, hPutStrLn, hClose, stderr)
 import System.Locale (defaultTimeLocale)
 import System.Posix.Types (EpochTime)
+import System.Process (createProcess, waitForProcess, proc, cwd, std_in, StdStream(..))
 
 import Prelude hiding (readFile, writeFile)
 
@@ -238,35 +237,21 @@ isFileReadable f = do
     then readable <$> getPermissions f
     else return False
 
--- When being lazy, I want the program to fail spectacularly when a system
--- command returns a non-zero exit code.
-
-unsafeSystem :: String -> IO ()
-unsafeSystem command = do
-  status <- system command
-  case status of
-    ExitFailure _ -> error $ "command failed: " ++ command
-    ExitSuccess   -> return ()
-
--- Sending mail is pretty easy. We just deliver it to a local MTA. Even if we
--- have no MTA running locally, there are sendmail emulators that will handle
--- the SMTP forwarding for us so that we don't have to deal with SMTP here.
-
--- TODO: Check for errors.
-
 sendMail :: String -> String -> String -> IO (Maybe ())
-sendMail to subject body = do
-  let body' = unlines [ "From: Vocabulink <vocabulink@vocabulink.com>"
-                      , "To: <" ++ to ++ ">"
-                      , "Subject: " ++ subject
-                      , ""
-                      , body
-                      ]
-  res <- try $ system ("echo -e \"" ++ body' ++ "\" | \
-                       \sendmail \"" ++ to ++ "\"")
-  case res of
-    Right ExitSuccess  -> return $ Just ()
-    _                  -> return Nothing
+sendMail address subject body = do
+  (Just inF, _, _, pr) <- createProcess (proc "/usr/local/ses/ses-send-email.pl"
+                                              ["-f", "vocabulink@vocabulink.com"
+                                              ,"-s", subject
+                                              ,"-k", "aws-credentials"
+                                              ,address])
+                                        {cwd = Just "/usr/local/ses"
+                                        ,std_in = CreatePipe
+                                        }
+  hPutStr inF body >> hClose inF
+  status <- waitForProcess pr
+  case status of
+    ExitFailure _ -> return Nothing
+    ExitSuccess   -> return $ Just ()
 
 -- Log a message to standard error. It'll get picked up by svlogd.
 
