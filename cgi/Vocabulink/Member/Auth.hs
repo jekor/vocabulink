@@ -96,7 +96,7 @@ cookieShelfLife = 30
 instance Show AuthToken where
   show a = "exp="   ++ showGregorian (authExpiry a)
         ++ "&no="   ++ show (authMemberNo a)
-        ++ "&name=" ++ escapeURIString isUnescapedInURI (encodeString $ authUsername a)
+        ++ "&name=" ++ escapeURIString' (encodeString $ authUsername a)
         ++ maybe "" ("&grav=" ++) (authGravatar a)
         ++ "&ip="   ++ authIPAddress a
         ++ "&mac="  ++ authDigest a

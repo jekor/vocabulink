@@ -28,7 +28,7 @@ module Vocabulink.CGI ( output, outputText, outputHtml, outputJSON
                       , readInput, readRequiredInput, readInputDefault
                       , getInputs, getBody, getTextOrFileInput
                       , urlify, reversibleRedirect, referrerOrVocabulink
-                      , handleErrors
+                      , handleErrors, escapeURIString'
                       {- Network.CGI -}
                       , MonadCGI, CGIResult
                       , requestURI, requestMethod
@@ -197,7 +197,7 @@ reversibleRedirect :: (MonadCGI m) => String -> m String
 reversibleRedirect path = do
   uri' <- getVar "REQUEST_URI"
   let uri = fromMaybe "/" uri'
-  return $ path ++ "?redirect=" ++ escapeURIString isUnescapedInURI uri
+  return $ path ++ "?redirect=" ++ escapeURIString' uri
 
 -- In some cases we'll need to redirect the client to where it came from after
 -- we perform some action. We use this to make sure that we don't redirect them
@@ -243,3 +243,6 @@ outputException' h ex = do
   liftIO $ logError "exception" (show ex)
   liftIO $ pgDisconnect h
   outputInternalServerError [show ex]
+
+escapeURIString' :: String -> String
+escapeURIString' = escapeURIString isUnescapedInURI
