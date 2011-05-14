@@ -102,7 +102,7 @@ $(function () {
     }
   });
 
-  if (V.loggedIn()) {
+  if (V.loggedIn() && $('#linkword-stories').length) {
     showNewStory();
     $('.linkword-story').each(function () {
       if ($(this).find('.username').text() === V.memberName()) {
