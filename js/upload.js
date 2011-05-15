@@ -23,7 +23,7 @@
 function submitFile(fileInput, fileButton) {
   fileInput.css('background',
                 "url('http://s.vocabulink.com/img/wait-bar.gif') no-repeat center center");
-  fileButton.attr('disabled', null);
+  fileButton.prop('disabled', null);
 }
 
 function fileSubmitted(fileInput, fileButton, file, response) {
@@ -31,7 +31,7 @@ function fileSubmitted(fileInput, fileButton, file, response) {
     fileInput.css('background', 'none');
     fileInput.val(response.substr(12));
     fileInput.removeAttr('disabled');
-    fileInput.attr('readonly', null);
+    fileInput.prop('readonly', null);
   } else {
     alert('Error uploading file.');
   }

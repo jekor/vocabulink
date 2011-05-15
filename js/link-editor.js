@@ -23,7 +23,7 @@ var changeLinkType = function () {
          .addClass(newType);
   var linkword = $(this).parent().find('input');
   if (newType === 'linkword') {
-    linkword.attr('required', null).css('visibility', 'visible');
+    linkword.prop('required', null).css('visibility', 'visible');
   } else {
     linkword.removeAttr('required').css('visibility', 'hidden');
   }
