@@ -74,7 +74,7 @@ var changePronunciation = function () {
 };
 
 $(function () {
-  $('h1.link.edit .link select').change(changeLinkType);
+  $('h1.link.edit .link select').change(changeLinkType).change();
   $('#body form').minform();
   $('[name="foreign"], [name="foreign-lang"]').change(changePronunciation);
   changePronunciation();
