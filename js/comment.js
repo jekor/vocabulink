@@ -79,7 +79,6 @@ $(function () {
     addReplyCommentBox($(this).parent());
   });
   $('.comments').each(setupRootReply);
-  $('.vote-arrow').click(vote);
   $('#topics tr:nth-child(2) button').click(function () {
     var box = createTopicBox();
     $(this).replaceWith(box);
