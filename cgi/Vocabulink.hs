@@ -19,8 +19,8 @@
 
 -- This is Vocabulink, the SCGI program that handles all web requests for\\*
 -- \url{http://www.vocabulink.com/}. The site helps people learn languages
--- through fiction. It provides a mnemonics database, spaced repition (review)
--- tools, and a forum for learners to collaborate.
+-- through fiction. It provides a mnemonics database and spaced repetion
+-- (review) tools.
 
 -- Architecture
 
@@ -45,7 +45,6 @@ import Vocabulink.Article.Html
 import Vocabulink.CGI
 import Vocabulink.Comment
 import Vocabulink.Config
-import Vocabulink.Forum
 import Vocabulink.Html
 import Vocabulink.Link
 import Vocabulink.Link.Html
@@ -318,8 +317,7 @@ dispatch "POST" ["member","login"] = login
 
 dispatch "POST" ["member","logout"] = logout
 
--- Members can also request support, if for some reason they can't or don't
--- want to use the forums.
+-- Members can also request support.
 
 dispatch "GET"  ["member","support"] = memberSupport
 dispatch "POST" ["member","support"] = memberSupport
@@ -327,33 +325,6 @@ dispatch "POST" ["member","support"] = memberSupport
 -- Member Pages
 
 dispatch "GET" ("member":[username]) = memberPage username
-
--- Forums
-
--- While Vocabulink is still growing (and into the future), it's important to
--- help new members along and to get feedback from them. For this, Vocabulink
--- uses forums.
-
-dispatch "GET"  ["forums"] = forumsPage
-dispatch "POST" ["forums"] = forumsPage
-
--- Forums are uniquely identified by their name. The names are trusted to be
--- unique and reversibly mappable into URI-safe strings because they are
--- created by administrators of the site.
-
-dispatch "POST" ["forum","new"] = createForum
-dispatch "GET"  ["forum",x] = forumPage x
-
--- However, topics can be created by anyone and are identified by numbers. This
--- might seem like a lost opportunity for search engine optimization, but
--- including the forum topic text could lead to some very long URIs.
-
-dispatch "POST" ["forum",x] = createForumTopic x
-
-dispatch "GET" ["forum",x,y] =
-  case maybeRead y of
-    Nothing -> outputNotFound
-    Just n  -> forumTopicPage x n
 
 -- ``reply'' is used here as a noun.
 

@@ -77,8 +77,8 @@ memberSupport = do
     Left html -> simplePage "Need Help?" mempty $ do
       div ! id "central-column" $ do
         p ! style "text-align: center" $ do
-          string "Have you checked the "
-          a ! href "/forum/help" $ "help forum"
+          string "Have you checked our "
+          a ! href "http://getsatisfaction.com/vocabulink" $ "getsatisfaction page"
           string "?"
       html
     Right (email, problem, redirect') -> do

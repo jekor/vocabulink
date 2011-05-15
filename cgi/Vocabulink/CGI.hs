@@ -170,13 +170,13 @@ getTextOrFileInput name = do
 
 -- Working with URLs
 
--- Certain dynamic parts of the site, such as forum titles, are displayed to
--- the user in a friendly natural form but are also used in URLs. For those
--- cases, it's generally better to use URL-safe representations for both the
--- URL and the natural key in the database. This allows us, for example, to
--- re-title a forum without changing the URL it's located at. Also, since we
--- have the natural key from the URL, we don't need to do an extra database
--- lookup to find the key from a mapping table.
+-- Certain dynamic parts of the site are displayed to the user in a friendly
+-- natural form but are also used in URLs. For those cases, it's generally
+-- better to use URL-safe representations for both the URL and the natural key
+-- in the database. This allows us, for example, to re-title a forum without
+-- changing the URL it's located at. Also, since we have the natural key from
+-- the URL, we don't need to do an extra database lookup to find the key from a
+-- mapping table.
 
 -- Note that this is not meant to handle arbitrary input from users. For that
 -- we can use URL encoding. This is to make common URLs friendly.

@@ -167,14 +167,6 @@ footerBar = do
          a ! href (stringValue $ "/article/" ++ articleFilename article) $
            string $ articleTitle article
 
-footerForums :: App [Html]
-footerForums = do
-  rows' <- $(queryTuples' "SELECT name, title FROM forum \
-                          \WHERE group_name = 'Vocabulink'")
-  return $ map forumLink rows'
- where forumLink (name', title') =
-         a ! href (stringValue $ "/forum/" ++ name') $ string title'
-
 -- We want a copyright notice at the bottom of every page. Since this is a
 -- copyright notice for dynamic content, we want it to be up-to-date with the
 -- generation time (now).

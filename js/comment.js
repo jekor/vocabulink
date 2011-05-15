@@ -19,67 +19,6 @@
 
 (function ($) {
 
-// Here's yet another one to move out to a forum file.
-function createTopic(box, e) {
-  var title = $.trim(box.find('input[name=title]').val());
-  var body = $.trim(box.find('textarea').val());
-  if (title === '') {
-    alert('Please enter a title.');
-    return false;
-  }
-  if (body === '') {
-    alert('Please enter a comment.');
-    return false;
-  }
-  // We get the forum name from the URL.
-  var forumName = window.location.pathname.split('/').pop();
-  box.mask('Creating...');
-  $.ajax({'type': 'POST', 'url': '/forum/' + forumName + '/new',
-          'data': {'title': title, 'body': body},
-          'dataType': 'json',
-          'success': function (data) {
-            window.location.reload();
-          },
-          'error':   function (data) {
-            box.unmask();
-            alert('Error creating topic.');
-          }});  
-  return false;
-}
-
-// TODO: This should be moved out once we have a dependency system.
-function vote(e) {
-  var arrow = $(this);
-  var parent = arrow.parent();
-  if (!parent.hasClass('enabled')) {    
-    return false;
-  }
-  var voteCount = parent.find('span:first');
-  var count = parseInt(voteCount.text(), 10);
-  var url = arrow.attr('href') + '/votes';
-  var fail = function () { voteCount.text('FAIL!'); };
-  if (arrow.hasClass('up')) {
-    $.ajax({'type': 'POST', 'url': url,
-            'data': {'vote': 'up'},
-            'success': function () {
-              voteCount.text(count + 1);
-              arrow.css('background-position', '4px -24px');
-              parent.removeClass('enabled');
-            },
-            'error': fail});
-  } else if (arrow.hasClass('down')) {
-    $.ajax({'type': 'POST', 'url': url,
-            'data': {'vote': 'down'},
-            'success': function () {
-              voteCount.text(count - 1);
-              arrow.css('background-position', '4px -37px');
-              parent.removeClass('enabled');
-            },
-            'error': fail});    
-  }
-  return false;
-}
-
 function createCommentBox(parentID) {
   var box = $(
     '<form method="post" action="/comment/' + parentID + '/reply" class="comment">'
@@ -99,17 +38,6 @@ function createCommentBox(parentID) {
 // This box is for replying to comments.
 function createReplyBox(parentNumber) {
   return createCommentBox(parentNumber);
-}
-
-// TODO: Move to forum JS file.
-// This box is for creating new topics (new root comments).
-function createTopicBox() {
-  var box = createCommentBox();
-  box.attr('action', '/forum/' + window.location.pathname.split('/').pop());
-  $('<div class="title">' +
-      '<label>Title:</label> <input name="title" required></input>' +
-    '</div>').prependTo(box.find('.body'));
-  return box;
 }
 
 // Replying to comments, including generating the necessary form, is left up to
