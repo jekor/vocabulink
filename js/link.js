@@ -90,7 +90,7 @@ function showNewStory() {
 }
 
 $(function () {
-  V.annotateLink($('h1.link:visible'));
+  V.annotateLink($('h1.link:visible:not(.edit)'));
 
   $('#pronounce').click(function () {
     $(this).find('audio')[0].play();
