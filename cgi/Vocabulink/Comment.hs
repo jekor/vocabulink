@@ -15,7 +15,7 @@
 -- You should have received a copy of the GNU Affero General Public License
 -- along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-module Vocabulink.Comment ( renderComments, storeComment, replyToComment, voteOnComment
+module Vocabulink.Comment ( renderComments, storeComment, replyToComment
                           ) where
 
 import Vocabulink.App
@@ -135,15 +135,6 @@ replyToComment parent = withRequiredMember $ \m -> do
                     commentTime      = t,
                     commentBody      = fromJust b }
 
--- TODO: Make sure that the vote is in the proper format.
-
-voteOnComment :: Integer -> App CGIResult
-voteOnComment n = withRequiredMember $ \m -> do
-  vote <- getRequiredInput "vote"
-  $(execute' "INSERT INTO comment_vote (comment, member, upvote) \
-                               \VALUES ({n}, {memberNumber m}, {vote == \"up\"})")
-  outputNothing
-
 -- It's common to add a little hyperlink teaser for actions that require
 -- verification. For example "login to reply" or "verify email to reply".
 
@@ -152,8 +143,7 @@ invitationLink text = do
   member <- asks appMember
   case member of
     Nothing -> do
-      url <- reversibleRedirect "/member/login"
-      return $ a ! class_ "invitation" ! href (stringValue url) $ string ("Login to " ++ text)
+      return $ a ! class_ "login-required" $ string ("Login to " ++ text)
     Just m  -> case memberEmail m of
                  Nothing -> do
                    url <- reversibleRedirect "/member/confirmation"

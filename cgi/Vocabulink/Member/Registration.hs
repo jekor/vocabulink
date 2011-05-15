@@ -228,58 +228,32 @@ confirmEmailPage = do
         a ! href (stringValue redirect') $ "Click here to go back"
         string " to where you came from."
 
--- TODO: Move this all into AJAX.
-
--- To authenticate a member, we need their username and password. This is our
--- first example of a formlet. The formlet nicely encapsulates validating the
--- member's password against the database as part of normal formlet validation.
-
-loginForm :: String -> AppForm (String, String)
-loginForm ref = plug (\html -> do input ! type_ "hidden" ! name "redirect" ! value (stringValue ref)
-                                  table $ do
-                                    html
-                                    tfoot $ tabularSubmit "Login")
-                 ((,) <$> username <*> passwd "Password") `checkM`
-                   ensureM passMatch err
-  where passMatch (user, pwd) =
-          maybe False fromJust <$> $(queryTuple'
-            "SELECT password_hash = crypt({pwd}, password_hash) \
-            \FROM member WHERE username = {user}")
-        err = "Username and password do not match (or don't exist)."
-
--- If a member authenticates correctly, we redirect them to either the
--- frontpage or whatever redirect parameter we've been given. This allows
--- |withRequiredMember| to function properly: getting the client to login and
--- then continuing where it left off.
+-- To login a member, simply set their auth cookie. Reloading the page and such
+-- is handled by the client.
 
 login :: App CGIResult
 login = do
-  ref   <- referrerOrVocabulink
-  redir <- getInputDefault ref "redirect"
-  res   <- runForm (loginForm redir) $ Right mempty
-  key   <- fromJust <$> getOption "authtokenkey"
-  case res of
-    Left html -> simplePage "Login" [] $ do
-      p ! style "text-align: center" $ do
-        string "Not a member? "
-        a ! href "/member/signup" $ "Sign Up for free!"
-      html
-    Right (user, _) -> do
+  username' <- getRequiredInput "username"
+  password' <- getRequiredInput "password"
+  match <- $(queryTuple' "SELECT password_hash = crypt({password'}, password_hash) \
+                         \FROM member WHERE username = {username'}")
+  case match of
+    Just (Just True) -> do
       ip      <- remoteAddr
-      member' <- memberByName user
+      member' <- memberByName username'
       case member' of
-        Nothing     -> redirect redir
+        Nothing     -> error "Failed to lookup username."
         Just member -> do
-          authTok <- liftIO $ authToken (memberNumber member) user (memberEmail member) ip key
+          key <- fromJust <$> getOption "authtokenkey"
+          authTok <- liftIO $ authToken (memberNumber member) username' (memberEmail member) ip key
           setAuthCookie authTok
-          redirect redir
+          outputNothing
+    _         -> error "Username and password do not match (or don't exist)."
 
 -- To logout a member, we simply clear their auth cookie and redirect them
--- somewhere sensible. If you want to send a client somewhere other than the
--- front page after logout, add a @redirect@ query string or POST parameter.
+-- to the front page.
 
 logout :: App CGIResult
 logout = do
   deleteAuthCookie
-  ref <- referrerOrVocabulink
-  redirect =<< getInputDefault ref "redirect"
+  redirect "http://www.vocabulink.com/"

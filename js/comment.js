@@ -81,11 +81,6 @@ $(function () {
   if (V.memberGravatar()) {
     $('.comments').each(setupRootReply);
   }
-  $('#topics tr:nth-child(2) button').click(function () {
-    var box = createTopicBox();
-    $(this).replaceWith(box);
-    return false;
-  });
 });
 
 })(jQuery);

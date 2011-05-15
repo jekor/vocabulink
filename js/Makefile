@@ -7,7 +7,7 @@ all : $(libs)
 clean :
 	rm $(libs)
 
-lib.common.js : jquery-1.6.1.js jquery.cookie.js minform.js common.js
+lib.common.js : jquery-1.6.1.js jquery.cookie.js minform.js common.js jquery.toastmessage.js
 	cat $^ | yuicompress --type js > $@
 
 # link viewing and reviewing, not editing

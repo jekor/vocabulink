@@ -333,7 +333,6 @@ dispatch meth ("comment":x:meth') =
     Nothing -> outputNotFound
     Just n  -> case (meth, meth') of
                  ("POST", ["reply"]) -> replyToComment n
-                 ("POST", ["votes"]) -> voteOnComment n
                  (_     , _)         -> outputNotFound
 
 -- Administrative Pages

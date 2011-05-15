@@ -84,12 +84,36 @@ outputJSON = outputText . encode . toJSObject
 outputNotFound :: (MonadCGI m, MonadIO m) => m CGIResult
 outputNotFound = CGI.outputNotFound ""
 
+-- Errors
+
+outputError' :: (MonadCGI m, MonadIO m) =>
+                Int      -- ^ HTTP Status code
+             -> String   -- ^ Message
+             -> m CGIResult
+outputError' c m = do
+  logCGI $ show (c,m)
+  setStatus c m
+  let textType = CGI.ContentType "text" "plain" [("charset","utf-8")]
+      -- htmlType = CGI.ContentType "text" "html"  [("charset","utf-8")]
+  -- cts <- liftM (negotiate [htmlType,textType]) requestAccept
+  -- case cts of
+  --   ct:_ | ct == textType ->
+  setHeader "Content-type" (showContentType textType)
+  output m
+    -- TODO: Add nice HTML error pages
+    -- _ -> do setHeader "Content-type" (showContentType htmlType)
+    --         page <- errorPage c m []
+    --         output $ renderHtml page
+
+outputInternalServerError' :: (MonadCGI m, MonadIO m) => String -> m CGIResult
+outputInternalServerError' = outputError' 500
+
 -- Usually we use the |withRequired| functions when an action requires that the
 -- client be authenticated. However, sometimes (as with AJAX) we want to output
 -- an actual 403 error.
 
 outputUnauthorized :: (MonadCGI m, MonadIO m) => m CGIResult
-outputUnauthorized = outputError 403 "Unauthorized" []
+outputUnauthorized = outputError' 403 "Unauthorized"
 
 -- We need to handle UTF-8-encoded GET and POST parameters. The following are
 -- enhanced versions of Network.CGI's |getInput| and |readInput| along with a
@@ -240,9 +264,8 @@ handleErrors h a = catchCGI' (do r <- a
 
 outputException' :: (MonadCGI m, MonadIO m) => Handle -> SomeException -> m CGIResult
 outputException' h ex = do
-  liftIO $ logError "exception" (show ex)
   liftIO $ pgDisconnect h
-  outputInternalServerError [show ex]
+  outputInternalServerError' $ show ex
 
 escapeURIString' :: String -> String
 escapeURIString' = escapeURIString isUnescapedInURI

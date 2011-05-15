@@ -70,13 +70,29 @@ V.memberGravatar = function () {
   }
 };
 
+toastNotice = function (msg) {
+  $().toastmessage('showNoticeToast', msg);
+}
+
+toastSuccess = function (msg) {
+  $().toastmessage('showSuccessToast', msg);
+}
+
+toastError = function (msg) {
+  $().toastmessage('showErrorToast', msg);
+}
+
+toastWarning = function (msg) {
+  $().toastmessage('showWarningToast', msg);
+}
+
 function loginPopup() {
   var headBar = $('#head-bar');
   var popup = $(
     '<form id="login-popup" action="/member/login" method="post">'
     + '<table>'
-      + '<tr><td><label>Username:</label></td><td><input name="fval[0]" required autofocus></td></tr>'
-      + '<tr><td><label>Password:</label></td><td><input type="password" name="fval[1]" required></td></tr>'
+      + '<tr><td><label>Username:</label></td><td><input name="username" required autofocus></td></tr>'
+      + '<tr><td><label>Password:</label></td><td><input type="password" name="password" required></td></tr>'
     + '</table>'
     + '<input type="submit" value="Login" class="dark">'
     + '<button class="cancel">cancel</button>'
@@ -87,6 +103,16 @@ function loginPopup() {
          $(this).parent().remove();
        });
   popup.minform();
+  popup.submit(function (e) {
+    e.preventDefault();
+    $.post($(this).attr('action'), $(this).serialize())
+      .done(function () {location.reload();})
+      .fail(function (xhr) {
+              toastError(xhr.responseText);
+              popup.find('input[name=password]').val('').focus();
+            });
+    return false;
+  });
 }
 
 // initialization for every page
@@ -102,6 +128,16 @@ $(function () {
       loginPopup();
     }
   });
+
+  // Hook up any buttons that require login to popup the login box.
+  $('.login-required').click(function () {
+    if (!$('#login-popup').length) {
+      loginPopup();
+    }
+  });
+
+  // Display all notices in the top center.
+  $().toastmessage({'position': 'top-center'});
 });
 
 })(jQuery);
