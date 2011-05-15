@@ -128,7 +128,7 @@ languageLinks :: App [Html]
 languageLinks = do
   rows' <- $(queryTuples' "SELECT abbr, name \
                           \FROM language_frequency_to_english \
-                          \ORDER BY freq DESC LIMIT 7")
+                          \ORDER BY freq DESC LIMIT 11")
   return $ map languageLink rows' ++ [a ! href "/languages" $ "more..."]
  where languageLink (abbr', name') =
          a ! href (stringValue $ "/links?ol=" ++ fromJust abbr' ++ "&dl=en") $
@@ -138,17 +138,15 @@ footerBar :: App Html
 footerBar = do
   langLinks <- languageLinks
   articles <- (map articleLinkHtml . take 3) <$> getArticles
-  forums <- footerForums
   copy <- liftIO copyrightNotice
   return $ do
-    multiColumn [ do h2 $ a ! href "/languages" $ "Browse Links by Language"
-                     multiColumnList 2 langLinks
-                , do h2 $ a ! href "/articles" $ "Latest Articles"
-                     multiColumnList 1 (articles ++ [a ! href "/articles" $ "more..."])
-                , do h2 $ a ! href "/forums" $ "Forums"
-                     multiColumnList 2 (forums ++ [a ! href "/forums" $ "more..."])
-                ] ! id "handy-links"
-    unordList [ a ! href "/help" $ "help"
+    div ! id "handy-links-background" $ do
+      multiColumn [ do h2 $ a ! href "/languages" $ "Browse Links by Language"
+                       multiColumnList 3 langLinks
+                  , do h2 $ a ! href "/articles" $ "Latest Articles"
+                       multiColumnList 1 (articles ++ [a ! href "/articles" $ "more..."])
+                  ] ! id "handy-links"
+    unordList [ a ! href "https://getsatisfaction.com/vocabulink" $ "help"
               , a ! href "/privacy" $ "privacy policy"
               , a ! href "/terms-of-use" $ "terms of use"
               , a ! href "/source" $ "source"
