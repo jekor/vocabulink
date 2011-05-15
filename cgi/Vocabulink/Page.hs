@@ -112,7 +112,7 @@ headerBar = do
               Just m  -> reviewBox <$> numLinksToReview m
   let newLink = case member of
                   Nothing -> mempty
-                  Just _  -> a ! href "/link/new" $ string "new link"
+                  Just _  -> a ! href "/link/new" ! class_ "new-link" $ string "new link"
   return $ do
     a ! href "/" ! accesskey "1" $
       img ! class_ "logo" ! alt "Vocabulink: Learn Languages through Fiction"
