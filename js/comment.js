@@ -78,7 +78,9 @@ $(function () {
   $('.comment .reply').click(function () {
     addReplyCommentBox($(this).parent());
   });
-  $('.comments').each(setupRootReply);
+  if (V.memberGravatar()) {
+    $('.comments').each(setupRootReply);
+  }
   $('#topics tr:nth-child(2) button').click(function () {
     var box = createTopicBox();
     $(this).replaceWith(box);
