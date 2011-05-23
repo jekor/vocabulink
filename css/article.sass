@@ -49,3 +49,35 @@
   code
     font-family: Courier New, monospace
     font-weight: bold
+  .linkword-story
+    margin:
+      left: auto
+      right: auto
+    width: 50em
+    position: relative
+    &:before, &:after
+      font-size: 64pt
+      font-family: 'Lucida Console', Monaco, monospace
+      color: #C5C5C5
+      position: absolute
+    &:before
+      content: "“"
+      left: 0
+      top: 0
+    &:after
+      content: "”"
+      right: 0
+      bottom: -34pt
+    blockquote
+      line-height: 1.3
+      min-height: 32pt
+      margin:
+        left: 48pt
+        right: 48pt
+      > *:first-child
+        margin-top: 0
+      > *:last-child
+        margin-bottom: 0
+      textarea
+        width: 100%
+        height: 5em
