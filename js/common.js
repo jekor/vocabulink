@@ -70,29 +70,30 @@ V.memberGravatar = function () {
   }
 };
 
-toastNotice = function (msg) {
+function toastNotice(msg) {
   $().toastmessage('showNoticeToast', msg);
 }
 
-toastSuccess = function (msg) {
+function toastSuccess(msg) {
   $().toastmessage('showSuccessToast', msg);
 }
 
-toastError = function (msg) {
+function toastError(msg) {
   $().toastmessage('showErrorToast', msg);
 }
 
-toastWarning = function (msg) {
+function toastWarning(msg) {
   $().toastmessage('showWarningToast', msg);
 }
 
-function loginPopup() {
+// TODO: Factor out common code between login and signup popups.
+V.loginPopup = function () {
   var headBar = $('#head-bar');
   var popup = $(
     '<form id="login-popup" action="/member/login" method="post">'
     + '<table>'
-      + '<tr><td><label>Username:</label></td><td><input name="username" required autofocus></td></tr>'
-      + '<tr><td><label>Password:</label></td><td><input type="password" name="password" required></td></tr>'
+      + '<tr><td><label for="login-username">Username:</label></td><td><input id="login-username" name="username" required autofocus></td></tr>'
+      + '<tr><td><label for="login-password">Password:</label></td><td><input id="login-password" type="password" name="password" required></td></tr>'
     + '</table>'
     + '<input type="submit" value="Login" class="dark">'
     + '<button class="cancel">cancel</button>'
@@ -104,13 +105,55 @@ function loginPopup() {
        });
   popup.minform();
   popup.submit(function (e) {
+    popup.mask('Logging in...');
     e.preventDefault();
     $.post($(this).attr('action'), $(this).serialize())
       .done(function () {location.reload();})
       .fail(function (xhr) {
+              popup.unmask();
               toastError(xhr.responseText);
               popup.find('input[name=password]').val('').focus();
             });
+    return false;
+  });
+};
+
+V.signupPopup = function() {
+  var headBar = $('#head-bar');
+  var popup = $(
+    '<form id="signup-popup" action="/member/signup" method="post">'
+    + '<h2>Sign Up for Free</h2>'
+    + '<table>'
+      + '<tr><td><label for="signup-username">Username:</label></td><td><input id="signup-username" name="username" required autofocus minlength="3" maxlength="32"></td><td></td></tr>'
+      + '<tr><td><label for="signup-email">Email:</label></td><td><input id="signup-email" type="email" name="email" required></td><td></td></tr>'
+      + '<tr><td><label for="signup-password">Password:</label></td><td><input id="signup-password" type="password" name="password" required></td><td></td></tr>'
+      + '<tr><td colspan="2"><label for="signup-terms">I agree to the <a href="/terms-of-use" target="_blank">Terms of Use</a>.</label><input id="signup-terms" name="terms" type="checkbox" required></td></tr>'
+      + '<tr><td></td><td><input type="submit" value="Signup" class="dark"></td></tr>'
+    + '</table>'
+  + '</form>').appendTo(headBar);
+  popup.css('top', headBar.offset().top + headBar.outerHeight())
+       .css('left', headBar.offset().left + headBar.outerWidth() - $('#signup-popup').outerWidth() - 3)
+       .find('.cancel').click(function () {
+         $(this).parent().remove();
+       });
+  popup.minform();
+  $('#signup-username').change(function () {
+    var username = $(this).val();
+    $.get('http://www.vocabulink.com/member/' + username + '/available')
+     .done(function (available) {
+       if (available) {
+         $('#signup-username').parent().parent().find('td:last-child').empty().append('<img alt="✓" title="This username is available." src="http://s.vocabulink.com/img/icon/accept.png">');
+       } else {
+         $('#signup-username').parent().parent().find('td:last-child').empty().append('<img alt="!" title="This username is unavailable" src="http://s.vocabulink.com/img/icon/exclamation.png">');
+       }
+     });
+  });
+  popup.submit(function (e) {
+    popup.mask('Signing up...');
+    e.preventDefault();
+    $.post($(this).attr('action'), $(this).serialize())
+     .done(function () {location.reload();})
+     .fail(function (xhr) {popup.unmask(); toastError(xhr.responseText);});
     return false;
   });
 }
@@ -125,14 +168,24 @@ $(function () {
     if ($('#login-popup').length) {
       $('#login-popup').remove();
     } else {
-      loginPopup();
+      $('#signup-popup').remove();
+      V.loginPopup();
+    }
+  });
+
+  $('#signup-button').click(function () {
+    if ($('#signup-popup').length) {
+      $('#signup-popup').remove();
+    } else {
+      $('#login-popup').remove();
+      V.signupPopup();
     }
   });
 
   // Hook up any buttons that require login to popup the login box.
   $('.login-required').click(function () {
     if (!$('#login-popup').length) {
-      loginPopup();
+      V.loginPopup();
     }
   });
 

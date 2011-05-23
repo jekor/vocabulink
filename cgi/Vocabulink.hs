@@ -300,8 +300,7 @@ dispatch meth ("review":rpath) = do
 
 -- Becoming a member is simply a matter of filling out a form.
 
-dispatch "GET"  ["member","signup"] = registerMember
-dispatch "POST" ["member","signup"] = registerMember
+dispatch "POST" ["member","signup"] = signup
 
 -- But to use most of the site, we require email confirmation.
 
@@ -310,7 +309,6 @@ dispatch "GET" ["member","confirmation",x] = confirmEmail x
 
 -- Logging in is a similar process.
 
-dispatch "GET"  ["member","login"] = login
 dispatch "POST" ["member","login"] = login
 
 -- Logging out can be done without a form.
@@ -324,7 +322,8 @@ dispatch "POST" ["member","support"] = memberSupport
 
 -- Member Pages
 
-dispatch "GET" ("member":[username]) = memberPage username
+dispatch "GET" ["member", username] = memberPage username
+dispatch "GET" ["member", username, "available"] = outputJSON =<< usernameAvailable username
 
 -- ``reply'' is used here as a noun.
 

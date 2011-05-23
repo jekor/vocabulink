@@ -21,7 +21,7 @@
 -- exist in any libraries I know of. We also use this module to export some
 -- oft-used functions for other modules.
 
-module Vocabulink.Utils ( (?), if', (<$$>)
+module Vocabulink.Utils ( (?), (<$$>)
                         , safeHead, safeTail, every2nd, every3rd
                         , partitionHalves, partitionThirds
                         , translate, ltrim, convertLineEndings
@@ -40,6 +40,8 @@ module Vocabulink.Utils ( (?), if', (<$$>)
                         , liftM, Control.Monad.join, msum, when, replicateM
                         {- Control.Monad.Trans -}
                         , liftIO, MonadIO
+                        {- Data.Bool.HT -}
+                        , if'
                         {- Data.Char -}
                         , toLower
                         {- Data.ByteString.Lazy -}
@@ -82,6 +84,7 @@ import Data.Maybe (fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
 import Data.Monoid
 import Database.TemplatePG
 import Debug.Trace (trace)
+import Data.Bool.HT (if')
 -- Time is notoriously difficult to deal with in Haskell. It gets especially
 -- tricky when working with the database and libraries that expect different
 -- formats.
@@ -110,10 +113,6 @@ import Prelude hiding (readFile, writeFile)
 infixl 1 ?
 (?) :: Bool -> a -> a -> a
 (?) = if'
-
-if' :: Bool -> a -> a -> a
-if' True  x _ = x
-if' False _ y = y
 
 -- Often it's handy to be able to lift an operation into 2 monads with little
 -- verbosity. Parsec may have claimed this operator name before me, but |<$$>|

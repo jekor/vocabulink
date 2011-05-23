@@ -22,7 +22,7 @@
 -- their own threads, it's not the end of the world if we generate an error or
 -- don't catch an exception.
 
-module Vocabulink.CGI ( output, outputText, outputHtml, outputJSON
+module Vocabulink.CGI ( outputText, outputHtml, outputJSON
                       , outputNotFound, outputUnauthorized
                       , getInput, getRequiredInput, getInputDefault, getRequiredInputFPS
                       , readInput, readRequiredInput, readInputDefault
@@ -47,6 +47,8 @@ import Control.Exception (Exception, SomeException, try)
 import Control.Monad.Reader (ReaderT(..))
 import Control.Monad.Writer (WriterT(..))
 import Database.TemplatePG (pgDisconnect)
+import Data.Aeson.Encode as J (encode)
+import Data.Aeson.Types (ToJSON)
 import Data.ByteString.Lazy (ByteString)
 import Data.ByteString.Lazy.UTF8 (fromString, toString)
 import Data.Char (isAlphaNum)
@@ -58,18 +60,13 @@ import Network.CGI.Monad (CGIT(..))
 import Network.CGI.Protocol (CGIResult(..))
 import Text.Blaze.Html5 (Html)
 import Text.Blaze.Renderer.Utf8 (renderHtml)
-import Text.JSON (JSON, encode, toJSObject)
-
--- The default |output| method provided by |Network.CGI| does not automatically
--- encode the input.
-
-output :: MonadCGI m => String -> m CGIResult
-output = return . CGIOutput . fromString
 
 -- Also, we do not always output HTML. Sometimes we output JSON or HTML fragments.
 
 outputText :: (MonadCGI m, MonadIO m) => String -> m CGIResult
-outputText s = setHeader "Content-Type" "text/plain; charset=utf-8" >> output s
+outputText s = do
+  setHeader "Content-Type" "text/plain; charset=utf-8"
+  return $ CGIOutput $ fromString s
 
 outputHtml :: MonadCGI m => Html -> m CGIResult
 outputHtml html = do
@@ -78,14 +75,17 @@ outputHtml html = do
 
 -- To output JSON, we just need an associative list.
 
-outputJSON :: (MonadCGI m, MonadIO m, JSON a) => [(String, a)] -> m CGIResult
-outputJSON = outputText . encode . toJSObject
+outputJSON :: (MonadCGI m, MonadIO m, ToJSON a) => a -> m CGIResult
+outputJSON obj = do
+  setHeader "Content-Type" "application/json"
+  return $ CGIOutput $ J.encode obj
 
 outputNotFound :: (MonadCGI m, MonadIO m) => m CGIResult
 outputNotFound = CGI.outputNotFound ""
 
 -- Errors
 
+-- TODO: Add nice HTML error pages
 outputError' :: (MonadCGI m, MonadIO m) =>
                 Int      -- ^ HTTP Status code
              -> String   -- ^ Message
@@ -93,17 +93,7 @@ outputError' :: (MonadCGI m, MonadIO m) =>
 outputError' c m = do
   logCGI $ show (c,m)
   setStatus c m
-  let textType = CGI.ContentType "text" "plain" [("charset","utf-8")]
-      -- htmlType = CGI.ContentType "text" "html"  [("charset","utf-8")]
-  -- cts <- liftM (negotiate [htmlType,textType]) requestAccept
-  -- case cts of
-  --   ct:_ | ct == textType ->
-  setHeader "Content-type" (showContentType textType)
-  output m
-    -- TODO: Add nice HTML error pages
-    -- _ -> do setHeader "Content-type" (showContentType htmlType)
-    --         page <- errorPage c m []
-    --         output $ renderHtml page
+  outputText m
 
 outputInternalServerError' :: (MonadCGI m, MonadIO m) => String -> m CGIResult
 outputInternalServerError' = outputError' 500

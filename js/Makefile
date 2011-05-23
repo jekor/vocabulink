@@ -7,7 +7,7 @@ all : $(libs)
 clean :
 	rm $(libs)
 
-lib.common.js : jquery-1.6.1.js jquery.cookie.js minform.js common.js jquery.toastmessage.js
+lib.common.js : jquery-1.6.1.js jquery.cookie.js minform.js jquery.loadmask.js jquery.toastmessage.js common.js
 	cat $^ | yuicompress --type js > $@
 
 # link viewing and reviewing, not editing
@@ -15,7 +15,7 @@ lib.link.js : link.js review.js
 	cat $^ | yuicompress --type js > $@
 
 # This is for email-verified members.
-lib.member.js : jquery.loadmask.js jquery.markitup.js markdown.set.js showdown.js ajax.js chartviz.js comment.js link-editor.js
+lib.member.js : jquery.markitup.js markdown.set.js showdown.js ajax.js chartviz.js comment.js link-editor.js
 	cat $^ | yuicompress --type js > $@
 
 lib.upload.js : ajaxupload.js upload.js

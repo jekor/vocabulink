@@ -178,11 +178,13 @@ tr.odd:hover, tr.even:hover
     margin:
       left: 1.3em
       top: 13px
+  a
+    color: #29BBBD
   #head-decoration
     height: 2px
     background-color: #2D2D2D
     border-bottom: 3px solid #61C6CF
-  #head-bar, #login-popup
+  #head-bar, #login-popup, #signup-popup
     display: inline-block
     background-color: #2D2D2D
     border:
@@ -198,7 +200,6 @@ tr.odd:hover, tr.even:hover
     margin-top: -3px
     color: white
     a
-      color: white
       &:hover
         text-decoration: underline
     .auth-box, .search-box, .review-box, .new-link
@@ -208,13 +209,11 @@ tr.odd:hover, tr.even:hover
       margin-right: 1em
     .auth-box.logout input
       margin-left: 1em
-  #login-popup
+  #login-popup, #signup-popup
     position: absolute
     color: #BABABA
     label
       float: right
-    td input
-      width: 10em
     input[type=submit]
       float: left
       margin:
@@ -223,6 +222,25 @@ tr.odd:hover, tr.even:hover
     .cancel
       float: right
       color: #BABABA
+  #login-popup
+    td input
+      width: 10em
+  #signup-popup
+    padding: 0.5em 2em 1em 2em
+    h2
+      margin:
+        top: 0.5em
+        bottom: 0.5em
+    #signup-username, #signup-email, #signup-password
+      width: 15em
+    td:last-child
+      width: 16px
+    input[type=checkbox]
+      float: right
+      margin-right: 0.66em
+    input[type=submit]
+      float: right
+      margin: 0
 
 #foot
   clear: both

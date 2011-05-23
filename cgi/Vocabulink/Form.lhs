@@ -159,4 +159,4 @@ TODO: Do a check right before writeFile to ensure a safe path.
 >       let f'    = "/tmp." ++ urlify (basename f)
 >           file  = dir ++ f'
 >       liftIO $ writeFile file content'
->       output $ path ++ f'
+>       outputText $ path ++ f'
