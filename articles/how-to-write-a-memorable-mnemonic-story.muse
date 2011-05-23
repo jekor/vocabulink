@@ -18,23 +18,43 @@
 
 ; * Mnemonics are Stories
 
-For あるく ➝ to walk, it's easy to think of the link word "ark". And you could make up a mnemonic link such as "Noah walked around the ark."
+Let's link the word "あるく" (pronounced "ah-roo-koo") to its meaning: "to walk".
 
-On its own, that would be a pretty weak mnemonic. While it might be somewhat vivid and memorable to you now, you may forget the association at some point. One end of the association is strong: When hearing あるく you probably will think of "ark" which will probably make you think of Noah. But will you remember that the action was "walk"?
+Here's our first attempt, using the linkword "ark":
+
+<literal>
+<div class="linkword-story">
+<blockquote>
+Noah walked around the ark.
+</blockquote>
+</div>
+</literal>
+
+On its own, that would be a pretty weak mnemonic. While it might be somewhat vivid and memorable to you now, you may forget the association at some point. One end of the association is strong: When hearing あるく, you probably will think of "ark", which will probably make you think of Noah. But will you remember that the meaning was "to walk"?
 
 To improve the mnemonic you could have Noah walking around the ark examining it or walking out the length of the ark, but both of those have the possibility of confusing you with the words "inspect" or "measure".
 
-Focus on the essense of what "to walk" means to you or think of a way of linking Noah and/or the ark to the very clear, unmistakable act of walking. Maybe Noah has miniature arks for shoes (like clogs, and they come in pairs) and he puts them on to go out for his power walk each morning around the deck of the ark (the world is flooded, but Noah needs his exercise after all). Picture Noah with his wooden ark shoes, power walking, and listening to his iPod. Maybe even some of the animals on the ark have come out and are walking laps with him.
+Focus on the essence of what "to walk" means to you or think of a way of linking Noah and/or the ark to the very clear, unmistakable act of walking. Then, add vivid detail. Don't be afraid to make the story weird or ridiculous. For example:
 
-It may seem that we've actually introduced even more ways to confuse your memory, but as long as the details of the story enhance the essence of the word, you'll have a much better chance remembering the target word (even if you remember all of the silly details first).
+<literal>
+<div class="linkword-story">
+<blockquote>
+<p>Imagine that Noah, while on his ark, needed to get some exercise. So he decided to go on walks every morning. But of course the earth was flooded, so he would put on his ark shoes (miniature arks, sort of like clogs) and go for a walk on the water.</p>
+
+<p>These weren't just any walks, they were power walks. You could imagine the water splashing around as Noah furiously tried to walk as fast as possible on the ocean, wearing spandex and listening to his iPod.</p>
+</blockquote>
+</div>
+</literal>
+
+It may seem that we've actually introduced even more ways to confuse your memory, but as long as the details of the story enhance the essence of the meaning "to walk", you'll have a much better chance remembering it (even if you remember all of the silly details first).
 
 * What to Do if You're Stuck
 
-It might take a while before you can easily create memorable mnemonics. Don't worry. They will become easier with time.
+It might take a while before you can easily create memorable mnemonics. Don't worry. They will come more easily with time.
 
-It's helpful to start writing as soon as you have a link word, even if you think it's not that great. You can always scrap or change your mnemonic at any time.
+It's helpful to start writing as soon as you have a linkword, even if you think the mnemonic's not that great. You can always scrap or change your story later.
 
-You'll find that as you begin with what you thought was a weak mnemonic, the very act of writing begins to activate other regions of your mind giving you more ideas for embellishment. It seems to be an unfailing trait of the mind that it is very hard to drag ideas from it when staring at a blank page, but that the ideas begin to flow freely once the first word is laid down.
+You'll find that as you begin writing what you thought was a weak mnemonic, the very act of writing activates other regions of your mind, giving you more ideas for embellishment. It seems to be an unfailing trait of the mind that it is very hard to drag ideas from it when staring at a blank page, but that the ideas begin to flow freely once the first word is laid down.
 
 * Mnemonics Can Be Long
 
@@ -42,7 +62,7 @@ You'll find that as you begin with what you thought was a weak mnemonic, the ver
 
 A story does not need to be short to be memorable. In fact, the opposite can be true. The more detail that you put into a story, the more connections it creates in the reader's brain. Brains work on associations, and detailed stories lead to more associations.
 
-The challenge is to add detail without introducing ambiguity. Walking this delicate balance takes practice.
+The challenge is to add detail without introducing ambiguity. Balancing on this delicate line takes practice.
 
 * Deliver a Memorable Punchline
 
@@ -52,22 +72,16 @@ We tend to remember the beginning and end of a story more than the middle. We ca
 
 * Writing Good Mnemonics Takes Practice
 
-Fortunately, spaced repetition gives us a feedback loop for how well our mnemonics work. By writing mnemonics for words you want to learn, and then studying those words, you can learn from your own experience what works well and what doesn't.
+Fortunately, spaced repetition gives us feedback on how well our mnemonics work. By writing mnemonics for words you want to learn, and then studying those words, you can learn from your own experience what works well and what doesn't.
 
 * What to Avoid
+
+** Balance Vividness and Ambiguity
 
 Avoid introducing similar meanings in the story if possible. This may be unavoidable in some cases where in English we don't distinguish between 2 meanings. In that case, don't worry about it. Experience will eventually differentiate the meaning. It's better to have some idea of what a word means initially, so that you can learn the nuance of its meaning through reading and listening.
 
 Try using a less-recognizable form of a word if you need to use a comparison. For example, if you're trying to write a story for みず ➝ water, instead of using the word "rain" use "downpour", "drenching", or another word that emphasizes water more than weather.
 
-Try to avoid making up words when you're searching for a link word. A made up word won't spring to mind as readily as a word you've used for years. It's OK to use multi-word phrases if those are the only words that will fit the foreign word. For example, for けいたい ("kay-tie", cell phone) an obvious candidate is "K-tie" <- a K-shaped tie for holding your cell phone. If you do have to use a compound link word like this, pay extra attention to making the story really bring the link words to life.
-
-Don't just take the first story that comes to mind! Ponder it for a while. See if you can work the definition or link word into the story in more ways or using more of the senses.
-
-* Choosing a Good Link Word is Only Half the Battle
-
-If you remember the link word and the story associated with it but can't remember what the story means, it does you no good. You need to make sure that the story clearly and unambiguously conveys the meaning of the foreign word. You have to be especially careful with abstract words such as particles and some adverbs.
-
 * Other Notes
 
-Make sure that you're conveying the correct meaning of the word. Look through some example sentences in the dictionary to make sure that you're not mistranslating the word or applying native-language meanings that don't apply to the foreign-language word. This is especially important for short, common words like particles.
+Make sure that you're conveying the correct meaning of the word. Look through some example sentences in the dictionary to make sure that you're not mistranslating the word or applying native-language meanings that don't apply to the foreign-language word. This is especially important for short, common words.
