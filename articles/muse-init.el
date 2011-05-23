@@ -1,4 +1,4 @@
-(add-to-list 'load-path "~/.emacs.d/muse-3.12/lisp")
+(add-to-list 'load-path "~/.emacs.d/muse/lisp")
 (require 'muse-mode)
 (require 'muse-html)
 (setq muse-xhtml-style-sheet "")
