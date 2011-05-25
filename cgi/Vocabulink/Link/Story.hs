@@ -22,6 +22,7 @@ module Vocabulink.Link.Story ( addStory, linkWordStories, renderStory
                              ) where
 
 import Vocabulink.App
+import Vocabulink.CGI
 import Vocabulink.Html
 import Vocabulink.Member
 import Vocabulink.Utils
@@ -71,10 +72,27 @@ getStory :: Integer -- ^ story number
          -> App (Maybe String) -- ^ unformatted body
 getStory n = $(queryTuple' "SELECT story FROM linkword_story WHERE story_no = {n}")
 
+-- This needs to be in a permissions system.
+storyEditable :: Integer -> App Bool
+storyEditable n = do
+  member <- asks appMember
+  case member of
+    Nothing -> return False
+    Just m  -> do
+      author <- $(queryTuple' "SELECT author FROM linkword_story \
+                              \WHERE story_no = {n}")
+      case author of
+        Nothing -> return False
+        Just a' -> return $ a' == memberNumber m || memberNumber m == 1 || memberNumber m == 2
+
 editStory :: Integer -- ^ story number
-         -> String -- ^ new unformatted body
-         -> App ()
-editStory n s = withRequiredMember $ \ m -> do
-  $(execute' "UPDATE linkword_story \
-             \SET story = {s}, edited = NOW() \
-             \WHERE story_no = {n} AND author = {memberNumber m}")
+          -> String -- ^ new unformatted body
+          -> App CGIResult
+editStory n s = do
+  editable <- storyEditable n
+  case editable of
+    False -> outputUnauthorized -- Might be 404, but not concerned with that now.
+    True  -> do $(execute' "UPDATE linkword_story \
+                           \SET story = {s}, edited = NOW() \
+                           \WHERE story_no = {n}")
+                outputNothing

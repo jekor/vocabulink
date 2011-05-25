@@ -213,9 +213,11 @@ dispatch meth ["link","story",x] =
     Nothing -> outputNotFound
     Just n  -> case meth of
                  "GET" -> maybe outputNotFound outputText =<< getStory n
-                 "PUT" -> getBody >>= editStory n >> outputNothing
+                 "PUT" -> getBody >>= editStory n
                  -- temporarily allow POST until AJAX forms are better
-                 "POST" -> getRequiredInput "story" >>= editStory n >> referrerOrVocabulink >>= redirect
+                 "POST" -> do
+                   getRequiredInput "story" >>= editStory n
+                   referrerOrVocabulink >>= redirect
                  _     -> outputNotFound
 
 dispatch meth ("link":x:meth') =

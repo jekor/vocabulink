@@ -78,11 +78,11 @@ instance UserContent Link where
       then True
       else case member of
         Nothing -> False
-        Just m  -> (memberNumber m) == linkAuthor link || (memberNumber m) == 1
+        Just m  -> (memberNumber m) == linkAuthor link || (memberNumber m) == 1 || (memberNumber m) == 2
   canEdit link    = do
     member <- asks appMember
     return $ case member of
-      Just m  -> (memberNumber m) == linkAuthor link || (memberNumber m) == 1
+      Just m  -> (memberNumber m) == linkAuthor link || (memberNumber m) == 1 || (memberNumber m) == 2
       Nothing -> False
   canDelete link  = do
     edit <- canEdit link

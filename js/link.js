@@ -105,7 +105,8 @@ $(function () {
   if (V.loggedIn() && $('#linkword-stories').length) {
     showNewStory();
     $('.linkword-story').each(function () {
-      if ($(this).find('.username').text() === V.memberName()) {
+      // Quick hack to allow "admin" edits.
+      if ($(this).find('.username').text() === V.memberName() || V.memberName() === 'jekor' || V.memberName() === 'charisma') {
         var sig = $(this).find('.signature');
         var editButton = $('<button class="light">Edit</button>');
         editButton.click(function () {
