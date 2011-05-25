@@ -23,8 +23,7 @@
 >                         name, enctype, readonly, disabled,
 >                         formLabel, formLabel',
 >                         tabularInput, tabularSubmit,
->                         nonEmptyAndLessThan,
->                         fileUpload, uploadFile) where
+>                         nonEmptyAndLessThan) where
 
 > import Vocabulink.App
 > import Vocabulink.CGI
@@ -127,36 +126,3 @@ We want any submit button centered on a row of its own.
 
 > tabularSubmit :: String -> Html
 > tabularSubmit l = tr $ td ! colspan "2" $ input ! type_ "submit" ! class_ "light" ! value (stringValue l)
-
-\subsection{File Uploads}
-
-Standard file inputs for forms don't quite fit our needs because they require
-the client to upload the file each time they submit the form. When there are
-errors or during an iterative preview process this could be an annoyance.
-
-Instead, we'll use some JavaScript to submit the file once in the background
-and store its filename in a standard input. This way, once the file has been
-uploaded the input will reflect the name of the file on the server side.
-
-> fileUpload :: String -> AppForm String
-> fileUpload l = plug (\html -> do
->   html ! class_ "upload-file" ! style "width: 50%" ! readonly "readonly"
->   button ! id "upload-file-button" ! disabled "disabled" ! style "text-align: center" $ string l)
->   (HF.input Nothing)
-
-For now, you're responsible for providing a safe FilePath to upload to.
-
-TODO: Do a check right before writeFile to ensure a safe path.
-
-> uploadFile :: FilePath -> App CGIResult
-> uploadFile path = do
->   dir <- (</> "upload" </> path) <$> asks appDir
->   filename <- getInputFilename "userfile"
->   case filename of
->     Nothing  -> error "Missing filename."
->     Just f   -> do
->       content' <- fromJust <$> getInputFPS "userfile"
->       let f'    = "/tmp." ++ urlify (basename f)
->           file  = dir ++ f'
->       liftIO $ writeFile file content'
->       outputText $ path ++ f'
