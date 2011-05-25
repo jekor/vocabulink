@@ -18,9 +18,6 @@ lib.link.js : link.js review.js
 lib.member.js : jquery.markitup.js markdown.set.js showdown.js ajax.js chartviz.js comment.js link-editor.js
 	cat $^ | yuicompress --type js > $@
 
-lib.upload.js : ajaxupload.js upload.js
-	cat $^ | yuicompress --type js > $@
-
 lib.raphael.js : raphael.js
 	cat $^ | yuicompress --type js > $@
 
