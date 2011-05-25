@@ -1,6 +1,6 @@
 # Vocabulink JavaScript modules
 
-libs := lib.common.js lib.link.js lib.member.js lib.upload.js lib.raphael.js
+libs := lib.common.js lib.link.js lib.member.js lib.raphael.js
 
 all : $(libs)
 
