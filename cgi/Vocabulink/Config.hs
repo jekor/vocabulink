@@ -91,8 +91,8 @@ getConfig = runErrorT $ do
 staticDeps :: ConfigParser -> IO [(Dependency, EpochTime)]
 staticDeps cp = do
   let dir = forceEither $ get cp "DEFAULT" "maindir"
-  jsDeps  <- map (first (JS  . takeBaseName)) `liftM` modificationTimes (dir </> "js")  ".js"
-  cssDeps <- map (first (CSS . takeBaseName)) `liftM` modificationTimes (dir </> "css") ".css"
+  jsDeps  <- map (first (JS  . takeBaseName)) `liftM` modificationTimes (dir </> "s" </> "js")  ".js"
+  cssDeps <- map (first (CSS . takeBaseName)) `liftM` modificationTimes (dir </> "s" </> "css") ".css"
   return $ jsDeps ++ cssDeps
 
 modificationTimes :: FilePath -> String -> IO [(FilePath, EpochTime)]

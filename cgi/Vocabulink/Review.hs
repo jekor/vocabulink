@@ -141,7 +141,7 @@ reviewLinkPage linkNo = do
       sLang <- linkOriginLanguage l'
       dLang <- linkDestinationLanguage l'
       fullLink <- renderLink l' False False
-      stdPage ("Review: " ++ source ++ " → ?") [CSS "link", JS "lib.link"] mempty $ do
+      stdPage ("Review: " ++ source ++ " → ?") [CSS "link", JS "link"] mempty $ do
         h1 ! id "review-link" ! class_ "link review" $ do
           span ! class_ "foreign" ! title (stringValue sLang) $ string source
           span ! class_ "link" $ mempty
@@ -220,7 +220,7 @@ noLinksToReviewPage :: Integer -> App CGIResult
 noLinksToReviewPage memberNo = do
   t <- nextReviewTime memberNo
   now <- liftIO getCurrentTime
-  simplePage "No Links to Review" [CSS "link", JS "lib.link"] $ do
+  simplePage "No Links to Review" [CSS "link", JS "link"] $ do
     div ! id "central-column" $ do
       p ! style "text-align: center" $ "Take a break! You don't have any links to review right now."
       case t of

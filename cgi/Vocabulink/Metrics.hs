@@ -38,7 +38,7 @@ metricsPage = do
   stories  <- storyCounts start end
   comments <- commentCounts start end
   reviews  <- reviewCounts start end
-  simplePage "Metrics" [JS "lib.raphael", JS "metrics", CSS "metrics"] $ do
+  simplePage "Metrics" [JS "raphael", JS "metrics", CSS "metrics"] $ do
     h2 "Sign Ups"
     dateSeriesChart signups
       ! customAttribute "start" (stringValue $ showGregorian start)

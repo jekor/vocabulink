@@ -50,8 +50,8 @@ stdPage title' deps head' body' = outputHtml =<< (do
   headerB <- headerBar
   footerB <- footerBar
   member <- asks appMember
-  let deps' = [CSS "lib.common", JS "lib.common"]
-           ++ (isJust member ? [CSS "lib.member", JS "lib.member"] $ [])
+  let deps' = [CSS "lib.common", JS "common"]
+           ++ (isJust member ? [CSS "lib.member", JS "member"] $ [])
            ++ deps
       (cssDeps, jsDeps) = partition (\x -> case x of
                                              (CSS _) -> True

@@ -44,7 +44,7 @@ newLinkPage = do
   foreignLangs  <- languageMenu $ Left ()
   familiarLangs <- languageMenu $ Right ()
   foreignWord <- getInputDefault "" "foreign"
-  simplePage "Create a New Link" [CSS "link", JS "lib.link"] $ do
+  simplePage "Create a New Link" [CSS "link", JS "link"] $ do
     form ! method "post" ! action "/link/new" $ do
       h1 ! class_ "link edit linkword" $ do
         span ! class_ "foreign" $ do
@@ -99,7 +99,7 @@ linkPage linkNo = do
                          ss <- linkWordStories (linkNumber l')
                          return $ mconcat $ map (\ (n, x, y, z) -> renderStory n x y z) ss
                        else return mempty
-          stdPage (orig ++ " → " ++ dest) [CSS "link", JS "lib.link"] mempty $ do
+          stdPage (orig ++ " → " ++ dest) [CSS "link", JS "link"] mempty $ do
             div ! id "link-head-bar" $ do
               h2 $ a ! href (stringValue $ "/links?ol=" ++ linkOriginLang l' ++ "&dl=" ++ linkDestinationLang l') $
                 string (oLanguage ++ " to " ++ dLanguage ++ ":")
