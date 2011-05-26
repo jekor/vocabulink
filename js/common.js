@@ -70,20 +70,28 @@ V.memberGravatar = function () {
   }
 };
 
-function toastNotice(msg) {
-  $().toastmessage('showNoticeToast', msg);
+function toastMessage(type, msg, sticky) {
+  return $().toastmessage('showToast', {'text': msg
+                                       ,'type': type
+                                       ,'sticky': sticky
+                                       ,'position': 'top-center'
+                                       });
 }
 
-function toastSuccess(msg) {
-  $().toastmessage('showSuccessToast', msg);
+function toastNotice(msg, sticky) {
+  return toastMessage('notice', msg, sticky);
 }
 
-function toastError(msg) {
-  $().toastmessage('showErrorToast', msg);
+function toastSuccess(msg, sticky) {
+  return toastMessage('success', msg, sticky);
 }
 
-function toastWarning(msg) {
-  $().toastmessage('showWarningToast', msg);
+function toastError(msg, sticky) {
+  return toastMessage('error', msg, sticky);
+}
+
+function toastWarning(msg, sticky) {
+  return toastMessage('warning', msg, sticky);
 }
 
 // TODO: Factor out common code between login and signup popups.
@@ -153,10 +161,38 @@ V.signupPopup = function() {
     e.preventDefault();
     $.post($(this).attr('action'), $(this).serialize())
      .done(function () {location.reload();})
-     .fail(function (xhr) {popup.unmask(); toastError(xhr.responseText);});
+     .fail(function (xhr) {popup.unmask(); toastError(xhr.responseText, true);});
     return false;
   });
 }
+
+V.contactPopup = function () {
+  var content = $('<div><h1>Contact Us</h1>'
+          + '<form id="contact-form" action="/contact" method="post">'
+            + '<input type="hidden" name="url" value="' + window.location + '">'
+            + '<table>'
+              + '<tr><th><label>Email:</label></th><td><input type="email" name="email" required autofocus style="width: 295px"></td></tr>'
+              + '<tr><th><label>Message:</label></th><td><textarea name="message" required style="width: 300px"></textarea></td></tr>'
+              + '<tr><td colspan="2" style="text-align: right"><input class="light" type="submit" value="Send" style="margin-bottom: 1em"></td></tr>'
+            + '</table>'
+          + '</form>'
+        + '</div>');
+  if (V.loggedIn()) {
+    content.find('tr:first-child').remove();
+  }
+  $.modal(content);
+  var form = $('#contact-form');
+  var modal = $('#simplemodal-container');
+  form.minform()
+      .submit(function (e) {
+        modal.mask('Sending...');
+        e.preventDefault();
+        $.post($(this).attr('action'), $(this).serialize())
+          .done(function () {$.modal.close(); toastSuccess('Message sent.');})
+          .fail(function (xhr) {modal.unmask(); toastError(xhr.responseText, true);});
+        return false;
+      });
+};
 
 // initialization for every page
 $(function () {
@@ -189,8 +225,7 @@ $(function () {
     }
   });
 
-  // Display all notices in the top center.
-  $().toastmessage({'position': 'top-center'});
+  $('.contact-us').live('click', V.contactPopup);
 });
 
 })(jQuery);

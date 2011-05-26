@@ -7,7 +7,8 @@ all : $(compiled)
 clean :
 	rm $(compiled)
 
-compiled/common.js : jquery-1.6.1.js jquery.cookie.js minform.js jquery.loadmask.js jquery.toastmessage.js common.js
+# This is getting large. I'd like to break it up and do deferred loading at some point.
+compiled/common.js : jquery-1.6.1.js jquery.cookie.js minform.js jquery.loadmask.js jquery.toastmessage.js common.js jquery.simplemodal-1.4.1.js
 	cat $^ | yuicompress --type js > $@
 
 # link viewing and reviewing, not editing

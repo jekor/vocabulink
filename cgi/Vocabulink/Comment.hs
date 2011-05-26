@@ -15,7 +15,7 @@
 -- You should have received a copy of the GNU Affero General Public License
 -- along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-module Vocabulink.Comment ( renderComments, storeComment, replyToComment
+module Vocabulink.Comment ( renderComments, storeComment, replyToComment, contactUs
                           ) where
 
 import Vocabulink.App
@@ -150,3 +150,22 @@ invitationLink text = do
                    return $ a ! class_ "invitation" ! href (stringValue url) $
                               string ("Verify Email to " ++ text)
                  Just _  -> return mempty
+
+contactUs :: App CGIResult
+contactUs = do
+  message <- getRequiredInput "message"
+  url <- getRequiredInput "url"
+  member <- asks appMember
+  email <- case member >>= memberEmail of
+             Nothing -> getRequiredInput "email"
+             Just e  -> return e
+  supportAddress <- fromJust <$> getOption "supportaddress"
+  -- TODO: Add a reply-to header.
+  res' <- liftIO $ sendMail supportAddress "Contact!" $
+            unlines [ "Email: " ++ email
+                    , "URL: " ++ url
+                    , "Message: " ++ message ]
+  case res' of
+    Nothing  -> error ("Error sending message. \
+                       \Please contact " ++ supportAddress ++ " for support.")
+    Just _   -> outputNothing

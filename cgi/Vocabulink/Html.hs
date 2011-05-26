@@ -31,11 +31,12 @@ module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList
                        , div, p, h1, h2, h3, hr, blockquote, script
                        , span, a, img, br, strong
                        , table, thead, tbody, tfoot, tr, td, th
-                       , form, input, button
+                       , form, input, button, textarea, label, fieldset, legend
                        {- Text.Blaze.Html5.Attributes -}
                        , id, class_, href, type_, src, style, title
                        , width, height, alt, accesskey, colspan
-                       , method, action, name, value, required, placeholder, autofocus, tabindex
+                       , method, action, name, value, required, placeholder, autofocus
+                       , tabindex, enctype, readonly, disabled
                        {- Text.Hamlet -}
                        , hamletFile, hamletFileDebug
                        ) where
@@ -48,11 +49,12 @@ import Text.Blaze.Html5 ( Html, (!), string, stringValue, preEscapedString, cust
                         , table, thead, tbody, tfoot, tr, td, th
                         , form, input, select, option, button
                         , ul, li, dl, dt, dd
+                        , textarea, label, fieldset, legend
                         )
 import Text.Blaze.Html5.Attributes ( id, class_, href, type_, src, style, title
                                    , width, height , alt, accesskey, colspan
                                    , method, action, name, value, required, placeholder, autofocus
-                                   , tabindex
+                                   , tabindex, enctype, readonly, disabled
                                    )
 import Text.Hamlet (hamletFile, hamletFileDebug)
 import Text.Pandoc ( readMarkdown, writeHtmlString, defaultParserState

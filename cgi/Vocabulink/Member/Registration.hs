@@ -29,7 +29,6 @@ import Vocabulink.Html
 import Vocabulink.Member
 import Vocabulink.Member.Auth
 import Vocabulink.Page
-import Vocabulink.Support
 import Vocabulink.Utils
 
 import Prelude hiding (div, id, span)
@@ -179,14 +178,14 @@ confirmEmailPage :: App CGIResult
 confirmEmailPage = do
   ref <- referrerOrVocabulink
   redirect' <- getInputDefault ref "redirect"
-  support <- getSupportForm $ Just redirect'
   simplePage "Email Confirmation Required" mempty $ do
     div ! id "central-column" $ do
       p "In order to interact with Vocabulink, \
         \you need to confirm your email address."
-      p "If you haven't received a confirmation email \
-        \or are having trouble, let us know."
-      support
+      p $ do
+        string "If you haven't received a confirmation email or are having trouble, "
+        a ! href "#" ! class_ "contact-us" $ "click here for support"
+        string "."
       p $ do
         a ! href (stringValue redirect') $ "Click here to go back"
         string " to where you came from."

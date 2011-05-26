@@ -57,7 +57,6 @@ import Vocabulink.Metrics
 import Vocabulink.Page
 import Vocabulink.Review
 import Vocabulink.Search
-import Vocabulink.Support
 import Vocabulink.Utils
 
 import Prelude hiding (div, span, id)
@@ -161,6 +160,8 @@ dispatch "GET" ["help"]         = articlePage "help"
 dispatch "GET" ["privacy"]      = articlePage "privacy"
 dispatch "GET" ["terms-of-use"] = articlePage "terms-of-use"
 dispatch "GET" ["source"]       = articlePage "source"
+
+dispatch "POST" ["contact"]     = contactUs
 
 -- Other articles are dynamic and can be created without recompilation. We just
 -- have to rescan the filesystem for them. They also live in the @/article@
@@ -316,11 +317,6 @@ dispatch "POST" ["member","login"] = login
 -- Logging out can be done without a form.
 
 dispatch "POST" ["member","logout"] = logout
-
--- Members can also request support.
-
-dispatch "GET"  ["member","support"] = memberSupport
-dispatch "POST" ["member","support"] = memberSupport
 
 -- Member Pages
 

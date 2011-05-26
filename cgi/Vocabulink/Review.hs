@@ -27,7 +27,6 @@ import qualified Vocabulink.Review.SM2 as SM2
 
 import Vocabulink.App
 import Vocabulink.CGI
-import Vocabulink.Form
 import Vocabulink.Html
 import Vocabulink.Page
 import Vocabulink.Link
