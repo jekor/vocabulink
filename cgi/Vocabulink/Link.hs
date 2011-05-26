@@ -356,9 +356,7 @@ createLink = withRequiredMember $ \m -> do
   redirect $ "/link/" ++ show n
 
 -- When creating a link from a form, the link number must be undefined until
--- the link is established in the database. Also, because of the way formlets
--- work (or how I'm using them), we need to retrieve the link type name from
--- the link type.
+-- the link is established in the database.
 
 mkLink :: String -> String -> String -> String -> LinkType -> Link
 mkLink o ol d dl t = Link { linkNumber          = undefined

@@ -67,6 +67,7 @@ type App = AppT IO
 
 -- We need to make the App monad an Applicative Functor so that it will work
 -- with formlets.
+-- TODO: Do we need this anymore?
 
 instance Applicative App where
   pure = return

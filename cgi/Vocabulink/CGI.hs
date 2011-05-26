@@ -26,7 +26,7 @@ module Vocabulink.CGI ( outputText, outputHtml, outputJSON
                       , outputNotFound, outputUnauthorized
                       , getInput, getRequiredInput, getInputDefault, getRequiredInputFPS
                       , readInput, readRequiredInput, readInputDefault
-                      , getInputs, getBody, getTextOrFileInput
+                      , getInputs, getBody
                       , urlify, reversibleRedirect, referrerOrVocabulink
                       , handleErrors, escapeURIString'
                       {- Network.CGI -}
@@ -53,7 +53,6 @@ import Data.ByteString.Lazy (ByteString)
 import Data.ByteString.Lazy.UTF8 (fromString, toString)
 import Data.Char (isAlphaNum)
 import Network.URI (uriPath, uriQuery, escapeURIString, isUnescapedInURI)
-import Text.Formlets as F
 import Network.CGI hiding (getInput, readInput, getInputs, getBody, Html, output, outputNotFound, handleErrors)
 import qualified Network.CGI as CGI
 import Network.CGI.Monad (CGIT(..))
@@ -157,30 +156,6 @@ getInputs = map decode' `liftM` CGI.getInputsFPS
 
 getBody :: MonadCGI m => m String
 getBody = toString `liftM` CGI.getBodyFPS
-
--- File inputs are a bit of a hassle to deal with.
-
-getTextOrFileInput :: MonadCGI m => String -> m (Maybe (Either String File))
-getTextOrFileInput name = do
-  contentType' <- getInputContentType name
-  case contentType' of
-    Nothing -> return Nothing
-    Just ct -> case ct of
-      "text/plain" -> do
-        val <- fromJust `liftM` getInput name
-        return $ Just $ Left val
-      ct'          -> do
-        ct'' <- parseContentType ct'
-        content'  <- getInputFPS name
-        fileName' <- getInputFilename name
-        return $ Just $ Right
-          File { content     = fromJust content'
-               , fileName    = fromJust fileName'
-               , contentType = F.ContentType { F.ctType       = CGI.ctType ct''
-                                             , F.ctSubtype    = CGI.ctSubtype ct''
-                                             , F.ctParameters = CGI.ctParameters ct'' 
-                                             }
-               }
 
 -- Working with URLs
 
