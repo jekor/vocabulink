@@ -308,7 +308,7 @@ wordCloud :: Int -> Int -> Int -> Int -> Int -> Int -> App Html
 wordCloud n width' height' fontMin fontMax numClasses = do
   words <- $(queryTuples'
     "SELECT origin, link_no FROM link \
-    \WHERE NOT deleted \
+    \WHERE NOT deleted AND link_type = 'linkword' \
     \ORDER BY random() LIMIT {n}")
   gen <- liftIO getStdGen
   let (styles, (newGen, _)) = runState (mapM (wordStyle . fst) words) (gen, [])
