@@ -64,12 +64,12 @@ stdPage title' deps head' body' = outputHtml =<< (do
       link ! rel "icon" ! type_ "image/png" ! href "http://s.vocabulink.com/img/favicon.png"
       head'
     body $ do
-      script ! src "http://www.google-analytics.com/ga.js" $ mempty
-      mconcat jsDeps'
       div ! id "head" $ headerB
       when (jsDeps /= []) (noscript $ p "This page requires JavaScript for some functionality.")
       div ! id "body" $ body'
-      div ! id "foot" $ footerB)
+      div ! id "foot" $ footerB
+      script ! src "http://www.google-analytics.com/ga.js" $ mempty
+      mconcat jsDeps')
 
 -- Often we just need a simple page where the title and header are the same.
 
