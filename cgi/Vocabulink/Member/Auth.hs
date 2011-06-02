@@ -28,8 +28,8 @@ module Vocabulink.Member.Auth ( Member(..), AuthToken(..)
 import Vocabulink.CGI
 import Vocabulink.Utils hiding ((<$$>))
 
-import Data.ByteString.Char8 (pack)
-import Data.Digest.OpenSSL.HMAC (hmac, sha1)
+import Data.ByteString.Lazy.Char8 (pack)
+import Data.Digest.Pure.SHA (hmacSha1, showDigest)
 import Data.Time.Format (parseTime)
 import System.Locale (iso8601DateFormat)
 import System.Time (TimeDiff(..), getClockTime, addToClockTime, toCalendarTime)
@@ -112,13 +112,13 @@ authToken :: Integer -- ^ member number
 authToken memberNo username email ip key = do
   now <- currentDay
   let expires = addDays cookieShelfLife now
-  digest <- tokenDigest AuthToken { authExpiry    = expires
-                                  , authMemberNo  = memberNo
-                                  , authUsername  = username
-                                  , authGravatar  = gravatarHash =<< email
-                                  , authIPAddress = ip
-                                  , authDigest    = ""
-                                  } key
+      digest  = tokenDigest AuthToken { authExpiry    = expires
+                                      , authMemberNo  = memberNo
+                                      , authUsername  = username
+                                      , authGravatar  = gravatarHash =<< email
+                                      , authIPAddress = ip
+                                      , authDigest    = ""
+                                      } key
   return AuthToken { authExpiry    = expires
                    , authMemberNo  = memberNo
                    , authUsername  = username
@@ -133,8 +133,8 @@ authToken memberNo username email ip key = do
 -- this, authentication is less secure.
 tokenDigest :: AuthToken
             -> String -- ^ auth token key (from the config file)
-            -> IO String
-tokenDigest a key = hmac sha1 (pack key) (pack token)
+            -> String
+tokenDigest a key = showDigest $ hmacSha1 (pack key) (pack token)
   where token = showGregorian (authExpiry a)
              ++ show (authMemberNo a)
              ++ encodeString (authUsername a)
@@ -189,7 +189,7 @@ verifiedAuthToken key = do
     Nothing -> return Nothing
     Just a  -> do
       now <- liftIO currentDay
-      digest <- liftIO $ tokenDigest a key
+      let digest = tokenDigest a key
       if digest == authDigest a && diffDays (authExpiry a) now > 0 && ip == authIPAddress a
         then return $ Just a
         else return Nothing

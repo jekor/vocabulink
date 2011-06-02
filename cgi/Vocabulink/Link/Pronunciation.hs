@@ -21,8 +21,8 @@ import Vocabulink.App
 import Vocabulink.CGI
 import Vocabulink.Utils
 
-import Network.Curl.Download.Lazy (openLazyURI)
-import Network.Curl.Download (openURIString)
+import System.Exit (ExitCode(..))
+import System.Process (system, readProcess)
 
 import Prelude hiding (writeFile)
 
@@ -38,15 +38,13 @@ pronunciationFile linkNo filetype = do
   dir <- (</> "upload" </> "audio" </> "pronunciation") <$> asks appDir
   return $ dir </> show linkNo <.> filetype
 
-addPronunciation :: Integer -> String -> String -> App (Either String ())
+addPronunciation :: Integer -> String -> String -> App (Maybe ())
 addPronunciation linkNo url filetype = do
-  audio <- liftIO $ openLazyURI url
-  case audio of
-    Left s  -> return $ Left s
-    Right a -> saveFile a >> return (Right ())
- where saveFile s = do
-         f <- pronunciationFile linkNo filetype
-         liftIO $ writeFile f s
+  f <- pronunciationFile linkNo filetype
+  s <- liftIO $ system ("wget -q -O " ++ f ++ " " ++ url)
+  case s of
+    ExitSuccess -> return $ Just ()
+    _           -> return Nothing
 
 getPronunciations :: String -> String -> App CGIResult
 getPronunciations lang word = do
@@ -55,7 +53,5 @@ getPronunciations lang word = do
           ++ "/format/json/action/word-pronunciations/word/"
           ++ escapeURIString (\ _ -> False) (encodeString word)
           ++ "/language/" ++ lang ++ "/order/rate-desc")
-  s <- liftIO $ openURIString url
-  case s of
-    Left _   -> error "Unable to retrieve pronunciations"
-    Right s' -> outputText s'
+  output <- liftIO $ readProcess "wget" ["-q", "-O", "-", url] ""
+  outputText output

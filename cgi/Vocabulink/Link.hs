@@ -331,7 +331,7 @@ adjacentLinkNumbers link = do
 
 createLink :: App CGIResult
 createLink = withRequiredMember $ \m -> do
-  foreign      <- getRequiredInput "foreign"
+  foreign'     <- getRequiredInput "foreign"
   foreignLang  <- getRequiredInput "foreign-lang"
   familiar     <- getRequiredInput "familiar"
   familiarLang <- getRequiredInput "familiar-lang"
@@ -345,7 +345,7 @@ createLink = withRequiredMember $ \m -> do
                  _             -> error "Invalid link type"
   ogg <- getInput "ogg"
   mp3 <- getInput "mp3"
-  let link = mkLink foreign foreignLang familiar familiarLang linkType'
+  let link = mkLink foreign' foreignLang familiar familiarLang linkType'
   n <- establishLink link (memberNumber m)
   case (ogg, mp3) of
     (Just ogg', Just mp3') -> do

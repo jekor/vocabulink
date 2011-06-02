@@ -37,8 +37,6 @@ module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList
                        , width, height, alt, accesskey, colspan
                        , method, action, name, value, required, placeholder, autofocus
                        , tabindex, enctype, readonly, disabled
-                       {- Text.Hamlet -}
-                       , hamletFile, hamletFileDebug
                        ) where
 
 import Vocabulink.Utils
@@ -56,7 +54,6 @@ import Text.Blaze.Html5.Attributes ( id, class_, href, type_, src, style, title
                                    , method, action, name, value, required, placeholder, autofocus
                                    , tabindex, enctype, readonly, disabled
                                    )
-import Text.Hamlet (hamletFile, hamletFileDebug)
 import Text.Pandoc ( readMarkdown, writeHtmlString, defaultParserState
                    , defaultWriterOptions, writerHtml5
                    )
