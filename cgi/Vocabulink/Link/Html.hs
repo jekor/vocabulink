@@ -218,9 +218,9 @@ languageMenu side = do
 --     <span class="familiar" title="English">only</span>
 -- </h1>
 
--- <h2 class="link sound-alike">
+-- <h2 class="link soundalike">
 --     <span class="foreign" title="Esperanto">lingvo</span>
---     <span class="link" title="sound-alike"></span>
+--     <span class="link" title="soundalike"></span>
 --     <span class="familiar" title="English">language</span>
 -- </h2>
 
@@ -247,7 +247,7 @@ renderLink link pronounceable' paging = do
     maybe mempty (\n -> a ! href (stringValue $ show n) ! class_ "next"
                           ! title (stringValue $ "Next " ++ oLanguage ++ "→" ++ dLanguage ++ " Link") $ mempty) nextLink
  where renderLinkType :: LinkType -> Html
-       renderLinkType (LinkWord word) = string word
+       renderLinkType (Linkword word) = string word
        renderLinkType _               = mempty
        pronunciation = if pronounceable'
                          then button ! id "pronounce" ! class_ "button light" $ do

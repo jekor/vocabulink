@@ -58,13 +58,18 @@ data Link = Link { linkNumber          :: Integer
 -- displayed, edited, used in statistical analysis, etc. See the Vocabulink
 -- handbook for a more in-depth description of the types.
 
-data LinkType = Association | SoundAlike | LinkWord String
+data LinkType = Association | Soundalike | Linkword String
                 deriving (Show)
 
 isLinkword :: Link -> Bool
 isLinkword l = case linkType l of
-                 (LinkWord _) -> True
+                 (Linkword _) -> True
                  _            -> False
+
+linkWord :: Link -> Maybe String
+linkWord l = case linkType l of
+               (Linkword w) -> Just w
+               _            -> Nothing
 
 -- We'll eventually want to support private/unpublished links.
 
@@ -110,18 +115,18 @@ linkDestinationLanguage l = fromJust <$> languageNameFromAbbreviation (linkDesti
 -- types sorted by usefulness.
 
 activeLinkTypes :: [String]
-activeLinkTypes = ["linkword", "sound-alike", "association"]
+activeLinkTypes = ["linkword", "soundalike", "association"]
 
 -- Sometimes we need to work with a human-readable name, such as when
 -- interacting with a client or the database.
 
 -- I used to call cognates "cognates" on the site, but it's a confusing term
--- for most people. Now, I call it a "sound-alike".
+-- for most people. Now, I call it a "soundalike".
 
 linkTypeNameFromType :: LinkType -> String
 linkTypeNameFromType Association  = "association"
-linkTypeNameFromType SoundAlike   = "sound-alike"
-linkTypeNameFromType (LinkWord _) = "linkword"
+linkTypeNameFromType Soundalike   = "soundalike"
+linkTypeNameFromType (Linkword _) = "linkword"
 
 -- Fully loading a link from the database requires joining 2 relations. The
 -- join depends on the type of the link. But we don't always need the
@@ -154,7 +159,7 @@ newtype PartialLink = PartialLink { pLink :: Link }
 -- Since we need to store the link in 2 different tables, we use a transaction.
 -- Our App-level database functions are not yet great with transactions, so
 -- we'll have to handle the transaction manually here. You'll also notice that
--- some link types (such as sound-alikes) have no additional information and
+-- some link types (such as soundalikes) have no additional information and
 -- hence no relation in the database.
 
 -- This returns the newly established link number.
@@ -183,7 +188,7 @@ establishLink l memberNo = do
 
 establishLinkType :: Handle -> Link -> IO ()
 establishLinkType h l = case linkType l of
-  (LinkWord word) -> do
+  (Linkword word) -> do
     $(execute "INSERT INTO link_linkword \
                      \(link_no, linkword) \
               \VALUES ({linkNumber l}, {word})") h
@@ -199,14 +204,14 @@ linkExists h l = case linkType l of
     "SELECT link_no FROM link \
     \WHERE origin = {linkOrigin l} AND destination = {linkDestination l} \
       \AND origin_language = {linkOriginLang l} AND destination_language = {linkDestinationLang l}") h
-  -- Sound-alikes cannot be created if a sound-alike already exists for the words.
-  SoundAlike      -> isJust <$> $(queryTuple
+  -- Soundalikes cannot be created if a soundalike already exists for the words.
+  Soundalike      -> isJust <$> $(queryTuple
     "SELECT link_no FROM link \
     \WHERE origin = {linkOrigin l} AND destination = {linkDestination l} \
       \AND origin_language = {linkOriginLang l} AND destination_language = {linkDestinationLang l} \
-      \AND link_type = {linkTypeNameFromType SoundAlike}") h
+      \AND link_type = {linkTypeNameFromType Soundalike}") h
   -- Linkwords can duplicate everything, as long as they are different linkwords.
-  (LinkWord word) -> isJust <$> $(queryTuple
+  (Linkword word) -> isJust <$> $(queryTuple
     "SELECT link_no FROM link INNER JOIN link_linkword USING (link_no) \
     \WHERE origin = {linkOrigin l} AND destination = {linkDestination l} \
       \AND origin_language = {linkOriginLang l} AND destination_language = {linkDestinationLang l} \
@@ -253,10 +258,10 @@ getLinkFromPartial (PartialLink partial) = do
 getLinkType :: PartialLink -> App (Maybe LinkType)
 getLinkType (PartialLink pl) = case pl of
   (Link { linkTypeName  = "association" }) -> return $ Just Association
-  (Link { linkTypeName  = "sound-alike"})  -> return $ Just SoundAlike
+  (Link { linkTypeName  = "soundalike"})  -> return $ Just Soundalike
   (Link { linkTypeName  = "linkword"
         , linkNumber    = n })             -> do
-    LinkWord <$$> $(queryTuple'
+    Linkword <$$> $(queryTuple'
       "SELECT linkword FROM link_linkword \
       \WHERE link_no = {n}")
   _                                        -> error "Bad partial link."
@@ -339,8 +344,8 @@ createLink = withRequiredMember $ \m -> do
   linkType' <- case linkType'' of
                  "linkword"    -> do
                    linkword <- getRequiredInput "linkword"
-                   return $ LinkWord linkword
-                 "sound-alike" -> return SoundAlike
+                   return $ Linkword linkword
+                 "soundalike"  -> return Soundalike
                  "association" -> return Association
                  _             -> error "Invalid link type"
   ogg <- getInput "ogg"

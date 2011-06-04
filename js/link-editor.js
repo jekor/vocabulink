@@ -19,7 +19,7 @@
 
 var changeLinkType = function () {
   var newType = $(this).val();
-  $(this).parents('h1').removeClass('linkword').removeClass('sound-alike').removeClass('association')
+  $(this).parents('h1').removeClass('linkword').removeClass('soundalike').removeClass('association')
          .addClass(newType);
   var linkword = $(this).parent().find('input');
   if (newType === 'linkword') {

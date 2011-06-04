@@ -239,7 +239,7 @@ COMMENT ON TABLE link_type IS 'There are different types of links between lexeme
 COMMENT ON COLUMN link_type.relation IS 'For most link types, an individual link carries with it extra information. We use a separate table for each to store the extra information for each link. I considered using PostgreSQL''s inheritance features, but they seem to be problematic and I don''t know how well they perform. More than 1 link type can share the same table.';
 INSERT INTO link_type (name, description, relation)
      VALUES ('association', 'A simple association with no attached meaning', NULL),
-            ('sound-alike', 'A sound-alike or borrowed word', NULL),
+            ('soundalike', 'A soundalike or borrowed word', NULL),
             ('linkword', 'A story derived from a native-language linkword', 'link_type_linkword');
 
 CREATE TABLE link (

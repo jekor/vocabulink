@@ -28,7 +28,7 @@ after searching for minutes for a link word without success. Don't despair.
 Just lower your standards a little bit and search for words and phrases that
 just have some resemblance to the foreign word.
 
-Except for when dealing with sound-alikes, always try to create links as link
+Except for when dealing with soundalikes, always try to create links as link
 words. Spend at least 5 minutes searching for a link before giving up and
 moving to another link type.
 
@@ -36,10 +36,10 @@ Link word associations always go from target (foreign) word (origin) to source
 (native) word (destination) because the link word is triggered by the foreign
 word.
 
-* <literal><span style="color: #86CF6A"></literal>Sound-alike<literal></span></literal>
+* <literal><span style="color: #86CF6A"></literal>Soundalike<literal></span></literal>
 
-A sound-alike is like an association, but it's easier to remember because the
-words sound the same. For example, the German word "milch" is a sound-alike for
+A soundalike is like an association, but it's easier to remember because the
+words sound the same. For example, the German word "milch" is a soundalike for
 "milk".
 
 Be careful that you're actually linking 2 words with the same meaning.
