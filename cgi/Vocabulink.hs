@@ -160,6 +160,7 @@ dispatch "GET" ["help"]         = articlePage "help"
 dispatch "GET" ["privacy"]      = articlePage "privacy"
 dispatch "GET" ["terms-of-use"] = articlePage "terms-of-use"
 dispatch "GET" ["source"]       = articlePage "source"
+dispatch "GET" ["api"]          = articlePage "api"
 
 dispatch "POST" ["contact"]     = contactUs
 
@@ -271,33 +272,33 @@ dispatch "GET" ["languages"] = languagePairsPage
 -- to review their links through different means such as a desktop program or a
 -- phone application.
 
+-- PUT  /review/n     → add a link for review
 -- GET  /review/next  → retrieve the next link for review
 -- POST /review/n     → mark link as reviewed
--- POST /review/n/add → add a link for review
 
 -- (where n is the link number)
-
--- TODO: Change POST /review/n/add to something better (don't like action names
--- in the URI)
 
 -- Reviewing links is one of the only things that logged-in-but-unverified
 -- members are allowed to do.
 
 dispatch meth ("review":rpath) = do
-  memberNo' <- memberNumber <$$> asks appMember
-  case memberNo' of
-    Nothing       -> redirect =<< reversibleRedirect "/member/login"
-    Just memberNo ->
+  member' <- asks appMember
+  case member' of
+    Nothing     -> outputNotFound
+    Just member ->
       case (meth,rpath) of
-        ("GET",  ["next"]) -> nextReview memberNo
-        ("POST", x:xs)   ->
-           case maybeRead x of
-             Nothing -> outputNotFound
-             Just n  -> case xs of
-                          ["add"] -> newReview memberNo n
-                          []      -> linkReviewed memberNo n
-                          _       -> outputNotFound
-        (_       ,_)       -> outputNotFound
+        ("GET",  [])        -> reviewPage
+        ("GET",  ["next"])  -> readInputDefault 1 "n" >>= nextReview member
+        ("GET",  ["stats"]) -> reviewStats member
+        ("PUT",  [x]) ->
+          case maybeRead x of
+            Nothing -> error "Link number must be an integer"
+            Just n  -> newReview member n >> outputNothing
+        ("POST", [x]) ->
+          case maybeRead x of
+            Nothing -> error "Link number must be an integer"
+            Just n  -> linkReviewed member n >> outputNothing
+        (_       ,_)  -> outputNotFound
 
 -- Membership
 

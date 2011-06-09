@@ -154,6 +154,7 @@ footerBar = do
               , a ! href "/privacy" $ "privacy policy"
               , a ! href "/terms-of-use" $ "terms of use"
               , a ! href "/source" $ "source"
+              -- , a ! href "/api" $ "API"
               ] ! class_ "hyperlinks"
     p $ do
       copy
@@ -215,9 +216,8 @@ searchBox = form ! id "cse-search-box" ! class_ "search-box" ! action "/search" 
 
 reviewBox :: Integer -- ^ the number of links due for review (presumably from numLinksToReview)
           -> Html
-reviewBox n = a ! href "/review/next" ! class_ "review-box" $ message n
-  where message 0 = "No links to review"
-        message 1 = strong "1" >> " link to review"
+reviewBox n = a ! href "/review" ! class_ "review-box" $ message n
+  where message 1 = strong "1" >> " link to review"
         message _ = strong (string $ prettyPrint n) >> " links to review"
 
 -- This retrievs the number of links that a user has for review right now.

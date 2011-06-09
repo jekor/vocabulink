@@ -20,7 +20,7 @@
 
 module Vocabulink.Link ( Link(..), PartialLink(..), LinkType(..), isLinkword
                        , linkOriginLanguage, linkDestinationLanguage, languageNameFromAbbreviation
-                       , activeLinkTypes
+                       , activeLinkTypes, linkTypeNameFromType, linkWord
                        , getLink, getPartialLink
                        , linkLanguages, adjacentLinkNumbers
                        , createLink, deleteLink
@@ -65,6 +65,11 @@ isLinkword :: Link -> Bool
 isLinkword l = case linkType l of
                  (LinkWord _) -> True
                  _            -> False
+
+linkWord :: Link -> Maybe String
+linkWord l = case linkType l of
+               (LinkWord w) -> Just w
+               _            -> Nothing
 
 -- We'll eventually want to support private/unpublished links.
 

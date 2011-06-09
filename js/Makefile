@@ -1,6 +1,6 @@
 # Vocabulink JavaScript modules
 
-compiled := compiled/common.js compiled/link.js compiled/member.js compiled/raphael.js compiled/metrics.js
+compiled := compiled/common.js compiled/link.js compiled/member.js compiled/raphael.js compiled/metrics.js compiled/review.js
 
 all : $(compiled)
 
@@ -11,12 +11,15 @@ clean :
 compiled/common.js : jquery-1.6.1.js jquery.cookie.js minform.js jquery.loadmask.js jquery.toastmessage.js common.js jquery.simplemodal-1.4.1.js
 	cat $^ | jsmin > $@
 
-# link viewing and reviewing, not editing
-compiled/link.js : link.js review.js
+# link viewing, not editing
+compiled/link.js : link.js
 	cat $^ | jsmin > $@
 
 # This is for email-verified members.
 compiled/member.js : jquery.markitup.js markdown.set.js showdown.js ajax.js chartviz.js comment.js link-editor.js
+	cat $^ | jsmin > $@
+
+compiled/review.js : review.js jquery.hotkeys.js
 	cat $^ | jsmin > $@
 
 compiled/raphael.js : raphael.js

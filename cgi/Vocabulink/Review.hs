@@ -19,7 +19,7 @@
 -- it. We need a way to present links to members for regular (scheduled)
 -- reviews.
 
-module Vocabulink.Review (newReview, linkReviewed, nextReview) where
+module Vocabulink.Review (newReview, linkReviewed, nextReview, reviewStats, reviewPage) where
 
 -- For now, we have only 1 review algorithm (SuperMemo 2).
 
@@ -27,11 +27,14 @@ import qualified Vocabulink.Review.SM2 as SM2
 
 import Vocabulink.App
 import Vocabulink.CGI
-import Vocabulink.Html
 import Vocabulink.Page
 import Vocabulink.Link
-import Vocabulink.Link.Html
+import Vocabulink.Member.Auth
 import Vocabulink.Utils
+
+import qualified Data.Aeson.Generic
+import qualified Data.Aeson.Types
+import qualified Data.Text
 
 import Prelude hiding (div, span, id)
 
@@ -49,23 +52,21 @@ import Prelude hiding (div, span, id)
 -- that they're reviewing the link now). However, this is a good candidate for
 -- an asynchronous JavaScript call.
 
-newReview :: Integer -> Integer -> App CGIResult
-newReview memberNo linkNo = do
+newReview :: Member -> Integer -> App ()
+newReview member linkNo = do
   $(execute' "INSERT INTO link_to_review (member_no, link_no) \
-                                 \VALUES ({memberNo}, {linkNo})")
-  outputJSON [(""::String, ""::String)]
+                                 \VALUES ({memberNumber member}, {linkNo})")
 
 -- The client indicates a completed review with a @POST@ to
 -- @/review/linknumber@ which will be dispatched to |linkReviewed|. Once we
 -- schedule the next review time for the link, we move on to the next in their
 -- set.
 
-linkReviewed :: Integer -> Integer -> App CGIResult
-linkReviewed memberNo linkNo = do
-  recall     <- readRequiredInput "recall"
-  recallTime <- readRequiredInput "recall-time"
-  scheduleNextReview memberNo linkNo recall recallTime
-  redirect "/review/next"
+linkReviewed :: Member -> Integer -> App ()
+linkReviewed member linkNo = do
+  grade <- readRequiredInput "grade"
+  time  <- readRequiredInput "time"
+  scheduleNextReview member linkNo grade time
 
 -- We need to schedule the next review based on the review algorithm in use.
 -- The algorithm needs to know how well the item was remembered. Also, we log
@@ -78,28 +79,24 @@ linkReviewed memberNo linkNo = do
 -- discrete options like a slider). 0 indicates complete failure while 1
 -- indicates perfect recall.
 
--- @previous@ is passed as well. This is the time in seconds between this and
--- the last review (the actual time difference, not the scheduled time
--- difference).
-
 -- All database updates during this process are wrapped in a transaction.
 
-scheduleNextReview :: Integer -> Integer -> Float -> Integer -> App ()
-scheduleNextReview memberNo linkNo recall recallTime = do
-  previous <- fromJust <$> previousInterval memberNo linkNo
-  diff <- SM2.reviewInterval memberNo linkNo previous recall
+scheduleNextReview :: Member -> Integer -> Float -> Integer -> App ()
+scheduleNextReview member linkNo recall recallTime = do
+  previous <- fromJust <$> previousInterval member linkNo
+  diff <- SM2.reviewInterval (memberNumber member) linkNo previous recall
   h <- asks appDB
   liftIO $ withTransaction h $ do
     $(execute
       "INSERT INTO link_review (member_no, link_no, recall, recall_time, \
                                \target_time) \
-                       \VALUES ({memberNo}, {linkNo}, {recall}, {recallTime}, \
+                       \VALUES ({memberNumber member}, {linkNo}, {recall}, {recallTime}, \
                                \(SELECT target_time FROM link_to_review \
-                                \WHERE member_no = {memberNo} AND link_no = {linkNo}))") h
+                                \WHERE member_no = {memberNumber member} AND link_no = {linkNo}))") h
     $(execute
       "UPDATE link_to_review \
       \SET target_time = current_timestamp + {diff} \
-      \WHERE member_no = {memberNo} AND link_no = {linkNo}") h
+      \WHERE member_no = {memberNumber member} AND link_no = {linkNo}") h
 
 -- Review Pages
 
@@ -108,67 +105,29 @@ scheduleNextReview memberNo linkNo recall recallTime = do
 -- @target_time@. If there's none, we send the member to a ``congratulations''
 -- page. If there is a link for review, we send them to the review page.
 
-nextReview :: Integer -> App CGIResult
-nextReview memberNo = do
-  row <- $(queryTuple'
+nextReview :: Member -> Integer -> App CGIResult
+nextReview member n = do
+  rows <- $(queryTuples'
     "SELECT link_no FROM link_to_review \
-    \WHERE member_no = {memberNo} AND current_timestamp >= target_time \
-    \ORDER BY target_time ASC LIMIT 1")
-  case row of
-    Nothing -> noLinksToReviewPage memberNo
-    Just n  -> reviewLinkPage n
-
--- The review page is pretty simple. It displays a link without the typical
--- link-type decorations and with the destination node covered by a question
--- mark. Once the member clicks the question mark or presses the space bar (to
--- find out what is hidden beneath it) it reveals the lexeme, records the total
--- amount of recall time taken, and displays a recall feedback form (currently
--- a row of 6 buttons for working with the SM2 algorithm).
-
--- Once the member clicks a recall number, it sends the information off to
--- |linkReviewed| to record the details and schedule the next review. This
--- sends the client to |nextReview| which begins the process all over again.
-
-reviewLinkPage :: Integer -> App CGIResult
-reviewLinkPage linkNo = do
-  l <- getLink linkNo
-  case l of
-    Nothing  -> simplePage "Error: Unable to retrieve link." [CSS "link"] mempty
-    Just l'  -> do
-      let source  = linkOrigin l'
-          dest    = linkDestination l'
-      sLang <- linkOriginLanguage l'
-      dLang <- linkDestinationLanguage l'
-      fullLink <- renderLink l' False False
-      stdPage ("Review: " ++ source ++ " → ?") [CSS "link", JS "link"] mempty $ do
-        h1 ! id "review-link" ! class_ "link review" $ do
-          span ! class_ "foreign" ! title (stringValue sLang) $ string source
-          span ! class_ "link" $ mempty
-          a ! class_ "familiar hidden" ! title (stringValue dLang) $ "?"
-        div ! id "recall-check" ! style "display: none" $ do
-          fullLink
-          form ! action (stringValue $ "/review/" ++ show linkNo) ! method "post" $ do
-            input ! type_ "hidden" ! id "recall-time" ! name "recall-time"
-            input ! type_ "hidden" ! name "hidden-lexeme" ! value (stringValue dest)
-            fieldset ! id "recall-buttons" ! style "display: none" $
-              mconcat $ map (recallButton 5) [0..5]
-          p $ do
-            string "On a scale from 0 to 5, rate how well you remembered the word."
-            definitionList [ ("5", "I remembered it perfectly and instantly.")
-                           , ("4", "I remembered it well, but not instantly.")
-                           , ("3", "I remembered, but only after a struggle.")
-                           , ("2", "I was pretty close.")
-                           , ("1", "I thought I remembered, but I was wrong.")
-                           , ("0", "I couldn't remember anything.")
-                           ]
-            clear
-
--- The next review time can be in the future or in the past.
-
-nextReviewTime :: Integer -> App (Maybe UTCTime)
-nextReviewTime memberNo = liftM join $(queryTuple'
-  "SELECT MIN(target_time) FROM link_to_review \
-  \WHERE member_no = {memberNo}")
+    \WHERE member_no = {memberNumber member} AND current_timestamp >= target_time \
+    \ORDER BY target_time ASC LIMIT {n}")
+  case rows of
+    [] -> outputNotFound
+    -- TODO: Make a version of getLink that can retrieve multiple links at once.
+    _  -> outputJSON =<< mapM linkJSON =<< (catMaybes <$> mapM getLink rows)
+ where linkJSON l = do
+         ol <- linkOriginLanguage l
+         dl <- linkDestinationLanguage l
+         return [aesonQQ| {"linkNumber": <| linkNumber l |>
+                          ,"foreign": <| linkOrigin l |>
+                          ,"foreignLang": <| linkOriginLang l |>
+                          ,"foreignLanguage": <| ol |>
+                          ,"familiar": <| linkDestination l |>
+                          ,"familiarLang": <| linkDestinationLang l |>
+                          ,"familiarLanguage": <| dl |>
+                          ,"linkType": <| linkTypeNameFromType $ linkType l |>
+                          ,"linkword": <| toJSON $ linkWord l |>
+                          } |]
 
 -- In order to determine the next review interval, the review scheduling
 -- algorithm may need to know how long the last review period was (in fact, any
@@ -179,55 +138,34 @@ nextReviewTime memberNo = liftM join $(queryTuple'
 -- that the review algorithm does not have to be used for determining the first
 -- review (immediate).
 
-previousInterval :: Integer -> Integer -> App (Maybe DiffTime)
-previousInterval memberNo linkNo = do
+previousInterval :: Member -> Integer -> App (Maybe DiffTime)
+previousInterval member linkNo = do
   t <- $(queryTuple'
     "SELECT COALESCE(extract(epoch from current_timestamp - \
                             \(SELECT actual_time FROM link_review \
-                             \WHERE member_no = {memberNo} AND link_no = {linkNo} \
+                             \WHERE member_no = {memberNumber member} AND link_no = {linkNo} \
                              \ORDER BY actual_time DESC LIMIT 1))::int, \
                     \extract(epoch from current_timestamp - \
                             \(SELECT target_time FROM link_to_review \
-                             \WHERE member_no = {memberNo} AND link_no = {linkNo}))::int)")
+                             \WHERE member_no = {memberNumber member} AND link_no = {linkNo}))::int)")
   case t of
     Nothing -> return Nothing
     Just t' -> return $ liftM secondsToDiffTime t'
 
--- This creates a ``recall button''. It returns a button with a decimal recall
--- value based on an integral button number. It hopefully allows us to make the
--- recall options more flexible in the future.
+reviewStats :: Member -> App CGIResult
+reviewStats member = do
+  due <- fromJust . fromJust <$> $(queryTuple'
+    "SELECT COUNT(*) FROM link_to_review \
+    \WHERE member_no = {memberNumber member} AND current_timestamp > target_time")
+  reviews <- fromJust . fromJust <$> $(queryTuple'
+    "SELECT COUNT(*) FROM link_review \
+    \WHERE member_no = {memberNumber member}")
+  links <- fromJust . fromJust <$> $(queryTuple'
+    "SELECT COUNT(*) FROM link_to_review \
+    \WHERE member_no = {memberNumber member}")
+  outputJSON [aesonQQ| {"due": <| due::Integer |>
+                       ,"reviews": <| reviews::Integer |>
+                       ,"links": <| links::Integer |>} |]
 
--- You may get unpleasant results when passing a |total| that doesn't cleanly
--- divide |i|.
-
-recallButton :: Integer -> Integer -> Html
-recallButton total i = let q = fromIntegral i / fromIntegral total in
-                       button ! name "recall" ! value (stringValue $ show q) $ string (show i)
-
--- When a member has no more links to review for now, let's display a page
--- letting them know that.
-
--- Here's a critical chance to:
--- * Give positive feedback to encourage the behavior of getting through the
---   review set.
--- * Point the member to other places of interest on the site.
-
--- But for now, the page is pretty plain. We congratulate the member and let
--- them know when their next review is scheduled.
-
-noLinksToReviewPage :: Integer -> App CGIResult
-noLinksToReviewPage memberNo = do
-  t <- nextReviewTime memberNo
-  now <- liftIO getCurrentTime
-  simplePage "No Links to Review" [CSS "link", JS "link"] $ do
-    div ! id "central-column" $ do
-      p ! style "text-align: center" $ "Take a break! You don't have any links to review right now."
-      case t of
-        Just t' -> p ! style "text-align: center" $ do
-                     string "Your next review is due "
-                     span ! id "countdown" $ do
-                       string "in "
-                       span ! class_ "seconds" $ (string $ show (round $ diffUTCTime t' now))
-                       string " seconds"
-                     string "."
-        Nothing -> mempty
+reviewPage :: App CGIResult
+reviewPage = stdPage "Review Your Links" [JS "review", CSS "review"] mempty mempty

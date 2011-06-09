@@ -25,7 +25,7 @@
 -- functions. An example of this is |linkList|.
 
 module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList, menu
-                       , clear, markdownToHtml, hamletUrl
+                       , clear, markdownToHtml
                        {- Text.Blaze.Html5 -}
                        , Html, (!), string, stringValue, preEscapedString, customAttribute
                        , div, p, h1, h2, h3, hr, blockquote, script
@@ -108,6 +108,3 @@ clear = div ! class_ "clear" $ mempty
 
 markdownToHtml :: String -> Html
 markdownToHtml = preEscapedString . writeHtmlString defaultWriterOptions {writerHtml5 = True} . readMarkdown defaultParserState
-
-hamletUrl :: a -> [(String, String)] -> String
-hamletUrl _ _ = ""

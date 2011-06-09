@@ -1,5 +1,5 @@
 Name:          Vocabulink
-Version:       2011.6.1
+Version:       2011.6.8
 Cabal-Version: >= 1.2
 License:       OtherLicense
 License-File:  COPYING
@@ -22,9 +22,10 @@ Build-Type:    Custom
 Executable vocabulink.cgi
   Main-Is:       Vocabulink.hs
   Build-Depends: aeson,
+                 aeson-qq,
                  applicative-extras,
                  base >= 4,
-                 blaze-html,
+                 blaze-html >= 0.4,
                  bytestring,
                  cgi,
                  ConfigFile,
@@ -47,6 +48,7 @@ Executable vocabulink.cgi
                  split,
                  template-haskell,
                  templatepg >= 0.2,
+                 text,
                  time,
                  unix,
                  utf8-string,
@@ -54,5 +56,6 @@ Executable vocabulink.cgi
   Extensions:    TypeSynonymInstances,
                  GeneralizedNewtypeDeriving,
                  TemplateHaskell,
-                 OverloadedStrings
+                 OverloadedStrings,
+                 QuasiQuotes
   GHC-Options:   -Wall -fno-warn-type-defaults -threaded -O2
