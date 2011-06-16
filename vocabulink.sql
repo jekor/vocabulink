@@ -33,6 +33,13 @@ COMMENT ON TABLE member_confirmation IS 'This allows us to keep track of in-prog
 COMMENT ON COLUMN member_confirmation.hash IS 'This is a random hash that we can email to the user (in the form of a link) to ensure that they''ve actually received the confirmation email. It should be random so that it''s not guessable';
 COMMENT ON COLUMN member_confirmation.email_sent IS 'email_sent is the time a confirmation email was successfully sent (or at least when our MTA says it was sent).';
 
+CREATE TABLE password_reset_token (
+       member_no INTEGER REFERENCES member (member_no) PRIMARY KEY,
+       hash TEXT NOT NULL,
+       expires TIMESTAMP (0) WITH TIME ZONE
+);
+COMMENT ON COLUMN password_reset_token.hash IS 'This is a random hash that we can email to the user (in the form of a link) to ensure that they''ve actually received the password reset email. It should be random so that it''s not guessable';
+
 -- For our purposes, a lexeme is any text or symbol which can be linked. Each lexeme has a lemma, which is the canonical representation of different forms of the lexeme.
 -- Lexemes include "日本語", "語", "五", "5", "five", "language", "にほんご" and "に".
 -- Lexemes automatically exist. They are not represented by a relation.

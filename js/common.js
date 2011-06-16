@@ -103,6 +103,30 @@ V.toastWarning = function (msg, sticky) {
   return V.toastMessage('warning', msg, sticky);
 }
 
+function lostPasswordPopup() {
+  var content = $('<div><h1>Lost Password</h1>'
+          + '<form id="lost-password-form" action="/member/password/reset" method="post">'
+            + '<p>Enter the email address you signed up with, and we\'ll send you a link to reset your password with.</p>'
+            + '<table>'
+              + '<tr><th><label>Email:</label></th><td><input type="email" name="email" required autofocus style="width: 295px"></td></tr>'
+              + '<tr><td colspan="2" style="text-align: right"><input class="light" type="submit" value="Send Password Recovery" style="margin-bottom: 1em"></td></tr>'
+            + '</table>'
+          + '</form>'
+        + '</div>').css('width', '370px');
+  $.modal(content);
+  var form = $('#lost-password-form');
+  var modal = $('#simplemodal-container');
+  form.minform()
+      .submit(function (e) {
+        modal.mask('Sending...');
+        e.preventDefault();
+        $.post($(this).attr('action'), $(this).serialize())
+          .done(function () {$.modal.close(); V.toastSuccess('Password recovery instructions sent.');})
+          .fail(function (xhr) {modal.unmask(); V.toastError(xhr.responseText, true);});
+        return false;
+      });
+}
+
 // TODO: Factor out common code between login and signup popups.
 V.loginPopup = function () {
   var headBar = $('#head-bar');
@@ -113,12 +137,13 @@ V.loginPopup = function () {
       + '<tr><td><label for="login-password">Password:</label></td><td><input id="login-password" type="password" name="password" required></td></tr>'
     + '</table>'
     + '<input type="submit" value="Login" class="dark">'
-    + '<button class="cancel">cancel</button>'
+    + '<button class="cancel">lost password</button>'
   + '</form>').appendTo(headBar);
   popup.css('top', headBar.offset().top + headBar.outerHeight())
        .css('left', headBar.offset().left + headBar.outerWidth() - $('#login-popup').outerWidth() - 3)
        .find('.cancel').click(function () {
          $(this).parent().remove();
+         lostPasswordPopup();
        });
   popup.minform();
   popup.submit(function (e) {

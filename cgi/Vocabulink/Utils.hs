@@ -239,7 +239,7 @@ isFileReadable f = do
 sendMail :: String -> String -> String -> IO (Maybe ())
 sendMail address subject body = do
   (Just inF, _, _, pr) <- createProcess (proc "/usr/local/ses/ses-send-email.pl"
-                                              ["-f", "vocabulink@vocabulink.com"
+                                              ["-f", "support@vocabulink.com"
                                               ,"-s", subject
                                               ,"-k", "aws-credentials"
                                               ,address])

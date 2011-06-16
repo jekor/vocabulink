@@ -21,6 +21,7 @@
 module Vocabulink.Member.Registration ( usernameAvailable
                                       , signup, confirmEmail, confirmEmailPage
                                       , login, logout
+                                      , sendPasswordReset, passwordResetPage, passwordReset
                                       ) where
 
 import Vocabulink.App
@@ -189,3 +190,73 @@ confirmEmailPage = do
       p $ do
         a ! href (stringValue redirect') $ "Click here to go back"
         string " to where you came from."
+
+sendPasswordReset :: App CGIResult
+sendPasswordReset = do
+  email <- getRequiredInput "email"
+  -- The member's email address is either in the member table (for confirmed
+  -- email addresses), or in the member_confirmation table. We keep them
+  -- distinct in order to avoid sending email to unconfirmed addresses. In this
+  -- case, however, we'll make an exception. It's likely that a user has
+  -- forgotten their password shortly after signing up (before confirming their
+  -- email address).
+  memberNo <- $(queryTuple' "SELECT member_no FROM member WHERE email = {email} \
+                            \UNION \
+                            \SELECT member_no FROM member_confirmation WHERE email = {email} \
+                            \LIMIT 1")
+  case memberNo of
+    Just (Just mn) -> do
+      $(execute' "DELETE FROM password_reset_token WHERE member_no = {mn}")
+      hash <- fromJust <$> $(queryTuple'
+        "INSERT INTO password_reset_token (member_no, hash, expires) \
+                                  \VALUES ({mn}, md5(random()::text), current_timestamp + interval '4 hours') \
+        \RETURNING hash")
+      let body = unlines [ "Password Reset"
+                         , ""
+                         , "Click http://www.vocabulink.com/member/password/reset/" ++
+                           hash ++ " to reset your password."
+                         , ""
+                         , "The password reset page will only be available for 4 hours."
+                         ]
+      res <- liftIO $ sendMail email "Vocabulink Password Reset" body
+      case res of
+        Nothing -> error "Failed to send password reset email."
+        _       -> outputNothing
+    _              -> error "No member exists with that email address. Please try again."
+
+passwordResetPage :: String -> App CGIResult
+passwordResetPage hash = do
+  memberNo <- $(queryTuple' "SELECT member_no FROM password_reset_token \
+                            \WHERE hash = {hash} AND expires > current_timestamp")
+  case memberNo of
+    Just mn -> simplePage "Change Your Password" [] $ do
+                 form ! action (stringValue $ "/member/password/reset/" ++ hash)
+                      ! method "post"
+                      ! style "width: 33em; margin-left: auto; margin-right: auto; text-align: center" $ do
+                   label "Choose a new password: "
+                   input ! type_ "password" ! name "password" ! customAttribute "required" "required"
+                   br
+                   br
+                   input ! class_ "light" ! type_ "submit" ! value "Change Password"
+    _             -> error "Invalid or expired password reset."
+
+passwordReset :: String -> App CGIResult
+passwordReset hash = do
+  password <- getRequiredInput "password"
+  memberNo <- $(queryTuple' "SELECT member_no FROM password_reset_token \
+                            \WHERE hash = {hash} AND expires > current_timestamp")
+  case memberNo of
+    Just mn -> do
+      $(execute' "UPDATE member SET password_hash = crypt({password}, password_hash) \
+                 \WHERE member_no = {mn}")
+      -- As a convenience, log the user in before redirecting them.
+      ip      <- remoteAddr
+      member' <- memberByNumber mn
+      case member' of
+        Nothing     -> error "Failed to lookup member."
+        Just member -> do
+          key <- fromJust <$> getOption "authtokenkey"
+          authTok <- liftIO $ authToken (memberNumber member) (memberName member) (memberEmail member) ip key
+          setAuthCookie authTok
+          redirect "http://www.vocabulink.com/"
+    _       -> error "Invalid or expired password reset."

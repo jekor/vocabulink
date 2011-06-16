@@ -24,7 +24,7 @@
 
 -- Architecture
 
--- Requests arrive via a webserver.\footnote{I'm currently using cherokee, but
+-- Requests arrive via a webserver.\footnote{I'm currently using lighttpd, but
 -- it should work with any server that supports SCGI.} They are passed to the
 -- vocabulink.cgi process (this program) on TCP port 10033 of the local
 -- loopback interface.
@@ -318,6 +318,10 @@ dispatch "POST" ["member","login"] = login
 -- Logging out can be done without a form.
 
 dispatch "POST" ["member","logout"] = logout
+
+dispatch "POST" ["member","password","reset"] = sendPasswordReset
+dispatch "GET"  ["member","password","reset",x] = passwordResetPage x
+dispatch "POST" ["member","password","reset",x] = passwordReset x
 
 -- Member Pages
 
