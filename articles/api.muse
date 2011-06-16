@@ -1,0 +1,100 @@
+#title Vocabulink API
+#date 2011-05-30 11:28:00 -0800
+
+* Authentication
+
+* Reviewing
+
+** Adding a Link to Your Review Set
+
+<code>PUT /review/</code><literal><em>linkno</em></literal>
+
+*** Body
+
+empty
+
+*** Response
+
+empty HTTP 200 OK on success, HTTP 500 error message on failure
+
+; ** Removing a Link from Your Review Set
+
+; <code>DELETE /review/</code><literal><em>linkno</em></literal>
+
+; *** Body
+
+; empty
+
+; *** Response
+
+; empty HTTP 200 OK on success, HTTP 500 error message on failure
+
+** Getting the Next Link(s) for Review
+
+=GET /review/next=
+
+?n=1
+
+*** Response
+
+404 when no more links are available for review
+
+A list of up to n link-to-review objects:
+
+<literal><pre><code>
+[
+{"linkNumber": integer
+,"foreign": "string"
+,"foreignLang": "string"
+,"foreignLanguage": "string"
+,"familiar": "string"
+,"familiarLang": "string"
+,"familiarLanguage": "string"
+,"linkType": "linkword"|"soundalike"|"association"
+,"linkword": "string"}
+]
+</code></pre></literal>
+
+Note that linkword will be =null= for linktypes other than "linkword".
+
+**** Example Response
+
+<code>
+</code>
+
+** Mark a Link as Reviewed
+
+<code>POST /review/</code><literal><em>linkno</em></literal>
+
+*** Parameters
+
+grade ::
+  a floating point number from 0 to 1
+  0 indicates complete failure to recall the meaning of the word
+  1 indicates perfect recall of the meaning of the word
+  The floating point value allows you to use a continuous grading scale. However, we recommend that you use the discrete grades: 0.0 0.2 0.4 0.6 0.8 and 1.0.
+
+time ::
+  an integer
+  The number of milliseconds that recall took. This should be measured from the moment the foreign word is displayed to the learner until the learner requests the display of the translation.
+
+*** Response
+
+empty HTTP 200 OK on success, HTTP 500 error message on failure
+
+** Get Review Stats
+
+=GET /review/stats=
+
+*** Response
+
+JSON
+
+; TODO: Add next review due (as date and in X seconds).
+
+<literal><pre><code>
+{"due": integer
+,"reviews": integer
+,"links": integer}
+</code></pre></literal>
+

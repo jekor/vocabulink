@@ -160,6 +160,7 @@ dispatch "GET" ["help"]         = articlePage "help"
 dispatch "GET" ["privacy"]      = articlePage "privacy"
 dispatch "GET" ["terms-of-use"] = articlePage "terms-of-use"
 dispatch "GET" ["source"]       = articlePage "source"
+dispatch "GET" ["api"]          = articlePage "api"
 
 dispatch "POST" ["contact"]     = contactUs
 
@@ -271,33 +272,33 @@ dispatch "GET" ["languages"] = languagePairsPage
 -- to review their links through different means such as a desktop program or a
 -- phone application.
 
+-- PUT  /review/n     → add a link for review
 -- GET  /review/next  → retrieve the next link for review
 -- POST /review/n     → mark link as reviewed
--- POST /review/n/add → add a link for review
 
 -- (where n is the link number)
-
--- TODO: Change POST /review/n/add to something better (don't like action names
--- in the URI)
 
 -- Reviewing links is one of the only things that logged-in-but-unverified
 -- members are allowed to do.
 
 dispatch meth ("review":rpath) = do
-  memberNo' <- memberNumber <$$> asks appMember
-  case memberNo' of
-    Nothing       -> redirect =<< reversibleRedirect "/member/login"
-    Just memberNo ->
+  member' <- asks appMember
+  case member' of
+    Nothing     -> outputNotFound
+    Just member ->
       case (meth,rpath) of
-        ("GET",  ["next"]) -> nextReview memberNo
-        ("POST", x:xs)   ->
-           case maybeRead x of
-             Nothing -> outputNotFound
-             Just n  -> case xs of
-                          ["add"] -> newReview memberNo n
-                          []      -> linkReviewed memberNo n
-                          _       -> outputNotFound
-        (_       ,_)       -> outputNotFound
+        ("GET",  [])        -> reviewPage
+        ("GET",  ["next"])  -> readInputDefault 1 "n" >>= nextReview member
+        ("GET",  ["stats"]) -> reviewStats member
+        ("PUT",  [x]) ->
+          case maybeRead x of
+            Nothing -> error "Link number must be an integer"
+            Just n  -> newReview member n >> outputNothing
+        ("POST", [x]) ->
+          case maybeRead x of
+            Nothing -> error "Link number must be an integer"
+            Just n  -> linkReviewed member n >> outputNothing
+        (_       ,_)  -> outputNotFound
 
 -- Membership
 
@@ -366,5 +367,51 @@ dispatch _ _ = outputNotFound
 frontPage :: App CGIResult
 frontPage = do
   cloud <- wordCloud 40 261 248 12 32 6
-  let page = $(hamletFile "../hamlet/frontpage.hamlet") hamletUrl
-  stdPage "Welcome to Vocabulink" [CSS "front"] mempty page
+  stdPage "Welcome to Vocabulink" [CSS "front"] mempty (page cloud)
+ where page wordcloud = mconcat [
+         div ! class_ "top" $ do
+           div ! id "word-cloud" $ do
+             wordcloud
+             div ! class_ "clear" $ mempty
+           div ! id "intro" $ do
+             h1 $ "What Is Vocabulink?"
+             p $ "We're devoted to helping you learn the words of a foreign language as quickly and effortlessly as possible."
+             p $ "Vocabulary building is the most important and most time-consuming part of learning a language. But the good news is that you can learn foreign words more quickly and easily than you imagined. We'll show you how, using 3 simple principles."
+             a ! id "try-now" ! href "/languages" ! class_ "faint-gradient-button green" $ "Get Started"
+             div ! class_ "clear" $ mempty
+           div ! class_ "clear" $ mempty,
+         div ! class_ "bottom" $ do
+           div ! class_ "three-column" $ do
+             div ! class_ "column" $ do
+               h2 $ do
+                 strong "1"
+                 string "Outrageous Stories"
+               p $ do
+                 string "Vocabulink uses imaginative stories to make new words stick. This use of stories is a language-learning technique called "
+                 a ! href "http://en.wikipedia.org/wiki/Linkword" $ "Linkword mnemonics"
+                 string "."
+               p "Your memory is especially receptive to stories. We pass verbal history down from generation to generation through stories. We teach lessons to children with stories. And experienced public speakers know that stories are essential for getting a point across and making it stick with an audience."
+               p "Vocabulink exploits this unique feature of the human brain to make learning more natural. It might seem silly at first, but it's effective."
+             div ! class_ "column" $ do
+               h2 $ do
+                 strong "2"
+                 string "Important Words"
+               p $ do
+                 string "The "
+                 a ! href "http://www.oxforddictionaries.com/page/93" $ "Oxford English Dictionary"
+                 string " defines 171,476 words currently in use. That seems like a daunting amount until you realize that the word \"the\" makes up 7% of the total words we read. Next, the word \"of\" accounts for 3.5%, \"and\" makes up another 2.8%, and so on. You only need to know about 135 words to recognize half the words in common written English."
+               p $ do
+                 string "This uneven spread is similar in every language that statisticians have studied. In fact, it has a name: "
+                 a ! href "http://en.wikipedia.org/wiki/Zipf%27s_law" $ "Zipf's law"
+                 string ". You can take advantage of this law in order to build vocabulary scientifically. Use your study time more effectively by ignoring words that you'll rarely, if ever, use."
+             div ! class_ "column" $ do
+               h2 $ do
+                 strong "3"
+                 string "Spaced Repetition"
+               p $ "Sometimes you forget words, even when you've used memorable stories. The traditional solution to this is flashcards. But it's a tedious waste of time to keep drilling the same words day after day. Luckily, there's a better way."
+               p $ do
+                 string "We've taken some of the latest research about how memory works and made it an integrated part of Vocabulink. It's called "
+                 a ! href "http://www.supermemo.com/english/ol/background.htm" $ "spaced repetition"
+                 string " and it helps you spend only as much time as necessary reviewing words. You can think of Vocabulink as your own personal language trainer. We keep detailed stats on what you've learned and drill you only on the ones we think you're about to forget."
+             div ! class_ "clear" $ mempty ]
+

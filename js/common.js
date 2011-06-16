@@ -70,7 +70,16 @@ V.memberGravatar = function () {
   }
 };
 
-function toastMessage(type, msg, sticky) {
+V.incrLinksToReview = function (by) {
+  var num = parseInt($('#head .review-box strong').text(), 10) + by;
+  if (num == 1) {
+    $('#head .review-box').empty().append('<strong>1</strong> link to review');
+  } else {
+    $('#head .review-box').empty().append('<strong>' + num + '</strong> links to review');
+  }
+}
+
+V.toastMessage = function (type, msg, sticky) {
   return $().toastmessage('showToast', {'text': msg
                                        ,'type': type
                                        ,'sticky': sticky
@@ -78,20 +87,20 @@ function toastMessage(type, msg, sticky) {
                                        });
 }
 
-function toastNotice(msg, sticky) {
-  return toastMessage('notice', msg, sticky);
+V.toastNotice = function (msg, sticky) {
+  return V.toastMessage('notice', msg, sticky);
 }
 
-function toastSuccess(msg, sticky) {
-  return toastMessage('success', msg, sticky);
+V.toastSuccess = function (msg, sticky) {
+  return V.toastMessage('success', msg, sticky);
 }
 
-function toastError(msg, sticky) {
-  return toastMessage('error', msg, sticky);
+V.toastError = function (msg, sticky) {
+  return V.toastMessage('error', msg, sticky);
 }
 
-function toastWarning(msg, sticky) {
-  return toastMessage('warning', msg, sticky);
+V.toastWarning = function (msg, sticky) {
+  return V.toastMessage('warning', msg, sticky);
 }
 
 // TODO: Factor out common code between login and signup popups.
@@ -119,7 +128,7 @@ V.loginPopup = function () {
       .done(function () {location.reload();})
       .fail(function (xhr) {
               popup.unmask();
-              toastError(xhr.responseText);
+              V.toastError(xhr.responseText);
               popup.find('input[name=password]').val('').focus();
             });
     return false;
@@ -161,7 +170,7 @@ V.signupPopup = function() {
     e.preventDefault();
     $.post($(this).attr('action'), $(this).serialize())
      .done(function () {location.reload();})
-     .fail(function (xhr) {popup.unmask(); toastError(xhr.responseText, true);});
+     .fail(function (xhr) {popup.unmask(); V.toastError(xhr.responseText, true);});
     return false;
   });
 }
@@ -188,8 +197,8 @@ V.contactPopup = function () {
         modal.mask('Sending...');
         e.preventDefault();
         $.post($(this).attr('action'), $(this).serialize())
-          .done(function () {$.modal.close(); toastSuccess('Message sent.');})
-          .fail(function (xhr) {modal.unmask(); toastError(xhr.responseText, true);});
+          .done(function () {$.modal.close(); V.toastSuccess('Message sent.');})
+          .fail(function (xhr) {modal.unmask(); V.toastError(xhr.responseText, true);});
         return false;
       });
 };

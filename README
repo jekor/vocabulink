@@ -13,7 +13,6 @@ cd cgi
 make configure && make install
 
 Note: If you build with GHC 7.0 or 7.0.1, you will get runtime crashes due to a bug in the GHC IO manager.
-Note: You might have to install nano-hmac manually due to its compilation parameters aborting on warning.
 
 Contact
 =======

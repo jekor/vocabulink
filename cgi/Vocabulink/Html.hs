@@ -25,7 +25,7 @@
 -- functions. An example of this is |linkList|.
 
 module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList, menu
-                       , clear, markdownToHtml, hamletUrl
+                       , clear, markdownToHtml
                        {- Text.Blaze.Html5 -}
                        , Html, (!), string, stringValue, preEscapedString, customAttribute
                        , div, p, h1, h2, h3, hr, blockquote, script
@@ -37,8 +37,6 @@ module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList
                        , width, height, alt, accesskey, colspan
                        , method, action, name, value, required, placeholder, autofocus
                        , tabindex, enctype, readonly, disabled
-                       {- Text.Hamlet -}
-                       , hamletFile, hamletFileDebug
                        ) where
 
 import Vocabulink.Utils
@@ -56,7 +54,6 @@ import Text.Blaze.Html5.Attributes ( id, class_, href, type_, src, style, title
                                    , method, action, name, value, required, placeholder, autofocus
                                    , tabindex, enctype, readonly, disabled
                                    )
-import Text.Hamlet (hamletFile, hamletFileDebug)
 import Text.Pandoc ( readMarkdown, writeHtmlString, defaultParserState
                    , defaultWriterOptions, writerHtml5
                    )
@@ -111,6 +108,3 @@ clear = div ! class_ "clear" $ mempty
 
 markdownToHtml :: String -> Html
 markdownToHtml = preEscapedString . writeHtmlString defaultWriterOptions {writerHtml5 = True} . readMarkdown defaultParserState
-
-hamletUrl :: a -> [(String, String)] -> String
-hamletUrl _ _ = ""

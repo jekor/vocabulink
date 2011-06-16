@@ -13,7 +13,7 @@ doc : vocabulink.pdf
 configure : $(hss)
 	cabal configure
 
-$(binary) : $(hss) ../hamlet/*.hamlet
+$(binary) : $(hss)
 	TPG_DB="vocabulink" TPG_USER="vocabulink" cabal build
 
 vocabulink.pdf : vocabulink.tex

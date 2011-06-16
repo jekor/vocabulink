@@ -150,16 +150,18 @@ $(function () {
     var op = $(this);
     op.mask("Adding...");
     var linkNum = window.location.pathname.split('/').pop();
-    $.postJSON('/review/' + linkNum + '/add', null, function (successful, data) {
-      op.unmask();
-      op.removeClass("enabled").addClass("disabled");
-      if (successful) {
-        op.text("now reviewing");
-      } else {
-        op.addClass("failed");
-        op.text("Failed!");
-      }
-    });
+    $.ajax('/review/' + linkNum, {'type': 'PUT'})
+     .done(function () {
+       op.unmask();
+       op.text("now reviewing");
+       V.incrLinksToReview(1);
+     })
+     .fail(function (xhr) {
+       op.unmask();
+       op.addClass("failed");
+       op.text("Failed!");
+       V.toastError(xhr.responseText);
+     });
   });
 
   // "delete link"

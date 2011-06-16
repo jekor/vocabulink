@@ -29,6 +29,10 @@ module Vocabulink.CGI ( outputText, outputHtml, outputJSON
                       , getInputs, getBody
                       , urlify, reversibleRedirect, referrerOrVocabulink
                       , handleErrors, escapeURIString'
+                      {- Data.Aeson.QQ -}
+                      , aesonQQ
+                      {- Data.Aeson.Types -}
+                      , ToJSON(..)
                       {- Network.CGI -}
                       , MonadCGI, CGIResult
                       , requestURI, requestMethod
@@ -48,7 +52,8 @@ import Control.Monad.Reader (ReaderT(..))
 import Control.Monad.Writer (WriterT(..))
 import Database.TemplatePG (pgDisconnect)
 import Data.Aeson.Encode as J (encode)
-import Data.Aeson.Types (ToJSON)
+import Data.Aeson.QQ (aesonQQ)
+import Data.Aeson.Types (ToJSON(..))
 import Data.ByteString.Lazy (ByteString)
 import Data.ByteString.Lazy.UTF8 (fromString, toString)
 import Data.Char (isAlphaNum)
