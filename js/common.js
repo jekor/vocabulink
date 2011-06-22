@@ -137,7 +137,7 @@ V.loginPopup = function () {
       + '<tr><td><label for="login-password">Password:</label></td><td><input id="login-password" type="password" name="password" required></td></tr>'
     + '</table>'
     + '<input type="submit" value="Login" class="dark">'
-    + '<button class="cancel">lost password</button>'
+    + '<button class="cancel">lost password?</button>'
   + '</form>').appendTo(headBar);
   popup.css('top', headBar.offset().top + headBar.outerHeight())
        .css('left', headBar.offset().left + headBar.outerWidth() - $('#login-popup').outerWidth() - 3)
