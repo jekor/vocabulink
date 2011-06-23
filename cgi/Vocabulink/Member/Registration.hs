@@ -229,7 +229,7 @@ passwordResetPage hash = do
   memberNo <- $(queryTuple' "SELECT member_no FROM password_reset_token \
                             \WHERE hash = {hash} AND expires > current_timestamp")
   case memberNo of
-    Just mn -> simplePage "Change Your Password" [] $ do
+    Just _  -> simplePage "Change Your Password" [] $ do
                  form ! action (stringValue $ "/member/password/reset/" ++ hash)
                       ! method "post"
                       ! style "width: 33em; margin-left: auto; margin-right: auto; text-align: center" $ do
