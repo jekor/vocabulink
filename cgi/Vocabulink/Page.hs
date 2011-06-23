@@ -108,10 +108,11 @@ headerBar = do
   member <- asks appMember
   review <- case member of
               Nothing -> return mempty
-              Just m  -> reviewBox <$> numLinksToReview m
+              Just m  -> do box <- reviewBox <$> numLinksToReview m
+                            return $ mconcat [box, string " | "]
   let newLink = case member of
                   Nothing -> mempty
-                  Just _  -> a ! href "/link/new" ! class_ "new-link" $ string "new link"
+                  Just _  -> mconcat [a ! href "/link/new" ! class_ "new-link" $ string "new link", string " | "]
   return $ do
     a ! href "/" ! accesskey "1" $
       img ! class_ "logo" ! alt "Vocabulink: Learn Languages through Fiction"
