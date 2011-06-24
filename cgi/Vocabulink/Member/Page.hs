@@ -61,6 +61,6 @@ latestStories :: Member -> App [Html]
 latestStories m = map renderStory <$> $(queryTuples'
   "SELECT story_no, link_no, story FROM linkword_story \
   \WHERE author = {memberNumber m} \
-  \ORDER BY edited DESC LIMIT 5")
+  \ORDER BY edited DESC LIMIT 10")
  where renderStory (sn, ln, s) = a ! href (stringValue $ "/link/" ++ show ln ++ "#" ++ show sn)
                                    $ markdownToHtml s
