@@ -78,7 +78,7 @@ $(function () {
   $('#body form').minform();
   $('[name="foreign"], [name="foreign-lang"]').change(changePronunciation);
   changePronunciation();
-  $('#pronounce').live('click', function () {$('audio', this)[0].play();});
+  $('#pronounce').live('click', function () {$('audio', this)[0].play(); return false;});
 });
 
 })(jQuery);

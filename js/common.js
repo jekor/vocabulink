@@ -270,7 +270,7 @@ $(function () {
     }
   });
 
-  $('.contact-us').live('click', V.contactPopup);
+  $('.contact-us').live('click', function () {V.contactPopup(); return false;});
 });
 
 })(jQuery);
