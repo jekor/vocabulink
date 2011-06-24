@@ -186,7 +186,18 @@ V.signupPopup = function() {
        if (available) {
          $('#signup-username').parent().parent().find('td:last-child').empty().append('<img alt="✓" title="This username is available." src="http://s.vocabulink.com/img/icon/accept.png">');
        } else {
-         $('#signup-username').parent().parent().find('td:last-child').empty().append('<img alt="!" title="This username is unavailable" src="http://s.vocabulink.com/img/icon/exclamation.png">');
+         $('#signup-username').parent().parent().find('td:last-child').empty().append('<img alt="!" title="This username is unavailable." src="http://s.vocabulink.com/img/icon/exclamation.png">');
+       }
+     });
+  });
+  $('#signup-email').change(function () {
+    var email = $(this).val();
+    $.get('http://www.vocabulink.com/email/' + email + '/available')
+     .done(function (available) {
+       if (available) {
+         $('#signup-email').parent().parent().find('td:last-child').empty().append('<img alt="✓" title="This email address is valid and available." src="http://s.vocabulink.com/img/icon/accept.png">');
+       } else {
+         $('#signup-email').parent().parent().find('td:last-child').empty().append('<img alt="!" title="This email address is unavailable or invalid." src="http://s.vocabulink.com/img/icon/exclamation.png">');
        }
      });
   });

@@ -18,7 +18,7 @@
 -- To register a new member we need their desired username, a password, and
 -- optionally an email address.
 
-module Vocabulink.Member.Registration ( usernameAvailable
+module Vocabulink.Member.Registration ( usernameAvailable, emailAvailable
                                       , signup, confirmEmail, confirmEmailPage
                                       , login, logout
                                       , sendPasswordReset, passwordResetPage, passwordReset
@@ -45,8 +45,9 @@ signup = do
       password' <- getRequiredInput "password"
       terms'    <- getInput "terms"
       userAvail <- usernameAvailable username'
-      when (not userAvail) $ error "The username you chose is not available."
-      when (not $ emailValid email') $ error "The email address you gave is invalid."
+      emailAvail <- emailAvailable email'
+      when (not userAvail) $ error "The username you chose is unavailable or invalid."
+      when (not emailAvail) $ error "The email address you gave is unavailable or invalid."
       when (isNothing terms') $ error "You must accept the Terms of Use."
       memberNo <- fromJust <$> $(queryTuple'
                                  "INSERT INTO member (username, password_hash) \
@@ -104,10 +105,14 @@ usernameAvailable u =
   isNothing <$> $(queryTuple' "SELECT username FROM member \
                               \WHERE username ILIKE {u}")
 
-
 -- TODO: Validate email addresses.
-emailValid :: String -> Bool
-emailValid _ = True
+emailAvailable :: String -> App Bool
+emailAvailable e =
+  isNothing <$> $(queryTuple' "(SELECT email FROM member \
+                               \WHERE email ILIKE {e}) \
+                              \UNION \
+                              \(SELECT email FROM member_confirmation \
+                               \WHERE email ILIKE {e})")
 
 -- Once a user registers, they can log in. However, they won't be able to use
 -- most member-specific functions until they've confirmed their email address.
