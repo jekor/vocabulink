@@ -25,6 +25,7 @@ import Vocabulink.CGI
 import Vocabulink.Html
 import Vocabulink.Link
 import Vocabulink.Link.Html
+import Vocabulink.Member.Auth
 import Vocabulink.Page
 import Vocabulink.Utils
 
@@ -35,15 +36,18 @@ import Prelude hiding (div, span, id)
 searchPage :: App CGIResult
 searchPage = do
   q <- getRequiredInput "q"
+  member <- asks appMember
   links <- linksContaining q
   links' <- mapM renderPartialLink links
   stdPage (q ++ " - Search Results") [CSS "search"] mempty $ do
     div ! id "main-content" $ do
       div ! id "cse-search-results" $ mempty
     div ! id "sidebar" $ do
-      div ! id "new-link" $ do
-        a ! href (stringValue $ "/link/new?foreign=" ++ q) $
-          string ("→ Create a new link with \"" ++ q ++ "\"")
+      case memberEmail =<< member of
+        Just _ -> div ! id "new-link" $ do
+                    a ! href (stringValue $ "/link/new?foreign=" ++ q) $
+                      string ("→ Create a new link with \"" ++ q ++ "\"")
+        _      -> mempty
       div ! class_ "sidebox" $ do
         h3 $ string ("Found " ++ show (length links) ++ " Links Containing \"" ++ q ++ "\"")
         unordList links' ! class_ "links"
