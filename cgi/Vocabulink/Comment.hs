@@ -156,13 +156,15 @@ contactUs = do
   message <- getRequiredInput "message"
   url <- getRequiredInput "url"
   member <- asks appMember
-  email <- case member >>= memberEmail of
+  let username = maybe "unregistered" memberName member
+  email <- case memberEmail =<< member of
              Nothing -> getRequiredInput "email"
              Just e  -> return e
   supportAddress <- fromJust <$> getOption "supportaddress"
   -- TODO: Add a reply-to header.
   res' <- liftIO $ sendMail supportAddress "Contact!" $
             unlines [ "Email: " ++ email
+                    , "Username: " ++ username
                     , "URL: " ++ url
                     , "Message: " ++ message ]
   case res' of

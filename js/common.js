@@ -222,7 +222,7 @@ V.contactPopup = function () {
             + '</table>'
           + '</form>'
         + '</div>');
-  if (V.loggedIn()) {
+  if (V.memberGravatar()) {
     content.find('tr:first-child').remove();
   }
   $.modal(content);
