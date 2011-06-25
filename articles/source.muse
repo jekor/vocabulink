@@ -16,3 +16,5 @@ Vocabulink makes use of the following JavaScript libraries. They are sent minifi
  - [[http://plugins.jquery.com/project/Cookie][jQuery Cookie]]
  - [[http://akquinet.github.com/jquery-toastmessage-plugin/][jQuery toastmessage]]
  - [[http://jekor.com/chartviz/][chartviz]]
+
+Vocabulink also uses icons from [[http://www.famfamfam.com/lab/icons/silk/][famfamfam Silk]].
