@@ -56,7 +56,7 @@ newLinkPage = do
           br
           menu (zip activeLinkTypes activeLinkTypes) ! name "link-type" ! required mempty
         span ! class_ "familiar" $ do
-          input ! name "familiar" ! required mempty ! placeholder "Familiar Word" ! tabindex "3"
+          input ! name "familiar" ! required mempty ! placeholder "Translation" ! tabindex "3"
           br
           familiarLangs ! name "familiar-lang" ! required mempty
       p ! style "text-align: center" $
