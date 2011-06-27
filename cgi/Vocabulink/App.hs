@@ -27,7 +27,7 @@
 
 module Vocabulink.App ( App, AppEnv(..), AppT, runApp
                       , Dependency(..), dependencyVersion
-                      , queryTuple', queryTuples', execute'
+                      , queryTuple', queryTuples', execute', withConnection
                       , getOption
                       {- Control.Monad.Reader -}
                       , asks

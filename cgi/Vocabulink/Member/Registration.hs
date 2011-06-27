@@ -34,6 +34,14 @@ import Vocabulink.Utils
 
 import Prelude hiding (div, id, span)
 
+-- Once a user registers, they can log in. However, they won't be able to use
+-- most member-specific functions until they've confirmed their email address.
+-- This is to make sure that people cannot impersonate or spam others.
+
+-- Email confirmation consists of generating a unique random string and
+-- emailing it to the member as a hyperlink. Once they click the hyperlink we
+-- consider the email address confirmed.
+
 signup :: App CGIResult
 signup = do
   member <- asks appMember
@@ -49,18 +57,34 @@ signup = do
       when (not userAvail) $ error "The username you chose is unavailable or invalid."
       when (not emailAvail) $ error "The email address you gave is unavailable or invalid."
       when (isNothing terms') $ error "You must accept the Terms of Use."
-      memberNo <- fromJust <$> $(queryTuple'
-                                 "INSERT INTO member (username, password_hash) \
-                                 \VALUES ({username'}, crypt({password'}, gen_salt('bf'))) \
-                                 \RETURNING member_no")
-      ip <- remoteAddr
-      key <- fromJust <$> getOption "authtokenkey"
-      authTok <- liftIO $ authToken memberNo username' Nothing ip key
-      setAuthCookie authTok
-      res' <- sendConfirmationEmail memberNo email'
-      case res' of
-        Nothing -> error "Registration failure (this is not your fault)."
-        Just _  -> outputNothing
+      memberNo <- withConnection $ \c -> do
+        withTransaction c $ do
+          memberNo' <- fromJust <$> $(queryTuple
+                                      "INSERT INTO member (username, password_hash) \
+                                      \VALUES ({username'}, crypt({password'}, gen_salt('bf'))) \
+                                      \RETURNING member_no") c
+          hash <- fromJust <$> $(queryTuple
+                                 "INSERT INTO member_confirmation (member_no, hash, email) \
+                                 \VALUES ({memberNo'}, md5(random()::text), {email'}) \
+                                 \RETURNING hash") c
+          let body = unlines ["Welcome to Vocabulink."
+                             ,""
+                             ,"Click http://www.vocabulink.com/member/confirmation/" ++
+                              hash ++ " to confirm your email address."
+                             ]
+          res <- liftIO $ sendMail email' "Welcome to Vocabulink" body
+          maybe (rollback c >> return Nothing)
+                (\_ -> do $(execute "UPDATE member_confirmation \
+                                    \SET email_sent = current_timestamp \
+                                    \WHERE member_no = {memberNo'}") c
+                          return (Just memberNo')) res
+      case memberNo of
+        Just mn -> do ip <- remoteAddr
+                      key <- fromJust <$> getOption "authtokenkey"
+                      authTok <- liftIO $ authToken mn username' Nothing ip key
+                      setAuthCookie authTok
+                      outputNothing
+        Nothing -> error "Registration failure (this is not your fault). Please try again later."
 
 -- To login a member, simply set their auth cookie. Reloading the page and such
 -- is handled by the client.
@@ -113,31 +137,6 @@ emailAvailable e =
                               \UNION \
                               \(SELECT email FROM member_confirmation \
                                \WHERE email ILIKE {e})")
-
--- Once a user registers, they can log in. However, they won't be able to use
--- most member-specific functions until they've confirmed their email address.
--- This is to make sure that people cannot impersonate or spam others.
-
--- Email confirmation consists of generating a unique random string and
--- emailing it to the member as a hyperlink. Once they click the hyperlink we
--- consider the email address confirmed.
-
-sendConfirmationEmail :: Integer -> String -> App (Maybe ())
-sendConfirmationEmail memberNo email = do
-  hash <- fromJust <$> $(queryTuple'
-    "INSERT INTO member_confirmation (member_no, hash, email) \
-                             \VALUES ({memberNo}, md5(random()::text), {email}) \
-    \RETURNING hash")
-  let body = unlines [
-               "Welcome to Vocabulink.",
-               "",
-               "Click http://www.vocabulink.com/member/confirmation/" ++
-               hash ++ " to confirm your email address." ]
-  res <- liftIO $ sendMail email "Welcome to Vocabulink" body
-  maybe (return Nothing) (\_ -> do $(execute' "UPDATE member_confirmation \
-                                              \SET email_sent = current_timestamp \
-                                             \WHERE member_no = {memberNo}")
-                                   return $ Just ()) res
 
 -- This is the place that the dispatcher will send the client to if they click
 -- the hyperlink in the email. If confirmation is successful it redirects them

@@ -53,7 +53,7 @@ module Vocabulink.Utils ( (?), (<$$>)
                         {- Data.Monoid -}
                         , mempty, mappend, mconcat
                         {- Database.TemplatePG -}
-                        , withTransaction, execute, queryTuple, queryTuples
+                        , withTransaction, rollback, execute, queryTuple, queryTuples
                         {- Data.Time.Calendar -}
                         , Day, addDays, diffDays, showGregorian
                         {- Data.Time.Clock -}
