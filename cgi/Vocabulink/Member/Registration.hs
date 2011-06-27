@@ -148,6 +148,7 @@ emailAvailable e =
 confirmEmail :: String -> App CGIResult
 confirmEmail hash = do
   member <- asks appMember
+  when (isJust (memberEmail =<< member)) $ error "You've already confirmed your email."
   case member of
     Nothing -> do
       simplePage "Please Login to Confirm Your Account" mempty $ do
