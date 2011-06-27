@@ -62,7 +62,7 @@ renderStory n s member edited =
         --   string "favorite"
         fromJust $ memberAvatar 32 member
         div ! class_ "details" $ do
-          a ! class_ "username" ! href (stringValue $ "/member/" ++ memberName member)
+          a ! class_ "username" ! href (stringValue $ "/user/" ++ memberName member)
             $ string (memberName member)
           br
           span ! class_ "date" $ string $ prettyPrint edited

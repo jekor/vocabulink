@@ -325,8 +325,8 @@ dispatch "POST" ["member","password","reset",x] = passwordReset x
 
 -- Member Pages
 
-dispatch "GET" ["member", username] = memberPage username
-dispatch "GET" ["member", username, "available"] = outputJSON =<< usernameAvailable username
+dispatch "GET" ["user", username] = memberPage username
+dispatch "GET" ["user", username, "available"] = outputJSON =<< usernameAvailable username
 dispatch "GET" ["email", email, "available"] = outputJSON =<< emailAvailable email
 
 -- ``reply'' is used here as a noun.

@@ -181,7 +181,7 @@ V.signupPopup = function() {
   popup.minform();
   $('#signup-username').change(function () {
     var username = $(this).val();
-    $.get('http://www.vocabulink.com/member/' + username + '/available')
+    $.get('http://www.vocabulink.com/user/' + username + '/available')
      .done(function (available) {
        if (available) {
          $('#signup-username').parent().parent().find('td:last-child').empty().append('<img alt="✓" title="This username is available." src="http://s.vocabulink.com/img/icon/accept.png">');

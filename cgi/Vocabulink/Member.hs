@@ -67,7 +67,7 @@ memberFromTuple (n, u, e) = Member { memberNumber = n
 memberAvatar :: Int -- ^ size (square) in pixels
              -> Member
              -> Maybe Html
-memberAvatar size' member = (\ e -> a ! href (stringValue $  "/member/" ++ memberName member)
+memberAvatar size' member = (\ e -> a ! href (stringValue $  "/user/" ++ memberName member)
                                       $ gravatar size' e) <$> memberEmail member
 
 -- | Only perform the given action if the user is authenticated and has
