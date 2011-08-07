@@ -396,7 +396,7 @@ frontPage = do
                  a ! href "http://en.wikipedia.org/wiki/Linkword" $ "Linkword mnemonics"
                  string "."
                p "Your memory is especially receptive to stories. We pass verbal history down from generation to generation through stories. We teach lessons to children with stories. And experienced public speakers know that stories are essential for getting a point across and making it stick with an audience."
-               p "Vocabulink exploits this unique feature of the human brain to make learning more natural. It might seem silly at first, but it's effective."
+               p "Vocabulink exploits this feature of the human brain to make learning more natural. It might seem silly at first, but it's effective."
              div ! class_ "column" $ do
                h2 $ do
                  strong "2"
