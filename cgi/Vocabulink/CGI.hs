@@ -23,7 +23,7 @@
 -- don't catch an exception.
 
 module Vocabulink.CGI ( outputText, outputHtml, outputJSON
-                      , outputNotFound, outputUnauthorized
+                      , outputNotFound, outputUnauthorized, outputClientError, outputServerError
                       , getInput, getRequiredInput, getInputDefault, getRequiredInputFPS
                       , readInput, readRequiredInput, readInputDefault
                       , getInputs, getBody
@@ -99,8 +99,11 @@ outputError' c m = do
   setStatus c m
   outputText m
 
-outputInternalServerError' :: (MonadCGI m, MonadIO m) => String -> m CGIResult
-outputInternalServerError' = outputError' 500
+outputClientError :: (MonadCGI m, MonadIO m) => String -> m CGIResult
+outputClientError = outputError' 400
+
+outputServerError :: (MonadCGI m, MonadIO m) => String -> m CGIResult
+outputServerError = outputError' 500
 
 -- Usually we use the |withRequired| functions when an action requires that the
 -- client be authenticated. However, sometimes (as with AJAX) we want to output
@@ -235,7 +238,7 @@ handleErrors h a = catchCGI' (do r <- a
 outputException' :: (MonadCGI m, MonadIO m) => Handle -> SomeException -> m CGIResult
 outputException' h ex = do
   liftIO $ pgDisconnect h
-  outputInternalServerError' $ show ex
+  outputServerError $ show ex
 
 escapeURIString' :: String -> String
 escapeURIString' = escapeURIString isUnescapedInURI
