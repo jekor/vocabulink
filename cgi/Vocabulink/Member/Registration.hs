@@ -67,7 +67,7 @@ signup = do
                                  "INSERT INTO member_confirmation (member_no, hash, email) \
                                  \VALUES ({memberNo'}, md5(random()::text), {email'}) \
                                  \RETURNING hash") c
-          let body = unlines ["Welcome to Vocabulink."
+          let body = unlines ["Welcome to Vocabulink, " ++ username' ++ "."
                              ,""
                              ,"Click http://www.vocabulink.com/member/confirmation/" ++
                               hash ++ " to confirm your email address."
@@ -83,7 +83,7 @@ signup = do
                       key <- fromJust <$> getOption "authtokenkey"
                       authTok <- liftIO $ authToken mn username' Nothing ip key
                       setAuthCookie authTok
-                      outputNothing
+                      redirect "http://www.vocabulink.com/?signedup"
         Nothing -> error "Registration failure (this is not your fault). Please try again later."
 
 -- To login a member, simply set their auth cookie. Reloading the page and such
@@ -105,8 +105,8 @@ login = do
           key <- fromJust <$> getOption "authtokenkey"
           authTok <- liftIO $ authToken (memberNumber member) username' (memberEmail member) ip key
           setAuthCookie authTok
-          outputNothing
-    _         -> error "Username and password do not match (or don't exist)."
+          redirect "http://www.vocabulink.com/"
+    _         -> redirect "http://www.vocabulink.com/?badlogin" -- error "Username and password do not match (or don't exist)."
 
 -- To logout a member, we simply clear their auth cookie and redirect them
 -- to the front page.

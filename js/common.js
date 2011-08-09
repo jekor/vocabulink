@@ -70,6 +70,19 @@ V.memberGravatar = function () {
   }
 };
 
+// http://stackoverflow.com/questions/647259/javascript-query-string
+function queryString() {
+  var result = {},
+      queryString = location.search.substring(1),
+      re = /([^&=]+)(=([^&]*))?/g,
+      m;
+  while (m = re.exec(queryString)) {
+    result[decodeURIComponent(m[1])] = m[3] ? decodeURIComponent(m[3]) : true;
+  }
+  return result;
+};
+V.query = queryString();
+
 V.incrLinksToReview = function (by) {
   var num = parseInt($('#head .review-box strong').text(), 10) + by;
   if (num == 1) {
@@ -131,7 +144,7 @@ function lostPasswordPopup() {
 V.loginPopup = function () {
   var headBar = $('#head-bar');
   var popup = $(
-    '<form id="login-popup" action="/member/login" method="post">'
+    '<form id="login-popup" action="https://www.vocabulink.com/member/login" method="post">'
     + '<table>'
       + '<tr><td><label for="login-username">Username:</label></td><td><input id="login-username" name="username" required autofocus></td></tr>'
       + '<tr><td><label for="login-password">Password:</label></td><td><input id="login-password" type="password" name="password" required></td></tr>'
@@ -146,24 +159,12 @@ V.loginPopup = function () {
          lostPasswordPopup();
        });
   popup.minform();
-  popup.submit(function (e) {
-    popup.mask('Logging in...');
-    e.preventDefault();
-    $.post($(this).attr('action'), $(this).serialize())
-      .done(function () {location.reload();})
-      .fail(function (xhr) {
-              popup.unmask();
-              V.toastError(xhr.responseText);
-              popup.find('input[name=password]').val('').focus();
-            });
-    return false;
-  });
 };
 
 V.signupPopup = function() {
   var headBar = $('#head-bar');
   var popup = $(
-    '<form id="signup-popup" action="/member/signup" method="post">'
+    '<form id="signup-popup" action="https://www.vocabulink.com/member/signup" method="post">'
     + '<h2>Sign Up for Free</h2>'
     + '<table>'
       + '<tr><td><label for="signup-username">Username:</label></td><td><input id="signup-username" name="username" required autofocus minlength="3" maxlength="32"></td><td></td></tr>'
@@ -200,14 +201,6 @@ V.signupPopup = function() {
          $('#signup-email').parent().parent().find('td:last-child').empty().append('<img alt="!" title="This email address is unavailable or invalid." src="http://s.vocabulink.com/img/icon/exclamation.png">');
        }
      });
-  });
-  popup.submit(function (e) {
-    popup.mask('Signing up...');
-    e.preventDefault();
-    $.post($(this).attr('action'), $(this).serialize())
-     .done(function () {location.reload();})
-     .fail(function (xhr) {popup.unmask(); V.toastError(xhr.responseText, true);});
-    return false;
   });
 }
 
@@ -253,6 +246,15 @@ $(function () {
       V.loginPopup();
     }
   });
+
+  // Check for signals in the query string.
+  if (V.query['badlogin']) {
+    V.toastError("Username and password do not match (or don't exist).");
+    V.loginPopup();
+  }
+  if (V.query['signedup']) {
+    V.toastSuccess('Congratulations! Please check your email to confirm your account.', true);
+  }
 
   $('#signup-button').click(function () {
     if ($('#signup-popup').length) {
