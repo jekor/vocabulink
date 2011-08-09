@@ -40,7 +40,7 @@ memberPage username = do
       let avatar = fromMaybe mempty (memberAvatar 60 m)
       links <- mapM renderPartialLink =<< memberLinks (memberNumber m) 0 10
       stories <- latestStories m
-      stdPage (memberName m ++ "'s Vocabulink Page") [CSS "member-page", CSS "link"] mempty $ do
+      stdPage (memberName m ++ "'s Vocabulink Page") [CSS "member-page", CSS "lib.link"] mempty $ do
         div ! id "avatar" $ do
           avatar
           span ! class_ "username" $ string $ memberName m

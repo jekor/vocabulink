@@ -89,6 +89,17 @@ function reviewLink(link) {
              + '<span class="link" linkword="' + (link.linkword ? link.linkword : '') + '"></span>'
              + '<span class="familiar" title="' + link.familiarLanguage + '" familiar="' + link.familiar + '">?</span>'
            + '</h1>');
+  if (link.pronunciation) {
+    $('<button id="pronounce" class="button light">'
+      + '<audio>'
+        + '<source src="http://s.vocabulink.com/audio/pronunciation/' + link.linkNumber + '.ogg">'
+        + '<source src="http://s.vocabulink.com/audio/pronunciation/' + link.linkNumber + '.mp3">'
+      + '</audio>'
+      + '<img src="http://s.vocabulink.com/img/icon/audio.png">'
+    + '</button>').click(function () {
+      $(this).find('audio')[0].play();
+    }).appendTo(h1.find('.foreign'));
+  }
   $('#review-area').empty().append(h1);
   h1.attr('start', Date.now());
 }

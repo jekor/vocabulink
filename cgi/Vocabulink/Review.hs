@@ -29,6 +29,7 @@ import Vocabulink.App
 import Vocabulink.CGI
 import Vocabulink.Page
 import Vocabulink.Link
+import Vocabulink.Link.Pronunciation
 import Vocabulink.Member.Auth
 import Vocabulink.Utils
 
@@ -118,6 +119,7 @@ nextReview member n = do
  where linkJSON l = do
          ol <- linkOriginLanguage l
          dl <- linkDestinationLanguage l
+         pr <- pronounceable $ linkNumber l
          return [aesonQQ| {"linkNumber": <| linkNumber l |>
                           ,"foreign": <| linkOrigin l |>
                           ,"foreignLang": <| linkOriginLang l |>
@@ -127,6 +129,7 @@ nextReview member n = do
                           ,"familiarLanguage": <| dl |>
                           ,"linkType": <| linkTypeNameFromType $ linkType l |>
                           ,"linkword": <| toJSON $ linkWord l |>
+                          ,"pronunciation": <| pr |>
                           } |]
 
 -- In order to determine the next review interval, the review scheduling
@@ -168,4 +171,4 @@ reviewStats member = do
                        ,"links": <| links::Integer |>} |]
 
 reviewPage :: App CGIResult
-reviewPage = stdPage "Review Your Links" [JS "review", CSS "review"] mempty mempty
+reviewPage = stdPage "Review Your Links" [JS "review", CSS "review", CSS "link-common"] mempty mempty

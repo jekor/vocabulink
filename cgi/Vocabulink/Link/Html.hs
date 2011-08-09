@@ -44,7 +44,7 @@ newLinkPage = do
   foreignLangs  <- languageMenu $ Left ()
   familiarLangs <- languageMenu $ Right ()
   foreignWord <- getInputDefault "" "foreign"
-  simplePage "Create a New Link" [CSS "link", JS "link"] $ do
+  simplePage "Create a New Link" [CSS "lib.link", JS "link"] $ do
     form ! method "post" ! action "/link/new" $ do
       h1 ! class_ "link edit linkword" $ do
         span ! class_ "foreign" $ do
@@ -99,7 +99,7 @@ linkPage linkNo = do
                          ss <- linkWordStories (linkNumber l')
                          return $ mconcat $ map (\ (n, x, y, z) -> renderStory n x y z) ss
                        else return mempty
-          stdPage (orig ++ " → " ++ dest) [CSS "link", JS "link"] mempty $ do
+          stdPage (orig ++ " → " ++ dest) [CSS "lib.link", JS "link"] mempty $ do
             div ! id "link-head-bar" $ do
               h2 $ a ! href (stringValue $ "/links?ol=" ++ linkOriginLang l' ++ "&dl=" ++ linkDestinationLang l') $
                 string (oLanguage ++ " to " ++ dLanguage ++ ":")
@@ -120,14 +120,14 @@ linksPage title' f = do
   ts <- f offset (n + 1)
   pagerControl <- pager pg n $ offset + length ts
   partialLinks <- mapM renderPartialLink (take n ts)
-  simplePage title' [CSS "link"] $ do
+  simplePage title' [CSS "lib.link"] $ do
     unordList partialLinks ! id "central-column" ! class_ "links"
     pagerControl
 
 languagePairsPage :: App CGIResult
 languagePairsPage = do
   languages' <- (groupBy groupByName . sortBy compareNames) <$> linkLanguages
-  simplePage "Available Languages" [CSS "link"] $ do
+  simplePage "Available Languages" [CSS "lib.link"] $ do
     mconcat $ map renderLanguageGroup $ sortBy compareSize languages'
  where compareNames ((_, ol1), (_, dl1), _) ((_, ol2), (_, dl2), _) =
          if dl1 == dl2
