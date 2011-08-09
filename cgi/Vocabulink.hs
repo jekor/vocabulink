@@ -310,6 +310,7 @@ dispatch "POST" ["member","signup"] = signup
 
 dispatch "GET" ["member","confirmation"]   = confirmEmailPage
 dispatch "GET" ["member","confirmation",x] = confirmEmail x
+dispatch "POST" ["member","confirmation"]  = resendConfirmEmail
 
 -- Logging in is a similar process.
 

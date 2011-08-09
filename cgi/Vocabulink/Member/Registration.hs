@@ -19,7 +19,7 @@
 -- optionally an email address.
 
 module Vocabulink.Member.Registration ( usernameAvailable, emailAvailable
-                                      , signup, confirmEmail, confirmEmailPage
+                                      , signup, confirmEmail, confirmEmailPage, resendConfirmEmail
                                       , login, logout
                                       , sendPasswordReset, passwordResetPage, passwordReset
                                       ) where
@@ -67,12 +67,7 @@ signup = do
                                  "INSERT INTO member_confirmation (member_no, hash, email) \
                                  \VALUES ({memberNo'}, md5(random()::text), {email'}) \
                                  \RETURNING hash") c
-          let body = unlines ["Welcome to Vocabulink, " ++ username' ++ "."
-                             ,""
-                             ,"Click http://www.vocabulink.com/member/confirmation/" ++
-                              hash ++ " to confirm your email address."
-                             ]
-          res <- liftIO $ sendMail email' "Welcome to Vocabulink" body
+          res <- liftIO $ sendConfirmationEmail email' username' hash
           maybe (rollback c >> return Nothing)
                 (\_ -> do $(execute "UPDATE member_confirmation \
                                     \SET email_sent = current_timestamp \
@@ -85,6 +80,31 @@ signup = do
                       setAuthCookie authTok
                       redirect "http://www.vocabulink.com/?signedup"
         Nothing -> error "Registration failure (this is not your fault). Please try again later."
+
+sendConfirmationEmail :: String -> String -> String -> IO (Maybe ())
+sendConfirmationEmail email username hash =
+  let body = unlines ["Welcome to Vocabulink, " ++ username ++ "."
+                     ,""
+                     ,"Click http://www.vocabulink.com/member/confirmation/" ++
+                      hash ++ " to confirm your email address."
+                     ] in
+  sendMail email "Welcome to Vocabulink" body
+
+resendConfirmEmail :: App CGIResult
+resendConfirmEmail = do
+  member <- asks appMember
+  case member of
+    Nothing -> do
+      simplePage "Please Login to Resend Your Confirmation Email" mempty $ do
+        script ! type_ "text/javascript" $ preEscapedString "jQuery(function () {V.loginPopup();});"
+    Just m  -> do
+      (hash, email) <- fromJust <$> $(queryTuple'
+                         "SELECT hash, email FROM member_confirmation \
+                         \WHERE member_no = {memberNumber m}")
+      res <- liftIO $ sendConfirmationEmail email (memberName m) hash
+      case res of
+        Nothing -> error "Error sending confirmation email."
+        Just _  -> simplePage "Your confirmation email has been sent." mempty mempty
 
 -- To login a member, simply set their auth cookie. Reloading the page and such
 -- is handled by the client.
@@ -182,19 +202,23 @@ confirmEmail hash = do
 
 confirmEmailPage :: App CGIResult
 confirmEmailPage = do
-  ref <- referrerOrVocabulink
-  redirect' <- getInputDefault ref "redirect"
-  simplePage "Email Confirmation Required" mempty $ do
-    div ! id "central-column" $ do
-      p "In order to interact with Vocabulink, \
-        \you need to confirm your email address."
-      p $ do
-        string "If you haven't received a confirmation email or are having trouble, "
-        a ! href "#" ! class_ "contact-us" $ "click here for support"
-        string "."
-      p $ do
-        a ! href (stringValue redirect') $ "Click here to go back"
-        string " to where you came from."
+  member <- asks appMember
+  case memberEmail =<< member of
+    Nothing -> do
+      ref <- referrerOrVocabulink
+      redirect' <- getInputDefault ref "redirect"
+      simplePage "Email Confirmation Required" mempty $ do
+        div ! id "central-column" $ do
+          p "In order to interact with Vocabulink, \
+            \you need to confirm your email address."
+          p $ do
+            form ! action "/member/confirmation" ! method "post" $ do
+              string "If you haven't received a confirmation email or are having trouble: "
+              input ! type_ "submit" ! value "Resend Confirmation Email" ! class_ "button light"
+          p $ do
+            a ! href (stringValue redirect') $ "Click here to go back"
+            string " to where you came from."
+    Just _  -> error "You've already confirmed your email."
 
 sendPasswordReset :: App CGIResult
 sendPasswordReset = do
