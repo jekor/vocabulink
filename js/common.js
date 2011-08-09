@@ -253,7 +253,10 @@ $(function () {
     V.loginPopup();
   }
   if (V.query['signedup']) {
-    V.toastSuccess('Congratulations! Please check your email to confirm your account.', true);
+    V.toastSuccess("Welcome! Please check your email to confirm your account.", true);
+  }
+  if (V.query['emailconfirmed']) {
+    V.toastSuccess("Congratulations! You've confirmed your account.", true);
   }
 
   $('#signup-button').click(function () {

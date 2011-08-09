@@ -174,7 +174,7 @@ confirmEmail hash = do
                 key <- fromJust <$> getOption "authtokenkey"
                 authTok <- liftIO $ authToken (memberNumber m) (memberName m) email ip key
                 setAuthCookie authTok
-                redirect "http://www.vocabulink.com/"
+                redirect "http://www.vocabulink.com/?emailconfirmed"
         else error "Confirmation code does not match logged in user."
 
 -- This is the page we redirect unconfirmed members to when they try to
