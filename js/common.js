@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-var V = V || {};
-
 if (!window.console) {
   window.console = {
     log: function () {}
@@ -48,23 +46,13 @@ function authTokenPart(key) {
   }
 }
 
-// Read the member's name from the authtoken cookie. If the member's name
-// cannot be found (likely because the client is not authenticated), this
-// returns null.
-// We don't worry about cookie tampering. Authentication verification is
-// handled by the server.
-V.memberName = function () {
-  return authTokenPart('name');
-};
-
 V.loggedIn = function () {
-  return V.memberName() !== null;
+  return V.memberName !== null;
 };
 
 V.memberGravatar = function () {
-  var gravHash = authTokenPart('grav');
-  if (gravHash) {
-    return 'http://www.gravatar.com/avatar.php?gravatar_id=' + gravHash + '&size=60&default=wavatar';
+  if (V.gravatarHash) {
+    return 'http://www.gravatar.com/avatar.php?gravatar_id=' + V.gravatarHash + '&size=60&default=wavatar';
   } else {
     return null;
   }

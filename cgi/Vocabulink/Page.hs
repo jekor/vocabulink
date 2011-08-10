@@ -68,8 +68,15 @@ stdPage title' deps head' body' = outputHtml =<< (do
       when (jsDeps /= []) (noscript $ p "This page requires JavaScript for some functionality.")
       div ! id "body" $ body'
       div ! id "foot" $ footerB
+      script ! type_ "text/javascript" $ preEscapedString $ standardJS member
       script ! src "http://www.google-analytics.com/ga.js" $ mempty
       mconcat jsDeps')
+ where standardJS m =
+         unlines [ "var V = {" -- the Vocabulink object
+                 , "  memberName: " ++ maybe "null" (\m' -> "'" ++ memberName m' ++ "'") m ++ ","
+                 , "  gravatarHash: " ++ maybe "null" (\h -> "'" ++ h ++ "'") (gravatarHash =<< memberEmail =<< m)
+                 , "};"
+                 ]
 
 -- Often we just need a simple page where the title and header are the same.
 

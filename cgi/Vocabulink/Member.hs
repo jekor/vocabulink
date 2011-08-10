@@ -23,7 +23,7 @@
 module Vocabulink.Member ( UserContent(..)
                          , memberByName, memberByNumber, memberAvatar
                          , withRequiredMember, loggedInVerified, loggedInVerifiedButton
-                         , gravatar
+                         , gravatar, gravatarHash
                          {- Vocabulink.Member.Auth -}
                          , Member(..)
                          ) where
@@ -35,6 +35,8 @@ import Vocabulink.Member.Auth
 import Vocabulink.Utils
 
 import Network.Gravatar (gravatarWith, size)
+import qualified Network.Gravatar as Gravatar (gravatar)
+import Text.Regex
 
 -- | Simple user-generated content permissions
 class UserContent u where
@@ -113,3 +115,15 @@ gravatar size' email =
       ! class_ "avatar"
       ! src (stringValue $ gravatarWith (map toLower email)
                                         Nothing (size size') (Just "wavatar"))
+
+-- The gravatar library will generate the entire URL, but sometimes we just
+-- need the hash. Rather than implement the hashing ourselves, we'll dissect
+-- the one we receive from the gravatar library.
+
+gravatarHash :: String -> Maybe String
+gravatarHash email =
+  let url = Gravatar.gravatar email
+      matches = matchRegex (mkRegex "gravatar_id=([0-9a-f]+)") url in
+  case matches of
+    Just [hash] -> Just hash
+    _           -> Nothing

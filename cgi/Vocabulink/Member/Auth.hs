@@ -33,28 +33,15 @@ import Data.Digest.Pure.SHA (hmacSha1, showDigest)
 import Data.Time.Format (parseTime)
 import System.Locale (iso8601DateFormat)
 import System.Time (TimeDiff(..), getClockTime, addToClockTime, toCalendarTime)
-import qualified Network.Gravatar as Gravatar (gravatar)
+import Network.CGI.Cookie (showCookie)
 import Network.URI (unEscapeString)
 import Text.ParserCombinators.Parsec (Parser, parse, noneOf, many1, try, char, string, optional)
-import Text.ParserCombinators.Parsec.Perm ((<$$>), (<||>), (<|?>), permute)
-import Text.Regex
+import Text.ParserCombinators.Parsec.Perm ((<$$>), (<||>), permute)
 
 data Member = Member { memberNumber :: Integer
                      , memberName   :: String
                      , memberEmail  :: Maybe String
                      }
-
--- The gravatar library will generate the entire URL, but sometimes we just
--- need the hash. Rather than implement the hashing ourselves, we'll dissect
--- the one we receive from the gravatar library.
-
-gravatarHash :: String -> Maybe String
-gravatarHash email =
-  let url = Gravatar.gravatar email
-      matches = matchRegex (mkRegex "gravatar_id=([0-9a-f]+)") url in
-  case matches of
-    Just [hash] -> Just hash
-    _           -> Nothing
 
 -- Creating the Auth Token
 
@@ -69,15 +56,9 @@ gravatarHash email =
 -- cookie. This also means we don't have to deal with storing session state on
 -- our end.
 
--- Storing the member's username and gravatar hash are not necessary for
--- authentication, but it's useful to have them here for client-side code to
--- use for generating dynamic UI elements (such as comment boxes). We store the
--- gravatar hash instead of the member's email address for privacy/security.
-
 data AuthToken = AuthToken { authExpiry    :: Day
                            , authMemberNo  :: Integer
                            , authUsername  :: String
-                           , authGravatar  :: Maybe String
                            , authIPAddress :: String
                            , authDigest    :: String
                            }
@@ -97,7 +78,6 @@ instance Show AuthToken where
   show a = "exp="   ++ showGregorian (authExpiry a)
         ++ "&no="   ++ show (authMemberNo a)
         ++ "&name=" ++ escapeURIString' (encodeString $ authUsername a)
-        ++ maybe "" ("&grav=" ++) (authGravatar a)
         ++ "&ip="   ++ authIPAddress a
         ++ "&mac="  ++ authDigest a
 
@@ -105,24 +85,21 @@ instance Show AuthToken where
 -- calculating the digest.
 authToken :: Integer -- ^ member number
           -> String -- ^ username
-          -> Maybe String -- ^ email
           -> String -- ^ IP address
           -> String -- ^ auth token key (from the config file)
           -> IO AuthToken
-authToken memberNo username email ip key = do
+authToken memberNo username ip key = do
   now <- currentDay
   let expires = addDays cookieShelfLife now
       digest  = tokenDigest AuthToken { authExpiry    = expires
                                       , authMemberNo  = memberNo
                                       , authUsername  = username
-                                      , authGravatar  = gravatarHash =<< email
                                       , authIPAddress = ip
                                       , authDigest    = ""
                                       } key
   return AuthToken { authExpiry    = expires
                    , authMemberNo  = memberNo
                    , authUsername  = username
-                   , authGravatar  = gravatarHash =<< email
                    , authIPAddress = ip
                    , authDigest    = digest
                    }
@@ -138,7 +115,6 @@ tokenDigest a key = showDigest $ hmacSha1 (pack key) (pack token)
   where token = showGregorian (authExpiry a)
              ++ show (authMemberNo a)
              ++ encodeString (authUsername a)
-             ++ maybe "" ("&grav=" ++) (authGravatar a)
              ++ authIPAddress a
 
 -- Setting the cookie is rather simple by this point. We just create the auth
@@ -156,13 +132,14 @@ setAuthCookie authTok = do
                                         , tdSec     = 0
                                         , tdPicosec = 0
                                         } now)
-  setCookie Cookie { cookieName    = "auth"
-                   , cookieValue   = show authTok
-                   , cookieExpires = Just expires
-                   , cookieDomain  = Just "www.vocabulink.com"
-                   , cookiePath    = Just "/"
-                   , cookieSecure  = False
-                   }
+  let cookie = Cookie { cookieName    = "auth"
+                      , cookieValue   = show authTok
+                      , cookieExpires = Just expires
+                      , cookieDomain  = Just "www.vocabulink.com"
+                      , cookiePath    = Just "/"
+                      , cookieSecure  = False
+                      }
+  setHeader "Set-Cookie" $ showCookie cookie ++ "; HttpOnly"
 
 deleteAuthCookie :: MonadCGI m => m ()
 deleteAuthCookie =
@@ -203,7 +180,6 @@ authTokenParser = permute
   (mkAuthToken <$$> authFrag "exp"
                <||> authFrag "no"
                <||> authFrag "name"
-               <|?> (Nothing, Just <$> authFrag "grav")
                <||> authFrag "ip"
                <||> authFrag "mac")
  where authFrag key = do
@@ -211,14 +187,13 @@ authTokenParser = permute
          frag <- many1 $ noneOf "&"
          optional $ char '&'
          return frag
-       mkAuthToken exp' no name grav ip mac =
+       mkAuthToken exp' no name ip mac =
          let day = parseTime defaultTimeLocale (iso8601DateFormat Nothing) exp' in
          case day of
            Nothing -> error "Failed to parse expiration time"
            Just d  -> AuthToken { authExpiry    = d
                                 , authMemberNo  = read no
                                 , authUsername  = decodeString $ unEscapeString name
-                                , authGravatar  = grav
                                 , authIPAddress = ip
                                 , authDigest    = mac
                                 }

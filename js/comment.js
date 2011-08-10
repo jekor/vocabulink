@@ -23,7 +23,7 @@ function createCommentBox(parentID) {
   var box = $(
     '<form method="post" action="/comment/' + parentID + '/reply" class="comment">'
     + '<div class="metadata">'
-      + '<span class="username">' + V.memberName() + '</span>'
+      + '<span class="username">' + V.memberName + '</span>'
     + '</div>'
     + '<img class="avatar" width="48" height="48" src="' + V.memberGravatar() + '"/>'
     + '<input type="submit" value="Send" class="send light"></input>'

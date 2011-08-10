@@ -76,7 +76,7 @@ signup = do
       case memberNo of
         Just mn -> do ip <- remoteAddr
                       key <- fromJust <$> getOption "authtokenkey"
-                      authTok <- liftIO $ authToken mn username' Nothing ip key
+                      authTok <- liftIO $ authToken mn username' ip key
                       setAuthCookie authTok
                       redirect "http://www.vocabulink.com/?signedup"
         Nothing -> error "Registration failure (this is not your fault). Please try again later."
@@ -123,7 +123,7 @@ login = do
         Nothing     -> error "Failed to lookup username."
         Just member -> do
           key <- fromJust <$> getOption "authtokenkey"
-          authTok <- liftIO $ authToken (memberNumber member) username' (memberEmail member) ip key
+          authTok <- liftIO $ authToken (memberNumber member) username' ip key
           setAuthCookie authTok
           redirect "http://www.vocabulink.com/"
     _         -> redirect "http://www.vocabulink.com/?badlogin" -- error "Username and password do not match (or don't exist)."
@@ -189,10 +189,9 @@ confirmEmail hash = do
                 -- We can't just look at the App's member object, since we just
                 -- updated it.
                 -- TODO: The logic isn't quite right on this.
-                email <- (fromJust . memberEmail) <$$> memberByNumber (memberNumber m)
                 ip <- remoteAddr
                 key <- fromJust <$> getOption "authtokenkey"
-                authTok <- liftIO $ authToken (memberNumber m) (memberName m) email ip key
+                authTok <- liftIO $ authToken (memberNumber m) (memberName m) ip key
                 setAuthCookie authTok
                 redirect "http://www.vocabulink.com/?emailconfirmed"
         else error "Confirmation code does not match logged in user."
@@ -285,7 +284,7 @@ passwordReset hash = do
         Nothing     -> error "Failed to lookup member."
         Just member -> do
           key <- fromJust <$> getOption "authtokenkey"
-          authTok <- liftIO $ authToken (memberNumber member) (memberName member) (memberEmail member) ip key
+          authTok <- liftIO $ authToken (memberNumber member) (memberName member) ip key
           setAuthCookie authTok
           redirect "http://www.vocabulink.com/"
     _       -> error "Invalid or expired password reset."
