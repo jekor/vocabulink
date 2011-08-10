@@ -18,7 +18,7 @@
 (function ($) {
 
 V.annotateLink = function (link) {
-  link.children('.foreign, .familiar, .dest').each(function () {
+  link.children('.foreign, .familiar, .link').each(function () {
     var word = $(this);
     var caption = $('<span class="caption">' + word.attr('title') + '</span>');
     // We have to calculate these before we add content to them and screw up
