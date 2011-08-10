@@ -234,7 +234,7 @@ getPartialLink linkNo = partialLinkFromTuple <$$> $(queryTuple'
          \origin, destination, \
          \origin_language, destination_language \
   \FROM link \
-  \WHERE link_no = {linkNo}")
+  \WHERE link_no = {linkNo} AND NOT deleted")
 
 -- We use a helper function to convert the raw SQL tuple to a partial link
 -- value. Note that we leave the link's |linkType| undefined.
