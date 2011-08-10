@@ -203,19 +203,22 @@ linkExists h l = case linkType l of
   Association     -> isJust <$> $(queryTuple
     "SELECT link_no FROM link \
     \WHERE origin = {linkOrigin l} AND destination = {linkDestination l} \
-      \AND origin_language = {linkOriginLang l} AND destination_language = {linkDestinationLang l}") h
+      \AND origin_language = {linkOriginLang l} AND destination_language = {linkDestinationLang l} \
+      \AND NOT deleted") h
   -- Soundalikes cannot be created if a soundalike already exists for the words.
   Soundalike      -> isJust <$> $(queryTuple
     "SELECT link_no FROM link \
     \WHERE origin = {linkOrigin l} AND destination = {linkDestination l} \
       \AND origin_language = {linkOriginLang l} AND destination_language = {linkDestinationLang l} \
-      \AND link_type = {linkTypeNameFromType Soundalike}") h
+      \AND link_type = {linkTypeNameFromType Soundalike} \
+      \AND NOT deleted") h
   -- Linkwords can duplicate everything, as long as they are different linkwords.
   (Linkword word) -> isJust <$> $(queryTuple
     "SELECT link_no FROM link INNER JOIN link_linkword USING (link_no) \
     \WHERE origin = {linkOrigin l} AND destination = {linkDestination l} \
       \AND origin_language = {linkOriginLang l} AND destination_language = {linkDestinationLang l} \
-      \AND linkword = {word}") h
+      \AND linkword = {word} \
+      \AND NOT deleted") h
 
 -- Retrieving Links
 
@@ -385,6 +388,13 @@ deleteLink linkNo = do
   $(execute' "UPDATE link SET deleted = TRUE \
              \WHERE link_no = {linkNo}")
   outputJSON [(""::String, ""::String)]
+
+-- Determine if a link can be safely deleted. This means that the link:
+-- * is not being reviewed by anyone
+-- * has never been reviewed by anyone
+-- * does not have any stories
+-- * does not have any comments
+-- linkIsDeletable :: Integer -> App Bool
 
 -- We want to be able to display links in various ways. It would be really nice
 -- to get lazy lists from the database. For now, you need to specify how many
