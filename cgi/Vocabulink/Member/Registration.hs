@@ -125,7 +125,7 @@ login = do
           key <- fromJust <$> getOption "authtokenkey"
           authTok <- liftIO $ authToken (memberNumber member) username' ip key
           setAuthCookie authTok
-          redirect "http://www.vocabulink.com/"
+          redirect =<< referrerOrVocabulink
     _         -> redirect "http://www.vocabulink.com/?badlogin" -- error "Username and password do not match (or don't exist)."
 
 -- To logout a member, we simply clear their auth cookie and redirect them
