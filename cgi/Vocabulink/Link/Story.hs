@@ -43,7 +43,8 @@ linkWordStories :: Integer -- ^ link number
 linkWordStories linkNo = map tuplify <$> $(queryTuples'
     "SELECT story_no, story, edited, member_no, username, email \
     \FROM linkword_story s INNER JOIN member m ON (m.member_no = s.author) \
-    \WHERE link_no = {linkNo}")
+    \WHERE link_no = {linkNo} \
+    \ORDER BY story_no ASC")
  where tuplify (n, s, e, n', u, em) = (n, s, Member n' u em, e)
 
 renderStory :: Integer -- ^ story number
