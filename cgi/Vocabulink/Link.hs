@@ -75,15 +75,12 @@ linkWord l = case linkType l of
 
 instance UserContent Link where
   canView link    = do
-    member <- asks appMember
+    -- You used to be able to view deleted links if you were the author.
+    -- However, that led to some confusion.
     deleted <- fromJust <$> $(queryTuple'
                  "SELECT deleted FROM link \
                  \WHERE link_no = {linkNumber link}")
-    return $ if not deleted
-      then True
-      else case member of
-        Nothing -> False
-        Just m  -> (memberNumber m) == linkAuthor link || (memberNumber m) == 1 || (memberNumber m) == 2
+    return $ not deleted
   canEdit link    = do
     member <- asks appMember
     return $ case member of
@@ -234,7 +231,7 @@ getPartialLink linkNo = partialLinkFromTuple <$$> $(queryTuple'
          \origin, destination, \
          \origin_language, destination_language \
   \FROM link \
-  \WHERE link_no = {linkNo} AND NOT deleted")
+  \WHERE link_no = {linkNo}")
 
 -- We use a helper function to convert the raw SQL tuple to a partial link
 -- value. Note that we leave the link's |linkType| undefined.
