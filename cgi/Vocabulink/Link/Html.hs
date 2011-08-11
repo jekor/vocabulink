@@ -192,14 +192,14 @@ languageMenu side = do
         \WHERE language.abbr = link.origin_language \
           \AND link.author = {memberNumber m} \
         \GROUP BY origin_language, abbr, name \
-        \ORDER BY COUNT(origin_language) DESC")
+        \ORDER BY MAX(created) DESC")
       Right _ -> $(queryTuples'
         "SELECT abbr, name \
         \FROM link, language \
         \WHERE language.abbr = link.destination_language \
           \AND link.author = {memberNumber m} \
         \GROUP BY destination_language, abbr, name \
-        \ORDER BY COUNT(destination_language) DESC")
+        \ORDER BY MAX(created) DESC")
   -- Default to English as the familiar language to make things easier and more
   -- obvious for new users.
   let langs' = case (langs, side) of
