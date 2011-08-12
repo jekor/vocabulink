@@ -115,7 +115,9 @@ function getLinks(stats) {
        $('#recall-area').show();
        links = links_;
        total = links.length;
-       reviewLink(links.shift());
+       if (total > 0) {
+         reviewLink(links.shift());
+       }
      })
     .fail(function () {V.toastError("Failed to retrieve links to review.");});
   }
