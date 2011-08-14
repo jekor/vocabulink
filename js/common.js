@@ -283,18 +283,21 @@ $(function () {
   });
 
   // Hook up any buttons that require login to popup the login box.
-  $('.login-required').live('click', function () {
-    if (!$('#login-popup').length) {
-      V.loginPopup();
-    }
-  });
-
-  // Similarly, if there are any buttons that require verification, hook those up.
-  if (V.loggedIn() && !V.verified()) {
-    $('.verified').live('click', function () {
-      V.verificationPopup();
+  if (!V.loggedIn()) {
+    $('.login-required').live('click', function () {
+      if (!$('#login-popup').length) {
+        V.loginPopup();
+      }
       return false;
     });
+  } else {
+    // Similarly, if there are any buttons that require verification, hook those up.
+    if (!V.verified()) {
+      $('.verified').live('click', function () {
+        V.verificationPopup();
+        return false;
+      });
+    }
   }
 
   $('.contact-us').live('click', function () {V.contactPopup(); return false;});

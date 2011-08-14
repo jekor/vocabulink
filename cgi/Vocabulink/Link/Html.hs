@@ -155,7 +155,7 @@ linkOperations link = do
       (_,       True) -> review False ! title "already reviewing this link"
       (Just _,  _)    -> review True  ! id "link-op-review"
                                       ! title "add this link to be quizzed on it later"
-      (Nothing, _)    -> review False ! href "/member/login" ! title "login to review"
+      (Nothing, _)    -> review False ! title "login to review"
     when deletable $ linkAction "delete link" "delete" True
                        ! id "link-op-delete"
                        ! title "delete this link (it will still be visibles to others who are reviewing it)"
@@ -295,7 +295,7 @@ linkAction label' icon' enabled =
              icon' ++
              (enabled ? "" $ "-disabled") ++
              ".png" in
-  a ! class_ (stringValue $ "operation " ++ (enabled ? "enabled" $ "disabled")) $ do
+  a ! class_ (stringValue $ "operation login-required " ++ (enabled ? "enabled" $ "disabled")) $ do
     img ! src (stringValue icon) ! class_ "icon"
     string label'
 
