@@ -37,37 +37,40 @@ searchPage :: App CGIResult
 searchPage = do
   q <- getRequiredInput "q"
   member <- asks appMember
-  links <- linksContaining q
+  links <- linksContaining q 20
   links' <- mapM renderPartialLink links
   stdPage (q ++ " - Search Results") [CSS "search"] mempty $ do
-    div ! id "main-content" $ do
-      div ! id "cse-search-results" $ mempty
-    div ! id "sidebar" $ do
+    div ! id "results" $ do
       case memberEmail =<< member of
         Just _ -> div ! id "new-link" $ do
                     a ! href (stringValue $ "/link/new?foreign=" ++ q) $
                       string ("→ Create a new link with \"" ++ q ++ "\"")
         _      -> mempty
-      div ! class_ "sidebox" $ do
-        h3 $ string ("Found " ++ show (length links) ++ " Links Containing \"" ++ q ++ "\"")
-        unordList links' ! class_ "links"
-    script ! type_ "text/javascript" $ preEscapedString (unlines
-      [ "var googleSearchIframeName = \"cse-search-results\";"
-      , "var googleSearchFormName = \"cse-search-box\";"
-      , "var googleSearchFrameWidth = 600;"
-      , "var googleSearchDomain = \"www.google.com\";"
-      , "var googleSearchPath = \"/cse\";"
-      ])
-    script ! src "http://www.google.com/afsonline/show_afs_search.js" $ mempty
+      h3 $ string ("Found " ++ show (length links) ++ " Links Containing \"" ++ q ++ "\"")
+      unordList links' ! class_ "links"
 
-linksContaining :: String -> App [PartialLink]
-linksContaining q =
-  let q' = "%" ++ q ++ "%" in
-  map partialLinkFromTuple <$> $(queryTuples'
+linksContaining :: String -> Integer -> App [PartialLink]
+linksContaining q n = do
+  let q' = "%" ++ q ++ "%"
+  exacts <- map partialLinkFromTuple <$> $(queryTuples'
     "SELECT link_no, link_type, author, \
            \origin, destination, \
            \origin_language, destination_language \
     \FROM link \
     \WHERE NOT deleted \
-      \AND (origin ~~* {q'} OR destination ~~* {q'}) \
-    \LIMIT 20")
+      \AND (origin ~~* {q} OR destination ~~* {q} \
+        \OR unaccent(origin) ~~* {q} OR unaccent(destination) ~~* {q}) \
+    \LIMIT {n}")
+  closes <- map partialLinkFromTuple <$> $(queryTuples'
+    "SELECT link_no, link_type, author, \
+           \origin, destination, \
+           \origin_language, destination_language \
+    \FROM link \
+    \WHERE NOT deleted \
+      \AND (origin !~~* {q} AND destination !~~* {q} \
+        \AND unaccent(origin) !~~* {q} AND unaccent(destination) !~~* {q}) \
+      \AND (origin ~~* {q'} OR destination ~~* {q'} \
+        \OR unaccent(origin) ~~* {q'} OR unaccent(destination) ~~* {q'}) \
+    \ORDER BY char_length(origin) \
+    \LIMIT {n - fromIntegral (length exacts)}")
+  return $ exacts ++ closes

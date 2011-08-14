@@ -206,21 +206,14 @@ logoutBox member = form ! class_ "auth-box logout" ! action "/member/logout" ! m
 
 -- Students with a goal in mind will want to search for words they're studying
 -- rather than browse randomly. We display a search box for them at the top of the
--- page. This also is currently the only way to create new links (aside from
--- entering in the URL manually), but that might change in the future.
-
--- Currently, this uses a combination of our search logic and Google Custom Search.
+-- page.
 
 searchBox :: Html
-searchBox = form ! id "cse-search-box" ! class_ "search-box" ! action "/search" $ do
+searchBox = form ! class_ "search-box" ! action "/search" $ do
   div $ do
-    input ! type_ "hidden" ! name "cx" ! value "011479832181784786223:2ibwsl9f6ca"
-    input ! type_ "hidden" ! name "cof" ! value "FORID:9"
-    input ! type_ "hidden" ! name "ie" ! value "UTF-8"
     input ! type_ "search" ! name "q" ! accesskey "s"
     string " "
-    input ! type_ "submit" ! id "sa" ! name "sa" ! class_ "button dark" ! value "Search"
-  script ! src "http://www.google.com/cse/brand?form=cse-search-box&lang=en" $ mempty
+    input ! type_ "submit" ! class_ "button dark" ! value "Search"
 
 reviewBox :: Integer -- ^ the number of links due for review (presumably from numLinksToReview)
           -> Html
