@@ -58,19 +58,20 @@ stdPage title' deps head' body' = outputHtml =<< (do
   cssDeps' <- mapM includeDep cssDeps
   jsDeps'  <- mapM includeDep jsDeps
   return $ docTypeHtml $ do
-    head $ do
-      mconcat cssDeps'
-      title $ string title'
-      link ! rel "icon" ! type_ "image/png" ! href "http://s.vocabulink.com/img/favicon.png"
-      head'
-    body $ do
-      div ! id "head" $ headerB
-      when (jsDeps /= []) (noscript $ p "This page requires JavaScript for some functionality.")
-      div ! id "body" $ body'
-      div ! id "foot" $ footerB
-      script ! type_ "text/javascript" $ preEscapedString $ standardJS member
-      script ! src "http://www.google-analytics.com/ga.js" $ mempty
-      mconcat jsDeps')
+    div ! id "page" $ do
+      head $ do
+        mconcat cssDeps'
+        title $ string title'
+        link ! rel "icon" ! type_ "image/png" ! href "http://s.vocabulink.com/img/favicon.png"
+        head'
+      body $ do
+        div ! id "head" $ headerB
+        when (jsDeps /= []) (noscript $ p "This page requires JavaScript for some functionality.")
+        div ! id "body" $ body'
+        div ! id "foot" $ footerB
+        script ! type_ "text/javascript" $ preEscapedString $ standardJS member
+        script ! src "http://www.google-analytics.com/ga.js" $ mempty
+        mconcat jsDeps')
  where standardJS m =
          unlines [ "var V = {" -- the Vocabulink object
                  , "  memberName: " ++ maybe "null" (\m' -> "'" ++ memberName m' ++ "'") m ++ ","

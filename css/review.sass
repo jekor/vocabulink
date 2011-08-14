@@ -5,9 +5,10 @@
   margin:
     bottom: 0
     top: 3em
-  padding-bottom: 4em
   position: relative
   border-top: 1px solid #DFDFDF
+  > *:last-child
+    margin-bottom: 4em
 
 #review-area
   min-height: 12em
@@ -25,7 +26,6 @@
   div
     min-width: 4px
     height: 12px
-    // background-color: #81CC58
     @include vertical_gradient(#A6DE66, #79BB27)
 
 #review-progress
