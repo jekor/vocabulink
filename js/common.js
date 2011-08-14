@@ -151,6 +151,8 @@ V.loginPopup = function () {
 
 V.signupPopup = function() {
   var headBar = $('#head-bar');
+  var usernameOK = false;
+  var emailOK = false;
   var popup = $(
     '<form id="signup-popup" action="https://www.vocabulink.com/member/signup" method="post">'
     + '<h2>Sign Up for Free</h2>'
@@ -168,12 +170,23 @@ V.signupPopup = function() {
          $(this).parent().remove();
        });
   popup.minform();
+  popup.submit(function () {
+    if (!usernameOK) {
+      V.toastError("Your chosen username is unavailable or invalid.");
+      return false;
+    }
+    if (!emailOK) {
+      V.toastError("Your chosen email address is unavailable or invalid.");
+      return false;
+    }
+  });
   $('#signup-username').change(function () {
     var username = $(this).val();
     $.get('http://www.vocabulink.com/user/' + username + '/available')
      .done(function (available) {
        if (available) {
          $('#signup-username').parent().parent().find('td:last-child').empty().append('<img alt="✓" title="This username is available." src="http://s.vocabulink.com/img/icon/accept.png">');
+         usernameOK = true;
        } else {
          $('#signup-username').parent().parent().find('td:last-child').empty().append('<img alt="!" title="This username is unavailable." src="http://s.vocabulink.com/img/icon/exclamation.png">');
        }
@@ -185,6 +198,7 @@ V.signupPopup = function() {
      .done(function (available) {
        if (available) {
          $('#signup-email').parent().parent().find('td:last-child').empty().append('<img alt="✓" title="This email address is valid and available." src="http://s.vocabulink.com/img/icon/accept.png">');
+         emailOK = true;
        } else {
          $('#signup-email').parent().parent().find('td:last-child').empty().append('<img alt="!" title="This email address is unavailable or invalid." src="http://s.vocabulink.com/img/icon/exclamation.png">');
        }
