@@ -308,7 +308,6 @@ dispatch "POST" ["member","signup"] = signup
 
 -- But to use most of the site, we require email confirmation.
 
-dispatch "GET" ["member","confirmation"]   = confirmEmailPage
 dispatch "GET" ["member","confirmation",x] = confirmEmail x
 dispatch "POST" ["member","confirmation"]  = resendConfirmEmail
 

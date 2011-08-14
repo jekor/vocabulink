@@ -61,7 +61,7 @@ function collapseStory(q, h, mh) {
 function showNewStory() {
   if (!V.memberGravatar()) {
     $('<div class="linkword-story-container">'
-      + '<a class="invitation" href="/member/confirmation">Verify Email to Add Story</a>'
+      + '<a class="verified" href="/member/confirmation">Verify Email to Add Story</a>'
     + '</div>').appendTo('#linkword-stories');
     return;
   }

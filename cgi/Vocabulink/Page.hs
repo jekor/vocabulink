@@ -117,9 +117,6 @@ headerBar = do
               Nothing -> return mempty
               Just m  -> do box <- reviewBox <$> numLinksToReview m
                             return $ mconcat [box, string " | "]
-  let newLink = case member of
-                  Nothing -> mempty
-                  Just _  -> mconcat [a ! href "/link/new" ! class_ "new-link" $ string "new link", string " | "]
   return $ do
     a ! href "/" ! accesskey "1" $
       img ! class_ "logo" ! alt "Vocabulink: Learn Languages through Fiction"
@@ -127,7 +124,7 @@ headerBar = do
     div ! id "head-decoration" $ mempty
     div ! id "head-bar" $ do
       searchBox
-      newLink
+      mconcat [a ! href "/link/new" ! class_ "new-link verified" $ string "new link", string " | "]
       review
       maybe loginBox logoutBox member
     clear

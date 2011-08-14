@@ -22,7 +22,7 @@
 
 module Vocabulink.Member ( UserContent(..)
                          , memberByName, memberByNumber, memberAvatar
-                         , withRequiredMember, loggedInVerified, loggedInVerifiedButton
+                         , withRequiredMember
                          , gravatar, gravatarHash
                          {- Vocabulink.Member.Auth -}
                          , Member(..)
@@ -83,28 +83,6 @@ withRequiredMember f = do
     Just m  -> case memberEmail m of
                  Nothing -> error "Please verify your email address."
                  Just _  -> f m
-
--- This is a helper to quickly return a value based on the client's status. If the
--- client is not authenticated, return nothing. If they are authenticated but have
--- not verified their email address, return loggedIn. If they have verified their
--- email address, return verified.
-
-loggedInVerified :: a -> a -> a -> App a
-loggedInVerified verified loggedIn nothing = do
-  member <- asks appMember
-  return $ case member of
-    Nothing -> nothing
-    Just m  -> case memberEmail m of
-                 Nothing -> loggedIn
-                 Just _  -> verified
-
-loggedInVerifiedButton :: String -> App Html
-loggedInVerifiedButton text = do
-  confirm  <- reversibleRedirect "/member/confirmation"
-  login    <- reversibleRedirect "/member/login"
-  loggedInVerified (button ! class_ "light" $ string text)
-                   (a ! href (stringValue confirm) $ string text)
-                   (a ! href (stringValue login) $ string text)
 
 gravatar :: Int -- ^ size (square) in pixels
          -> String -- ^ email address

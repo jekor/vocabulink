@@ -19,7 +19,7 @@
 -- optionally an email address.
 
 module Vocabulink.Member.Registration ( usernameAvailable, emailAvailable
-                                      , signup, confirmEmail, confirmEmailPage, resendConfirmEmail
+                                      , signup, confirmEmail, resendConfirmEmail
                                       , login, logout
                                       , sendPasswordReset, passwordResetPage, passwordReset
                                       ) where
@@ -195,29 +195,6 @@ confirmEmail hash = do
                 setAuthCookie authTok
                 redirect "http://www.vocabulink.com/?emailconfirmed"
         else error "Confirmation code does not match logged in user."
-
--- This is the page we redirect unconfirmed members to when they try to
--- interact with the site in a way that requires a confirmed email address.
-
-confirmEmailPage :: App CGIResult
-confirmEmailPage = do
-  member <- asks appMember
-  case memberEmail =<< member of
-    Nothing -> do
-      ref <- referrerOrVocabulink
-      redirect' <- getInputDefault ref "redirect"
-      simplePage "Email Confirmation Required" mempty $ do
-        div ! id "central-column" $ do
-          p "In order to interact with Vocabulink, \
-            \you need to confirm your email address."
-          p $ do
-            form ! action "/member/confirmation" ! method "post" $ do
-              string "If you haven't received a confirmation email or are having trouble: "
-              input ! type_ "submit" ! value "Resend Confirmation Email" ! class_ "button light"
-          p $ do
-            a ! href (stringValue redirect') $ "Click here to go back"
-            string " to where you came from."
-    Just _  -> error "You've already confirmed your email."
 
 sendPasswordReset :: App CGIResult
 sendPasswordReset = do

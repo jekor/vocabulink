@@ -58,6 +58,8 @@ V.memberGravatar = function () {
   }
 };
 
+V.verified = V.memberGravatar;
+
 // http://stackoverflow.com/questions/647259/javascript-query-string
 function queryString() {
   var result = {},
@@ -234,6 +236,16 @@ V.contactPopup = function () {
       });
 };
 
+V.verificationPopup = function () {
+  var content = $(
+    '<div><h1>Email Verification Required</h1>'
+    + '<p>In order to interact with Vocabulink, you need to confirm your email address.</p>'
+    + '<form method="post" action="/member/confirmation" style="margin-bottom: 2.6em;">If you haven\'t received a confirmation email: <input class="button light" type="submit" value="Resend Confirmation Email"></form>'
+  + '</div>'
+  );
+  $.modal(content);
+};
+
 // initialization for every page
 $(function () {
   try {
@@ -271,11 +283,19 @@ $(function () {
   });
 
   // Hook up any buttons that require login to popup the login box.
-  $('.login-required').click(function () {
+  $('.login-required').live('click', function () {
     if (!$('#login-popup').length) {
       V.loginPopup();
     }
   });
+
+  // Similarly, if there are any buttons that require verification, hook those up.
+  if (V.loggedIn() && !V.verified()) {
+    $('.verified').live('click', function () {
+      V.verificationPopup();
+      return false;
+    });
+  }
 
   $('.contact-us').live('click', function () {V.contactPopup(); return false;});
 });

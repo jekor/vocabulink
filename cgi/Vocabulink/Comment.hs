@@ -147,7 +147,7 @@ invitationLink text = do
     Just m  -> case memberEmail m of
                  Nothing -> do
                    url <- reversibleRedirect "/member/confirmation"
-                   return $ a ! class_ "invitation" ! href (stringValue url) $
+                   return $ a ! class_ "verified" ! href (stringValue url) $
                               string ("Verify Email to " ++ text)
                  Just _  -> return mempty
 
