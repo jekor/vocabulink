@@ -1,0 +1,37 @@
+#!/usr/bin/env php
+<?php
+
+$forvo_key = rtrim(shell_exec("grep forvokey /etc/vocabulink.conf | cut -d' ' -f 3"));
+
+function psql($sql) {
+    $rows = array();
+    foreach (explode("\n", rtrim(shell_exec('psql -U vocabulink -d vocabulink -c ' . escapeshellarg($sql) . ' | head -n -2 | tail -n +3'))) as $row) {
+        $rows[] = array_map('trim', explode('|', $row));
+    }
+    return $rows;
+}
+
+function fetch_pronunciation($lang, $word) {
+    global $forvo_key;
+
+    $url = "http://apifree.forvo.com/key/{$forvo_key}/format/json/action/word-pronunciations/word/"
+         . urlencode($word) . "/language/{$lang}/order/rate-desc";
+    return json_decode(rtrim(shell_exec('wget -q -O - ' . escapeshellarg($url))), true);
+}
+
+foreach (psql("SELECT link_no FROM link WHERE NOT deleted ORDER BY link_no DESC") as $row) {
+    $prefix = "../upload/audio/pronunciation/{$row[0]}";
+    if (!file_exists("{$prefix}.ogg")) {
+        print("{$row[0]}\n");
+        $rows = psql("SELECT origin_language, origin FROM link WHERE link_no = {$row[0]}");
+        list($lang, $word) = $rows[0];
+        $pronunciation = fetch_pronunciation($lang, $word);
+        if (!empty($pronunciation['items'])) {
+            shell_exec("wget -q -O {$prefix}.ogg {$pronunciation['items'][0]['pathogg']}");
+            shell_exec("wget -q -O {$prefix}.mp3 {$pronunciation['items'][0]['pathmp3']}");
+        }
+        sleep(1);
+    }
+}
+
+?>
