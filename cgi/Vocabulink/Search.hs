@@ -59,3 +59,15 @@ searchPage = do
       , "var googleSearchPath = \"/cse\";"
       ])
     script ! src "http://www.google.com/afsonline/show_afs_search.js" $ mempty
+
+linksContaining :: String -> App [PartialLink]
+linksContaining q =
+  let q' = "%" ++ q ++ "%" in
+  map partialLinkFromTuple <$> $(queryTuples'
+    "SELECT link_no, link_type, author, \
+           \origin, destination, \
+           \origin_language, destination_language \
+    \FROM link \
+    \WHERE NOT deleted \
+      \AND (origin ~~* {q'} OR destination ~~* {q'}) \
+    \LIMIT 20")

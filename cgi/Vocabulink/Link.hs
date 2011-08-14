@@ -21,10 +21,10 @@
 module Vocabulink.Link ( Link(..), PartialLink(..), LinkType(..), isLinkword
                        , linkOriginLanguage, linkDestinationLanguage, languageNameFromAbbreviation
                        , activeLinkTypes, linkTypeNameFromType, linkWord
-                       , getLink, getPartialLink
+                       , getLink, getPartialLink, partialLinkFromTuple
                        , linkLanguages, adjacentLinkNumbers
                        , createLink, deleteLink
-                       , latestLinks, memberLinks, languagePairLinks, linksContaining
+                       , latestLinks, memberLinks, languagePairLinks
                        ) where
 
 import Vocabulink.App
@@ -446,18 +446,3 @@ languagePairLinks ol dl offset limit = do
       \AND origin_language = {ol} AND destination_language = {dl} \
     \ORDER BY link_no DESC \
     \OFFSET {offset} LIMIT {limit}")
-
--- This is a close parallel to the original search for Vocabulink. We use it so
--- that we can display a link to a specialized link search only when results are
--- available.
-
-linksContaining :: String -> App [PartialLink]
-linksContaining q =
-  map partialLinkFromTuple <$> $(queryTuples'
-    "SELECT link_no, link_type, author, \
-           \origin, destination, \
-           \origin_language, destination_language \
-    \FROM link \
-    \WHERE NOT deleted \
-      \AND (origin ILIKE {q} OR destination ILIKE {q}) \
-    \LIMIT 20")
