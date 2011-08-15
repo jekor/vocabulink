@@ -89,6 +89,7 @@ function showNewStory() {
       newStory.find('.cancel').click(function () {
         newStory.remove();
         showNewStory();
+        return false;
       });
     });
   });
