@@ -48,6 +48,8 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , readFile, writeFile
                         {- Data.Either.Utils -}
                         , forceEither
+                        {- Data.List.Split -}
+                        , splitOn, splitEvery
                         {- Data.Maybe -}
                         , maybe, fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes
                         {- Data.Monoid -}
@@ -79,6 +81,8 @@ import Control.Monad.Trans (liftIO, MonadIO)
 import Data.ByteString.Lazy (readFile, writeFile)
 import Data.Char (toLower)
 import Data.Either.Utils (forceEither) -- MissingH
+import Data.List (intercalate)
+import Data.List.Split (splitOn, splitEvery)
 import Data.List.Utils as LU -- MissingH
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
 import Data.Monoid
@@ -263,7 +267,9 @@ class PrettyPrint a where
 -- > instance (Integral a) => PrettyPrint a where
 
 instance PrettyPrint Integer where
-  prettyPrint = show -- TODO: Implement with commas separating groups of thousands.
+  prettyPrint = reverse . intercalate "," . splitEvery 3 . reverse . show
+
+-- TODO: instance PrettyPrint Float
 
 instance PrettyPrint Day where
   prettyPrint = formatTime defaultTimeLocale "%F"

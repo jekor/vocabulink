@@ -40,6 +40,7 @@ memberPage username = do
       let avatar = fromMaybe mempty (memberAvatar 60 m)
       links <- mapM renderPartialLink =<< memberLinks (memberNumber m) 0 10
       stories <- latestStories m
+      studyStats' <- studyStats m
       stdPage (memberName m ++ "'s Vocabulink Page") [CSS "member-page", CSS "lib.link"] mempty $ do
         div ! id "avatar" $ do
           avatar
@@ -47,6 +48,11 @@ memberPage username = do
           when isSelf $ do br
                            span $ do string "Change your avatar at "
                                      a ! href "http://gravatar.com" $ "gravatar.com"
+        multiColumn
+          [div $ do
+             h2 "Study Stats"
+             studyStats',
+             mempty]
         multiColumn
           [div $ do
              h2 $ string ("Latest Links by " ++ memberName m)
@@ -64,3 +70,13 @@ latestStories m = map renderStory <$> $(queryTuples'
   \ORDER BY edited DESC LIMIT 10")
  where renderStory (sn, ln, s) = a ! href (stringValue $ "/link/" ++ show ln ++ "#" ++ show sn)
                                    $ markdownToHtml s
+
+studyStats :: Member -> App Html
+studyStats m = do
+  numLinks <- fromJust . fromJust <$> $(queryTuple'
+    "SELECT COUNT(*) FROM link_to_review WHERE member_no = {memberNumber m}")
+  numReviews <- fromJust . fromJust <$> $(queryTuple'
+    "SELECT COUNT(*) FROM link_review WHERE member_no = {memberNumber m}")
+  return $ tableOfPairs [("# of links in review", prettyPrint (numLinks::Integer))
+                        ,("# of reviews", prettyPrint (numReviews::Integer))
+                        ]

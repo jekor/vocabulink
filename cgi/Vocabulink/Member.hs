@@ -29,7 +29,6 @@ module Vocabulink.Member ( UserContent(..)
                          ) where
 
 import Vocabulink.App
-import Vocabulink.CGI
 import Vocabulink.Html
 import Vocabulink.Member.Auth
 import Vocabulink.Utils

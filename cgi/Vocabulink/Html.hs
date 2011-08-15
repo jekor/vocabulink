@@ -24,8 +24,8 @@
 -- importantly, it allows us to use abstraction to get higher-level HTML-based
 -- functions. An example of this is |linkList|.
 
-module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList, menu
-                       , clear, markdownToHtml
+module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList, tableOfPairs
+                       , menu, clear, markdownToHtml
                        {- Text.Blaze.Html5 -}
                        , Html, (!), string, stringValue, preEscapedString, customAttribute
                        , div, p, h1, h2, h3, hr, blockquote, script
@@ -87,6 +87,12 @@ multiColumnList 3 xs  =
   let (col1, col2, col3) = partitionThirds xs in
   multiColumn [unordList col1, unordList col2, unordList col3]
 multiColumnList _ _   = error "Unsupported number of columns."
+
+tableOfPairs :: [(String, String)] -> Html
+tableOfPairs pairs = table ! class_ "pairs" $ mconcat (map tr' pairs)
+ where tr' (h, d) = tr $ do
+                      th $ string h
+                      td $ string d
 
 -- Form Helpers
 
