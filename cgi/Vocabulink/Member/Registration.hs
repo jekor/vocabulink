@@ -85,10 +85,10 @@ sendConfirmationEmail :: String -> String -> String -> IO (Maybe ())
 sendConfirmationEmail email username hash =
   let body = unlines ["Welcome to Vocabulink, " ++ username ++ "."
                      ,""
-                     ,"Click http://www.vocabulink.com/member/confirmation/" ++
+                     ,"Please click http://www.vocabulink.com/member/confirmation/" ++
                       hash ++ " to confirm your email address."
                      ] in
-  sendMail email "Welcome to Vocabulink" body
+  sendMail email "Please confirm your email address." body
 
 resendConfirmEmail :: App CGIResult
 resendConfirmEmail = do
