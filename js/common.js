@@ -262,7 +262,7 @@ $(function () {
   });
 
   // Check for signals in the query string.
-  if (V.query['badlogin']) {
+  if (V.query['badlogin'] && !V.loggedIn()) {
     V.toastError("Username and password do not match (or don't exist).");
     V.loginPopup();
   }
