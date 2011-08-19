@@ -33,6 +33,7 @@ import Vocabulink.Page
 import Vocabulink.Utils
 
 import Prelude hiding (div, id, span)
+import Network.URI (parseURI, query)
 
 -- Once a user registers, they can log in. However, they won't be able to use
 -- most member-specific functions until they've confirmed their email address.
@@ -126,7 +127,14 @@ login = do
           authTok <- liftIO $ authToken (memberNumber member) username' ip key
           setAuthCookie authTok
           redirect =<< referrerOrVocabulink
-    _         -> redirect "http://www.vocabulink.com/?badlogin" -- error "Username and password do not match (or don't exist)."
+    _         -> do -- error "Username and password do not match (or don't exist)."
+      uri' <- parseURI <$> referrerOrVocabulink
+      case uri' of
+        Just uri -> let query' = case query uri of
+                                   "" -> "?badlogin"
+                                   q' -> "?" ++ q' ++ "&badlogin" in
+                    redirect $ show $ uri {uriQuery = query'}
+        Nothing  -> redirect "http://www.vocabulink.com/?badlogin"
 
 -- To logout a member, we simply clear their auth cookie and redirect them
 -- to the front page.
