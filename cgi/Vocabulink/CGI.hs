@@ -27,7 +27,7 @@ module Vocabulink.CGI ( outputText, outputHtml, outputJSON
                       , getInput, getRequiredInput, getInputDefault, getRequiredInputFPS
                       , readInput, readRequiredInput, readInputDefault
                       , getInputs, getBody
-                      , urlify, reversibleRedirect, referrerOrVocabulink
+                      , urlify, referrerOrVocabulink
                       , handleErrors, escapeURIString'
                       {- Data.Aeson.QQ -}
                       , aesonQQ
@@ -184,17 +184,6 @@ getBody = toString `liftM` CGI.getBodyFPS
 
 urlify :: String -> String
 urlify = map toLower . filter (\e -> isAlphaNum e || e `elem` "-.") . translate [(' ', '-')]
-
--- When we direct a user to some page, we might want to make sure that they can
--- find their way back to where they were. To do so, we get the current URI and
--- append it to the target page in the query string. The receiving page might know
--- what to do with it.
-
-reversibleRedirect :: (MonadCGI m) => String -> m String
-reversibleRedirect path = do
-  uri' <- getVar "REQUEST_URI"
-  let uri = fromMaybe "/" uri'
-  return $ path ++ "?redirect=" ++ escapeURIString' uri
 
 -- In some cases we'll need to redirect the client to where it came from after
 -- we perform some action. We use this to make sure that we don't redirect them
