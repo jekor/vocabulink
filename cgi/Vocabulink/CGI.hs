@@ -84,9 +84,6 @@ outputJSON obj = do
   setHeader "Content-Type" "application/json"
   return $ CGIOutput $ J.encode obj
 
-outputNotFound :: (MonadCGI m, MonadIO m) => m CGIResult
-outputNotFound = CGI.outputNotFound ""
-
 -- Errors
 
 -- TODO: Add nice HTML error pages
@@ -95,9 +92,12 @@ outputError' :: (MonadCGI m, MonadIO m) =>
              -> String   -- ^ Message
              -> m CGIResult
 outputError' c m = do
-  logCGI $ show (c,m)
+  when (c /= 404) $ logCGI $ show (c,m)
   setStatus c m
   outputText m
+
+outputNotFound :: (MonadCGI m, MonadIO m) => m CGIResult
+outputNotFound = outputError' 404 "The requested resource was not found."
 
 outputClientError :: (MonadCGI m, MonadIO m) => String -> m CGIResult
 outputClientError = outputError' 400
