@@ -75,7 +75,7 @@ linkReviewed member linkNo = do
 -- use this information (nor any SuperMemo algorithm that I know of), but we
 -- may find it useful when analyzing data later.
 
--- @recall@ is passed as a real number between 0 and 1 to allow for future
+-- @recallGrade@ is passed as a real number between 0 and 1 to allow for future
 -- variations in recall rating (such as fewer choices than 1 through 5 or less
 -- discrete options like a slider). 0 indicates complete failure while 1
 -- indicates perfect recall.
@@ -83,15 +83,15 @@ linkReviewed member linkNo = do
 -- All database updates during this process are wrapped in a transaction.
 
 scheduleNextReview :: Member -> Integer -> Float -> Integer -> App ()
-scheduleNextReview member linkNo recall recallTime = do
+scheduleNextReview member linkNo recallGrade recallTime = do
   previous <- fromJust <$> previousInterval member linkNo
-  diff <- SM2.reviewInterval (memberNumber member) linkNo previous recall
+  diff <- SM2.reviewInterval (memberNumber member) linkNo previous recallGrade
   h <- asks appDB
   liftIO $ withTransaction h $ do
     $(execute
-      "INSERT INTO link_review (member_no, link_no, recall, recall_time, \
+      "INSERT INTO link_review (member_no, link_no, recall_grade, recall_time, \
                                \target_time) \
-                       \VALUES ({memberNumber member}, {linkNo}, {recall}, {recallTime}, \
+                       \VALUES ({memberNumber member}, {linkNo}, {recallGrade}, {recallTime}, \
                                \(SELECT target_time FROM link_to_review \
                                 \WHERE member_no = {memberNumber member} AND link_no = {linkNo}))") h
     $(execute

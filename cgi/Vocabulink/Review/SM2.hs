@@ -37,9 +37,9 @@ import Vocabulink.Utils
 -- be repeated immediatey.
 
 reviewInterval :: Integer -> Integer -> DiffTime -> Float -> App DiffTime
-reviewInterval memberNo linkNo previous recall = do
+reviewInterval memberNo linkNo previous recallGrade = do
   let p = daysFromSeconds $ diffTimeToSeconds previous
-      q = round $ recall * 5 -- The algorithm expects 0-5, not 0-1.
+      q = round $ recallGrade * 5 -- The algorithm expects 0-5, not 0-1.
   stats <- $(queryTuple' "SELECT n, EF FROM link_sm2 \
                          \WHERE member_no = {memberNo} AND link_no = {linkNo}")
   secondsToDiffTime <$> case stats of
