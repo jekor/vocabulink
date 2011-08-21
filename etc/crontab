@@ -1,3 +1,4 @@
 0 1 * * * /home/jekor/vocabulink/scripts/backup-database-to-s3.sh
 0 2 * * * /home/jekor/vocabulink/scripts/rotate-backups.sh
-0 3 * * * /usr/bin/s3cmd sync /var/log/lighttpd/ s3://vocabulink.com-archive/lighttpd-logs/
+0 3 * * * /usr/bin/s3cmd sync /var/log/lighttpd s3://vocabulink.com-archive/logs/
+0 4 * * * /usr/bin/s3cmd sync /service/vocabulink.cgi/log/main/* s3://vocabulink.com-archive/logs/vocabulink.cgi/
