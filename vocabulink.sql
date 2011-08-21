@@ -375,30 +375,8 @@ CREATE TABLE comment (
        author INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE,
        time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        body TEXT,
-       parent_no INTEGER REFERENCES comment (comment_no),
-       upvotes INTEGER NOT NULL DEFAULT 0,
-       downvotes INTEGER NOT NULL DEFAULT 0
+       parent_no INTEGER REFERENCES comment (comment_no)
 );
-
-CREATE TABLE comment_vote (
-  comment INTEGER REFERENCES comment (comment_no),
-  member INTEGER REFERENCES member (member_no),
-  upvote BOOLEAN NOT NULL,
-  PRIMARY KEY (comment, member)
-);
-
-CREATE FUNCTION update_comment_vote_count() RETURNS trigger AS $$
-BEGIN
-  IF NEW.upvote THEN
-    UPDATE comment SET upvotes = upvotes + 1 WHERE comment_no = NEW.comment;
-  ELSE
-    UPDATE comment SET downvotes = downvotes + 1 WHERE comment_no = NEW.comment;
-  END IF;
-  RETURN NEW;
-END; $$ LANGUAGE plpgsql;
-
-CREATE TRIGGER vote_on_comment AFTER INSERT ON comment_vote FOR EACH ROW
-EXECUTE PROCEDURE update_comment_vote_count();
 
 -- Some objects don't have a meaningful root comment. Instead, commenters
 -- comment on the object itself. For those, we need a virtual root comment
