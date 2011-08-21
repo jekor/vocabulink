@@ -116,7 +116,7 @@ outputUnauthorized = outputError' 403 "Unauthorized"
 -- few helpers.
 
 getInput :: MonadCGI m => String -> m (Maybe String)
-getInput = liftM (>>= Just . convertLineEndings . toString) . CGI.getInputFPS
+getInput = liftM (>>= Just . convertLineEndings . trim . toString) . CGI.getInputFPS
 
 -- Often we'll want an input from the client but are happy to fall back to a
 -- default value.
@@ -126,7 +126,7 @@ getInputDefault d n = do
   i <- getInput n
   return $ case i of
              Nothing -> d
-             Just i' -> case ltrim i' of
+             Just i' -> case i' of
                           "" -> d
                           _  -> i'
 
@@ -155,7 +155,7 @@ readRequiredInput p =
   readInputDefault (error $ "Parameter '" ++ p ++ "' is required.") p
 
 getBody :: MonadCGI m => m String
-getBody = toString `liftM` CGI.getBodyFPS
+getBody = (trim . toString) `liftM` CGI.getBodyFPS
 
 -- Working with URLs
 

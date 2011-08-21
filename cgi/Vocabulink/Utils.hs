@@ -24,7 +24,7 @@
 module Vocabulink.Utils ( (?), (<$$>)
                         , safeHead, safeTail, every2nd, every3rd
                         , partitionHalves, partitionThirds
-                        , translate, ltrim, convertLineEndings
+                        , translate, trim, convertLineEndings
                         , currentDay, currentYear, diffTimeToSeconds
                         , basename, isFileReadable, sendMail
                         , logError, prettyPrint
@@ -79,7 +79,7 @@ import Control.Arrow (first, second, (***))
 import Control.Monad
 import Control.Monad.Trans (liftIO, MonadIO)
 import Data.ByteString.Lazy (readFile, writeFile)
-import Data.Char (toLower)
+import Data.Char (toLower, isSpace)
 import Data.Either.Utils (forceEither) -- MissingH
 import Data.List (intercalate)
 import Data.List.Split (splitOn, splitEvery)
@@ -175,11 +175,11 @@ partitionThirds x = (take len x, take len (drop len x), drop (len * 2) x)
 translate :: (Eq a) => [(a, a)] -> [a] -> [a]
 translate sr = map (\s -> fromMaybe s $ lookup s sr)
 
--- | Trim whitespace from the beginning of a string. Only deals with ASCII
--- | whitespace characters.
-ltrim :: String -> String
-ltrim = dropWhile (`elem` whitespace)
- where whitespace = " \n\r\t"
+-- | Trim whitespace from the beginning and end of a string.
+-- from https://secure.wikimedia.org/wikipedia/en/wiki/Trim_(programming)#Haskell
+trim :: String -> String
+trim = f . f
+ where f = reverse . dropWhile isSpace
 
 -- We might get data from various sources that use different end-of-line
 -- terminators. But we want to always work with just newlines.
