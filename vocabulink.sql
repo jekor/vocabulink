@@ -351,31 +351,14 @@ END; $$ LANGUAGE plpgsql;
 CREATE TRIGGER add_root_comment AFTER INSERT ON article FOR EACH ROW
 EXECUTE PROCEDURE create_article_root_comment();
 
--- Forums
-
-CREATE TABLE forum_group (
-       group_name TEXT PRIMARY KEY,
-       position SMALLINT NOT NULL
-);
-COMMENT ON COLUMN forum_group.position IS 'The lower the position, the higher on the page the forum group is displayed.';
-
-CREATE TABLE forum (
-       name TEXT PRIMARY KEY,
-       title TEXT NOT NULL,
-       group_name TEXT REFERENCES forum_group (group_name) NOT NULL ON UPDATE CASCADE,
-       position SMALLINT NOT NULL,
-       icon_filename TEXT NOT NULL
-);
-COMMENT ON COLUMN forum.name IS 'The forum name must be URL-safe.';
-COMMENT ON COLUMN forum.position IS 'This is like the forum group position. The forums are listed from left to right, top to bottom. The position is only for this forum group.';
-COMMENT ON COLUMN forum.icon_filename IS 'The filename is the relative path to the icon from the configured icon directory.';
+-- Comments
 
 CREATE TABLE comment (
        comment_no SERIAL PRIMARY KEY,
        author INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE,
        time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        body TEXT,
-       parent_no INTEGER REFERENCES comment (comment_no)
+       parent_no INTEGER REFERENCES comment (comment_no) ON DELETE CASCADE
 );
 
 -- Some objects don't have a meaningful root comment. Instead, commenters
@@ -404,17 +387,6 @@ CREATE FUNCTION comment_tree(INTEGER) RETURNS SETOF displayable_comment AS $$
     AND m.member_no = c.author AND c.body IS NOT NULL
 $$ LANGUAGE SQL;
 
-CREATE TABLE forum_topic (
-       topic_no SERIAL PRIMARY KEY,
-       forum_name TEXT REFERENCES forum (name) ON UPDATE CASCADE,
-       title TEXT NOT NULL,
-       root_comment INTEGER REFERENCES comment (comment_no) NOT NULL,
-       last_comment INTEGER REFERENCES comment (comment_no) NOT NULL,
-       num_replies SMALLINT NOT NULL DEFAULT 0
-);
-COMMENT ON COLUMN forum_topic.last_comment IS 'While a pointer to the last comment isn''t theoretically necessary, it greatly simplifies retrieving information on forum topics in bulk.';
-COMMENT ON COLUMN forum_topic.num_replies IS 'Again, this is not strictly necessary, but it does make queries easier.';
-
 CREATE FUNCTION comment_root(INTEGER) RETURNS INTEGER AS $$
 DECLARE
   r comment%rowtype;
@@ -426,18 +398,6 @@ BEGIN
     RETURN r.comment_no;
   END IF;
 END; $$ LANGUAGE plpgsql;
-
--- When someone replies to a comment that's part of a forum topic, we need to
--- update the forum topic table with some data for faster selects later.
-CREATE FUNCTION update_forum_topic() RETURNS trigger AS $$
-BEGIN
-  UPDATE forum_topic SET last_comment = NEW.comment_no, num_replies = num_replies + 1
-  WHERE root_comment = comment_root(NEW.comment_no);
-  RETURN NEW;
-END; $$ LANGUAGE plpgsql;
-
-CREATE TRIGGER update_root AFTER INSERT ON comment FOR EACH ROW
-EXECUTE PROCEDURE update_forum_topic();
 
 CREATE TABLE link_comment (
        link_no INTEGER REFERENCES link (link_no) NOT NULL,
