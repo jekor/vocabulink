@@ -25,8 +25,7 @@
 module Vocabulink.CGI ( outputText, outputHtml, outputJSON
                       , outputNotFound, outputUnauthorized, outputClientError, outputServerError
                       , getInput, getRequiredInput, getInputDefault, getRequiredInputFPS
-                      , readInput, readRequiredInput, readInputDefault
-                      , getInputs, getBody
+                      , readInput, readRequiredInput, readInputDefault, getBody
                       , urlify, referrerOrVocabulink
                       , handleErrors, escapeURIString'
                       {- Data.Aeson.QQ -}
@@ -58,7 +57,7 @@ import Data.ByteString.Lazy (ByteString)
 import Data.ByteString.Lazy.UTF8 (fromString, toString)
 import Data.Char (isAlphaNum)
 import Network.URI (uriPath, uriQuery, escapeURIString, isUnescapedInURI)
-import Network.CGI hiding (getInput, readInput, getInputs, getBody, Html, output, outputNotFound, handleErrors)
+import Network.CGI hiding (getInput, readInput, getBody, Html, output, outputNotFound, handleErrors)
 import qualified Network.CGI as CGI
 import Network.CGI.Monad (CGIT(..))
 import Network.CGI.Protocol (CGIResult(..))
@@ -154,13 +153,6 @@ readInputDefault d = liftM (fromMaybe d) . readInput
 readRequiredInput :: (Read a, MonadCGI m) => String -> m a
 readRequiredInput p =
   readInputDefault (error $ "Parameter '" ++ p ++ "' is required.") p
-
--- We need to do the same for getInputs as getInput. (It's used by |runForm| at
--- the least.)
-
-getInputs :: MonadCGI m => m [(String, String)]
-getInputs = map decode' `liftM` CGI.getInputsFPS
-    where decode' (x, y) = (decodeString x, convertLineEndings $ toString y)
 
 getBody :: MonadCGI m => m String
 getBody = toString `liftM` CGI.getBodyFPS
