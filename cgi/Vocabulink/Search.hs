@@ -54,23 +54,23 @@ linksContaining q n = do
   let q' = "%" ++ q ++ "%"
   exacts <- map partialLinkFromTuple <$> $(queryTuples'
     "SELECT link_no, link_type, author, \
-           \origin, destination, \
-           \origin_language, destination_language \
+           \foreign_phrase, familiar_phrase, \
+           \foreign_language, familiar_language \
     \FROM link \
     \WHERE NOT deleted \
-      \AND (origin ~~* {q} OR destination ~~* {q} \
-        \OR unaccent(origin) ~~* {q} OR unaccent(destination) ~~* {q}) \
+      \AND (foreign_phrase ~~* {q} OR familiar_phrase ~~* {q} \
+        \OR unaccent(foreign_phrase) ~~* {q} OR unaccent(familiar_phrase) ~~* {q}) \
     \LIMIT {n}")
   closes <- map partialLinkFromTuple <$> $(queryTuples'
     "SELECT link_no, link_type, author, \
-           \origin, destination, \
-           \origin_language, destination_language \
+           \foreign_phrase, familiar_phrase, \
+           \foreign_language, familiar_language \
     \FROM link \
     \WHERE NOT deleted \
-      \AND (origin !~~* {q} AND destination !~~* {q} \
-        \AND unaccent(origin) !~~* {q} AND unaccent(destination) !~~* {q}) \
-      \AND (origin ~~* {q'} OR destination ~~* {q'} \
-        \OR unaccent(origin) ~~* {q'} OR unaccent(destination) ~~* {q'}) \
-    \ORDER BY char_length(origin) \
+      \AND (foreign_phrase !~~* {q} AND familiar_phrase !~~* {q} \
+        \AND unaccent(foreign_phrase) !~~* {q} AND unaccent(familiar_phrase) !~~* {q}) \
+      \AND (foreign_phrase ~~* {q'} OR familiar_phrase ~~* {q'} \
+        \OR unaccent(foreign_phrase) ~~* {q'} OR unaccent(familiar_phrase) ~~* {q'}) \
+    \ORDER BY char_length(foreign_phrase) \
     \LIMIT {n - fromIntegral (length exacts)}")
   return $ exacts ++ closes

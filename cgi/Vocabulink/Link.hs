@@ -19,7 +19,7 @@
 -- around them.
 
 module Vocabulink.Link ( Link(..), PartialLink(..), LinkType(..), isLinkword
-                       , linkOriginLanguage, linkDestinationLanguage, languageNameFromAbbreviation
+                       , linkForeignLanguage, linkFamiliarLanguage, languageNameFromAbbreviation
                        , activeLinkTypes, linkTypeNameFromType, linkWord
                        , getLink, getPartialLink, partialLinkFromTuple
                        , linkLanguages, adjacentLinkNumbers
@@ -35,7 +35,7 @@ import Vocabulink.Utils
 
 -- Link Data Types
 
--- Abstractly, a link is defined by the origin and destination lexemes it links,
+-- Abstractly, a link is defined by the foreign and familiar phrases it links,
 -- as well as its type. Practically, we also need to carry around information such
 -- as its link number (in the database) as well as a string representation of its
 -- type (for partially constructed links, which you'll see later).
@@ -43,10 +43,10 @@ import Vocabulink.Utils
 data Link = Link { linkNumber          :: Integer
                  , linkTypeName        :: String
                  , linkAuthor          :: Integer
-                 , linkOrigin          :: String
-                 , linkOriginLang      :: String
-                 , linkDestination     :: String
-                 , linkDestinationLang :: String
+                 , linkForeignPhrase   :: String
+                 , linkForeignLang     :: String
+                 , linkFamiliarPhrase  :: String
+                 , linkFamiliarLang    :: String
                  , linkType            :: LinkType
                  }
 
@@ -98,15 +98,15 @@ instance UserContent Link where
           Nothing -> False
       else return False
 
--- The |linkOriginLang| and |linkDestinationLang| are the language
+-- The |linkForeignLang| and |linkFamiliarLang| are the language
 -- abbrevations. To get the full name we need to look it up.
 
 languageNameFromAbbreviation :: String -> App (Maybe String)
 languageNameFromAbbreviation abbr = lookup abbr <$> asks appLanguages
 
-linkOriginLanguage, linkDestinationLanguage :: Link -> App String
-linkOriginLanguage      l = fromJust <$> languageNameFromAbbreviation (linkOriginLang l)
-linkDestinationLanguage l = fromJust <$> languageNameFromAbbreviation (linkDestinationLang l)
+linkForeignLanguage, linkFamiliarLanguage :: Link -> App String
+linkForeignLanguage  l = fromJust <$> languageNameFromAbbreviation (linkForeignLang l)
+linkFamiliarLanguage l = fromJust <$> languageNameFromAbbreviation (linkFamiliarLang l)
 
 -- We already know what types of links exist, but we want only the active link
 -- types sorted by usefulness.
@@ -170,11 +170,11 @@ establishLink l memberNo = do
       True -> error "Link already exists."
       False -> do
         linkNo <- fromJust <$> $(queryTuple
-          "INSERT INTO link (origin, destination, \
-                            \origin_language, destination_language, \
+          "INSERT INTO link (foreign_phrase, familiar_phrase, \
+                            \foreign_language, familiar_language, \
                             \link_type, author) \
-                    \VALUES ({linkOrigin l}, {linkDestination l}, \
-                            \{linkOriginLang l}, {linkDestinationLang l}, \
+                    \VALUES ({linkForeignPhrase l}, {linkFamiliarPhrase l}, \
+                            \{linkForeignLang l}, {linkFamiliarLang l}, \
                             \{linkTypeName l}, {memberNo}) \
           \RETURNING link_no") h
         establishLinkType h (l {linkNumber = linkNo})
@@ -199,21 +199,21 @@ linkExists h l = case linkType l of
   -- Associations cannot be created if any better link type exists for the words.
   Association     -> isJust <$> $(queryTuple
     "SELECT link_no FROM link \
-    \WHERE origin ~~* {linkOrigin l} \
-      \AND origin_language = {linkOriginLang l} AND destination_language = {linkDestinationLang l} \
+    \WHERE foreign_phrase ~~* {linkForeignPhrase l} \
+      \AND foreign_language = {linkForeignLang l} AND familiar_language = {linkFamiliarLang l} \
       \AND NOT deleted") h
   -- Soundalikes cannot be created if a soundalike already exists for the words.
   Soundalike      -> isJust <$> $(queryTuple
     "SELECT link_no FROM link \
-    \WHERE origin ~~* {linkOrigin l} \
-      \AND origin_language = {linkOriginLang l} AND destination_language = {linkDestinationLang l} \
+    \WHERE foreign_phrase ~~* {linkForeignPhrase l} \
+      \AND foreign_language = {linkForeignLang l} AND familiar_language = {linkFamiliarLang l} \
       \AND link_type = {linkTypeNameFromType Soundalike} \
       \AND NOT deleted") h
   -- Linkwords can duplicate everything, as long as they are different linkwords.
   (Linkword word) -> isJust <$> $(queryTuple
     "SELECT link_no FROM link INNER JOIN link_linkword USING (link_no) \
-    \WHERE origin ~~* {linkOrigin l} \
-      \AND origin_language = {linkOriginLang l} AND destination_language = {linkDestinationLang l} \
+    \WHERE foreign_phrase ~~* {linkForeignPhrase l} \
+      \AND foreign_language = {linkForeignLang l} AND familiar_language = {linkFamiliarLang l} \
       \AND linkword = {word} \
       \AND NOT deleted") h
 
@@ -228,8 +228,8 @@ linkExists h l = case linkType l of
 getPartialLink :: Integer -> App (Maybe PartialLink)
 getPartialLink linkNo = partialLinkFromTuple <$$> $(queryTuple'
   "SELECT link_no, link_type, author, \
-         \origin, destination, \
-         \origin_language, destination_language \
+         \foreign_phrase, familiar_phrase, \
+         \foreign_language, familiar_language \
   \FROM link \
   \WHERE link_no = {linkNo}")
 
@@ -241,10 +241,10 @@ partialLinkFromTuple (n, t, u, o, d, ol, dl) =
   PartialLink Link { linkNumber          = n
                    , linkTypeName        = t
                    , linkAuthor          = u
-                   , linkOrigin          = o
-                   , linkDestination     = d
-                   , linkOriginLang      = ol
-                   , linkDestinationLang = dl
+                   , linkForeignPhrase   = o
+                   , linkFamiliarPhrase  = d
+                   , linkForeignLang     = ol
+                   , linkFamiliarLang    = dl
                    , linkType            = undefined }
 
 -- Once we have a partial link, it's a simple matter to turn it into a full
@@ -283,49 +283,49 @@ getLink linkNo = maybe (return Nothing) getLinkFromPartial =<< getPartialLink li
 linkLanguages :: App [((String, String), (String, String), Integer)]
 linkLanguages =
   map linkLanguages' <$> $(queryTuples'
-    "SELECT origin_language, orig.name, \
-           \destination_language, dest.name, \
+    "SELECT foreign_language, fo.name, \
+           \familiar_language, fa.name, \
            \COUNT(*) \
     \FROM link \
-    \INNER JOIN language orig ON (orig.abbr = origin_language) \
-    \INNER JOIN language dest ON (dest.abbr = destination_language) \
+    \INNER JOIN language fo ON (fo.abbr = foreign_language) \
+    \INNER JOIN language fa ON (fa.abbr = familiar_language) \
     \WHERE NOT deleted \
-    \GROUP BY origin_language, orig.name, \
-             \destination_language, dest.name")
+    \GROUP BY foreign_language, fo.name, \
+             \familiar_language, fa.name")
  where linkLanguages' (oa, on, da, dn, c) = ((oa, on), (da, dn), fromJust c)
 
 -- An adjacent link is the nearest (by link number) in the given language pair.
 
 adjacentLinkNumbers :: Link -> App (Maybe Integer, Maybe Integer)
 adjacentLinkNumbers link = do
-  let oLang = linkOriginLang link
-      dLang = linkDestinationLang link
+  let foLang = linkForeignLang link
+      faLang = linkFamiliarLang link
   prevLink <- $(queryTuple'
     "(SELECT link_no FROM link \
-     \WHERE origin_language = {oLang} \
-       \AND destination_language = {dLang} \
+     \WHERE foreign_language = {foLang} \
+       \AND familiar_language = {faLang} \
        \AND link_no < {linkNumber link} \
        \AND NOT deleted \
      \ORDER BY link_no DESC LIMIT 1) \
     \UNION \
     \(SELECT link_no FROM link \
-     \WHERE origin_language = {oLang} \
-     \AND destination_language = {dLang} \
+     \WHERE foreign_language = {foLang} \
+     \AND familiar_language = {faLang} \
      \AND NOT link_no = {linkNumber link} \
      \AND NOT deleted \
      \ORDER BY link_no DESC LIMIT 1) \
      \ORDER BY link_no ASC")
   nextLink <- $(queryTuple'
     "(SELECT link_no FROM link \
-     \WHERE origin_language = {oLang} \
-       \AND destination_language = {dLang} \
+     \WHERE foreign_language = {foLang} \
+       \AND familiar_language = {faLang} \
        \AND link_no > {linkNumber link} \
        \AND NOT deleted \
      \ORDER BY link_no ASC LIMIT 1) \
     \UNION \
     \(SELECT link_no FROM link \
-     \WHERE origin_language = {oLang} \
-       \AND destination_language = {dLang} \
+     \WHERE foreign_language = {foLang} \
+       \AND familiar_language = {faLang} \
        \AND NOT link_no = {linkNumber link} \
        \AND NOT deleted \
      \ORDER BY link_no ASC LIMIT 1) \
@@ -367,10 +367,10 @@ mkLink :: String -> String -> String -> String -> LinkType -> Link
 mkLink o ol d dl t = Link { linkNumber          = undefined
                           , linkAuthor          = undefined
                           , linkTypeName        = linkTypeNameFromType t
-                          , linkOrigin          = o
-                          , linkOriginLang      = ol
-                          , linkDestination     = d
-                          , linkDestinationLang = dl
+                          , linkForeignPhrase   = o
+                          , linkForeignLang     = ol
+                          , linkFamiliarPhrase  = d
+                          , linkFamiliarLang    = dl
                           , linkType            = t }
 
 -- Deleting Links
@@ -414,8 +414,8 @@ latestLinks :: Int -> Int -> App [PartialLink]
 latestLinks offset limit =
   map partialLinkFromTuple <$> $(queryTuples'
     "SELECT link_no, link_type, author, \
-           \origin, destination, \
-           \origin_language, destination_language \
+           \foreign_phrase, familiar_phrase, \
+           \foreign_language, familiar_language \
     \FROM link \
     \WHERE NOT deleted \
     \ORDER BY link_no DESC \
@@ -428,21 +428,21 @@ memberLinks :: Integer -> Int -> Int -> App [PartialLink]
 memberLinks memberNo offset limit =
   map partialLinkFromTuple <$> $(queryTuples'
     "SELECT link_no, link_type, author, \
-           \origin, destination, \
-           \origin_language, destination_language \
+           \foreign_phrase, familiar_phrase, \
+           \foreign_language, familiar_language \
     \FROM link \
     \WHERE NOT deleted AND author = {memberNo} \
     \ORDER BY link_no DESC \
     \OFFSET {offset} LIMIT {limit}")
 
 languagePairLinks :: String -> String -> Int -> Int -> App [PartialLink]
-languagePairLinks ol dl offset limit = do
+languagePairLinks foLang faLang offset limit = do
   map partialLinkFromTuple <$> $(queryTuples'
     "SELECT link_no, link_type, author, \
-           \origin, destination, \
-           \origin_language, destination_language \
+           \foreign_phrase, familiar_phrase, \
+           \foreign_language, familiar_language \
     \FROM link \
     \WHERE NOT deleted \
-      \AND origin_language = {ol} AND destination_language = {dl} \
+      \AND foreign_language = {foLang} AND familiar_language = {faLang} \
     \ORDER BY link_no DESC \
     \OFFSET {offset} LIMIT {limit}")

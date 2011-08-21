@@ -83,10 +83,10 @@ linkPage linkNo = do
           let owner' = maybe False (linkAuthor l' ==) memberNo
           ops <- linkOperations l'
           hasPronunciation <- pronounceable linkNo
-          oLanguage <- linkOriginLanguage l'
-          dLanguage <- linkDestinationLanguage l'
-          let orig = linkOrigin l'
-              dest = linkDestination l'
+          foLang <- linkForeignLanguage l'
+          faLang <- linkFamiliarLanguage l'
+          let fo = linkForeignPhrase l'
+              fa = linkFamiliarPhrase l'
           row <- $(queryTuple' "SELECT root_comment \
                                \FROM link_comment \
                                \WHERE link_no = {linkNo}")
@@ -99,10 +99,10 @@ linkPage linkNo = do
                          ss <- linkWordStories (linkNumber l')
                          return $ mconcat $ map (\ (n, x, y, z) -> renderStory n x y z) ss
                        else return mempty
-          stdPage (orig ++ " → " ++ dest) [CSS "lib.link", JS "link"] mempty $ do
+          stdPage (fo ++ " → " ++ fa) [CSS "lib.link", JS "link"] mempty $ do
             div ! id "link-head-bar" $ do
-              h2 $ a ! href (stringValue $ "/links?ol=" ++ linkOriginLang l' ++ "&dl=" ++ linkDestinationLang l') $
-                string (oLanguage ++ " to " ++ dLanguage ++ ":")
+              h2 $ a ! href (stringValue $ "/links?ol=" ++ linkForeignLang l' ++ "&dl=" ++ linkFamiliarLang l') $
+                string (foLang ++ " to " ++ faLang ++ ":")
               div ! id "link-ops" $ ops
             renderedLink
             when (isLinkword l') $
@@ -176,8 +176,8 @@ linkOperations link = do
 -- So what we do is sort languages that the member has already used to the top
 -- of the list (based on frequency).
 
--- This takes an either parameter to signify whether you want origin language
--- (Left) or destination language (Right). They are sorted separately.
+-- This takes an either parameter to signify whether you want foreign language
+-- (Left) or familiar language (Right). They are sorted separately.
 
 languageMenu :: Either () () -> App Html
 languageMenu side = do
@@ -189,16 +189,16 @@ languageMenu side = do
       Left  _ -> $(queryTuples'
         "SELECT abbr, name \
         \FROM link, language \
-        \WHERE language.abbr = link.origin_language \
+        \WHERE language.abbr = link.foreign_language \
           \AND link.author = {memberNumber m} \
-        \GROUP BY origin_language, abbr, name \
+        \GROUP BY foreign_language, abbr, name \
         \ORDER BY MAX(created) DESC")
       Right _ -> $(queryTuples'
         "SELECT abbr, name \
         \FROM link, language \
-        \WHERE language.abbr = link.destination_language \
+        \WHERE language.abbr = link.familiar_language \
           \AND link.author = {memberNumber m} \
-        \GROUP BY destination_language, abbr, name \
+        \GROUP BY familiar_language, abbr, name \
         \ORDER BY MAX(created) DESC")
   -- Default to English as the familiar language to make things easier and more
   -- obvious for new users.
@@ -230,22 +230,22 @@ languageMenu side = do
 
 renderLink :: Link -> Bool -> Bool -> App Html
 renderLink link pronounceable' paging = do
-  oLanguage <- linkOriginLanguage link
-  dLanguage <- linkDestinationLanguage link
+  foLang <- linkForeignLanguage link
+  faLang <- linkFamiliarLanguage link
   (prevLink, nextLink) <- if paging
                             then adjacentLinkNumbers link
                             else return (Nothing, Nothing)
   return $ h1 ! class_ (stringValue $ "link " ++ linkTypeName link) $ do
     maybe mempty (\n -> a ! href (stringValue $ show n) ! class_ "prev"
-                          ! title (stringValue $ "Previous " ++ oLanguage ++ "→" ++ dLanguage ++ " Link") $ mempty) prevLink
-    span ! class_ "foreign" ! title (stringValue oLanguage) $ do
-      string $ linkOrigin link
+                          ! title (stringValue $ "Previous " ++ foLang ++ "→" ++ faLang ++ " Link") $ mempty) prevLink
+    span ! class_ "foreign" ! title (stringValue foLang) $ do
+      string $ linkForeignPhrase link
       pronunciation
     span ! class_ "link" ! title (stringValue $ linkTypeName link) $
       renderLinkType (linkType link)
-    span ! class_ "familiar" ! title (stringValue dLanguage) $ string $ linkDestination link
+    span ! class_ "familiar" ! title (stringValue faLang) $ string $ linkFamiliarPhrase link
     maybe mempty (\n -> a ! href (stringValue $ show n) ! class_ "next"
-                          ! title (stringValue $ "Next " ++ oLanguage ++ "→" ++ dLanguage ++ " Link") $ mempty) nextLink
+                          ! title (stringValue $ "Next " ++ foLang ++ "→" ++ faLang ++ " Link") $ mempty) nextLink
  where renderLinkType :: LinkType -> Html
        renderLinkType (Linkword word) = string word
        renderLinkType _               = mempty
@@ -259,15 +259,15 @@ renderLink link pronounceable' paging = do
 
 renderPartialLink :: PartialLink -> App Html
 renderPartialLink (PartialLink l) = do
-  originLanguage      <- linkOriginLanguage l
-  destinationLanguage <- linkDestinationLanguage l
+  foLang <- linkForeignLanguage l
+  faLang <- linkFamiliarLanguage l
   return $
     a ! class_ (stringValue $ "partial-link " ++ linkTypeName l)
       ! href (stringValue $ "/link/" ++ show (linkNumber l))
-      ! title (stringValue $ originLanguage ++ " → " ++ destinationLanguage) $ do
-      span ! class_ "foreign" $ string $ linkOrigin l
+      ! title (stringValue $ foLang ++ " → " ++ faLang) $ do
+      span ! class_ "foreign" $ string $ linkForeignPhrase l
       string " → "
-      span ! class_ "familiar" $ string $ linkDestination l
+      span ! class_ "familiar" $ string $ linkFamiliarPhrase l
 
 -- Displaying an entire link involves not just drawing a graphical
 -- representation of the link but displaying its type-level details as well.
@@ -307,7 +307,7 @@ data WordStyle = WordStyle (Float, Float) (Float, Float) Int Int
 wordCloud :: Int -> Int -> Int -> Int -> Int -> Int -> App Html
 wordCloud n width' height' fontMin fontMax numClasses = do
   words <- $(queryTuples'
-    "SELECT origin, link_no FROM link \
+    "SELECT foreign_phrase, link_no FROM link \
     \WHERE NOT deleted AND link_no IN \
      \(SELECT DISTINCT link_no FROM linkword_story) \
     \ORDER BY random() LIMIT {n}")

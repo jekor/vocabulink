@@ -250,10 +250,10 @@ INSERT INTO link_type (name, description, relation)
 
 CREATE TABLE link (
        link_no SERIAL PRIMARY KEY,
-       origin TEXT NOT NULL CHECK (length(origin) > 0),
-       destination TEXT NOT NULL CHECK (length(destination) > 0),
-       origin_language CHARACTER VARYING (3) REFERENCES language (abbr) NOT NULL ON UPDATE CASCADE,
-       destination_language CHARACTER VARYING (3) REFERENCES language (abbr) NOT NULL ON UPDATE CASCADE,
+       foreign_phrase TEXT NOT NULL CHECK (length(foreign_phrase) > 0),
+       familiar_phrase TEXT NOT NULL CHECK (length(familiar_phrase) > 0),
+       foreign_language CHARACTER VARYING (3) REFERENCES language (abbr) NOT NULL ON UPDATE CASCADE,
+       familiar_language CHARACTER VARYING (3) REFERENCES language (abbr) NOT NULL ON UPDATE CASCADE,
        link_type TEXT REFERENCES link_type (name) NOT NULL ON UPDATE CASCADE,
        author INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE,
        created TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
@@ -261,12 +261,10 @@ CREATE TABLE link (
        deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 COMMENT ON TABLE link IS 'A link is an association between 2 ideas in a single direction. (A reverse association would require another link.)';
-COMMENT ON COLUMN link.origin IS 'lexeme (lemma)';
-COMMENT ON COLUMN link.destination IS 'lexeme (lemma)';
 COMMENT ON COLUMN link.deleted IS 'We need a way to delete links, but we don''t want to destroy people''s review decks. This allows us to mark deleted links so that we don''t display them to people who aren''t already reviewing them and we can later sweep ones with no references.';
 -- We're going to search by these often.
-CREATE INDEX link_origin_index ON link (origin);
-CREATE INDEX link_destination_index ON link (destination);
+CREATE INDEX link_foreign_phrase_index ON link (foreign_phrase);
+CREATE INDEX link_familiar_phrase_index ON link (familiar_phrase);
 
 CREATE TABLE link_linkword (
        link_no INTEGER REFERENCES link (link_no) NOT NULL PRIMARY KEY,

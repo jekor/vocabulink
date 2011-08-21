@@ -117,15 +117,15 @@ nextReview member n = do
     -- TODO: Make a version of getLink that can retrieve multiple links at once.
     _  -> outputJSON =<< mapM linkJSON =<< (catMaybes <$> mapM getLink rows)
  where linkJSON l = do
-         ol <- linkOriginLanguage l
-         dl <- linkDestinationLanguage l
+         ol <- linkForeignLanguage l
+         dl <- linkFamiliarLanguage l
          pr <- pronounceable $ linkNumber l
          return [aesonQQ| {"linkNumber": <| linkNumber l |>
-                          ,"foreign": <| linkOrigin l |>
-                          ,"foreignLang": <| linkOriginLang l |>
+                          ,"foreign": <| linkForeignPhrase l |>
+                          ,"foreignLang": <| linkForeignLang l |>
                           ,"foreignLanguage": <| ol |>
-                          ,"familiar": <| linkDestination l |>
-                          ,"familiarLang": <| linkDestinationLang l |>
+                          ,"familiar": <| linkFamiliarPhrase l |>
+                          ,"familiarLang": <| linkFamiliarLang l |>
                           ,"familiarLanguage": <| dl |>
                           ,"linkType": <| linkTypeNameFromType $ linkType l |>
                           ,"linkword": <| toJSON $ linkWord l |>
