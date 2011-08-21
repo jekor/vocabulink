@@ -2,5 +2,5 @@
 
 FILE=vocabulink--$(date +%Y-%m-%d).sql.gpg
 pg_dump -U postgres -h localhost --create vocabulink | gpg -e -r "chris@forno.us" > $FILE
-s3cmd put $FILE s3://vocabulink.com-archive/
+s3cmd put $FILE s3://vocabulink.com-archive/sql/
 rm $FILE
