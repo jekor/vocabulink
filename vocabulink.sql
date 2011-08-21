@@ -297,8 +297,8 @@ CREATE TABLE link_review (
        link_no INTEGER REFERENCES link (link_no) NOT NULL ON UPDATE CASCADE,
        target_time TIMESTAMP (0) WITH TIME ZONE NOT NULL,
        actual_time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-       recall REAL NOT NULL,
-       recall_time REAL NOT NULL,
+       recall_grade REAL NOT NULL,
+       recall_time INTEGER NOT NULL,
        PRIMARY KEY (member_no, link_no, actual_time)
 );
 COMMENT ON COLUMN link_review.recall IS 'Recall is a measure of how easy or complete the memory of a link was. 1.0 is perfect recall. 0.0 means "no clue".';
