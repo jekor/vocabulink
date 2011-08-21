@@ -24,7 +24,7 @@ INSERT INTO member (member_no, username, password_hash)
 VALUES (0, 'anonymous', '');
 
 CREATE TABLE member_confirmation (
-       member_no INTEGER REFERENCES member (member_no) PRIMARY KEY,
+       member_no INTEGER REFERENCES member (member_no) NOT NULL PRIMARY KEY,
        hash TEXT NOT NULL,
        email TEXT NOT NULL,
        email_sent TIMESTAMP (0) WITH TIME ZONE
@@ -34,7 +34,7 @@ COMMENT ON COLUMN member_confirmation.hash IS 'This is a random hash that we can
 COMMENT ON COLUMN member_confirmation.email_sent IS 'email_sent is the time a confirmation email was successfully sent (or at least when our MTA says it was sent).';
 
 CREATE TABLE password_reset_token (
-       member_no INTEGER REFERENCES member (member_no) PRIMARY KEY,
+       member_no INTEGER REFERENCES member (member_no) NOT NULL PRIMARY KEY,
        hash TEXT NOT NULL,
        expires TIMESTAMP (0) WITH TIME ZONE
 );
@@ -253,10 +253,10 @@ CREATE TABLE link (
        link_no SERIAL PRIMARY KEY,
        origin TEXT NOT NULL CHECK (length(origin) > 0),
        destination TEXT NOT NULL CHECK (length(destination) > 0),
-       origin_language CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE,
-       destination_language CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE,
-       link_type TEXT REFERENCES link_type (name) ON UPDATE CASCADE,
-       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
+       origin_language CHARACTER VARYING (3) REFERENCES language (abbr) NOT NULL ON UPDATE CASCADE,
+       destination_language CHARACTER VARYING (3) REFERENCES language (abbr) NOT NULL ON UPDATE CASCADE,
+       link_type TEXT REFERENCES link_type (name) NOT NULL ON UPDATE CASCADE,
+       author INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE,
        created TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        updated TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        deleted BOOLEAN NOT NULL DEFAULT FALSE
@@ -270,7 +270,7 @@ CREATE INDEX link_origin_index ON link (origin);
 CREATE INDEX link_destination_index ON link (destination);
 
 CREATE TABLE link_linkword (
-       link_no INTEGER REFERENCES link (link_no) PRIMARY KEY,
+       link_no INTEGER REFERENCES link (link_no) NOT NULL PRIMARY KEY,
        linkword TEXT NOT NULL
 );
 
@@ -284,8 +284,8 @@ CREATE TABLE linkword_story (
 );
 
 CREATE TABLE link_to_review (
-       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
-       link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE,
+       member_no INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE,
+       link_no INTEGER REFERENCES link (link_no) NOT NULL ON UPDATE CASCADE,
        target_time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        PRIMARY KEY (member_no, link_no)
 );
@@ -293,8 +293,8 @@ COMMENT ON COLUMN link_to_review.member_no IS 'Anonymous members cannot schedule
 COMMENT ON COLUMN link_to_review.target_time IS 'Target is the date and time at which this link should come up for review. The link will be reviewed sometime after that. All new links for review are currently scheduled for immediate review.';
 
 CREATE TABLE link_review (
-       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
-       link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE,
+       member_no INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE,
+       link_no INTEGER REFERENCES link (link_no) NOT NULL ON UPDATE CASCADE,
        target_time TIMESTAMP (0) WITH TIME ZONE NOT NULL,
        actual_time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        recall REAL NOT NULL,
@@ -305,8 +305,8 @@ COMMENT ON COLUMN link_review.recall IS 'Recall is a measure of how easy or comp
 COMMENT ON COLUMN link_review.recall_time IS 'Recall time is the amount of time (in milliseconds) taken to recall (or not) the destination of a link. It could be measured as the time between when the page is displayed and when the destination lexeme is shown (using JavaScript).';
 
 CREATE TABLE link_sm2 (
-       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
-       link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE,
+       member_no INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE,
+       link_no INTEGER REFERENCES link (link_no) NOT NULL ON UPDATE CASCADE,
        n SMALLINT NOT NULL DEFAULT 1,
        EF REAL NOT NULL DEFAULT 2.5,
        PRIMARY KEY (member_no, link_no)
@@ -336,8 +336,8 @@ CREATE RULE "replace article" AS
                 WHERE filename = NEW.filename);
 
 CREATE TABLE article_comment (
-  filename TEXT REFERENCES article (filename),
-  root_comment INTEGER REFERENCES comment (comment_no),
+  filename TEXT REFERENCES article (filename) NOT NULL,
+  root_comment INTEGER REFERENCES comment (comment_no) NOT NULL,
   PRIMARY KEY (filename, root_comment)
 );
 
@@ -372,7 +372,7 @@ COMMENT ON COLUMN forum.icon_filename IS 'The filename is the relative path to t
 
 CREATE TABLE comment (
        comment_no SERIAL PRIMARY KEY,
-       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE,
+       author INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE,
        time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        body TEXT,
        parent_no INTEGER REFERENCES comment (comment_no),
@@ -462,8 +462,8 @@ CREATE TRIGGER update_root AFTER INSERT ON comment FOR EACH ROW
 EXECUTE PROCEDURE update_forum_topic();
 
 CREATE TABLE link_comment (
-       link_no INTEGER REFERENCES link (link_no),
-       root_comment INTEGER REFERENCES comment (comment_no),
+       link_no INTEGER REFERENCES link (link_no) NOT NULL,
+       root_comment INTEGER REFERENCES comment (comment_no) NOT NULL,
        PRIMARY KEY (link_no, root_comment)
 );
 
