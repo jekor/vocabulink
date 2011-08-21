@@ -1,0 +1,11 @@
+\chapter{Backups}
+
+Backups are made nightly of the following:
+
+\begin{enumerate}
+\item the PostgreSQL database (see scripts/backup-database-to-s3.sh)
+\item the web server logs and program logs
+\item the upload directory
+\end{enumerate}
+
+All backup files are stored on Amazon S3 in the bucket named \verb|vocabulink.com-archive|.

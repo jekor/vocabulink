@@ -5,13 +5,13 @@ chapters:= $(shell ls chapters/*.tex)
 all: handbook.pdf
 
 handbook.pdf: handbook.ind
-	pdflatex handbook
+	xelatex handbook
 
 handbook.ind: handbook.idx
 	makeindex handbook
 
 handbook.idx: handbook.tex handbook.sty $(chapters)
-	pdflatex handbook
+	xelatex handbook
 
 clean:
 	rm *.aux *.idx *.ilg *.ind *.log *.out *.toc
