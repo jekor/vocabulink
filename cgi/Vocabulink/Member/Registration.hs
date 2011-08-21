@@ -153,7 +153,7 @@ logout = do
 usernameAvailable :: String -> App Bool
 usernameAvailable u =
   if' (length u < 4)  (return False) $
-  if' (length u > 32) (return False) $
+  if' (length u > 24) (return False) $
   isNothing <$> $(queryTuple' "SELECT username FROM member \
                               \WHERE username ILIKE {u}")
 
