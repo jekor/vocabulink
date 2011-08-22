@@ -139,16 +139,9 @@ articleFromFile path = do
 -- An accepted article's first lines will consist of something like:
 
 -- #title Why Learn with Vocabulink?
--- #author jekor
--- #date 2009-01-11 16:04 -0800
--- #update 2009-02-28 14:55 -0800
 -- #section main
 
 -- #title:   is a freeform title.
--- #author:  must be a username from the members table.
--- #date:    is the date in ISO-8601 format (with spaces between the date,
---           time, and timezone).
--- #update:  is an optional update time (in the same format as @#date@).
 -- #section: is the section of the site in to publish the article. For
 --           static content ``articles'' such as the privacy policy, don't
 --           include a section. For now, only ``main'' is supported with

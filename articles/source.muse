@@ -1,6 +1,4 @@
 #title Vocabulink Source Code
-#date 2009-05-02 14:15:00 -0700
-#updated 2011-02-20 22:25:00 -0700
 
 The program powering www.vocabulink.com is Free Software. We believe that you should have the freedom to examine and make use of the source code of the web applications that you use. As such, we've released it under the GNU Affero Public License.
 

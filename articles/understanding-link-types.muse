@@ -1,5 +1,4 @@
 #title Understanding Link Types
-#date 2009-04-18 13:23:00 -0700
 #section main
 
 Each link on Vocabulink has a type. The best way to understand link types is to

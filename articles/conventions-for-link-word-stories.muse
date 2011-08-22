@@ -1,5 +1,4 @@
 #title Conventions for Link Word Stories
-#date 2009-09-12 14:53:00 -0700
 #section main
 
 These are some conventions I've come up with while writing stories linking foreign language words to English words. They are based on my experience, not hard science. However, you might find them useful to use in your own mnemonics.
