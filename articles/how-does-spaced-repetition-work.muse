@@ -1,0 +1,68 @@
+#title How Does Spaced Repetition Work?
+#section main
+
+Once you've learned a word, it's only useful to you if you can recall it when you need it. Spaced repetition keeps words fresh in your mind without excessive effort on your part.
+
+* Regular Review, but Only When You Need It
+
+What would happen if you tried to review each word you'd learned every day? It would work for a while, but eventually the amount of time it takes would become overwhelming. It might take you a few minutes to review 10 words. But how long will it take you to review 100? 30 minutes? What about 1,000? 5 hours?
+
+Before you know it you would be mentally exhausted and discouraged. One way to avoid this problem is to declare certain words "learned" and stop reviewing them. But what if you forget that word eventually?
+
+No matter how strong your will or desire to learn a language, your mind can only focus on intense mental activity for so long. Spaced repetition keeps your daily review to a minimum.
+
+* What Does It Look Like?
+
+Spaced repetition doesn't require a computer. With traditional flashcards, you can make use of spaced repetition through a "memory box". The box is made up of steadily increasing slot sizes.
+
+; +-+--+----+--------+----------------+--------------------------------+
+; | |  |    |        |                |                                |
+; | |  |    |        |                |                                |
+; | |  |    |        |                |                                |
+; | |  |    |        |                |                                |
+; +-+--+----+--------+----------------+--------------------------------+
+
+<literal>
+<table style="border-collapse: collapse; margin-left: auto; margin-right: auto;">
+<caption style="caption-side: bottom;"><p style="margin-top: 1ex;">an overhead view of a memory box</p></caption>
+<tr>
+<td style="width: 1em; height: 10ex; border: 1px solid #000000;"></td>
+<td style="width: 2em; height: 10ex; border: 1px solid #000000;"></td>
+<td style="width: 4em; height: 10ex; border: 1px solid #000000;"></td>
+<td style="width: 8em; height: 10ex; border: 1px solid #000000;"></td>
+<td style="width: 16em; height: 10ex; border: 1px solid #000000;"></td>
+</tr>
+</table>
+</literal>
+
+The 1st (leftmost) slot should fit roughly 10 flashcards. The 2nd slot should fit double that (20). The 3rd slot should fit double that again (40), and so on.[1]
+
+When you first learn a word, you place its flashcard into the 1st (smallest) slot. Each day, you review all of the flashcards in the first slot. Each flashcard that you recall correctly goes into the 2nd slot. If you already had some cards in the second slot, you review 10 of those. Any that were correct move into the 3rd slot, and so on.
+
+Over time, each flashcard makes its way towards the larger slots in the box. As it does so, you review it less frequently. By the time it's in the 4th slot, you're reviewing it less than once a week. However, if you can't recall the meaning of the word on the card, the card goes back to the 1st slot, and you start all over again.
+
+The benefit of the memory box is that you only have do a limited amount of reviewing every day. If, for example, your memory box has 6 slots, you'll review a maximum of 60 flashcards each day.
+
+But the memory box has several limitations:
+
+ 1. It requires you to take the time to make physical flashcards.
+ 2. There's a limited number of slots. What happens after a flashcard makes it out of the final slot?
+ 3. It requires you to keep track of what you're doing. This takes away focus that you could be using to remember the meanings of the words.
+ 4. It doesn't track your progress. You'd have to do that yourself with a notebook.
+ 5. It's inefficient. Any time you forget a word, you have to either put it back in the 1st slot or make a judgement call to put it into a higher slot.
+
+* Our Improved Memory Box
+
+All of these problems can be solved with a computer, and that's Vocabulink does:
+
+ 1. The "flashcards" are already created for you on Vocabulink in the form of "links". All you have to do is click the "Add to Review" button to put them into your virtual "memory box".
+ 2. Our system has an unlimited number of "slots". Once you add a word, you'll be reminded to review it as often as necessary[2].
+ 3. We use a precise algorithm to track your reviews[3]. Each word is scheduled for review exactly when it needs to be. There's no need to remember which slot you're on or how many cards need to go out of or into each slot. You just open up the review page and review the links you're given.
+ 4. We keep a record of every time you've reviewed each word and the grade you gave yourself for how well you remembered the meaning.
+ 5. The algorithm we use is adaptive. Since we record every review time and grade from the past, the algorithm can take into account your entire review history when determining when to schedule the next review.
+
+Footnotes:
+[1]  Instead of using doubling slot sizes, you could base the sizes on the Fibonacci sequence.
+[2]  By default, we'll continue scheduling reviews for your entire lifetime. But don't worry, words you learn well will become so infrequent that years might pass between reviews.
+[3]  The algorithm we currently use is [[http://www.supermemo.com/english/ol/sm2.htm][Supermemo 2]].
+
