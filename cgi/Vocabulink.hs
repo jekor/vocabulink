@@ -396,6 +396,17 @@ frontPage = do
                  string "."
                p "Your memory is especially receptive to stories. We pass verbal history down from generation to generation through stories. We teach lessons to children with stories. And experienced public speakers know that stories are essential for getting a point across and making it stick with an audience."
                p "Vocabulink exploits this feature of the human brain to make learning more natural. It might seem silly at first, but it's effective."
+               p $ a ! href "article/how-do-linkword-mnemonics-work" $ "read more..."
+             div ! class_ "column" $ do
+               h2 $ do
+                 strong "3"
+                 string "Spaced Repetition"
+               p $ "Sometimes you forget words, even when you've used memorable stories. The traditional solution to this is flashcards. But it's a tedious waste of time to keep drilling the same words day after day. Luckily, there's a better way."
+               p $ do
+                 string "We've taken some of the latest research about how memory works and made it an integrated part of Vocabulink. It's called "
+                 a ! href "http://www.supermemo.com/english/ol/background.htm" $ "spaced repetition"
+                 string " and it helps you spend only as much time as necessary reviewing words. You can think of Vocabulink as your own personal language trainer. We keep detailed stats on what you've learned and drill you only on the ones we think you're about to forget."
+               p $ a ! href "article/how-does-spaced-repetition-work" $ "read more..."
              div ! class_ "column" $ do
                h2 $ do
                  strong "2"
@@ -408,14 +419,6 @@ frontPage = do
                  string "This uneven spread is similar in every language that statisticians have studied. In fact, it has a name: "
                  a ! href "http://en.wikipedia.org/wiki/Zipf%27s_law" $ "Zipf's law"
                  string ". You can take advantage of this law in order to build vocabulary scientifically. Use your study time more effectively by ignoring words that you'll rarely, if ever, use."
-             div ! class_ "column" $ do
-               h2 $ do
-                 strong "3"
-                 string "Spaced Repetition"
-               p $ "Sometimes you forget words, even when you've used memorable stories. The traditional solution to this is flashcards. But it's a tedious waste of time to keep drilling the same words day after day. Luckily, there's a better way."
-               p $ do
-                 string "We've taken some of the latest research about how memory works and made it an integrated part of Vocabulink. It's called "
-                 a ! href "http://www.supermemo.com/english/ol/background.htm" $ "spaced repetition"
-                 string " and it helps you spend only as much time as necessary reviewing words. You can think of Vocabulink as your own personal language trainer. We keep detailed stats on what you've learned and drill you only on the ones we think you're about to forget."
+               p $ a ! href "article/why-study-words-in-order-of-frequency" $ "read more..."
              div ! class_ "clear" $ mempty ]
 
