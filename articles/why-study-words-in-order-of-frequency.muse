@@ -1,7 +1,11 @@
 #title Why Study Words in Order of Frequency?
 #section main
 
-You might find it strange that we suggest learning words like "also", "until", "then", etc. right from the beginning. Learning words in order of how common they are might seem illogical and cold.
+The Oxford English Dictionary defines 171,476 words currently in use[1]. That seems like a daunting amount until you realize that the word "the" makes up 7% of the total words we read. Next, the word "of" accounts for 3.5%, "and" makes up another 2.8%, and so on. You only need to know about 135 words to recognize half the words in common written English.
+
+This uneven spread is similar in every language that statisticians have studied. In fact, it has a name: "Zipf's law"[2]. You can take advantage of this law in order to build vocabulary scientifically. Use your study time more effectively by ignoring words that you'll rarely, if ever, use.
+
+You might find it strange that we suggest learning words like "also", "until", "then", etc. right from the beginning. After all, they don't really seem to fit into a logical group.
 
 * Logical Groupings of Vocabulary Are Logical, But Not Very Useful
 
@@ -34,3 +38,8 @@ When you actually make use of a language, you'll be using these common words ove
 Luckily, linguists have been doing this for a while. Computer programs exist that will analyze a large body of text (such as from books or film transcripts). Vocabulink makes use of these "frequency lists" to order the words we introduce to you.
 
 You have a limited amount of time and energy to spend on learning a language. Why waste it on learning words that you might never encounter until you're already fluent?
+
+Footnotes: 
+[1]  http://www.oxforddictionaries.com/page/93
+
+[2]  http://en.wikipedia.org/wiki/Zipf%27s_law

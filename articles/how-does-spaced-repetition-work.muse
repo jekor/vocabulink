@@ -53,7 +53,7 @@ But the memory box has several limitations:
 
 * Our Improved Memory Box
 
-All of these problems can be solved with a computer, and that's Vocabulink does:
+All of these problems can be solved with a computer, and that's what Vocabulink does:
 
  1. The "flashcards" are already created for you on Vocabulink in the form of "links". All you have to do is click the "Add to Review" button to put them into your virtual "memory box".
  2. Our system has an unlimited number of "slots". Once you add a word, you'll be reminded to review it as often as necessary[2].

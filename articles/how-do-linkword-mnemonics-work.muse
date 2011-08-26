@@ -13,9 +13,15 @@ After all, isn't it more work to try to remember the linkword and mnemonic than 
 
 These mnemonics take advantage of what we've observed about memory:
 
-1. We naturally remember stories, especially vivid and strange ones.
-2. It's easier to associate related and familiar ideas than unrelated ones.
-3. Deep learning lasts longer than rote learning.
+** We naturally remember stories, especially vivid and strange ones.
+
+Your memory is especially receptive to stories. We pass verbal history down from generation to generation through stories. We teach lessons to children with stories. And experienced public speakers know that stories are essential for getting a point across and making it stick with an audience.
+
+** Deep learning lasts longer than rote learning.
+
+The more time you spend exploring and probing an idea from different angles, the more time your brain has to let it sink in. However, just staring at a word isn't enough: your brain will get bored and start to think about other things. Stories keep your mind engaged while they subtly repeat and hint at what we want your brain to remember.
+
+** It's easier to associate related and familiar ideas than unrelated ones.
 
 Try to remember that "despues" means "later". What does your mind try to do to form this association? You could try staring at the words and repeating them over and over. This kind of study is called "rote learning". It's useful when you need to quickly remember a phone number to call, but it's not as useful for remembering things long-term.
 
@@ -23,19 +29,21 @@ Linkword mnemonics break down this leap between 2 seemingly unrelated words into
 
 ; Illustration about the big leap between word and translation compared to small steps with mnemonics.
 
-* Step 1: Remember the Linkword
+* The 3 Steps of Linkword Activation
+
+** Step 1: Remember the Linkword
 
 The most important property of a linkword is that it sounds similar to the foreign word you're learning. Since it does, it should be easy to remember it. When you hear the word "sentar", "centaur" should readily come to mind. A good linkword will be effortless to remember when you hear (or read aloud) the foreign word.
 
 In step 1, you shouldn't be worried about remembering the meaning of the foreign word, just the linkword.
 
-* Step 2: Remember the Story
+** Step 2: Remember the Story
 
 Once you've recalled the linkword, it should remind you of a scene and/or story. In our example, "centaur" reminds us of the idea of centaurs living in modern society. You probably have an image of what that would look like right now.
 
 The reason that this happens naturally is because English words, especially familiar ones, tend to have many associations in our brain. You might have seen a movie or read a book with a centaur in it. The story takes advantage of these existing associations to sort of piggy-back its way into your memory.
 
-* Step 3: Remember the Meaning
+** Step 3: Remember the Meaning
 
 Once you remember the story, and the scene it takes place in, the story should remind you of the meaning. What were the centaurs doing in the story? They were having difficulty finding a place to sit.
 
@@ -75,7 +83,7 @@ Linkword mnemonics are uni-directional by nature. They're not designed to help y
 
 It is important to learn to communicate in a foreign language by forming sentences of your own. However, in the beginning stages of learning a language, listening and reading play a larger role than speaking and writing.
 
-Eventually, with enough reviews, you'll remember the meanings of words without using the mnemonic scaffolding. And at that point, when the words and more familiar, you'll be more prepared to make use of them in forming your own sentences.
+Eventually, with enough reviews, you'll remember the meanings of words without using the mnemonic scaffolding. And at that point, when the words are more familiar, you'll be more prepared to make use of them in forming your own sentences.
 
 ; * Deep Learning vs. Rote Learning
 
