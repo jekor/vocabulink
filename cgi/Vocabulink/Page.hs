@@ -58,13 +58,13 @@ stdPage title' deps head' body' = outputHtml =<< (do
   cssDeps' <- mapM includeDep cssDeps
   jsDeps'  <- mapM includeDep jsDeps
   return $ docTypeHtml $ do
-    div ! id "page" $ do
-      head $ do
-        mconcat cssDeps'
-        title $ string title'
-        link ! rel "icon" ! type_ "image/png" ! href "http://s.vocabulink.com/img/favicon.png"
-        head'
-      body $ do
+    head $ do
+      mconcat cssDeps'
+      title $ string title'
+      link ! rel "icon" ! type_ "image/png" ! href "http://s.vocabulink.com/img/favicon.png"
+      head'
+    body $ do
+      div ! id "page" $ do
         div ! id "head" $ headerB
         when (jsDeps /= []) (noscript $ p "This page requires JavaScript for some functionality.")
         div ! id "body" $ body'
