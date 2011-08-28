@@ -96,8 +96,8 @@ resendConfirmEmail = do
   member <- asks appMember
   case member of
     Nothing -> do
-      simplePage "Please Login to Resend Your Confirmation Email" mempty $ do
-        script ! type_ "text/javascript" $ preEscapedString "jQuery(function () {V.loginPopup();});"
+      simplePage "Please Login to Resend Your Confirmation Email"
+        [ReadyJS "V.loginPopup();"] mempty
     Just m  -> do
       (hash, email) <- fromJust <$> $(queryTuple'
                          "SELECT hash, email FROM member_confirmation \
@@ -179,8 +179,8 @@ confirmEmail hash = do
   when (isJust (memberEmail =<< member)) $ error "You've already confirmed your email."
   case member of
     Nothing -> do
-      simplePage "Please Login to Confirm Your Account" mempty $ do
-        script ! type_ "text/javascript" $ preEscapedString "jQuery(function () {V.loginPopup();});"
+      simplePage "Please Login to Confirm Your Account"
+        [ReadyJS "V.loginPopup();"] mempty
     Just m  -> do
       match <- maybe False fromJust <$> $(queryTuple'
         "SELECT hash = {hash} FROM member_confirmation \

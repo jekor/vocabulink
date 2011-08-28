@@ -26,7 +26,6 @@ import Vocabulink.Html hiding (title)
 import Vocabulink.Member
 import Vocabulink.Utils
 
-import Data.List (partition)
 import Text.Blaze.Html5 (docTypeHtml, head, noscript, link, body, title)
 import Text.Blaze.Html5.Attributes (rel)
 import Text.Regex (mkRegex, subRegex)
@@ -52,32 +51,31 @@ stdPage title' deps head' body' = outputHtml =<< (do
   let deps' = [CSS "lib.common", JS "common"]
            ++ (isJust member ? [CSS "lib.member", JS "member"] $ [])
            ++ deps
-      (cssDeps, jsDeps) = partition (\x -> case x of
-                                             (CSS _) -> True
-                                             (JS  _) -> False) deps'
-  cssDeps' <- mapM includeDep cssDeps
-  jsDeps'  <- mapM includeDep jsDeps
+  cssDeps     <- mapM includeDep [ css | css@(CSS _) <- deps' ]
+  jsDeps      <- mapM includeDep [ js  |  js@(JS _)  <- deps' ]
   return $ docTypeHtml $ do
     head $ do
-      mconcat cssDeps'
+      mconcat cssDeps
       title $ string title'
       link ! rel "icon" ! type_ "image/png" ! href "http://s.vocabulink.com/img/favicon.png"
       head'
     body $ do
       div ! id "page" $ do
         div ! id "head" $ headerB
-        when (jsDeps /= []) (noscript $ p "This page requires JavaScript for some functionality.")
+        when (length jsDeps > 0) (noscript $ p "This page requires JavaScript for some functionality.")
         div ! id "body" $ body'
         div ! id "foot" $ footerB
-        script ! type_ "text/javascript" $ preEscapedString $ standardJS member
+        inlineJS $ memberJS member
         script ! src "http://www.google-analytics.com/ga.js" $ mempty
-        mconcat jsDeps')
- where standardJS m =
+        mconcat jsDeps
+        readyJS $ concat [ js | ReadyJS js <- deps' ])
+ where memberJS m =
          unlines [ "var V = {" -- the Vocabulink object
                  , "  memberName: " ++ maybe "null" (\m' -> "'" ++ memberName m' ++ "'") m ++ ","
                  , "  gravatarHash: " ++ maybe "null" (\h -> "'" ++ h ++ "'") (gravatarHash =<< memberEmail =<< m)
                  , "};"
                  ]
+       readyJS js = inlineJS $ "(function ($) {$(function () {" ++ js ++ "})})(jQuery);"
 
 -- Often we just need a simple page where the title and header are the same.
 
@@ -95,8 +93,7 @@ includeDep :: Dependency -> App Html
 includeDep d = do
   version <- dependencyVersion d
   return $ case version of
-    Nothing -> script ! type_ "text/javascript" $
-                  preEscapedString ("alert('Dependency \"" ++ show d ++"\" not found.');")
+    Nothing -> inlineJS $ "alert('Dependency \"" ++ show d ++"\" not found.');"
     Just v  ->
       case d of
         CSS css -> link ! href (stringValue $ "http://s.vocabulink.com/css/" ++ css ++ ".css?" ++ v)
@@ -104,6 +101,7 @@ includeDep d = do
                         ! type_ "text/css"
         JS  js  -> script ! src (stringValue $ "http://s.vocabulink.com/js/" ++ js ++ ".js?" ++ v) $
                      mempty
+        ReadyJS _ -> error "Can't include inline JS."
 
 -- The standard header bar shows the Vocabulink logo (currently just some
 -- text), a list of hyperlinks, a search box, and either a login/sign up button

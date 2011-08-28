@@ -137,7 +137,11 @@ runApp h cp sd ls (AppT a) = do
 -- string. The web server will ignore this and serve the same file, but the
 -- client browser should see it as a new file.
 
-data Dependency = CSS String | JS String
+-- ReadyJS isn't a file dependency, it's a bit of JS that should execute after
+-- all JS dependencies. I'm hesitant to add it here, because it doesn't seem
+-- right, but I can't think of a better place at the moment.
+
+data Dependency = CSS FilePath | JS FilePath | ReadyJS String
                   deriving (Eq, Show)
 
 dependencyVersion :: Dependency -> App (Maybe String)
