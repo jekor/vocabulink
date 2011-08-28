@@ -48,6 +48,8 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , readFile, writeFile
                         {- Data.Either.Utils -}
                         , forceEither
+                        {- Data.List -}
+                        , intercalate
                         {- Data.List.Split -}
                         , splitOn, splitEvery
                         {- Data.Maybe -}

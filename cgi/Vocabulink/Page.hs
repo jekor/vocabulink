@@ -22,11 +22,11 @@ module Vocabulink.Page ( stdPage, simplePage
 import Vocabulink.App
 import Vocabulink.Article
 import Vocabulink.CGI
-import Vocabulink.Html hiding (title)
+import Vocabulink.Html hiding (title, style)
 import Vocabulink.Member
 import Vocabulink.Utils
 
-import Text.Blaze.Html5 (docTypeHtml, head, noscript, link, body, title)
+import Text.Blaze.Html5 (docTypeHtml, head, noscript, link, body, title, style)
 import Text.Blaze.Html5.Attributes (rel)
 import Text.Regex (mkRegex, subRegex)
 import Text.Regex.TDFA ((=~))
@@ -55,9 +55,10 @@ stdPage title' deps head' body' = outputHtml =<< (do
   jsDeps      <- mapM includeDep [ js  |  js@(JS _)  <- deps' ]
   return $ docTypeHtml $ do
     head $ do
-      mconcat cssDeps
       title $ string title'
       link ! rel "icon" ! type_ "image/png" ! href "http://s.vocabulink.com/img/favicon.png"
+      mconcat cssDeps
+      inlineCSS $ intercalate "\n" [ css | InlineCSS css <- deps' ]
       head'
     body $ do
       div ! id "page" $ do
@@ -68,7 +69,7 @@ stdPage title' deps head' body' = outputHtml =<< (do
         inlineJS $ memberJS member
         script ! src "http://www.google-analytics.com/ga.js" $ mempty
         mconcat jsDeps
-        readyJS $ concat [ js | ReadyJS js <- deps' ])
+        readyJS $ intercalate "\n" [ js | ReadyJS js <- deps' ])
  where memberJS m =
          unlines [ "var V = {" -- the Vocabulink object
                  , "  memberName: " ++ maybe "null" (\m' -> "'" ++ memberName m' ++ "'") m ++ ","
@@ -76,6 +77,7 @@ stdPage title' deps head' body' = outputHtml =<< (do
                  , "};"
                  ]
        readyJS js = inlineJS $ "(function ($) {$(function () {" ++ js ++ "})})(jQuery);"
+       inlineCSS = (style ! type_ "text/css") . string
 
 -- Often we just need a simple page where the title and header are the same.
 
