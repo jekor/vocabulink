@@ -63,7 +63,7 @@ import Prelude hiding (div, span, id)
 
 import Control.Concurrent (forkIO)
 import Data.ConfigFile (get)
-import Data.List (find, intercalate)
+import Data.List (find)
 import Database.TemplatePG (pgConnect)
 import Network (PortID(..))
 import Network.SCGI (runSCGIConcurrent')

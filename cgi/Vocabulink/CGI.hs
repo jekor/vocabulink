@@ -44,6 +44,7 @@ module Vocabulink.CGI ( outputText, outputHtml, outputJSON
                       , uriPath, uriQuery, escapeURIString, isUnescapedInURI
                       ) where
 
+import Vocabulink.Html hiding (title, style)
 import Vocabulink.Utils
 
 import Control.Exception (Exception, SomeException, try)
@@ -61,8 +62,12 @@ import Network.CGI hiding (getInput, readInput, getBody, Html, output, outputNot
 import qualified Network.CGI as CGI
 import Network.CGI.Monad (CGIT(..))
 import Network.CGI.Protocol (CGIResult(..))
-import Text.Blaze.Html5 (Html)
+import Text.Blaze.Html5 (docTypeHtml, head, body, title, style, link, string, stringValue)
+import Text.Blaze.Html5.Attributes (rel)
 import Text.Blaze.Renderer.Utf8 (renderHtml)
+import Text.Regex
+
+import Prelude hiding (head, id, div)
 
 -- Also, we do not always output HTML. Sometimes we output JSON or HTML fragments.
 
@@ -91,12 +96,57 @@ outputError' :: (MonadCGI m, MonadIO m) =>
              -> String   -- ^ Message
              -> m CGIResult
 outputError' c m = do
-  when (c /= 404) $ logCGI $ show (c,m)
+  logCGI $ show (c,m)
   setStatus c m
   outputText m
 
+-- TODO: Some of this HTML is duplicated from Page.hs. It would be nice to make
+-- Page.hs not depend on CGI.hs so that I could use its functionality here.
+-- More importantly, lib.common.css needs to be included properly using the
+-- dependency mechanisms.
 outputNotFound :: (MonadCGI m, MonadIO m) => m CGIResult
-outputNotFound = outputError' 404 "The requested resource was not found."
+outputNotFound = do
+  setStatus 404 "Not Found"
+  referrer <- decodeString <$$> getVar "HTTP_REFERER"
+  let internal = isJust (matchRegex (mkRegex "://www\\.vocabulink\\.com/") <$> referrer)
+  when internal $ do -- Log internal broken links.
+    uri <- requestURI
+    logCGI ("Broken internal link: " ++ fromJust referrer ++ " -> " ++ show uri)
+  outputHtml $ docTypeHtml $ do
+    head $ do
+      title "Vocabulink: Page Not Found"
+      link ! rel "icon" ! type_ "image/png" ! href "http://s.vocabulink.com/img/favicon.png"
+      link ! rel "stylesheet" ! type_ "text/css" ! href "http://s.vocabulink.lan/css/lib.common.css"
+      style ! type_ "text/css" $ string $ unlines
+        ["body {background-color: #2D2D2D; height: auto;}"
+        ,"#body {background-color: #FFFFFF; margin-top: 15%; padding-bottom: 0;}"
+        ,"#message {width: 55em; margin-left: auto; margin-right: auto; padding-top: 5ex; padding-bottom: 5ex;}"
+        ,"img {float: left; margin-right: 5em;}"
+        ,"h1 {text-align: left; margin-top: 0;}"
+        ,"ul {list-style-type: disc; list-style-position: inside;}"
+        ]
+    body $ do
+      div ! id "body" $ do
+        div ! id "message" $ do
+          img ! src "http://s.vocabulink.com/img/404.png"
+          h1 "Page Not Found"
+          p "The page you're looking for does not exist. You probably ended up here because of:"
+          unordList $ case referrer of
+                        Nothing -> [string "a mis-typed address"
+                                   ,string "an out-of-date bookmark"
+                                   ]
+                        Just r  -> if internal
+                                     then [string "an error on our part (a broken link)"]
+                                     else [string "an incorrect referral to this site (a broken link)"]
+          p "You might find one of the following useful:"
+          unordList
+            [mconcat [string "Return to the ", a ! href "http://www.vocabulink.com/" $ "homepage", string "."]
+            ,case referrer of
+                Nothing -> mconcat [string "View the list of ", a ! href "http://www.vocabulink.com/languages" $ "available languages", string "."]
+                Just r  -> mconcat [string "Go ", a ! href (stringValue r) $ "back", string "."]
+            ]
+          clear
+      script ! src "http://www.google-analytics.com/ga.js" $ mempty
 
 outputClientError :: (MonadCGI m, MonadIO m) => String -> m CGIResult
 outputClientError = outputError' 400
@@ -135,11 +185,11 @@ getInputDefault d n = do
 -- be removed and we should more gracefully handle the error.
 
 getRequiredInput :: MonadCGI m => String -> m String
-getRequiredInput p =
-  getInputDefault (error $ "Parameter '" ++ p ++ "' is required.") p
+getRequiredInput param =
+  getInputDefault (error $ "Parameter '" ++ param ++ "' is required.") param
 
 getRequiredInputFPS :: MonadCGI m => String -> m ByteString
-getRequiredInputFPS p = liftM (fromMaybe (error $ "Parameter '" ++ p ++ "' is required")) $ getInputFPS p
+getRequiredInputFPS param = liftM (fromMaybe (error $ "Parameter '" ++ param ++ "' is required")) $ getInputFPS param
 
 -- The Read versions of the above handle automatically converting the requested
 -- input to a required type (as long as that type is Readable).
@@ -151,8 +201,8 @@ readInputDefault :: (Read a, MonadCGI m) => a -> String -> m a
 readInputDefault d = liftM (fromMaybe d) . readInput
 
 readRequiredInput :: (Read a, MonadCGI m) => String -> m a
-readRequiredInput p =
-  readInputDefault (error $ "Parameter '" ++ p ++ "' is required.") p
+readRequiredInput param =
+  readInputDefault (error $ "Parameter '" ++ param ++ "' is required.") param
 
 getBody :: MonadCGI m => m String
 getBody = (trim . toString) `liftM` CGI.getBodyFPS
@@ -201,10 +251,10 @@ tryCGI' (CGIT c) = CGIT (ReaderT (WriterT . f . runWriterT . runReaderT c ))
 --  thrown, we'll close the database handle and return the CGI result.
 
 handleErrors :: Handle -> CGI CGIResult -> CGI CGIResult
-handleErrors h a = catchCGI' (do r <- a
-                                 liftIO $ pgDisconnect h
-                                 return r)
-                             (outputException' h)
+handleErrors h act = catchCGI' (do r <- act
+                                   liftIO $ pgDisconnect h
+                                   return r)
+                               (outputException' h)
 
 -- Network.CGI provides |outputException| as a basic default error handler. This
 -- is a slightly modified version that logs errors.
