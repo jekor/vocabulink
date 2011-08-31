@@ -252,10 +252,10 @@ CREATE TABLE link (
        link_no SERIAL PRIMARY KEY,
        foreign_phrase TEXT NOT NULL CHECK (length(foreign_phrase) > 0),
        familiar_phrase TEXT NOT NULL CHECK (length(familiar_phrase) > 0),
-       foreign_language CHARACTER VARYING (3) REFERENCES language (abbr) NOT NULL ON UPDATE CASCADE,
-       familiar_language CHARACTER VARYING (3) REFERENCES language (abbr) NOT NULL ON UPDATE CASCADE,
-       link_type TEXT REFERENCES link_type (name) NOT NULL ON UPDATE CASCADE,
-       author INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE,
+       foreign_language CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE NOT NULL,
+       familiar_language CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE NOT NULL,
+       link_type TEXT REFERENCES link_type (name) ON UPDATE CASCADE NOT NULL,
+       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE NOT NULL,
        created TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        updated TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        deleted BOOLEAN NOT NULL DEFAULT FALSE
@@ -281,8 +281,8 @@ CREATE TABLE linkword_story (
 );
 
 CREATE TABLE link_to_review (
-       member_no INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE,
-       link_no INTEGER REFERENCES link (link_no) NOT NULL ON UPDATE CASCADE,
+       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE NOT NULL,
+       link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE NOT NULL,
        target_time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        PRIMARY KEY (member_no, link_no)
 );
@@ -290,8 +290,8 @@ COMMENT ON COLUMN link_to_review.member_no IS 'Anonymous members cannot schedule
 COMMENT ON COLUMN link_to_review.target_time IS 'Target is the date and time at which this link should come up for review. The link will be reviewed sometime after that. All new links for review are currently scheduled for immediate review.';
 
 CREATE TABLE link_review (
-       member_no INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE,
-       link_no INTEGER REFERENCES link (link_no) NOT NULL ON UPDATE CASCADE,
+       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE NOT NULL,
+       link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE NOT NULL,
        target_time TIMESTAMP (0) WITH TIME ZONE NOT NULL,
        actual_time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        recall_grade REAL NOT NULL,
@@ -302,8 +302,8 @@ COMMENT ON COLUMN link_review.recall IS 'Recall is a measure of how easy or comp
 COMMENT ON COLUMN link_review.recall_time IS 'Recall time is the amount of time (in milliseconds) taken to recall (or not) the destination of a link. It could be measured as the time between when the page is displayed and when the destination lexeme is shown (using JavaScript).';
 
 CREATE TABLE link_sm2 (
-       member_no INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE,
-       link_no INTEGER REFERENCES link (link_no) NOT NULL ON UPDATE CASCADE,
+       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE NOT NULL,
+       link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE NOT NULL,
        n SMALLINT NOT NULL DEFAULT 1,
        EF REAL NOT NULL DEFAULT 2.5,
        PRIMARY KEY (member_no, link_no)
@@ -316,7 +316,7 @@ COMMENT ON COLUMN link_sm2.n IS 'This member is in review interval n. They may h
 
 CREATE TABLE article (
        filename TEXT PRIMARY KEY,
-       author INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE,
+       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE NOT NULL,
        publish_time TIMESTAMP (0) WITH TIME ZONE NOT NULL,
        update_time TIMESTAMP (0) WITH TIME ZONE NOT NULL,
        section TEXT,
@@ -352,7 +352,7 @@ EXECUTE PROCEDURE create_article_root_comment();
 
 CREATE TABLE comment (
        comment_no SERIAL PRIMARY KEY,
-       author INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE,
+       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE NOT NULL,
        time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        body TEXT,
        parent_no INTEGER REFERENCES comment (comment_no) ON DELETE CASCADE
