@@ -247,8 +247,7 @@ dispatch "GET" ["links"] = do
       ol'' <- languageNameFromAbbreviation ol'
       dl'' <- languageNameFromAbbreviation dl'
       case (ol'', dl'') of
-        (Just ol''', Just dl''') -> linksPage ("Links from " ++ ol''' ++ " to " ++ dl''')
-                                              (languagePairLinks ol' dl')
+        (Just ol''', Just dl''') -> linksPage ("Links from " ++ ol''' ++ " to " ++ dl''') =<< languagePairLinks ol' dl'
         _                        -> outputNotFound
     _                        -> languagePairsPage
 

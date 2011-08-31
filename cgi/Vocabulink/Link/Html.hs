@@ -114,20 +114,30 @@ linkPage linkNo = do
               h3 "Comments"
               comments
 
-linksPage :: String -> (Int -> Int -> App [PartialLink]) -> App CGIResult
-linksPage title' f = do
-  (pg, n, offset) <- currentPage
-  ts <- f offset (n + 1)
-  pagerControl <- pager pg n $ offset + length ts
-  partialLinks <- mapM renderPartialLink (take n ts)
-  simplePage title' [CSS "lib.link"] $ do
-    unordList partialLinks ! id "central-column" ! class_ "links"
-    pagerControl
+linksPage :: String -> [PartialLink] -> App CGIResult
+linksPage title' links = do
+  simplePage title' [JS "link", CSS "lib.link", ReadyJS initJS] $ do
+    partialLinksTable links
+ where initJS = "$('table.links').longtable();"
+
+partialLinksTable :: [PartialLink] -> Html
+partialLinksTable links = table ! class_ "links" $ do
+  thead $ do
+    tr $ do
+      th "Foreign"
+      th "Familiar"
+      th "Link Type"
+  tbody $ mconcat $ map linkRow links
+ where linkRow link = let url = "/link/" ++ show (linkNumber $ pLink link) in
+         tr ! class_ (stringValue $ "partial-link " ++ (linkTypeName $ pLink link)) $ do
+           td $ a ! href (stringValue url) $ string $ linkForeignPhrase $ pLink link
+           td $ a ! href (stringValue url) $ string $ linkFamiliarPhrase $ pLink link
+           td $ a ! href (stringValue url) $ string $ linkTypeName $ pLink link
 
 languagePairsPage :: App CGIResult
 languagePairsPage = do
   languages' <- (groupBy groupByName . sortBy compareNames) <$> linkLanguages
-  simplePage "Available Languages" [CSS "lib.link"] $ do
+  simplePage "Links By Language" [CSS "lib.link"] $ do
     mconcat $ map renderLanguageGroup $ sortBy compareSize languages'
  where compareNames ((_, ol1), (_, dl1), _) ((_, ol2), (_, dl2), _) =
          if dl1 == dl2

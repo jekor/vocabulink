@@ -12,7 +12,7 @@ compiled/common.js : jquery-1.6.1.js jquery.cookie.js minform.js jquery.loadmask
 	cat $^ | jsmin > $@
 
 # link viewing, not editing
-compiled/link.js : link.js
+compiled/link.js : link.js longtable.js
 	cat $^ | jsmin > $@
 
 # This is for email-verified members.
@@ -32,4 +32,7 @@ chartviz.js : /home/jekor/project/chartviz/chartviz.js
 	cp $^ $@
 
 minform.js : /home/jekor/project/minform/minform.js
+	cp $^ $@
+
+longtable.js : /home/jekor/project/longtable/longtable.js
 	cp $^ $@

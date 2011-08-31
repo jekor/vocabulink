@@ -420,8 +420,8 @@ memberLinks memberNo offset limit =
     \ORDER BY link_no DESC \
     \OFFSET {offset} LIMIT {limit}")
 
-languagePairLinks :: String -> String -> Int -> Int -> App [PartialLink]
-languagePairLinks foLang faLang offset limit = do
+languagePairLinks :: String -> String -> App [PartialLink]
+languagePairLinks foLang faLang = do
   map partialLinkFromTuple <$> $(queryTuples'
     "SELECT link_no, link_type, author, \
            \foreign_phrase, familiar_phrase, \
@@ -429,5 +429,4 @@ languagePairLinks foLang faLang offset limit = do
     \FROM link \
     \WHERE NOT deleted \
       \AND foreign_language = {foLang} AND familiar_language = {faLang} \
-    \ORDER BY link_no DESC \
-    \OFFSET {offset} LIMIT {limit}")
+    \ORDER BY link_no ASC")

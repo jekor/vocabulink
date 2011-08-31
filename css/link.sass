@@ -349,3 +349,47 @@ a.language-pair
     color: #737373
     background-color: #EBEBEB
     border-bottom: 1px solid #D3D3D3
+
+// mnemonic links, not hyperlinks
+table.links
+  width: 66em
+  margin:
+    left: auto
+    right: auto
+  border-collapse: collapse
+  th, td a
+    padding-left: 1.3em
+    padding-right: 1.3em
+  th
+    color: #ABABAB
+    background-color: #222222
+  thead
+    th
+      line-height: 1.667
+      &:first-child
+        @include rounded_tl(0.5em)
+      &:last-child
+        @include rounded_tr(0.5em)
+  tbody
+    td
+      border:
+        top: 1px solid white
+        bottom: 1px solid white
+      line-height: 2.6
+      &:first-child
+        border-left: 1px solid white
+      &:last-child
+        border-right: 1px solid white
+      a
+        color: #2D2D2D
+        display: block
+        width: 100%
+        line-height: 2.6
+        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2)
+  tfoot
+    th
+      line-height: 1.667
+      &:first-child
+        @include rounded_bl(0.5em)
+      &:last-child
+        @include rounded_br(0.5em)
