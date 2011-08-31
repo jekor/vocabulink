@@ -94,6 +94,10 @@ linkPage linkNo = do
                         Just root  -> renderComments root
                         Nothing    -> return mempty
           renderedLink <- renderLink l' hasPronunciation True
+          -- Only worry about 1 listed frequency for now.
+          rank <- $(queryTuple' "SELECT MIN(rank) \
+                                \FROM link_frequency \
+                                \WHERE link_no = {linkNo}")
           stories <- if isLinkword l'
                        then do
                          ss <- linkWordStories (linkNumber l')
@@ -103,7 +107,14 @@ linkPage linkNo = do
             div ! id "link-head-bar" $ do
               h2 $ a ! href (stringValue $ "/links?ol=" ++ linkForeignLang l' ++ "&dl=" ++ linkFamiliarLang l') $
                 string (foLang ++ " to " ++ faLang ++ ":")
-              div ! id "link-ops" $ ops
+              div ! id "link-ops" $ do
+                span ! id "rank" $ do
+                  case fromJust rank of
+                    Just r  -> string $ "Rank: " ++ show r
+                    Nothing -> if memberNo == Just 1 || memberNo == Just 2
+                                 then string "Rank: ?"
+                                 else mempty
+                ops
             renderedLink
             when (isLinkword l') $
               div ! id "linkword-stories" $ do
@@ -114,25 +125,27 @@ linkPage linkNo = do
               h3 "Comments"
               comments
 
-linksPage :: String -> [PartialLink] -> App CGIResult
+linksPage :: String -> [(PartialLink, Maybe Integer)] -> App CGIResult
 linksPage title' links = do
   simplePage title' [JS "link", CSS "lib.link", ReadyJS initJS] $ do
     partialLinksTable links
  where initJS = "$('table.links').longtable();"
 
-partialLinksTable :: [PartialLink] -> Html
+partialLinksTable :: [(PartialLink, Maybe Integer)] -> Html
 partialLinksTable links = table ! class_ "links" $ do
   thead $ do
     tr $ do
       th "Foreign"
       th "Familiar"
       th "Link Type"
+      th "Rank"
   tbody $ mconcat $ map linkRow links
- where linkRow link = let url = "/link/" ++ show (linkNumber $ pLink link) in
+ where linkRow (link, rank) = let url = "/link/" ++ show (linkNumber $ pLink link) in
          tr ! class_ (stringValue $ "partial-link " ++ (linkTypeName $ pLink link)) $ do
            td $ a ! href (stringValue url) $ string $ linkForeignPhrase $ pLink link
            td $ a ! href (stringValue url) $ string $ linkFamiliarPhrase $ pLink link
            td $ a ! href (stringValue url) $ string $ linkTypeName $ pLink link
+           td $ a ! href (stringValue url) $ string $ maybe "" show rank
 
 languagePairsPage :: App CGIResult
 languagePairsPage = do
@@ -248,12 +261,12 @@ renderLink link pronounceable' paging = do
   return $ h1 ! class_ (stringValue $ "link " ++ linkTypeName link) $ do
     maybe mempty (\n -> a ! href (stringValue $ show n) ! class_ "prev"
                           ! title (stringValue $ "Previous " ++ foLang ++ "→" ++ faLang ++ " Link") $ mempty) prevLink
-    span ! class_ "foreign" ! title (stringValue foLang) $ do
+    span ! class_ "foreign" ! customAttribute "lang" (stringValue $ linkForeignLang link) ! title (stringValue foLang) $ do
       string $ linkForeignPhrase link
       pronunciation
     span ! class_ "link" ! title (stringValue $ linkTypeName link) $
       renderLinkType (linkType link)
-    span ! class_ "familiar" ! title (stringValue faLang) $ string $ linkFamiliarPhrase link
+    span ! class_ "familiar" ! customAttribute "lang" (stringValue $ linkFamiliarLang link) ! title (stringValue faLang) $ string $ linkFamiliarPhrase link
     maybe mempty (\n -> a ! href (stringValue $ show n) ! class_ "next"
                           ! title (stringValue $ "Next " ++ foLang ++ "→" ++ faLang ++ " Link") $ mempty) nextLink
  where renderLinkType :: LinkType -> Html

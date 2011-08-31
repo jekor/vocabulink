@@ -169,10 +169,14 @@ fieldset#linkword textarea
   width: 50em
   margin: 2em auto
 
-#link-head-bar h2
-  display: inline-block
-  margin: 0 0 0.25em 0
-  a
+#link-head-bar
+  h2
+    display: inline-block
+    margin: 0 0 0.25em 0
+    a
+      color: #ACACAC
+  #rank
+    float: right
     color: #ACACAC
 
 #link-ops
@@ -364,12 +368,14 @@ table.links
     left: auto
     right: auto
   border-collapse: collapse
-  th, td a
+  th, td
     padding-left: 1.3em
     padding-right: 1.3em
   th
     color: #ABABAB
     background-color: #222222
+    &:last-child
+      text-align: right
   thead
     th
       line-height: 1.667
@@ -387,6 +393,7 @@ table.links
         border-left: 1px solid white
       &:last-child
         border-right: 1px solid white
+        text-align: right
       a
         color: #2D2D2D
         display: block
@@ -400,3 +407,6 @@ table.links
         @include rounded_bl(0.5em)
       &:last-child
         @include rounded_br(0.5em)
+
+#frequency-editor
+  border: 1px solid #EBEBEB

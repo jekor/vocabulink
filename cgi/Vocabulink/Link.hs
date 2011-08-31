@@ -420,13 +420,19 @@ memberLinks memberNo offset limit =
     \ORDER BY link_no DESC \
     \OFFSET {offset} LIMIT {limit}")
 
-languagePairLinks :: String -> String -> App [PartialLink]
+-- As a hack to read frequencies out later, the link numbers are stored to a
+-- temporary table.
+languagePairLinks :: String -> String -> App [(PartialLink, Maybe Integer)]
 languagePairLinks foLang faLang = do
-  map partialLinkFromTuple <$> $(queryTuples'
+  map partialLinkFromTuple' <$> $(queryTuples'
     "SELECT link_no, link_type, author, \
            \foreign_phrase, familiar_phrase, \
-           \foreign_language, familiar_language \
+           \foreign_language, familiar_language, \
+           \MIN(rank) \
     \FROM link \
+    \LEFT JOIN link_frequency USING (link_no) \
     \WHERE NOT deleted \
       \AND foreign_language = {foLang} AND familiar_language = {faLang} \
-    \ORDER BY link_no ASC")
+    \GROUP BY link_no, link_type, author, foreign_phrase, familiar_phrase, foreign_language, familiar_language \
+    \ORDER BY MIN(rank), link_no ASC")
+ where partialLinkFromTuple' (a,b,c,d,e,f,g, rank) = (partialLinkFromTuple (a,b,c,d,e,f,g), rank)

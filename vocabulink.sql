@@ -266,6 +266,22 @@ COMMENT ON COLUMN link.deleted IS 'We need a way to delete links, but we don''t 
 CREATE INDEX link_foreign_phrase_index ON link (foreign_phrase);
 CREATE INDEX link_familiar_phrase_index ON link (familiar_phrase);
 
+CREATE TABLE link_frequency_list (
+       list_no SERIAL PRIMARY KEY,
+       lang CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE NOT NULL,
+       list_name TEXT NOT NULL,
+       description TEXT NOT NULL,
+       UNIQUE (lang, list_name)
+);
+
+CREATE TABLE link_frequency (
+       link_no INTEGER REFERENCES link (link_no) NOT NULL,
+       list_no INTEGER REFERENCES link_frequency_list (list_no) NOT NULL,
+       rank INTEGER NOT NULL,
+       frequency REAL NOT NULL,
+       PRIMARY KEY (link_no, list_no)
+);
+
 CREATE TABLE link_linkword (
        link_no INTEGER REFERENCES link (link_no) NOT NULL PRIMARY KEY,
        linkword TEXT NOT NULL

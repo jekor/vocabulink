@@ -59,7 +59,7 @@ function collapseStory(q, h, mh) {
 }
 
 function showNewStory() {
-  if (!V.memberGravatar()) {
+  if (!V.verified()) {
     $('<div class="linkword-story-container">'
       + '<a class="verified" href="/member/confirmation">Verify Email to Add Story</a>'
     + '</div>').appendTo('#linkword-stories');
@@ -96,6 +96,68 @@ function showNewStory() {
   $('form', newStory).minform();
 }
 
+function editFrequency() {
+  // Grab the existing frequency lists.
+  var lang = $('h1 .foreign').attr('lang');
+  $.get('/list/frequency/' + lang)
+   .done(function (lists) {
+     var list_opts = $.map(lists, function (list) {
+       return '<option value="' + list.number + '">' + list.name + '</option>';
+     }).join('');
+     var editor = $(
+       '<form id="frequency-editor" action="/link/' + linkNumber() + '/frequencies" method="post" style="display: none">'
+       + '<select name="list" required style="min-width: 10em;">'
+         + list_opts
+       + '</select>'
+       + '<button id="new-freq-list" class="light">New List</button> '
+       + '<label>Rank:</label> <input name="rank" size="4" required> '
+       + '<label>Frequency:</label> <input name="frequency" required> '
+       + '<input class="light" type="submit" value="Set Frequency">'
+     + '</form>').appendTo('#link-head-bar').slideDown();
+     editor.minform().submit(function (e) {
+       e.preventDefault();
+       editor.mask('Sending...');
+       $.post($(this).attr('action'), $(this).serialize())
+        .done(function () {
+          window.location.reload();
+        })
+        .fail(function (xhr) {
+          editor.unmask();
+          V.toastError(xhr.responseText, true);
+        });
+       return false;
+     });
+     editor.find('#new-freq-list').click(function () {
+       var content = $(
+         '<div><h1>New Frequency List</h1>'
+         + '<form action="/list/frequency/' + lang + '" method="post">'
+           + '<label>Name:</label> <input name="name" required><br>'
+           + '<label>Description:</label> <input name="description" required>'
+           + '<input type="submit" class="light" value="Add List">'
+         + '</form>'
+       + '</div>');
+       $.modal(content);
+       var modal = $('#simplemodal-container');
+       content.find('form').minform().submit(function (e) {
+         e.preventDefault();
+         modal.mask('Sending...');
+         $.post($(this).attr('action'), $(this).serialize())
+          .done(function () {
+            $.modal.close();
+            V.toastSuccess('List created successfully');
+            $('#frequency-editor').remove();
+            editFrequency();
+          })
+          .fail(function (xhr) {
+            modal.unmask();
+            V.toastError(xhr.responseText, true);
+          });
+         return false;
+       });
+     });
+   });
+}
+
 $(function () {
   V.annotateLink($('h1.link:visible:not(.edit)'));
 
@@ -108,6 +170,10 @@ $(function () {
       collapseStory($(this), $(this).height(), 140);
     }
   });
+
+  if (V.memberName === 'jekor' || V.memberName === 'charisma') {
+    $('#rank').click(editFrequency);
+  }
 
   if (V.loggedIn() && $('#linkword-stories').length) {
     showNewStory();

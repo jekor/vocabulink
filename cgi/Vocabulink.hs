@@ -47,6 +47,7 @@ import Vocabulink.Comment
 import Vocabulink.Config
 import Vocabulink.Html
 import Vocabulink.Link
+import Vocabulink.Link.Frequency
 import Vocabulink.Link.Html
 import Vocabulink.Link.Pronunciation
 import Vocabulink.Link.Story
@@ -231,6 +232,12 @@ dispatch meth ("link":x:meth') =
                    story <- getRequiredInput "story"
                    addStory n story
                    redirect $ "/link/" ++ show n
+                 ("POST"  , ["frequencies"])   -> do
+                   list <- getRequiredInput "list"
+                   rank <- getRequiredInput "rank"
+                   freq <- getRequiredInput "frequency"
+                   addFrequency n (read list) (read rank) (read freq)
+                   outputNothing
                  (_       , _)                 -> outputNotFound
 
 dispatch "GET" ["pronunciations",lang,word] = getPronunciations lang word
@@ -262,6 +269,11 @@ dispatch "GET" ["search"] = searchPage
 -- hyperlinks to language-specific browsing.
 
 dispatch "GET" ["languages"] = permRedirect "/links"
+
+-- Frequency Lists
+
+dispatch "GET"  ["list","frequency",lang] = frequencyLists lang
+dispatch "POST" ["list","frequency",lang] = addFrequencyList lang
 
 -- Link Review
 
