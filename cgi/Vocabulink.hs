@@ -250,7 +250,7 @@ dispatch "GET" ["links"] = do
         (Just ol''', Just dl''') -> linksPage ("Links from " ++ ol''' ++ " to " ++ dl''')
                                               (languagePairLinks ol' dl')
         _                        -> outputNotFound
-    _                        -> linksPage "Latest Links" latestLinks
+    _                        -> languagePairsPage
 
 -- Site-wide search is done separately for now.
 
@@ -262,7 +262,7 @@ dispatch "GET" ["search"] = searchPage
 -- number of links. A languages page shows what's available and contains
 -- hyperlinks to language-specific browsing.
 
-dispatch "GET" ["languages"] = languagePairsPage
+dispatch "GET" ["languages"] = permRedirect "/links"
 
 -- Link Review
 
@@ -381,7 +381,7 @@ frontPage = do
              h1 $ "Build Vocabulary—Fast"
              p "Vocabulary building is the most important, but most time-consuming part of learning a language."
              p "We'll show you how to learn foreign words more quickly and easily than you imagined possible using 3 simple principles."
-             a ! id "try-now" ! href "/languages" ! class_ "faint-gradient-button green" $ "Get Started"
+             a ! id "try-now" ! href "/links" ! class_ "faint-gradient-button green" $ "Get Started"
              div ! class_ "clear" $ mempty
            div ! class_ "clear" $ mempty,
          div ! class_ "bottom" $ do

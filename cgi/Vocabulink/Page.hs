@@ -138,7 +138,7 @@ languageLinks = do
   rows' <- $(queryTuples' "SELECT abbr, name \
                           \FROM language_frequency_to_english \
                           \ORDER BY freq DESC LIMIT 11")
-  return $ map languageLink rows' ++ [a ! href "/languages" $ "more..."]
+  return $ map languageLink rows' ++ [a ! href "/links" $ "more..."]
  where languageLink (abbr', name') =
          a ! href (stringValue $ "/links?ol=" ++ fromJust abbr' ++ "&dl=en") $
            string $ fromJust name'
@@ -150,7 +150,7 @@ footerBar = do
   copy <- liftIO copyrightNotice
   return $ do
     div ! id "handy-links-background" $ do
-      multiColumn [ do h2 $ a ! href "/languages" $ "Browse Links by Language"
+      multiColumn [ do h2 $ a ! href "/links" $ "Browse Links by Language"
                        multiColumnList 3 langLinks
                   , do h2 $ a ! href "/articles" $ "Latest Articles"
                        multiColumnList 1 (articles ++ [a ! href "/articles" $ "more..."])

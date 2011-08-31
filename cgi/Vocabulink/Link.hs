@@ -24,7 +24,7 @@ module Vocabulink.Link ( Link(..), PartialLink(..), LinkType(..), isLinkword
                        , getLink, getPartialLink, partialLinkFromTuple
                        , linkLanguages, adjacentLinkNumbers
                        , createLink, deleteLink
-                       , latestLinks, memberLinks, languagePairLinks
+                       , memberLinks, languagePairLinks
                        ) where
 
 import Vocabulink.App
@@ -406,22 +406,7 @@ deleteLink linkNo = do
 -- people still reviewing them). There is some duplication of SQL here, but I
 -- have yet found a nice way to generalize these functions.
 
--- The first way to retrieve links is to just grab all of them, starting at the
--- most recent. This assumes the ordering of links is determined by link
--- number.
-
-latestLinks :: Int -> Int -> App [PartialLink]
-latestLinks offset limit =
-  map partialLinkFromTuple <$> $(queryTuples'
-    "SELECT link_no, link_type, author, \
-           \foreign_phrase, familiar_phrase, \
-           \foreign_language, familiar_language \
-    \FROM link \
-    \WHERE NOT deleted \
-    \ORDER BY link_no DESC \
-    \OFFSET {offset} LIMIT {limit}")
-
--- Another way we retrieve links is by author (member). These just happen to be
+-- One way we retrieve links is by author (member). These just happen to be
 -- sorted by link number as well.
 
 memberLinks :: Integer -> Int -> Int -> App [PartialLink]

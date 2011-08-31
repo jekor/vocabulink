@@ -26,7 +26,7 @@ module Vocabulink.CGI ( outputText, outputHtml, outputJSON
                       , outputNotFound, outputUnauthorized, outputClientError, outputServerError
                       , getInput, getRequiredInput, getInputDefault, getRequiredInputFPS
                       , readInput, readRequiredInput, readInputDefault, getBody
-                      , urlify, referrerOrVocabulink
+                      , urlify, referrerOrVocabulink, permRedirect
                       , handleErrors, escapeURIString'
                       {- Data.Aeson.QQ -}
                       , aesonQQ
@@ -135,14 +135,14 @@ outputNotFound = do
                         Nothing -> [string "a mis-typed address"
                                    ,string "an out-of-date bookmark"
                                    ]
-                        Just r  -> if internal
+                        Just _  -> if internal
                                      then [string "an error on our part (a broken link)"]
                                      else [string "an incorrect referral to this site (a broken link)"]
           p "You might find one of the following useful:"
           unordList
             [mconcat [string "Return to the ", a ! href "http://www.vocabulink.com/" $ "homepage", string "."]
             ,case referrer of
-                Nothing -> mconcat [string "View the list of ", a ! href "http://www.vocabulink.com/languages" $ "available languages", string "."]
+                Nothing -> mconcat [string "View the list of ", a ! href "http://www.vocabulink.com/links" $ "available languages", string "."]
                 Just r  -> mconcat [string "Go ", a ! href (stringValue r) $ "back", string "."]
             ]
           clear
@@ -234,6 +234,11 @@ urlify = map toLower . filter (\e -> isAlphaNum e || e `elem` "-.") . translate 
 referrerOrVocabulink :: MonadCGI m => m String
 referrerOrVocabulink =
   maybe "http://www.vocabulink.com/" decodeString `liftM` getVar "HTTP_REFERER"
+
+permRedirect :: (MonadCGI m, MonadIO m) => String -> m CGIResult
+permRedirect url = do
+  setStatus 301 "Moved Permanently"
+  redirect url
 
 -- It's quite probable that we're going to trigger an unexpected exception
 -- somewhere in the program. Rather than blow up, we'd like to catch and log
