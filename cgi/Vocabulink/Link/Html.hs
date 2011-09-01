@@ -103,7 +103,7 @@ linkPage linkNo = do
                          ss <- linkWordStories (linkNumber l')
                          return $ mconcat $ map (\ (n, x, y, z) -> renderStory n x y z) ss
                        else return mempty
-          stdPage (fo ++ " → " ++ fa) [CSS "lib.link", JS "link"] mempty $ do
+          stdPage (fo ++ " → " ++ fa ++ " — " ++ foLang ++ " to " ++ faLang) [CSS "lib.link", JS "link"] mempty $ do
             div ! id "link-head-bar" $ do
               h2 $ a ! href (stringValue $ "/links?ol=" ++ linkForeignLang l' ++ "&dl=" ++ linkFamiliarLang l') $
                 string (foLang ++ " to " ++ faLang ++ ":")

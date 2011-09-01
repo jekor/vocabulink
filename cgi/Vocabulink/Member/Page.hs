@@ -41,7 +41,7 @@ memberPage username = do
       links <- mapM renderPartialLink =<< memberLinks (memberNumber m) 0 10
       stories <- latestStories m
       studyStats' <- studyStats m
-      stdPage (memberName m ++ "'s Vocabulink Page") [CSS "member-page", CSS "lib.link"] mempty $ do
+      stdPage (memberName m ++ "'s Page") [CSS "member-page", CSS "lib.link"] mempty $ do
         div ! id "avatar" $ do
           avatar
           span ! class_ "username" $ string $ memberName m

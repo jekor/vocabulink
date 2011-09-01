@@ -382,7 +382,7 @@ dispatch _ _ = outputNotFound
 frontPage :: App CGIResult
 frontPage = do
   cloud <- wordCloud 40 261 248 12 32 6
-  stdPage "Welcome to Vocabulink" [CSS "front"] mempty (page cloud)
+  stdPage "Foreign Language Vocabulary — Stories, Spaced Repetition, and Important Words" [CSS "front"] mempty (page cloud)
  where page wordcloud = mconcat [
          div ! class_ "top" $ do
            div ! id "word-cloud" $ do
