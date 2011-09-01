@@ -16,7 +16,7 @@
 -- along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
 module Vocabulink.Link.Html ( newLinkPage, linkPage, linksPage, languagePairsPage
-                            , renderLink, renderPartialLink
+                            , renderLink, renderPartialLink, partialLinksTable
                             , wordCloud
                             ) where
 

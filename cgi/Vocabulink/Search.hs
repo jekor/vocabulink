@@ -36,41 +36,64 @@ import Prelude hiding (div, span, id)
 searchPage :: App CGIResult
 searchPage = do
   q <- getRequiredInput "q"
-  member <- asks appMember
-  links <- linksContaining q 20
-  links' <- mapM renderPartialLink links
-  stdPage (q ++ " - Search Results") [CSS "search"] mempty $ do
+  links <- linksContaining q
+  linksTable <- partialLinksTable' links
+  stdPage (q ++ " - Search Results") [JS "link", CSS "lib.link", CSS "search", ReadyJS initJS] mempty $ do
     div ! id "results" $ do
-      case memberEmail =<< member of
-        Just _ -> div ! id "new-link" $ do
-                    a ! href (stringValue $ "/link/new?foreign=" ++ q) $
-                      string ("→ Create a new link with \"" ++ q ++ "\"")
-        _      -> mempty
-      h3 $ string ("Found " ++ show (length links) ++ " Links Containing \"" ++ q ++ "\"")
-      unordList links' ! class_ "links"
+      h2 $ string ("Found " ++ show (length links) ++ " Links Containing \"" ++ q ++ "\"")
+      linksTable
+ where initJS = "$('table.links').longtable();"
 
-linksContaining :: String -> Integer -> App [PartialLink]
-linksContaining q n = do
+-- TODO: Consolidate with partialLinksTable'
+partialLinksTable' :: [(PartialLink, Maybe Integer)] -> App Html
+partialLinksTable' links = do
+  rows <- mapM linkRow links
+  return $ table ! class_ "links" $ do
+    thead $ do
+      tr $ do
+        th "Language"
+        th "Foreign"
+        th "Familiar"
+        th "Link Type"
+        th "Rank"
+    tbody $ mconcat rows
+ where linkRow (link, rank) = do
+         lang <- linkForeignLanguage $ pLink link
+         let url = "/link/" ++ show (linkNumber $ pLink link)
+         return $ tr ! class_ (stringValue $ "partial-link " ++ (linkTypeName $ pLink link)) $ do
+           td $ a ! href (stringValue url) $ string $ lang
+           td $ a ! href (stringValue url) $ string $ linkForeignPhrase $ pLink link
+           td $ a ! href (stringValue url) $ string $ linkFamiliarPhrase $ pLink link
+           td $ a ! href (stringValue url) $ string $ linkTypeName $ pLink link
+           td $ a ! href (stringValue url) $ string $ maybe "" show rank
+
+linksContaining :: String -> App [(PartialLink, Maybe Integer)]
+linksContaining q = do
   let q' = "%" ++ q ++ "%"
-  exacts <- map partialLinkFromTuple <$> $(queryTuples'
+  exacts <- map partialLinkFromTuple' <$> $(queryTuples'
     "SELECT link_no, link_type, author, \
            \foreign_phrase, familiar_phrase, \
-           \foreign_language, familiar_language \
+           \foreign_language, familiar_language, \
+           \MIN(rank) \
     \FROM link \
+    \LEFT JOIN link_frequency USING (link_no) \
     \WHERE NOT deleted \
       \AND (foreign_phrase ~~* {q} OR familiar_phrase ~~* {q} \
         \OR unaccent(foreign_phrase) ~~* {q} OR unaccent(familiar_phrase) ~~* {q}) \
-    \LIMIT {n}")
-  closes <- map partialLinkFromTuple <$> $(queryTuples'
+    \GROUP BY link_no, link_type, author, foreign_phrase, familiar_phrase, foreign_language, familiar_language")
+  closes <- map partialLinkFromTuple' <$> $(queryTuples'
     "SELECT link_no, link_type, author, \
            \foreign_phrase, familiar_phrase, \
-           \foreign_language, familiar_language \
+           \foreign_language, familiar_language, \
+           \MIN(rank) \
     \FROM link \
+    \LEFT JOIN link_frequency USING (link_no) \
     \WHERE NOT deleted \
       \AND (foreign_phrase !~~* {q} AND familiar_phrase !~~* {q} \
         \AND unaccent(foreign_phrase) !~~* {q} AND unaccent(familiar_phrase) !~~* {q}) \
       \AND (foreign_phrase ~~* {q'} OR familiar_phrase ~~* {q'} \
         \OR unaccent(foreign_phrase) ~~* {q'} OR unaccent(familiar_phrase) ~~* {q'}) \
-    \ORDER BY char_length(foreign_phrase) \
-    \LIMIT {n - fromIntegral (length exacts)}")
+    \GROUP BY link_no, link_type, author, foreign_phrase, familiar_phrase, foreign_language, familiar_language \
+    \ORDER BY char_length(foreign_phrase)")
   return $ exacts ++ closes
+ where partialLinkFromTuple' (a,b,c,d,e,f,g, rank) = (partialLinkFromTuple (a,b,c,d,e,f,g), rank)
