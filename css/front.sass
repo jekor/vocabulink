@@ -71,9 +71,12 @@ body #body
   font-size: 1.125em
 
 #foot
-  .two-column
+  #handy-links
     > .column
-      width: 44%
       margin:
         left: 3%
         right: 3%
+    > .column:first-child
+      width: 54%
+    > .column:nth-child(2)
+      width: 34%
