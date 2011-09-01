@@ -20,18 +20,20 @@
 V.annotateLink = function (link) {
   link.children('.foreign, .familiar, .link').each(function () {
     var word = $(this);
-    var caption = $('<span class="caption">' + word.attr('title') + '</span>');
-    // We have to calculate these before we add content to them and screw up
-    // the dimensions.
-    var width = word.outerWidth();
-    if (word.hasClass('foreign') || word.hasClass('familiar')) {
-      var y = word.outerHeight() + 4;
-    } else {
-      var y = word.height() + 8;
+    if (word.attr('title')) {
+      var caption = $('<span class="caption">' + word.attr('title') + '</span>');
+      // We have to calculate these before we add content to them and screw up
+      // the dimensions.
+      var width = word.outerWidth();
+      if (word.hasClass('foreign') || word.hasClass('familiar')) {
+        var y = word.outerHeight() + 4;
+      } else {
+        var y = word.height() + 8;
+      }
+      caption.appendTo(word);
+      var x = (width - caption.width()) / 2;
+      caption.css({'position': 'absolute', 'left': x, 'top': y});
     }
-    caption.appendTo(word);
-    var x = (width - caption.width()) / 2;
-    caption.css({'position': 'absolute', 'left': x, 'top': y});
   });
 }
 

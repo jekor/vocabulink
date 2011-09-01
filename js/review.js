@@ -102,6 +102,7 @@ function reviewLink(link) {
     }).appendTo(h1.find('.foreign'));
   }
   $('#review-area').empty().append(h1);
+  V.annotateLink(h1);
   h1.attr('start', Date.now());
 }
 
