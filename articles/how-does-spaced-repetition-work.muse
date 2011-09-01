@@ -3,6 +3,8 @@
 
 Once you've learned a word, it's only useful to you if you can recall it when you need it. Spaced repetition keeps words fresh in your mind without excessive effort on your part.
 
+<contents>
+
 * Regular Review, but Only When You Need It
 
 What would happen if you tried to review each word you'd learned every day? It would work for a while, but eventually the amount of time it takes would become overwhelming. It might take you a few minutes to review 10 words. But how long will it take you to review 100? 30 minutes? What about 1,000? 5 hours?

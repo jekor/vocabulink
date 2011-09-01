@@ -5,6 +5,8 @@ Each link on Vocabulink has a type. The best way to understand link types is to
 look through links created by other members. Each link is color-coded so that
 you can see what it is at a glance.
 
+<contents>
+
 * <literal><span style="color: #13B1B3"></literal>Link Word<literal></span></literal>
 
 The link word is the most important type of link, because it's the one with the

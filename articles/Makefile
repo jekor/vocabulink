@@ -5,7 +5,7 @@ articles := $(sources:.muse=.html)
 
 all : $(articles)
 
-%.html : %.muse
+%.html : %.muse muse-init.el
 	emacs -q -batch -l muse-init.el -f muse-batch-publish-files xhtml $<
 
 clean :

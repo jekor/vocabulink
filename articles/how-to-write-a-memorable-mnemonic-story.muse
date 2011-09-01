@@ -1,6 +1,8 @@
 #title How to Write a Memorable Mnemonic Story
 #section main
 
+<contents>
+
 ; * Keys to Memorable Mnemonic Stories
 
 ; unambiguous/essential

@@ -7,6 +7,8 @@ This uneven spread is similar in every language that statisticians have studied.
 
 You might find it strange that we suggest learning words like "also", "until", "then", etc. right from the beginning. After all, they don't really seem to fit into a logical group.
 
+<contents>
+
 * Logical Groupings of Vocabulary Are Logical, But Not Very Useful
 
 If you've ever taken a foreign language class or read a textbook, they might have begun by teaching you the words you'd find in an airport, items you'd find on a menu, or words used when asking for directions. "Aha! These will be useful!" you think to yourself. And indeed they are. But I'd like to show you why you should put off learning most of these words until later.

@@ -1,6 +1,8 @@
 #title How Do Linkword Mnemonics Work?
 #section main
 
+<contents>
+
 * What Exactly Is a Linkword Mnemonic?
 
 In Spanish, the word for "to sit" is "sentar". It's pronounced sort of like the word "centaur" (a mythical half-human, half-horse creature). Centaurs only exist in ancient Greek mythology. But imagine the difficulties they'd have if they really did exist today in modern society. Where would they sit? We have handicapped seating, but even that wouldn't be sufficient for a poor centaur. Well, fortunately being half-horse, centaurs don't actually need to sit.
