@@ -1,6 +1,6 @@
 # Vocabulink JavaScript modules
 
-compiled := compiled/common.js compiled/link.js compiled/member.js compiled/raphael.js compiled/metrics.js compiled/review.js
+compiled := compiled/common.js compiled/link.js compiled/member.js compiled/raphael.js compiled/metrics.js compiled/review.js compiled/dashboard.js
 
 all : $(compiled)
 
@@ -28,6 +28,9 @@ compiled/raphael.js : raphael.js
 compiled/metrics.js : metrics.js
 	cat $^ | jsmin > $@
 
+compiled/dashboard.js : drcal.js dashboard.js
+	cat $^ | jsmin > $@
+
 chartviz.js : /home/jekor/project/chartviz/chartviz.js
 	cp $^ $@
 
@@ -35,4 +38,7 @@ minform.js : /home/jekor/project/minform/minform.js
 	cp $^ $@
 
 longtable.js : /home/jekor/project/longtable/longtable.js
+	cp $^ $@
+
+drcal.js : /home/jekor/project/drcal/drcal.js
 	cp $^ $@

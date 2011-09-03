@@ -45,6 +45,7 @@ import Vocabulink.Article.Html
 import Vocabulink.CGI
 import Vocabulink.Comment
 import Vocabulink.Config
+import Vocabulink.Dashboard
 import Vocabulink.Html
 import Vocabulink.Link
 import Vocabulink.Link.Frequency
@@ -300,6 +301,13 @@ dispatch meth ("review":rpath) = do
         ("GET",  [])        -> reviewPage
         ("GET",  ["next"])  -> readInputDefault 1 "n" >>= nextReview member
         ("GET",  ["stats"]) -> reviewStats member
+        ("GET",  ["stats",x]) -> do
+          start <- readRequiredInput "start"
+          end   <- readRequiredInput "end"
+          tzOffset <- getRequiredInput "tzoffset"
+          case x of
+            "daily"    -> dailyReviewStats member start end tzOffset
+            "detailed" -> detailedReviewStats member start end tzOffset
         ("PUT",  [x]) ->
           case maybeRead x of
             Nothing -> error "Link number must be an integer"
@@ -309,6 +317,10 @@ dispatch meth ("review":rpath) = do
             Nothing -> error "Link number must be an integer"
             Just n  -> linkReviewed member n >> outputNothing
         (_       ,_)  -> outputNotFound
+
+-- Dashboard
+
+dispatch "GET" ["dashboard"] = dashboardPage
 
 -- Membership
 

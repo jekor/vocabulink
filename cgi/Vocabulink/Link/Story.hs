@@ -58,9 +58,6 @@ renderStory n s member edited =
     div ! class_ "linkword-story" $ do
       blockquote $ markdownToHtml s
       div ! class_ "signature" $ do
-        -- button ! class_ "light" $ do
-        --   img ! src "http://s.vocabulink.com/img/star-grey.png"
-        --   string "favorite"
         fromJust $ memberAvatar 32 member
         div ! class_ "details" $ do
           a ! class_ "username" ! href (stringValue $ "/user/" ++ memberName member)

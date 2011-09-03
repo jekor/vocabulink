@@ -1,0 +1,107 @@
+@import lib.sass
+
+#body
+  text-align: center
+
+#dashboard
+  display: inline-block
+  margin:
+    left: auto
+    right: auto
+
+#daily-detail
+  float: left
+  width: 30em
+  min-height: 30em
+  border: 1px solid #AEAEAE
+  margin:
+    left: auto
+    right: auto
+  .links
+    margin: 1em
+    th
+      font-weight: bold
+      text-align: center
+    th, td
+      padding:
+        left: 0.5em
+        right: 0.5em
+      vertical-align: middle
+      a
+        display: block
+        line-height: 30px
+  .links.reviewed
+    float: left
+  .links.scheduled
+    float: right
+
+.calendar
+  border-collapse: collapse
+  float: right
+  margin-left: 3.9em
+  thead tr:first-child th
+    font-size: 14pt
+    font-weight: bold
+    padding-bottom: 0.5em
+  .prev
+    float: left
+  .prev:before
+    content: "<"
+  .next
+    float: right
+  .next:after
+    content: ">"
+  thead tr:last-child th
+    font-size: 10pt
+  th
+    text-align: center
+  td
+    border: 1px solid #AEAEAE
+    width: 6em
+    height: 5em
+    > div
+      width: 100%
+      height: 100%
+      position: relative
+      cursor: pointer
+    .daynum
+      position: absolute
+      top: 0.5ex
+      right: 0.5ex
+    .reviews-completed
+      position: absolute
+      bottom: 0.5ex
+      left: 0.5ex
+      color: #81CC58
+    .reviews-scheduled
+      position: absolute
+      bottom: 0.5ex
+      right: 0.5ex
+      color: #29BBBD
+  .today, .today.selected
+    background-color: #E9EFF8
+  .selected
+    background-color: #F3F3F3
+  .extra
+    color: #AEAEAE
+
+b.grade
+  display: inline-block
+  width: 30px
+  height: 30px
+  background-image: url(/img/grades.png)
+  &.grade0
+    background-position: 0px 0px
+  &.grade1
+    background-position: -30px 0px
+  &.grade2
+    background-position: -60px 0px
+  &.grade3
+    background-position: -90px -30px
+  &.grade4
+    background-position: -120px -30px
+  &.grade5
+    background-position: -150px -30px
+
+.links.reviewed th, .links.scheduled th
+  padding-bottom: 0.5em

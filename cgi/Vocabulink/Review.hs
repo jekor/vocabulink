@@ -19,7 +19,8 @@
 -- it. We need a way to present links to members for regular (scheduled)
 -- reviews.
 
-module Vocabulink.Review (newReview, linkReviewed, nextReview, reviewStats, reviewPage) where
+module Vocabulink.Review (newReview, linkReviewed, nextReview, reviewPage
+                         ,reviewStats, dailyReviewStats, detailedReviewStats) where
 
 -- For now, we have only 1 review algorithm (SuperMemo 2).
 
@@ -36,6 +37,7 @@ import Vocabulink.Utils
 import qualified Data.Aeson.Generic
 import qualified Data.Aeson.Types
 import qualified Data.Text
+import Data.Time.Calendar (toGregorian)
 
 import Prelude hiding (div, span, id)
 
@@ -169,6 +171,82 @@ reviewStats member = do
   outputJSON [aesonQQ| {"due": <| due::Integer |>
                        ,"reviews": <| reviews::Integer |>
                        ,"links": <| links::Integer |>} |]
+
+dailyReviewStats :: Member -> Day -> Day -> String -> App CGIResult
+dailyReviewStats member start end tzOffset = do
+  reviews <- $(queryTuples'
+    "SELECT (actual_time AT TIME ZONE {tzOffset})::date AS day, COUNT(DISTINCT link_no), SUM(recall_time) \
+    \FROM link_review \
+    \WHERE member_no = {memberNumber member} \
+      \AND (actual_time AT TIME ZONE {tzOffset})::date BETWEEN {start}::date AND {end}::date \
+    \GROUP BY day \
+    \ORDER BY day")
+  scheduled <- $(queryTuples'
+    "SELECT (target_time AT TIME ZONE {tzOffset})::date AS day, COUNT(DISTINCT link_no) \
+    \FROM link_to_review \
+    \WHERE member_no = {memberNumber member} \
+      \AND (target_time AT TIME ZONE {tzOffset})::date BETWEEN {start}::date AND {end}::date \
+    \GROUP BY day \
+    \ORDER BY day")
+  outputJSON $ map reviewJSON reviews ++ map scheduledJSON scheduled
+ where reviewJSON (day, links, recallTime) =
+         [aesonQQ| {"date": <| (toGregorian $ fromJust day) |>
+                   ,"reviewed": <| (fromJust links)::Integer |>
+                   ,"recallTime": <| (fromJust recallTime)::Integer |>
+                   } |]
+       scheduledJSON (day, links) =
+         [aesonQQ| {"date": <| (toGregorian $ fromJust day) |>
+                   ,"scheduled": <| (fromJust links)::Integer |>
+                   } |]
+
+detailedReviewStats :: Member -> Day -> Day -> String -> App CGIResult
+detailedReviewStats member start end tzOffset = do
+  reviews <- $(queryTuples'
+    "SELECT link_no, COALESCE(extract(epoch from actual_time))::int, recall_grade, \
+           \foreign_phrase, familiar_phrase, foreign_language, familiar_language, link_type \
+    \FROM link_review \
+    \INNER JOIN link USING (link_no) \
+    \WHERE member_no = {memberNumber member} \
+      \AND (actual_time AT TIME ZONE {tzOffset})::date BETWEEN {start}::date AND {end}::date \
+    \ORDER BY actual_time")
+  scheduled <- $(queryTuples'
+    "SELECT link_no, COALESCE(extract(epoch from target_time))::int, \
+           \foreign_phrase, familiar_phrase, foreign_language, familiar_language, link_type \
+    \FROM link_to_review \
+    \INNER JOIN link USING (link_no) \
+    \WHERE member_no = {memberNumber member} \
+      \AND (target_time AT TIME ZONE {tzOffset})::date BETWEEN {start}::date AND {end}::date \
+    \ORDER BY target_time")
+  r <- mapM reviewJSON reviews
+  s <- mapM scheduledJSON scheduled
+  outputJSON $ [aesonQQ| {"reviewed": <| r |>, "scheduled": <| s |>} |]
+ where reviewJSON (linkNo, time, grade, foPhrase, faPhrase, foLang, faLang, type_) = do
+         foLanguage <- fromJust <$> languageNameFromAbbreviation foLang
+         faLanguage <- fromJust <$> languageNameFromAbbreviation faLang
+         return [aesonQQ| {"linkNumber": <| linkNo::Integer |>
+                          ,"time": <| (fromJust time)::Integer |>
+                          ,"grade": <| (round (grade * 5))::Integer |>
+                          ,"foreignPhrase": <| foPhrase |>
+                          ,"familiarPhrase": <| faPhrase |>
+                          ,"foreignLang": <| foLang |>
+                          ,"foreignLanguage": <| foLanguage |>
+                          ,"familiarLang": <| faLang |>
+                          ,"familiarLanguage": <| faLanguage |>
+                          ,"linkType": <| type_ |>
+                          } |]
+       scheduledJSON (linkNo, time, foPhrase, faPhrase, foLang, faLang, type_) = do
+         foLanguage <- fromJust <$> languageNameFromAbbreviation foLang
+         faLanguage <- fromJust <$> languageNameFromAbbreviation faLang
+         return [aesonQQ| {"linkNumber": <| linkNo::Integer |>
+                          ,"time": <| (fromJust time)::Integer |>
+                          ,"foreignPhrase": <| foPhrase |>
+                          ,"familiarPhrase": <| faPhrase |>
+                          ,"foreignLang": <| foLang |>
+                          ,"foreignLanguage": <| foLanguage |>
+                          ,"familiarLang": <| faLang |>
+                          ,"familiarLanguage": <| faLanguage |>
+                          ,"linkType": <| type_ |>
+                          } |]
 
 reviewPage :: App CGIResult
 reviewPage = stdPage "Review Your Links" [JS "link", JS "review", CSS "review", CSS "link-common"] mempty mempty
