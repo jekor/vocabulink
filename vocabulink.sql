@@ -300,6 +300,7 @@ CREATE TABLE link_to_review (
        member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE NOT NULL,
        link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE NOT NULL,
        target_time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       added_time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        PRIMARY KEY (member_no, link_no)
 );
 COMMENT ON COLUMN link_to_review.member_no IS 'Anonymous members cannot schedule reviews. That would be chaos. It''s also confusing if you hadn''t realized that you weren''t logged in.';
