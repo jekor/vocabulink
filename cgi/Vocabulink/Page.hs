@@ -66,10 +66,10 @@ stdPage title' deps head' body' = outputHtml =<< (do
         when (length jsDeps > 0) (noscript $ p "This page requires JavaScript for some functionality.")
         div ! id "body" $ body'
         div ! id "foot" $ footerB
-        inlineJS $ memberJS member
-        script ! src "http://www.google-analytics.com/ga.js" $ mempty
-        mconcat jsDeps
-        readyJS $ intercalate "\n" [ js | ReadyJS js <- deps' ])
+      inlineJS $ memberJS member
+      script ! src "http://www.google-analytics.com/ga.js" $ mempty
+      mconcat jsDeps
+      readyJS $ intercalate "\n" [ js | ReadyJS js <- deps' ])
  where memberJS m =
          unlines [ "var V = {" -- the Vocabulink object
                  , "  memberName: " ++ maybe "null" (\m' -> "'" ++ memberName m' ++ "'") m ++ ","
