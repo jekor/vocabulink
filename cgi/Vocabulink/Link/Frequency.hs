@@ -32,12 +32,12 @@ frequencyLists lang = do
   lists <- $(queryTuples' "SELECT list_no, list_name, description \
                           \FROM link_frequency_list \
                           \WHERE lang = {lang}")
-  outputJSON =<< mapM freqJSON lists
- where freqJSON (list_no, list_name, description) = do
-         return [aesonQQ| {"number": <| list_no::Integer |>
-                          ,"name": <| list_name |>
-                          ,"description": <| description |>
-                          } |]
+  outputJSON $ map freqJSON lists
+ where freqJSON (list_no, list_name, description) =
+         [aesonQQ| {"number": <| list_no::Integer |>
+                   ,"name": <| list_name |>
+                   ,"description": <| description |>
+                   } |]
 
 addFrequencyList :: String -> App CGIResult
 addFrequencyList lang = withRequiredMember $ \m -> do
