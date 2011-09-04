@@ -146,7 +146,7 @@ invitationLink text = do
       return $ a ! class_ "login-required" $ string ("Login to " ++ text)
     Just m  -> case memberEmail m of
                  Nothing -> do
-                   return $ a ! class_ "verified" ! href "#" $
+                   return $ a ! class_ "verified" ! href "" $
                               string ("Verify Email to " ++ text)
                  Just _  -> return mempty
 

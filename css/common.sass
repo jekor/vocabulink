@@ -524,7 +524,7 @@ a.username
   border: 2px solid #2D2D2D
   padding: 0.5em 1em
   font-weight: bold
-  color: white
+  color: #FFFFFF
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3)
   &:hover
     text-decoration: none
@@ -545,6 +545,9 @@ a.username
       @include vertical_gradient(darken(#60D2DB, 5%), #29A5AA)
     &:active
       @include vertical_gradient(#29A5AA, #60D2DB)
+// Temporary fix
+a.faint-gradient-button
+  color: #FFFFFF
 
 // Longtables
 

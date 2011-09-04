@@ -156,7 +156,7 @@ footerBar = do
                        multiColumnList 1 (articles ++ [a ! href "/articles" $ "more..."])
                   ] ! id "handy-links"
     unordList [ a ! href "https://getsatisfaction.com/vocabulink" $ "help"
-              , a ! href "#" ! class_ "contact-us" $ "contact us"
+              , a ! href "" ! class_ "contact-us" $ "contact us"
               , a ! href "/privacy" $ "privacy policy"
               , a ! href "/terms-of-use" $ "terms of use"
               , a ! href "/source" $ "source"

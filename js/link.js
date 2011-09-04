@@ -43,9 +43,9 @@ function linkNumber() {
 
 function collapseStory(q, h, mh) {
   q.addClass('collapsed').css('height', mh);
-  var readMore = $('<div class="control"><a href="#" class="read-more">read more...</a></div>');
+  var readMore = $('<div class="control"><a href="" class="read-more">read more...</a></div>');
   readMore.find('a').click(function () {
-    var readLess = $('<a href="#" class="read-less">read less...</a>');
+    var readLess = $('<a href="" class="read-less">read less...</a>');
     readLess.click(function () {
       q.animate({'height': mh}, 750, function () {
         readMore.remove();
@@ -56,6 +56,7 @@ function collapseStory(q, h, mh) {
       q.removeClass('collapsed');
       readMore.find('a').replaceWith(readLess);
     });
+    return false;
   });
   q.after(readMore);
 }
@@ -156,6 +157,7 @@ function editFrequency() {
           });
          return false;
        });
+       return false;
      });
    });
 }
@@ -165,6 +167,7 @@ $(function () {
 
   $('#pronounce').click(function () {
     $(this).find('audio')[0].play();
+    return false;
   });
 
   $('.linkword-story blockquote').each(function () {
@@ -221,7 +224,7 @@ $(function () {
   }
 
   // "add to review"
-  $('#link-op-review.enabled').click(function () {
+  $('#link-op-review.enabled').click(function (e) {
     var op = $(this);
     op.mask("Adding...");
     var linkNum = window.location.pathname.split('/').pop();
@@ -237,6 +240,7 @@ $(function () {
        op.text("Failed!");
        V.toastError(xhr.responseText);
      });
+    return false;
   });
 
   // "delete link"
@@ -253,6 +257,7 @@ $(function () {
              op.text('Failed!');
            }
           });
+    return false;
   });
 });
 

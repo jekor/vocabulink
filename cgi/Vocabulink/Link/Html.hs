@@ -325,7 +325,7 @@ linkAction label' icon' enabled =
              icon' ++
              (enabled ? "" $ "-disabled") ++
              ".png" in
-  a ! class_ (stringValue $ "operation login-required " ++ (enabled ? "enabled" $ "disabled")) $ do
+  a ! class_ (stringValue $ "operation login-required " ++ (enabled ? "enabled" $ "disabled")) ! href "" $ do
     img ! src (stringValue icon) ! class_ "icon"
     string label'
 
