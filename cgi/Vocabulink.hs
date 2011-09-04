@@ -308,6 +308,7 @@ dispatch meth ("review":rpath) = do
           case x of
             "daily"    -> dailyReviewStats member start end tzOffset
             "detailed" -> detailedReviewStats member start end tzOffset
+            _          -> outputNotFound
         ("PUT",  [x]) ->
           case maybeRead x of
             Nothing -> error "Link number must be an integer"
