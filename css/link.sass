@@ -370,6 +370,8 @@ table.links
   th
     color: #ABABAB
     background-color: #222222
+    &:nth-child(4)
+      text-align: center
     &:last-child
       text-align: right
   thead
@@ -403,6 +405,11 @@ table.links
         @include rounded_bl(0.5em)
       &:last-child
         @include rounded_br(0.5em)
+  .reviewing
+    background: url(/img/icon/memorybox.png) no-repeat 50% 50%
+  td:nth-child(4) a
+    text-shadow: none
+    color: transparent
 
 #frequency-editor
   border: 1px solid #EBEBEB

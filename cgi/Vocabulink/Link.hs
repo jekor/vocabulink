@@ -383,25 +383,27 @@ memberLinks memberNo offset limit =
     \ORDER BY link_no DESC \
     \OFFSET {offset} LIMIT {limit}")
 
-languagePairLinks :: String -> String -> App [(PartialLink, Maybe Integer)]
+languagePairLinks :: String -> String -> App [(PartialLink, Maybe Integer, Bool)]
 languagePairLinks foLang faLang = do
+  mn <- maybe 0 memberNumber <$> asks appMember
   map partialLinkFromTuple' <$> $(queryTuples'
-    "SELECT link_no, link_type, author, \
+    "SELECT link.link_no, link_type, author, \
            \foreign_phrase, familiar_phrase, \
            \foreign_language, familiar_language, \
-           \MIN(rank) \
+           \MIN(rank), COUNT(ltr.member_no) \
     \FROM link \
-    \LEFT JOIN link_frequency USING (link_no) \
+    \LEFT JOIN link_frequency lf ON (lf.link_no = link.link_no) \
+    \LEFT JOIN link_to_review ltr ON (ltr.link_no = link.link_no AND ltr.member_no = {mn}) \
     \WHERE NOT deleted \
       \AND foreign_language = {foLang} AND familiar_language = {faLang} \
-    \GROUP BY link_no, link_type, author, foreign_phrase, familiar_phrase, foreign_language, familiar_language \
-    \ORDER BY MIN(rank) ASC, link_no ASC")
- where partialLinkFromTuple' (a,b,c,d,e,f,g, rank) = (partialLinkFromTuple (a,b,c,d,e,f,g), rank)
+    \GROUP BY link.link_no, ltr.member_no, link_type, author, foreign_phrase, familiar_phrase, foreign_language, familiar_language \
+    \ORDER BY MIN(rank) ASC, link.link_no ASC")
+ where partialLinkFromTuple' (a,b,c,d,e,f,g, rank, m) = (partialLinkFromTuple (a,b,c,d,e,f,g), rank, fromJust m > 0)
 
 -- An adjacent link is the nearest (by rank) in the given language pair.
 
 adjacentLinkNumbers :: Link -> App (Integer, Integer)
 adjacentLinkNumbers link = do
-  links <- map (\(l, _) -> linkNumber (pLink l)) <$> languagePairLinks (linkForeignLang link) (linkFamiliarLang link)
+  links <- map (\(l, _, _) -> linkNumber (pLink l)) <$> languagePairLinks (linkForeignLang link) (linkFamiliarLang link)
   let i = fromJust $ findIndex (linkNumber link ==) links
   return (cycle links !! (i + length links - 1), cycle links !! (i + length links + 1))

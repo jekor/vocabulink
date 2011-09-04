@@ -125,7 +125,7 @@ linkPage linkNo = do
               h3 "Comments"
               comments
 
-linksPage :: String -> [(PartialLink, Maybe Integer)] -> App CGIResult
+linksPage :: String -> [(PartialLink, Maybe Integer, Bool)] -> App CGIResult
 linksPage title' links = do
   simplePage title' [JS "link", CSS "lib.link", ReadyJS initJS] $ do
     partialLinksTable links
@@ -140,20 +140,22 @@ linksPage title' links = do
                   ,"}).gotoPage(startPage);"
                   ]
 
-partialLinksTable :: [(PartialLink, Maybe Integer)] -> Html
+partialLinksTable :: [(PartialLink, Maybe Integer, Bool)] -> Html
 partialLinksTable links = table ! class_ "links" $ do
   thead $ do
     tr $ do
       th "Foreign"
       th "Familiar"
       th "Link Type"
+      th "Reviewing"
       th "Rank"
   tbody $ mconcat $ map linkRow links
- where linkRow (link, rank) = let url = "/link/" ++ show (linkNumber $ pLink link) in
+ where linkRow (link, rank, reviewing) = let url = "/link/" ++ show (linkNumber $ pLink link) in
          tr ! class_ (stringValue $ "partial-link " ++ (linkTypeName $ pLink link)) $ do
            td $ a ! href (stringValue url) $ string $ linkForeignPhrase $ pLink link
            td $ a ! href (stringValue url) $ string $ linkFamiliarPhrase $ pLink link
            td $ a ! href (stringValue url) $ string $ linkTypeName $ pLink link
+           td $ a ! href (stringValue url) ! class_ (stringValue (reviewing ? "reviewing" $ "")) $ string (reviewing ? "yes" $ "no")
            td $ a ! href (stringValue url) $ string $ maybe "" show rank
 
 languagePairsPage :: App CGIResult
