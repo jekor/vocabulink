@@ -259,6 +259,7 @@ $(function () {
       $('#signup-popup').remove();
       V.loginPopup();
     }
+    return false;
   });
 
   // Check for signals in the query string.
@@ -280,6 +281,7 @@ $(function () {
       $('#login-popup').remove();
       V.signupPopup();
     }
+    return false;
   });
 
   // Hook up any buttons that require login to popup the login box.
