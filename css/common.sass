@@ -45,7 +45,7 @@ h1, h2, h3, h4, h5, h6, p, ol, ul, dl, table, a, div, span
 body, select, input, textarea
   color: $text_color
 
-a
+a:link
   color: #28A3A4
   cursor: pointer
 
@@ -545,3 +545,22 @@ a.username
       @include vertical_gradient(darken(#60D2DB, 5%), #29A5AA)
     &:active
       @include vertical_gradient(#29A5AA, #60D2DB)
+
+// Longtables
+
+.paging-controls
+  text-align: center !important
+  a
+    text-decoration: none
+    &:visited
+      color: #28A3A4
+  .prev
+    float: left
+    &:before
+      content: "◄ prev"
+  .next
+    float: right
+    &:after
+      content: "next ►"
+  .elide:before
+    content: " … "
