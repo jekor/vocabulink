@@ -93,7 +93,7 @@ linkPage linkNo = do
           comments <- case row of
                         Just root  -> renderComments root
                         Nothing    -> return mempty
-          renderedLink <- renderLink l' hasPronunciation True
+          renderedLink <- renderLink l' hasPronunciation
           -- Only worry about 1 listed frequency for now.
           rank <- $(queryTuple' "SELECT MIN(rank) \
                                 \FROM link_frequency \
@@ -251,24 +251,22 @@ languageMenu side = do
 -- function has a problem in that it will add another class attribute instead of
 -- extending the existing one, which at least jquery doesn't like.
 
-renderLink :: Link -> Bool -> Bool -> App Html
-renderLink link pronounceable' paging = do
+renderLink :: Link -> Bool -> App Html
+renderLink link pronounceable' = do
   foLang <- linkForeignLanguage link
   faLang <- linkFamiliarLanguage link
-  (prevLink, nextLink) <- if paging
-                            then adjacentLinkNumbers link
-                            else return (Nothing, Nothing)
+  (prevLink, nextLink) <- adjacentLinkNumbers link
   return $ h1 ! class_ (stringValue $ "link " ++ linkTypeName link) $ do
-    maybe mempty (\n -> a ! href (stringValue $ show n) ! class_ "prev"
-                          ! title (stringValue $ "Previous " ++ foLang ++ "→" ++ faLang ++ " Link") $ mempty) prevLink
+    a ! href (stringValue $ show prevLink) ! class_ "prev"
+      ! title (stringValue $ "Previous " ++ foLang ++ "→" ++ faLang ++ " Link") $ mempty
     span ! class_ "foreign" ! customAttribute "lang" (stringValue $ linkForeignLang link) ! title (stringValue foLang) $ do
       string $ linkForeignPhrase link
       pronunciation
     span ! class_ "link" ! title (stringValue $ linkTypeName link) $
       renderLinkType (linkType link)
     span ! class_ "familiar" ! customAttribute "lang" (stringValue $ linkFamiliarLang link) ! title (stringValue faLang) $ string $ linkFamiliarPhrase link
-    maybe mempty (\n -> a ! href (stringValue $ show n) ! class_ "next"
-                          ! title (stringValue $ "Next " ++ foLang ++ "→" ++ faLang ++ " Link") $ mempty) nextLink
+    a ! href (stringValue $ show nextLink) ! class_ "next"
+      ! title (stringValue $ "Next " ++ foLang ++ "→" ++ faLang ++ " Link") $ mempty
  where renderLinkType :: LinkType -> Html
        renderLinkType (Linkword word) = string word
        renderLinkType _               = mempty
@@ -297,7 +295,7 @@ renderPartialLink (PartialLink l) = do
 
 displayLink :: Link -> App Html
 displayLink l = do
-  renderedLink <- renderLink l False True
+  renderedLink <- renderLink l False
   return $ do
     renderedLink
     div ! class_ "link-details htmlfrag" $ linkTypeHtml (linkType l)

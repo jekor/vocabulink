@@ -22,9 +22,8 @@ module Vocabulink.Link ( Link(..), PartialLink(..), LinkType(..), isLinkword
                        , linkForeignLanguage, linkFamiliarLanguage, languageNameFromAbbreviation
                        , activeLinkTypes, linkTypeNameFromType, linkWord
                        , getLink, getPartialLink, partialLinkFromTuple
-                       , linkLanguages, adjacentLinkNumbers
-                       , createLink, deleteLink
-                       , memberLinks, languagePairLinks
+                       , linkLanguages, createLink, deleteLink
+                       , memberLinks, languagePairLinks, adjacentLinkNumbers
                        ) where
 
 import Vocabulink.App
@@ -32,6 +31,8 @@ import Vocabulink.CGI
 import Vocabulink.Link.Pronunciation
 import Vocabulink.Member
 import Vocabulink.Utils
+
+import Data.List (findIndex)
 
 -- Link Data Types
 
@@ -294,44 +295,6 @@ linkLanguages =
              \familiar_language, fa.name")
  where linkLanguages' (oa, on, da, dn, c) = ((oa, on), (da, dn), fromJust c)
 
--- An adjacent link is the nearest (by link number) in the given language pair.
-
-adjacentLinkNumbers :: Link -> App (Maybe Integer, Maybe Integer)
-adjacentLinkNumbers link = do
-  let foLang = linkForeignLang link
-      faLang = linkFamiliarLang link
-  prevLink <- $(queryTuple'
-    "(SELECT link_no FROM link \
-     \WHERE foreign_language = {foLang} \
-       \AND familiar_language = {faLang} \
-       \AND link_no < {linkNumber link} \
-       \AND NOT deleted \
-     \ORDER BY link_no DESC LIMIT 1) \
-    \UNION \
-    \(SELECT link_no FROM link \
-     \WHERE foreign_language = {foLang} \
-     \AND familiar_language = {faLang} \
-     \AND NOT link_no = {linkNumber link} \
-     \AND NOT deleted \
-     \ORDER BY link_no DESC LIMIT 1) \
-     \ORDER BY link_no ASC")
-  nextLink <- $(queryTuple'
-    "(SELECT link_no FROM link \
-     \WHERE foreign_language = {foLang} \
-       \AND familiar_language = {faLang} \
-       \AND link_no > {linkNumber link} \
-       \AND NOT deleted \
-     \ORDER BY link_no ASC LIMIT 1) \
-    \UNION \
-    \(SELECT link_no FROM link \
-     \WHERE foreign_language = {foLang} \
-       \AND familiar_language = {faLang} \
-       \AND NOT link_no = {linkNumber link} \
-       \AND NOT deleted \
-     \ORDER BY link_no ASC LIMIT 1) \
-    \ORDER BY link_no DESC")
-  return (fromJust <$> prevLink, fromJust <$> nextLink)
-
 -- Creating New Links
 
 createLink :: App CGIResult
@@ -420,8 +383,6 @@ memberLinks memberNo offset limit =
     \ORDER BY link_no DESC \
     \OFFSET {offset} LIMIT {limit}")
 
--- As a hack to read frequencies out later, the link numbers are stored to a
--- temporary table.
 languagePairLinks :: String -> String -> App [(PartialLink, Maybe Integer)]
 languagePairLinks foLang faLang = do
   map partialLinkFromTuple' <$> $(queryTuples'
@@ -434,5 +395,13 @@ languagePairLinks foLang faLang = do
     \WHERE NOT deleted \
       \AND foreign_language = {foLang} AND familiar_language = {faLang} \
     \GROUP BY link_no, link_type, author, foreign_phrase, familiar_phrase, foreign_language, familiar_language \
-    \ORDER BY MIN(rank), link_no ASC")
+    \ORDER BY MIN(rank) ASC, link_no ASC")
  where partialLinkFromTuple' (a,b,c,d,e,f,g, rank) = (partialLinkFromTuple (a,b,c,d,e,f,g), rank)
+
+-- An adjacent link is the nearest (by rank) in the given language pair.
+
+adjacentLinkNumbers :: Link -> App (Integer, Integer)
+adjacentLinkNumbers link = do
+  links <- map (\(l, _) -> linkNumber (pLink l)) <$> languagePairLinks (linkForeignLang link) (linkFamiliarLang link)
+  let i = fromJust $ findIndex (linkNumber link ==) links
+  return (cycle links !! (i + length links - 1), cycle links !! (i + length links + 1))
