@@ -140,13 +140,14 @@ V.loginPopup = function () {
       + '<tr><td><label for="login-password">Password:</label></td><td><input id="login-password" type="password" name="password" required></td></tr>'
     + '</table>'
     + '<input type="submit" value="Login" class="dark">'
-    + '<button class="cancel hyperlink">lost password?</button>'
+    + '<a class="cancel" href="">lost password?</a>'
   + '</form>').appendTo(headBar);
   popup.css('top', headBar.offset().top + headBar.outerHeight())
        .css('left', headBar.offset().left + headBar.outerWidth() - $('#login-popup').outerWidth() - 3)
        .find('.cancel').click(function () {
          $(this).parent().remove();
          lostPasswordPopup();
+         return false;
        });
   popup.minform();
 };
