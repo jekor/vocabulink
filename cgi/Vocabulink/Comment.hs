@@ -143,7 +143,7 @@ invitationLink text = do
   member <- asks appMember
   case member of
     Nothing -> do
-      return $ a ! class_ "login-required" $ string ("Login to " ++ text)
+      return $ a ! class_ "login-required" ! href "" $ string ("Login to " ++ text)
     Just m  -> case memberEmail m of
                  Nothing -> do
                    return $ a ! class_ "verified" ! href "" $

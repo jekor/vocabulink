@@ -190,9 +190,9 @@ copyrightNotice = do
 
 loginBox :: Html
 loginBox = span ! class_ "auth-box login" $ do
-  a ! id "login-button" $ "Log in"
+  a ! id "login-button" ! href "" $ "Log in"
   string " | "
-  a ! id "signup-button" $ "Sign up"
+  a ! id "signup-button" ! href "" $ "Sign up"
 
 -- For logged-in members, we provide a logout button (with an indicator of your
 -- username to show that you're logged in).
