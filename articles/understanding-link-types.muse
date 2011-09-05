@@ -7,13 +7,13 @@ you can see what it is at a glance.
 
 <contents>
 
-* <literal><span style="color: #13B1B3"></literal>Link Word<literal></span></literal>
+* <literal><span style="color: #13B1B3"></literal>Linkword<literal></span></literal>
 
-The link word is the most important type of link, because it's the one with the
+The linkword is the most important type of link, because it's the one with the
 most mnemonic value. It's the type of link from which Vocabulink gets its name
 originally.
 
-The idea behind a link word is that the foreign language word triggers a
+The idea behind a linkword is that the foreign language word triggers a
 similar-sounding word or phrase in your native language. You then use that
 native language word to create a mnemonic story linking the 2.
 
@@ -22,10 +22,10 @@ For example, the Esperanto word for "week" is "semajno" (pronounced roughly
 could then weave into a story about the 7 dwarves working all week or a less
 wholesome story if you like.
 
-Note that link words do not have to sound exactly like the foreign word. They
+Note that linkwords do not have to sound exactly like the foreign word. They
 just have to be similar enough for the one to trigger the other in your brain.
-It's common when you're new at creating link word mnemonics to get frustrated
-after searching for minutes for a link word without success. Don't despair.
+It's common when you're new at creating linkword mnemonics to get frustrated
+after searching for minutes for a linkword without success. Don't despair.
 Just lower your standards a little bit and search for words and phrases that
 just have some resemblance to the foreign word.
 
@@ -33,8 +33,8 @@ Except for when dealing with soundalikes, always try to create links as link
 words. Spend at least 5 minutes searching for a link before giving up and
 moving to another link type.
 
-Link word associations always go from target (foreign) word (origin) to source
-(native) word (destination) because the link word is triggered by the foreign
+Linkword associations always go from target (foreign) word (origin) to source
+(native) word (destination) because the linkword is triggered by the foreign
 word.
 
 * <literal><span style="color: #86CF6A"></literal>Soundalike<literal></span></literal>
