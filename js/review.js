@@ -1,4 +1,4 @@
-// Copyright 2008, 2009, 2011 Chris Forno
+// Copyright 2008, 2009, 2011, 2012 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -78,6 +78,8 @@ function revealAnswer() {
   h1.addClass(h1.attr('type'));
   h1.find('.link').text(h1.find('.link').attr('linkword'));
   $('.familiar', h1).text(h1.find('.familiar').attr('familiar'));
+  h1.find('.caption').remove();
+  V.annotateLink(h1);
   $('#reveal').hide();
   $('#recall-area h2').css('visibility', 'visible');
   $('#grades').show();
@@ -86,7 +88,7 @@ function revealAnswer() {
 function reviewLink(link) {
   var h1 = $('<h1 class="link" linkno="' + link.linkNumber + '" type="' + link.linkType + '">'
              + '<span class="foreign" title="' + link.foreignLanguage + '">' + link.foreign + '</span>'
-             + '<span class="link"></span>'
+             + '<span class="link"' + (link.linkword ? ' title="linkword"' : '') + '></span>'
              + '<span class="familiar" title="' + link.familiarLanguage + '" familiar="' + link.familiar + '">?</span>'
            + '</h1>');
   h1.find('.link').attr('linkword', (link.linkword ? link.linkword : ''));
