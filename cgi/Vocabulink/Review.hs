@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -108,12 +108,23 @@ scheduleNextReview member linkNo recallGrade recallTime = do
 -- @target_time@. If there's none, we send the member to a ``congratulations''
 -- page. If there is a link for review, we send them to the review page.
 
+-- The links are returned in random order for now. This is not ideal if the
+-- learner gets behind, as they might have links that need review more than
+-- others that get left until later. However, in my experience, having the
+-- links displayed in the same order each time is a bigger problem because they
+-- get memorized in groups. For example, one link might cue the recognition for
+-- the next link, which is not what we want. A better solution for this would
+-- be to introduce a little drift/fuzziness instead of an entire random
+-- shuffling.
+
+-- TODO: Come up with a less thorough shuffling method than RANDOM().
+
 nextReview :: Member -> Integer -> App CGIResult
 nextReview member n = do
   rows <- $(queryTuples'
     "SELECT link_no FROM link_to_review \
     \WHERE member_no = {memberNumber member} AND current_timestamp >= target_time \
-    \ORDER BY target_time ASC LIMIT {n}")
+    \ORDER BY RANDOM() LIMIT {n}")
   case rows of
     [] -> outputNotFound
     -- TODO: Make a version of getLink that can retrieve multiple links at once.
