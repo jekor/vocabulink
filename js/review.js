@@ -88,7 +88,7 @@ function revealAnswer() {
 function reviewLink(link) {
   var h1 = $('<h1 class="link" linkno="' + link.linkNumber + '" type="' + link.linkType + '">'
              + '<span class="foreign" title="' + link.foreignLanguage + '">' + link.foreign + '</span>'
-             + '<span class="link"' + (link.linkword ? ' title="linkword"' : '') + '></span>'
+             + '<span class="link"></span>'
              + '<span class="familiar" title="' + link.familiarLanguage + '" familiar="' + link.familiar + '">?</span>'
            + '</h1>');
   h1.find('.link').attr('linkword', (link.linkword ? link.linkword : ''));
