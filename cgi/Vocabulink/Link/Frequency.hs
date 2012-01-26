@@ -1,4 +1,4 @@
--- Copyright 2011 Chris Forno
+-- Copyright 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -42,7 +42,7 @@ frequencyLists lang = do
 addFrequencyList :: String -> App CGIResult
 addFrequencyList lang = withRequiredMember $ \m -> do
   -- This is temporarily locked down.
-  when (memberNumber m /= 1 && memberNumber m /= 2) $ error "Unauthorized"
+  when (memberNumber m /= 1) $ error "Unauthorized"
   name <- getRequiredInput "name"
   description <- getRequiredInput "description"
   $(execute' "INSERT INTO link_frequency_list (lang, list_name, description) \

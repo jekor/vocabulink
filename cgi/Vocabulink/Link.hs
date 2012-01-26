@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -85,7 +85,7 @@ instance UserContent Link where
   canEdit link    = do
     member <- asks appMember
     return $ case member of
-      Just m  -> (memberNumber m) == linkAuthor link || (memberNumber m) == 1 || (memberNumber m) == 2
+      Just m  -> (memberNumber m) == linkAuthor link || (memberNumber m) == 1
       Nothing -> False
   canDelete link  = do
     edit <- canEdit link
