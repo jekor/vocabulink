@@ -17,6 +17,10 @@
 #review-area
   min-height: 12em
   padding-top: 8em
+  h1.link
+    margin:
+      top: 0.578em
+      bottom: 0.578em
 
 .progress-bar
   margin:
@@ -37,51 +41,6 @@
   position: absolute
   top: -7px
   left: 33.3%
-
-h1.link
-  .foreign, .familiar, .link
-    position: relative
-  .foreign, .familiar
-    display: inline-block
-    color: #434343
-    background-color: #FFFFFF
-    border: 3px solid #434343
-    @include rounded(10px)
-    @include drop_shadow(3px, 3px, 6px, rgba(0, 0, 0, 0.2))
-    font-size: 0.875em
-    padding: 1em 1.5em
-  .link
-    font-size: 0.75em
-    vertical-align: 50%
-    border-bottom: 3px solid #434343
-    padding:
-      left: 4em
-      right: 4em
-      bottom: 0.1em
-    margin:
-      left: 7px
-      right: 6px
-
-h1.link.linkword
-  .foreign, .familiar, .link
-    color: #13B1B3
-  .link
-    border-color: #13B1B3
-    padding:
-      left: 2em
-      right: 2em
-  .foreign, .familiar
-    background-color: #E9F7F7
-    border-color: #D3F1F1
-
-h1.link.soundalike
-  .foreign, .familiar, .link
-    color: #81CC58
-  .link
-    border-color: #81CC58
-  .foreign, .familiar
-    background-color: #ECF9DF
-    border-color: #D4F1C8
 
 #recall-area
   text-align: center

@@ -10,7 +10,7 @@ all : $(csses) $(libs)
 lib.common.css : common.css comment.css jquery.toastmessage.css jquery-loadmask.css jquery.simplemodal.css
 	cat $^ > $@
 
-lib.link.css : link-common.css link.css
+lib.link.css : link.css
 	cat $^ > $@
 
 lib.member.css : link-editor.css markitup-set.css markitup-skin.css fileuploader.css

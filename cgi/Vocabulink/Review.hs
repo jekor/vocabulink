@@ -260,4 +260,4 @@ detailedReviewStats member start end tzOffset = do
                           } |]
 
 reviewPage :: App CGIResult
-reviewPage = stdPage "Review Your Links" [JS "link", JS "review", CSS "review", CSS "link-common"] mempty mempty
+reviewPage = stdPage "Review Your Links" [JS "review", CSS "review", JS "link", CSS "link"] mempty mempty
