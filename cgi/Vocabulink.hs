@@ -235,7 +235,7 @@ dispatch meth ("link":x:part) =
                  ("DELETE", [])                -> deleteLink n
                  ("PUT"   , ["foreign"])       -> getBody >>= linkUpdateForeign n
                  ("PUT"   , ["familiar"])      -> getBody >>= linkUpdateFamiliar n
---                 ("PUT"   , ["linkword"])      -> getBody >>= linkAddOrUpdateLinkword n
+                 ("PUT"   , ["linkword"])      -> getBody >>= linkAddOrUpdateLinkword n
                  ("POST"  , ["stories"])       -> do
                    story <- getRequiredInput "story"
                    addStory n story

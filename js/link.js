@@ -194,9 +194,17 @@ $(function () {
         }
 				if (e.keyCode === 13 || e.keyCode === 10) { // Enter
           $this.mask('Saving...');
-          var side = $this.hasClass('foreign') ? 'foreign' : 'familiar';
+          if ($this.hasClass('foreign')) {
+            var part = 'foreign';
+          } else if ($this.hasClass('familiar')) {
+            var part = 'familiar';
+          } else if ($this.hasClass('link')) {
+            var part = 'linkword';
+          } else {
+            return false;
+          }
           $.ajax({'type': 'PUT',
-                  'url':  window.location.pathname + '/' + side,
+                  'url':  window.location.pathname + '/' + part,
                   'data': input.val(),
                   'contentType': 'text/plain'})
            .done(function () {
@@ -212,7 +220,7 @@ $(function () {
       $this.empty().append(input);
       input.focus().select();
     }
-    $('.link:not(.edit) .foreign, .link:not(.edit) .familiar').one('click', edit);
+    $('.link:not(.edit) .foreign, .link:not(.edit) .familiar, .link:not(.edit) .link').one('click', edit);
   }
 
   if (V.loggedIn() && $('#linkword-stories').length) {

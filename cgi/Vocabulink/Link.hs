@@ -23,7 +23,7 @@ module Vocabulink.Link ( Link(..), PartialLink(..), LinkType(..), isLinkword
                        , activeLinkTypes, linkTypeNameFromType, linkWord
                        , getLink, getPartialLink, partialLinkFromTuple
                        , linkLanguages, createLink, deleteLink
-                       , linkUpdateForeign, linkUpdateFamiliar
+                       , linkUpdateForeign, linkUpdateFamiliar, linkAddOrUpdateLinkword
                        , memberLinks, languagePairLinks, adjacentLinkNumbers
                        ) where
 
@@ -370,6 +370,12 @@ linkUpdateFamiliar :: Integer -> String -> App CGIResult
 linkUpdateFamiliar linkNo phrase = do
   $(execute' "UPDATE link SET familiar_phrase = {phrase} \
              \WHERE link_no = {linkNo}")
+  outputNothing
+
+linkAddOrUpdateLinkword :: Integer -> String -> App CGIResult
+linkAddOrUpdateLinkword linkNo linkword = do
+  $(execute' "INSERT INTO link_linkword (link_no, linkword) \
+                                \VALUES ({linkNo}, {linkword})")
   outputNothing
 
 -- We want to be able to display links in various ways. It would be really nice

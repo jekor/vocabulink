@@ -287,6 +287,18 @@ CREATE TABLE link_linkword (
        linkword TEXT NOT NULL
 );
 
+CREATE RULE "replace linkword" AS
+    ON INSERT TO "link_linkword"
+    WHERE EXISTS (SELECT TRUE FROM link_linkword WHERE link_no = NEW.link_no)
+    DO INSTEAD (UPDATE link_linkword SET linkword = NEW.linkword
+                WHERE link_no = NEW.link_no);
+
+CREATE RULE "update linktype linkword" AS
+    ON INSERT TO "link_linkword"
+    WHERE NOT EXISTS (SELECT TRUE FROM link WHERE link_no = NEW.link_no AND link_type = 'linkword')
+    DO ALSO (UPDATE link SET link_type = 'linkword'
+             WHERE link_no = NEW.link_no);
+
 CREATE TABLE linkword_story (
        story_no SERIAL PRIMARY KEY,
        link_no INTEGER REFERENCES link_type_linkword (link_no) NOT NULL,
