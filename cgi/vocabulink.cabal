@@ -1,9 +1,9 @@
 Name:          Vocabulink
-Version:       2011.8.19
+Version:       2012.1.26
 Cabal-Version: >= 1.2
 License:       OtherLicense
 License-File:  COPYING
-Copyright:     2008, 2009, 2010, 2011 Chris Forno
+Copyright:     2008, 2009, 2010, 2011, 2012 Chris Forno
 Author:        Chris Forno (jekor)
 Maintainer:    jekor@jekor.com
 Stability:     stable
@@ -27,7 +27,7 @@ Executable vocabulink.cgi
                  base >= 4,
                  blaze-html >= 0.4,
                  bytestring,
-                 cgi,
+                 cgi >= 3001.1.8.2,
                  ConfigFile,
                  directory,
                  filepath,

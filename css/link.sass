@@ -48,7 +48,12 @@ h1.link
   margin: 1.5em auto 2em
   .foreign, .familiar, .link
     position: relative
+    input
+      text-align: center
   .foreign, .familiar
+    input
+      font-size: 14pt
+      width: 12em
     display: inline-block
     border: 3px solid black
     @include rounded(10px)
@@ -66,6 +71,10 @@ h1.link
     margin:
       left: 8px
       right: 5px
+    input
+      font-size: 13pt
+      width: 8em
+      vertical-align: 40%
   &.review
     a
       cursor: pointer
@@ -117,13 +126,8 @@ h1.link.association
     border-color: #F4F3F3
 
 h1.link.edit
-  input
-    text-align: center
   .foreign, .familiar
     position: relative
-    input
-      font-size: 14pt
-      width: 12em
     select
       position: absolute
       top: 115%
@@ -132,10 +136,6 @@ h1.link.edit
   .link
     display: inline-block
     position: relative
-    input
-      font-size: 13pt
-      width: 8em
-      vertical-align: 40%
     select
       position: absolute
       top: 125%

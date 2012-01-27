@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -203,6 +203,10 @@ dispatch "POST" ["articles"] = refreshArticles
 -- POST   /link/10/stories       → add a linkword story
 -- POST   /link/10/pronunciation → add a pronunciation
 -- DELETE /link/10               → delete link
+-- PUT    /link/10/foreign       → update the foreign side of the link
+-- PUT    /link/10/familiar      → update the familiar side of the link
+-- PUT    /link/10/linkword      → update the linkword of the link, or add a
+--                                 linkword if one didn't exist before
 
 -- Creating a new link is a 2-step process. First, the member requests a page
 -- on which to enter information about the link. Then they @POST@ the details
@@ -223,12 +227,15 @@ dispatch meth ["link","story",x] =
                    referrerOrVocabulink >>= redirect
                  _     -> outputNotFound
 
-dispatch meth ("link":x:meth') =
+dispatch meth ("link":x:part) =
   case maybeRead x of
     Nothing -> outputNotFound
-    Just n  -> case (meth, meth') of
+    Just n  -> case (meth, part) of
                  ("GET"   , [])                -> linkPage n
                  ("DELETE", [])                -> deleteLink n
+                 ("PUT"   , ["foreign"])       -> getBody >>= linkUpdateForeign n
+                 ("PUT"   , ["familiar"])      -> getBody >>= linkUpdateFamiliar n
+--                 ("PUT"   , ["linkword"])      -> getBody >>= linkAddOrUpdateLinkword n
                  ("POST"  , ["stories"])       -> do
                    story <- getRequiredInput "story"
                    addStory n story

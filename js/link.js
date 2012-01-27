@@ -176,8 +176,43 @@ $(function () {
     }
   });
 
+  // Quick hack to allow "admin" edits.
   if (V.memberName === 'jekor') {
     $('#rank').click(editFrequency);
+    var edit = function () {
+      var $this = $(this);
+      var save = $this.clone();
+      var text = $this.clone().children().remove().end().text();
+      var input = $('<input>').attr('value', text);
+      var cancel = function () {
+        $this.replaceWith(save);
+        save.click(edit);
+      };
+      input.keyup(function (e) {
+        if (e.keyCode === 27) { // Esc
+          cancel();
+        }
+				if (e.keyCode === 13 || e.keyCode === 10) { // Enter
+          $this.mask('Saving...');
+          var side = $this.hasClass('foreign') ? 'foreign' : 'familiar';
+          $.ajax({'type': 'PUT',
+                  'url':  window.location.pathname + '/' + side,
+                  'data': input.val(),
+                  'contentType': 'text/plain'})
+           .done(function () {
+             window.location.reload();
+           })
+           .fail(function (xhr) {
+             $this.unmask();
+             V.toastError(xhr.responseText, true);
+           });
+        }
+      })
+      input.focusout(cancel);
+      $this.empty().append(input);
+      input.focus().select();
+    }
+    $('.link:not(.edit) .foreign, .link:not(.edit) .familiar').one('click', edit);
   }
 
   if (V.loggedIn() && $('#linkword-stories').length) {

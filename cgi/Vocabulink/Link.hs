@@ -23,6 +23,7 @@ module Vocabulink.Link ( Link(..), PartialLink(..), LinkType(..), isLinkword
                        , activeLinkTypes, linkTypeNameFromType, linkWord
                        , getLink, getPartialLink, partialLinkFromTuple
                        , linkLanguages, createLink, deleteLink
+                       , linkUpdateForeign, linkUpdateFamiliar
                        , memberLinks, languagePairLinks, adjacentLinkNumbers
                        ) where
 
@@ -343,6 +344,7 @@ mkLink o ol d dl t = Link { linkNumber          = undefined
 -- review sets. Instead, we just flag the link as deleted so that it doesn't
 -- appear in most contexts.
 
+-- TODO: No need to return anything here.
 deleteLink :: Integer -> App CGIResult
 deleteLink linkNo = do
   $(execute' "UPDATE link SET deleted = TRUE \
@@ -355,6 +357,20 @@ deleteLink linkNo = do
 -- * does not have any stories
 -- * does not have any comments
 -- linkIsDeletable :: Integer -> App Bool
+
+-- Editing/Updating Links
+
+linkUpdateForeign :: Integer -> String -> App CGIResult
+linkUpdateForeign linkNo phrase = do
+  $(execute' "UPDATE link SET foreign_phrase = {phrase} \
+             \WHERE link_no = {linkNo}")
+  outputNothing
+
+linkUpdateFamiliar :: Integer -> String -> App CGIResult
+linkUpdateFamiliar linkNo phrase = do
+  $(execute' "UPDATE link SET familiar_phrase = {phrase} \
+             \WHERE link_no = {linkNo}")
+  outputNothing
 
 -- We want to be able to display links in various ways. It would be really nice
 -- to get lazy lists from the database. For now, you need to specify how many
