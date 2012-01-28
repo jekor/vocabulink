@@ -180,6 +180,11 @@ establishLink l memberNo = do
                             \{linkTypeName l}, {memberNo}) \
           \RETURNING link_no") h
         establishLinkType h (l {linkNumber = linkNo})
+        -- Add the link to review for the author.
+        -- This duplicates a query from Review.hs in order to avoid a cyclical
+        -- dependency (and with the benefit of having it in the transaction).
+        $(execute "INSERT INTO link_to_review (member_no, link_no) \
+                                      \VALUES ({memberNo}, {linkNo})") h
         return linkNo
 
 -- The relation we insert additional details into depends on the type of the
