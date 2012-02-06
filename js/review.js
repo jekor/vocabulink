@@ -135,7 +135,7 @@ $(function () {
    .done(getLinks)
    .fail(function () {V.toastError("Failed to retrieve link stats.");});
   var grades = $('<div id="grades"></div>').hide();
-  $.each(['blank', 'bad', 'wrong', 'barely', 'good', 'perfect'], function (i, text) {
+  $.each(['blank', 'wrong', 'almost', 'barely', 'good', 'perfect'], function (i, text) {
     var button = $('<button class="grade' + i + '" grade="' + (i / 5) + '" title="hotkey: ' + (i + 1) + '"><b></b><br>' + text + '</button>');
     button.click(function () {grade(i / 5);});
     $(document).bind('keyup', (i + 1).toString(), function () {
