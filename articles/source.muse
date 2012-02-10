@@ -6,6 +6,7 @@ You can view the latest code on [[https://github.com/jekor/vocabulink][github]].
 
 Vocabulink makes use of the following JavaScript libraries. They are sent minified, but can be obtained in full in the latest source archive in their original form.
 
+ - [[http://www.minjs.com/][minjs]]
  - [[http://jquery.com/][jQuery]]
  - [[http://markitup.jaysalvat.com/][markItUp!]]
  - [[http://attacklab.net/showdown/][Showdown]]
