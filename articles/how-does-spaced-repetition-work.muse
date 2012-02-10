@@ -68,3 +68,7 @@ Footnotes:
 [2]  By default, we'll continue scheduling reviews for your entire lifetime. But don't worry, words you learn well will become so infrequent that years might pass between reviews.
 [3]  The algorithm we currently use is [[http://www.supermemo.com/english/ol/sm2.htm][Supermemo 2]].
 
+; * It's Discouraging to Keep Getting Words Wrong (that I Don't Remember)
+
+; That's the point of the spaced repetition algorithm. We only give you words for review when we think you're on the brink of forgetting them. Time spent reviewing a word you remember well is time that could be spent on other things.
+
