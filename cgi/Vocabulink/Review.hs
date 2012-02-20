@@ -119,12 +119,12 @@ scheduleNextReview member linkNo recallGrade recallTime = do
 
 -- TODO: Come up with a less thorough shuffling method than RANDOM().
 
-nextReview :: Member -> Integer -> App CGIResult
-nextReview member n = do
+nextReview :: Member -> App CGIResult
+nextReview member = do
   rows <- $(queryTuples'
     "SELECT link_no FROM link_to_review \
     \WHERE member_no = {memberNumber member} AND current_timestamp >= target_time \
-    \ORDER BY RANDOM() LIMIT {n}")
+    \ORDER BY RANDOM()")
   case rows of
     [] -> outputNotFound
     -- TODO: Make a version of getLink that can retrieve multiple links at once.

@@ -306,7 +306,7 @@ dispatch meth ("review":rpath) = do
     Just member ->
       case (meth,rpath) of
         ("GET",  [])        -> reviewPage
-        ("GET",  ["next"])  -> readInputDefault 1 "n" >>= nextReview member
+        ("GET",  ["next"])  -> nextReview member
         ("GET",  ["stats"]) -> reviewStats member
         ("GET",  ["stats",x]) -> do
           start <- readRequiredInput "start"

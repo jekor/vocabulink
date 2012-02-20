@@ -17,10 +17,13 @@
 
 (function ($) {
 
-var links = [];
-var total = 0;
-var correct = 0;
-var wrong = 0;
+function progressBar(total) {
+  var barDiv = $('<div class="progress-bar" id="review-progress"><div style="width: 0%"></div></div>');
+  var counter = 0;
+  return [barDiv, function () {
+    $('div', barDiv).animate({'width': (++counter)/total * 100 + '%'}, 'fast');
+  }];
+}
 
 function grade(g) {
   var h1 = $('#review-area h1');
@@ -33,45 +36,17 @@ function grade(g) {
                   ,'time': parseInt(h1.attr('stop'), 10) - parseInt(h1.attr('start'), 10)}})
    .fail(function () {V.toastError('Failed to record grade.');});
   if (g >= 0.5) {
-    correct++;
-    $('#review-progress div').animate({'width': correct/total * 100 + '%'}, 'fast');
     // Update the "X links to review" in the header.
     V.incrLinksToReview(-1);
-  } else {
-    wrong++;
   }
   $('#grades').hide();
   $('#recall-area h2').css('visibility', 'hidden');
   $('#reveal').show();
-  if (links.length) {
-    reviewLink(links.shift());
-  } else {
-    if (correct < total) {
-      // In case the learner didn't get all links correct, there are some
-      // stragglers. Now's the time to review them.
-      // Note that this isn't guaranteed to get just the stragglers. There's a
-      // chance that other links came due in the meantime. The fix needs to be
-      // completed on the server side.
-      $('#review-area').mask('Loading words...');
-      $.get('/review/next?n=' + (total - correct))
-       .done(function (links_) {
-         $('#review-area').unmask();
-         $('#recall-area').show();
-         links = links_;
-         reviewLink(links.shift());
-       })
-       .fail(function () {V.toastError("Failed to retrieve links to review.");});
-    } else {
-      $('#recall-area').hide();
-      // TODO: Make this more impressive and fun to work towards.
-      $('#review-area').empty().append('<h1>Congratulations, you\'re done!</h1>');
-    }
-  }
 }
 
 function revealAnswer() {
   var h1 = $('#review-area h1');
-  if (h1.attr('stop')) {
+  if (h1.attr('stop') || !h1.hasClass('link')) {
     return;
   }
   h1.attr('stop', Date.now());
@@ -85,7 +60,7 @@ function revealAnswer() {
   $('#grades').show();
 }
 
-function reviewLink(link) {
+function revealLink(link) {
   var h1 = $('<h1 class="link" linkno="' + link.linkNumber + '" type="' + link.linkType + '">'
              + '<span class="foreign" title="' + link.foreignLanguage + '">' + link.foreign + '</span>'
              + '<span class="link"></span>'
@@ -108,46 +83,52 @@ function reviewLink(link) {
   h1.attr('start', Date.now());
 }
 
-function getLinks(stats) {
-  if (stats.due == 0) {
-    $('#recall-area').hide();
-    $('#review-area').empty().append('<h1>No links ready for review!</h1>');
-  } else {
-    $.get('/review/next?n=' + stats.due)
-     .done(function (links_) {
-       $('#review-area').unmask();
-       $('#recall-area').show();
-       links = links_;
-       total = links.length;
-       if (total > 0) {
-         reviewLink(links.shift());
-       }
-     })
-    .fail(function () {V.toastError("Failed to retrieve links to review.");});
-  }
-}
-
 $(function () {
-  $('#body').append('<div class="progress-bar" id="review-progress"><div style="width: 0%"></div></div>');
   $('<div id="review-area"></div>').appendTo('#body').mask('Loading words...');
   $('<div id="recall-area" style="display: none"><h2 style="visibility: hidden;">How well did you remember?</h2><button id="reveal" class="faint-gradient-button green" title="hotkey: enter">Reveal Answer</button></div>').appendTo('#body');
-  $.get('/review/stats')
-   .done(getLinks)
-   .fail(function () {V.toastError("Failed to retrieve link stats.");});
-  var grades = $('<div id="grades"></div>').hide();
-  $.each(['blank', 'wrong', 'almost', 'barely', 'good', 'perfect'], function (i, text) {
-    var button = $('<button class="grade' + i + '" grade="' + (i / 5) + '" title="hotkey: ' + (i + 1) + '"><b></b><br>' + text + '</button>');
-    button.click(function () {grade(i / 5);});
-    $(document).bind('keyup', (i + 1).toString(), function () {
-      button.addClass('pressed');
-      setTimeout(function () {
-        button.removeClass('pressed');
-        grade(i / 5);
-      }, 250);
-    })
-    grades.append(button);
-  });
-  $('#recall-area').append(grades);
+  $.get('/review/next')
+   .done(function (links) {
+     $('#review-area').unmask();
+     $('#recall-area').show();
+     var progress = progressBar(links.length);
+     var progressDiv = progress[0];
+     var progressIncr = progress[1];
+     $('#body').prepend(progressDiv.attr('id', 'review-progress'));
+
+     var reviewNext = function () {
+       if (links.length > 0) {
+         revealLink(links.shift());
+       } else {
+         $('#recall-area').hide();
+         // TODO: Make this more impressive and fun to work towards.
+         $('#review-area').empty().append('<h1>Congratulations, you\'re done!</h1>');
+       }
+     };
+
+     var grade_ = function (score) {
+       grade(score);
+       progressIncr();
+       reviewNext();
+     };
+
+     var grades = $('<div id="grades"></div>').hide();
+     $.each(['blank', 'wrong', 'almost', 'barely', 'good', 'perfect'], function (i, text) {
+       var button = $('<button class="grade' + i + '" grade="' + (i / 5) + '" title="hotkey: ' + (i + 1) + '"><b></b><br>' + text + '</button>');
+       button.click(function () {grade_(i / 5);});
+       $(document).bind('keyup', (i + 1).toString(), function () {
+         button.addClass('pressed');
+         setTimeout(function () {
+           button.removeClass('pressed');
+           grade_(i / 5);
+         }, 250);
+       })
+       grades.append(button);
+     });
+     $('#recall-area').append(grades);
+
+     reviewNext();
+   })
+   .fail(function () {V.toastError("Failed to retrieve links to review.");});
   $('#reveal').click(revealAnswer);
   $(document).bind('keyup', 'return', revealAnswer);
 });
