@@ -19,7 +19,7 @@
 *.toc
 
 /cgi/dist
-/css/.sass-cache
+/.sass-cache
 /mnemonics
 /upload/audio/pronunciation
 /vocabulink.cgi
