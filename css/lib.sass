@@ -54,6 +54,11 @@
   background: -moz-linear-gradient(top, $from, $to, $to, $to)
   background: -webkit-gradient(linear, center top, center bottom, from($from), color-stop(33%, $to), to($to))
 
+@mixin border_box()
+  -moz-box-sizing: border-box
+  -webkit-box-sizing: border-box
+  box-sizing: border-box
+
 // This is the background color for major blocks in the interface.
 $bar_and_box_background: #F7F7F7
 $bar_and_box_border: #DFDFDF
