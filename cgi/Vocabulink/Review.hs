@@ -19,8 +19,8 @@
 -- it. We need a way to present links to members for regular (scheduled)
 -- reviews.
 
-module Vocabulink.Review (newReview, linkReviewed, nextReview, reviewPage
-                         ,reviewStats, dailyReviewStats, detailedReviewStats) where
+module Vocabulink.Review (newReview, nextReview, scheduleNextReview, upcomingReviews
+                         ,reviewPage, reviewStats, dailyReviewStats, detailedReviewStats) where
 
 -- For now, we have only 1 review algorithm (SuperMemo 2).
 
@@ -59,17 +59,6 @@ newReview :: Member -> Integer -> App ()
 newReview member linkNo = do
   $(execute' "INSERT INTO link_to_review (member_no, link_no) \
                                  \VALUES ({memberNumber member}, {linkNo})")
-
--- The client indicates a completed review with a @POST@ to
--- @/review/linknumber@ which will be dispatched to |linkReviewed|. Once we
--- schedule the next review time for the link, we move on to the next in their
--- set.
-
-linkReviewed :: Member -> Integer -> App ()
-linkReviewed member linkNo = do
-  grade <- readRequiredInput "grade"
-  time  <- readRequiredInput "time"
-  scheduleNextReview member linkNo grade time
 
 -- We need to schedule the next review based on the review algorithm in use.
 -- The algorithm needs to know how well the item was remembered. Also, we log

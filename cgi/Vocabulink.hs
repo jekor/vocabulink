@@ -323,7 +323,12 @@ dispatch meth ("review":rpath) = do
         ("POST", [x]) ->
           case maybeRead x of
             Nothing -> error "Link number must be an integer"
-            Just n  -> linkReviewed member n >> outputNothing
+            Just n  -> do
+              grade <- readRequiredInput "grade"
+              time  <- readRequiredInput "time"
+              scheduleNextReview member n grade time
+              outputNothing
+
         (_       ,_)  -> outputNotFound
 
 -- Dashboard
