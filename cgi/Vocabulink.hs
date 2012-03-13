@@ -388,7 +388,7 @@ dispatch "GET" ("admin":xs) = do
 -- For Google Webmaster Tools, we need to respond to a certain URI that acts as
 -- a kind of ``yes, we really do run this site''.
 
-dispatch "GET" ["google46b9909165f12901.html"] = outputNothing
+dispatch "GET" ["google1e7c25c4bdfc5be7.html"] = outputText "google-site-verification: google1e7c25c4bdfc5be7.html"
 
 dispatch "GET" ["robots.txt"] = outputText $ unlines [ "User-agent: *"
                                                      , "Disallow:"
