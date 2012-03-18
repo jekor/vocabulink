@@ -291,7 +291,8 @@ dispatch "POST" ["list","frequency",lang] = addFrequencyList lang
 -- phone application.
 
 -- PUT  /review/n     → add a link for review
--- GET  /review/next  → retrieve the next link for review
+-- GET  /review/next  → retrieve the next links for review
+-- GET  /review/upcoming?until=timestamp → retrieve upcoming links for review
 -- POST /review/n     → mark link as reviewed
 
 -- (where n is the link number)
@@ -305,10 +306,16 @@ dispatch meth ("review":rpath) = do
     Nothing     -> outputNotFound
     Just member ->
       case (meth,rpath) of
-        ("GET",  [])        -> reviewPage
-        ("GET",  ["next"])  -> nextReview member
-        ("GET",  ["stats"]) -> reviewStats member
-        ("GET",  ["stats",x]) -> do
+        ("GET",  [])           -> reviewPage
+        ("GET",  ["next"])     -> nextReview member
+        ("GET",  ["upcoming"]) -> do
+          until' <- getInput "until"
+          until <- case until' of
+                     Nothing -> liftIO getCurrentTime
+                     Just u' -> return $ readTime defaultTimeLocale "%s" u'
+          upcomingReviews member until
+        ("GET",  ["stats"])    -> reviewStats member
+        ("GET",  ["stats",x])  -> do
           start <- readRequiredInput "start"
           end   <- readRequiredInput "end"
           tzOffset <- getRequiredInput "tzoffset"
@@ -325,8 +332,13 @@ dispatch meth ("review":rpath) = do
             Nothing -> error "Link number must be an integer"
             Just n  -> do
               grade <- readRequiredInput "grade"
-              time  <- readRequiredInput "time"
-              scheduleNextReview member n grade time
+              recallTime <- readRequiredInput "time"
+              reviewedAt' <- readInput "when"
+              reviewedAt <- case reviewedAt' of
+                              Nothing -> liftIO getCurrentTime
+                              Just ra -> return $ utcEpoch ra
+              -- TODO: Sanity-check this time. It should at least not be in the future.
+              scheduleNextReview member n grade recallTime reviewedAt
               outputNothing
 
         (_       ,_)  -> outputNotFound

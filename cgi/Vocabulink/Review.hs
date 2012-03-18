@@ -71,23 +71,25 @@ newReview member linkNo = do
 -- discrete options like a slider). 0 indicates complete failure while 1
 -- indicates perfect recall.
 
+-- @recallTime@ is the time in milliseconds.
+
 -- All database updates during this process are wrapped in a transaction.
 
-scheduleNextReview :: Member -> Integer -> Float -> Integer -> App ()
-scheduleNextReview member linkNo recallGrade recallTime = do
+scheduleNextReview :: Member -> Integer -> Float -> Integer -> UTCTime -> App ()
+scheduleNextReview member linkNo recallGrade recallTime reviewedAt = do
   previous <- fromJust <$> previousInterval member linkNo
   diff <- SM2.reviewInterval (memberNumber member) linkNo previous recallGrade
   h <- asks appDB
   liftIO $ withTransaction h $ do
     $(execute
-      "INSERT INTO link_review (member_no, link_no, recall_grade, recall_time, \
+      "INSERT INTO link_review (member_no, link_no, recall_grade, recall_time, actual_time, \
                                \target_time) \
-                       \VALUES ({memberNumber member}, {linkNo}, {recallGrade}, {recallTime}, \
+                       \VALUES ({memberNumber member}, {linkNo}, {recallGrade}, {recallTime}, {reviewedAt}, \
                                \(SELECT target_time FROM link_to_review \
                                 \WHERE member_no = {memberNumber member} AND link_no = {linkNo}))") h
     $(execute
       "UPDATE link_to_review \
-      \SET target_time = current_timestamp + {diff} \
+      \SET target_time = {reviewedAt}::timestamp with time zone + {diff}::interval \
       \WHERE member_no = {memberNumber member} AND link_no = {linkNo}") h
 
 -- Review Pages
@@ -132,6 +134,34 @@ nextReview member = do
                           ,"linkType": <| linkTypeNameFromType $ linkType l |>
                           ,"linkword": <| toJSON $ linkWord l |>
                           ,"pronunciation": <| pr |>
+                          } |]
+
+upcomingReviews :: Member -> UTCTime -> App CGIResult
+upcomingReviews member until' = do
+  rows <- $(queryTuples'
+    "SELECT link_no, target_time FROM link_to_review \
+    \WHERE member_no = {memberNumber member} AND {until'} >= target_time")
+  outputJSON =<< mapM linkJSON =<< (catMaybes <$> mapM linksAndTimes rows)
+ where linksAndTimes (l, t) = do
+         link <- getLink l
+         case link of
+           Nothing -> return Nothing
+           Just l' -> return $ Just (l', t)
+       linkJSON (l, t) = do
+         ol <- linkForeignLanguage l
+         dl <- linkFamiliarLanguage l
+         pr <- pronounceable $ linkNumber l
+         return [aesonQQ| {"linkNumber": <| linkNumber l |>
+                          ,"foreign": <| linkForeignPhrase l |>
+                          ,"foreignLang": <| linkForeignLang l |>
+                          ,"foreignLanguage": <| ol |>
+                          ,"familiar": <| linkFamiliarPhrase l |>
+                          ,"familiarLang": <| linkFamiliarLang l |>
+                          ,"familiarLanguage": <| dl |>
+                          ,"linkType": <| linkTypeNameFromType $ linkType l |>
+                          ,"linkword": <| toJSON $ linkWord l |>
+                          ,"pronunciation": <| pr |>
+                          ,"targetTime": <| epochUTC t |>
                           } |]
 
 -- In order to determine the next review interval, the review scheduling

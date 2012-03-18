@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -25,7 +25,7 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , safeHead, safeTail, every2nd, every3rd
                         , partitionHalves, partitionThirds
                         , translate, trim, convertLineEndings
-                        , currentDay, currentYear, diffTimeToSeconds
+                        , currentDay, currentYear, diffTimeToSeconds, epochUTC, utcEpoch
                         , basename, isFileReadable, sendMail
                         , logError, prettyPrint
                         {- Codec.Binary.UTF8.String -}
@@ -62,6 +62,10 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , Day, addDays, diffDays, showGregorian
                         {- Data.Time.Clock -}
                         , UTCTime, DiffTime, getCurrentTime, diffUTCTime, secondsToDiffTime
+                        {- Data.Time.Clock.POSIX -}
+                        , posixSecondsToUTCTime, utcTimeToPOSIXSeconds
+                        {- Data.Time.Format -}
+                        , formatTime, readTime
                         {- Debug.Trace -}
                         , trace
                         {- System.FilePath -}
@@ -70,6 +74,8 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , Handle
                         {- System.Locale -}
                         , defaultTimeLocale
+                        {- System.Posix.Time -}
+                        , epochTime
                         {- System.Posix.Types -}
                         , EpochTime
                         ) where
@@ -96,7 +102,8 @@ import Data.Bool.HT (if')
 -- formats.
 import Data.Time.Calendar (Day, toGregorian, showGregorian, addDays, diffDays)
 import Data.Time.Clock (UTCTime, DiffTime, getCurrentTime, diffUTCTime, secondsToDiffTime)
-import Data.Time.Format (formatTime)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
+import Data.Time.Format (formatTime, readTime)
 import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, LocalTime(..))
 import System.Directory (getPermissions, doesFileExist, readable)
 import System.Exit (ExitCode(..))
@@ -104,6 +111,7 @@ import System.FilePath ( (</>), (<.>), takeExtension, replaceExtension
                        , takeBaseName, takeFileName )
 import System.IO (Handle, hPutStr, hPutStrLn, hClose, stderr)
 import System.Locale (defaultTimeLocale)
+import System.Posix.Time (epochTime)
 import System.Posix.Types (EpochTime)
 import System.Process (createProcess, waitForProcess, proc, cwd, std_in, StdStream(..))
 
@@ -228,6 +236,12 @@ serverDate utc = toGregorian <$> serverDay utc
 
 diffTimeToSeconds :: DiffTime -> Integer
 diffTimeToSeconds = floor . toRational
+
+epochUTC :: UTCTime -> Integer
+epochUTC = floor . realToFrac . utcTimeToPOSIXSeconds
+
+utcEpoch :: Integer -> UTCTime
+utcEpoch = posixSecondsToUTCTime . fromIntegral
 
 -- For files we receive via HTTP, we can't make assumptions about the path
 -- separator.

@@ -1,0 +1,1265 @@
+* Defects
+** Make the font for in-story headlines darker.
+** Test missing 1 link in a review (and make sure that it's the one brought up for review).
+** Require email addresses to be unique.
+** Fix the styling of the modals (contact/lost password).
+** Check for security vulnerability in sending emails via commandline.
+** Fix contact form for logged in but not verified users.
+** Don't commit the DB transaction to create the user until the confirmation email is sent.
+** Setup automatic backup of the uploads directory.
+** Replace the dark background spinner with the default one from ajaxload.info.
+** Disallow usernames login, logout, signup, confirmation, support...or preferrably move member pages into a different namespace than the actions (or both).
+** Make the 500 error for "please log in" redirect to the login page.
+* Cleanup
+** Correct the final grade graphic (teeth).
+** Update link_review table:
+rename recall to recall_grade
+change the type of recall_time from REAL to INTEGER
+** Remove comment reply count (no longer needed with removal of forums).
+** Remove upvotes and downvotes on comments.
+** Switch from nano-hmac to sha (Digest.Pure) and switch from SHA-1 to SHA-256.
+** Remove website attribute from member if unused.
+* Core New Features
+** Setup OAuth.
+** Send a Getting Started email after email confirmation
+*** setting up your avatar (gravatar)
+** Setup a permissions system.
+** Create a script or interface to update pronunciations on links that don't have them.
+** Implement the enhanced link browsing page (mockups from Carrie).
+** Improve the review process.
+*** Add a guide for the initial review process.
+*** Enhance the 0-5 buttons with words and/or icons.
+*** show how long the user has been reviewing for
+*** estimate how long the user's review is going to last
+*** add hints
+*** show pronunciation
+*** give a way to stop reviewing a link
+*** give a hyperlink back to the link page to freshen up on the story
+** Improve Forvo integration
+*** Link pronunciations back to Forvo.
+*** Allow for disambiguation.
+*** Allow for entering alternate forms to find pronunciations.
+*** Invite the user to contribute a pronunciation to Forvo when none is found.
+*** Allow for pronunciations to be shared between links (with the same spelling and language).
+* Security
+** Send an email on a successfully changed password?
+** Force auth cookie expiration when password is changed?
+** Set an expiration time on email confirmation.
+** Check to make sure that long passwords (passphrases) are allowed.
+** Switch to a salted hash if necessary to prevent rainbow cracking attempts.
+** Make it so that email verification is required for any action on the site, except possibly adding and reviewing links (without voting on stories).
+** Setup https for login.
+*** Make it mandatory for login.
+** Lock down editing operations (such as deletions, etc.) to owners.
+*** deleteLink
+** Add copyright header to generated javascript and CSS files.
+** Check the hmac in javascript for tampering of the auth cookie.
+** Verify that usernames cannot contain & or make the authtoken escape it.
+* Usability Kaizen
+** Add a way to stop a review session short.
+** Add a little "linkword" caption to linkword links (like the language captions).
+** Switch story editing to AJAX.
+** Show the user that their email confirmation was successful.
+** Improve the error message (make a full page) for when user tries to confirm email address multiple times (check if they're already confirmed).
+** When no linkword stories exist, make it more obvious (especially to logged out users), and provide an invitation for them to contribute.
+** Add a "login to add your own story" to the link page for logged out users.
+** Add a public bug tracker.
+** Improve "you need to login" 500 error pages.
+** Show the link type in grey text (like the language names) under the line (sound-alike, linkword)
+** Switch spinner to one that works on light backgrounds.
+** Setup tabindex for all forms.
+** do a case-insensitive comparison to see if a link is a duplicate
+** Switch to Google's Closure compiler.
+** Update gradient definitions with proper CSS3 gradients.
+** Make the header update the number of links to review when adding new links to review (or removing them, or maybe even when deleting)...probably the most reliable is to return the number of links to review in the call to add a new link for review and then use that number to update the header.
+** Add reply-to address on support emails.
+** Setup a method to re-request a confirmation email.
+** Reduce max username characters from 32 down to 24 or less.
+** Make the headings in the footer clickable.
+** Make login and logout happen in js.
+** Indicate that a link is deleted when navigating directly to the link page as the user.
+** Add line breaking for long link nodes.
+** Add a confirmation on the link deletion operation.
+** Add descriptions (tooltips) for what each number represents on the review recall rating buttons.
+** Add the ability to remove an item from review.
+** Make sure that when the next review timer reaches 0 we disconnect the timer and set the correct description.
+** Add cancel buttons for actions (reply, create topic, new link, etc.)
+** Change the review button into a big warm "Learn this Word" button (or something more understandable).
+** Have the login box automatically focus the username input.
+** Title the forum voting column "Rating" or somesuch.
+** Sort the forum topics by last comment date.
+** Add previewing for new forum topics (right now just has "Create").
+** Have the upvote/downvote system tell you that you need to log in (and verify) to vote.
+** Change the color of the number (of the comment vote) when voting it up or down (like Reddit)
+** Improve the confirmation email. [0/2]
+   - [ ] Greet the member by username.
+   - [ ] Make multipart HTML.
+   - [ ] Hype them up.
+** Setup anchors to each comment with a comment number identifier.
+** Fix extra margin-top and margin-bottom for .reply-options after asynchronously posting a comment.
+* Operations
+** Create a makefile rule to count lines of code
+*** I liked the > X characters rule.
+** STARTED Fix database backups and rotation.
+   - State "STARTED"    [2010-06-15 Tue 21:54]
+** Start doing backups of the upload directory.
+** Document the backup process.
+** Uninstall cherokee.
+** Remove 404s from the logs.
+** Change upload dir permissions from 777 to 775 or somesuch.
+** Start collecting all web logs from lighttpd, vocabulink.cgi, and cms.cgi with svlogd.
+** Setup iptables.
+** Allow deflate encoding.
+* Education
+** If you get stuck on coming up with a mnemonic for one word, try another. I keep a list of at least 10 mnemonics I'm working on at any given time. Sometimes I'll think of a good link word. Other times I'll think of a good story. Sometimes a word will sit for weeks and then a perfect link word and story will come to me in a flash.
+** Announcement forum: new link editing, new previewing for link and comment bodies, as well as forum topics
+** Announcement forum: new search means new way to create links (include note about new link hyperlink in the my links box)
+** TODO: Add a "How to Learn a Link" section to the getting started article.
+** Write an article about the vision of Vocabulink.
+*** Inspire people to write mnemonics.
+*** Show them it's a long-term thing.
+*** Explain how rewarding it can be to have your learning tool used by others.
+*** Talk about the marketplace idea.
+*** Talk about how it will be used for research into improving the method and language learning in general.
+** Make a FAQ
+*** How many words actually work with this technique?
+We won't know until we try. Based on experience, I expect that the majority of the most common words of a language will have link words. For the rest, I hope we can explore other mnemonic techniques such as relationship associations.
+** Add a list of browsers the site is tested with.
+** Clean up the "How to Write a Memorable Mnemonic" page <- gets a lot of search traffic
+** It helps to have a list of mnemonics that you're working on. If you can't come up with either a link word or mnemonic after 5 minutes, try another. There are plenty of words out there. Maybe tomorrow or the next day a mnemonic will come to mind immediately. That's how it works for me.
+** Explain that a really good mnemonic, especially for prepositions or other words that don't translate perfectly, use the story to illustrate how the word is used in the foreign language, especially if we use multiple English words for the same meaning.
+** Write about how I use a dictionary to make sure that my link word won't conflict with other words, or at least not with other common words.
+** Talk about really using your imagination and putting yourself into each story while reading it.
+** Add to FAQ how to work with RTL text.
+   - Basically, can't use Firefox. Try Safari or Chrome instead.
+   - https://bugzilla.mozilla.org/show_bug.cgi?id=311545
+** Add to the article about creating links how to use *italic* for the link word and **bold** for the meaning.
+** Explain that you want to go from your target language to your native language when creating links.
+** Q. How do you chose which form to use with Esperanto words (since they can be a noun, verb, adjective, etc.) A. Use the most common form. This can be determined by word frequency lists or if you don't have any other way of determining it, you can use the dictionary form (although it might not be the most common).
+** The 3 components of learning a language
+1. Vocabulary
+2. Immersion
+3. Grammar/Logic
+
+Textbooks deal with all 3 at once. Problems with textbooks: 1-size-fits-all approach, approaching subjects in logical groups (leads to waste, no need to learn all the items in a supermarket or all the colors).
+
+Vocabulary is a universal language-learning activity. The method of immersion is very individual. That's why the immersion practice in a textbook seems so contrived and artificial: it was cooked up by a group of authors or at best a single author whose idea of immersion is probably radically different from yours.
+
+Grammer study is also rather individual. Some people like to study the history and evolution of a language. Others like to study grammar formally. Some like to pick up grammar through immersion (making mistakes).
+** How to get started learning another language.
+** Why only link to the Hiragana/Katakana spelling of a word? Why not the Kanji or romaji, or some combination?
+First of all, learn to understand Japanese words and sentences before you worry about the Kanji. I made that mistake myself. I put in a massive effort to learn how to write and pronounce the Kanji using James Hesig's books, long before I needed to. I thought it would be cool and "proper". In the end, much of it was wasted effort.
+
+It's important that you are able to practice reading Japanese, but there are plenty basic level Japanese readers out there that use either only hiragana or furigana (hiragana above/below? the Kanji). Even once you outgrow those, you can use programs on your computer that will convert the Kanji into readable hiragana for you.
+
+Proceeding this way will enable you to learn Kanji in context from your reading. Yes, at some point you will need to undertake disciplined study of the Kanji if you want to read and write at a high level, but why discourage yourself now and take away time from learning vocabulary?
+
+As for romaji, many will agree that romaji is a crutch which will lead to bad pronunciation habits. With only 46? hiragana, it won't take long to learn them and get used to them as well as the roman alphabet.
+
+Also, we want to apply the minimum information principle. As strange as it sounds, having both the hiragana and the romaji (let alone the Kanji) in your review actually makes things more difficult. Even though it's helpful information, your brain is trying to encode more at a time. If you know you only have to worry about hiragana (or katakana with imported words), some work is lifted from your brain.
+
+If you do want to start studying the Kanji representation of words, go ahead and create a link from the hiragana version to the Kanji version. This allows you to practice directly in Japanese, maintains the minimum information principle, and allows you to employ another mnemonic for its study (one not based on sound but on Kanji meaning or appearance).
+** Why we review links (associations) and not words. (There are few direct correlations between foreign words except for concrete nouns).
+  [[file:~/project/vocabulink/vocabulink.cgi/vocabulink.sql::]]
+** How to Create Memorable Mnemonics
+** How to Evaluate/Rate Mnemonics
+** Why only words and symbols? Why not grammar and sentences?
+Because grammar and sentences are much harder to memorize, but much easier to learn with enough vocabulary.
+Latin-based grammar study does not work. If you need to memorize verb forms, use associative links (jump -> jumped is to 躍り出る -> ?). If you need to memorize irregular verbs, use associative links with mnemonics.
+Once you learn enough vocabulary, you'll be able to infer grammar rules from your reading and listening practice. The point of vocabulink is not to make you a fluent, it's to get you to the point where becoming fluent is fun and natural with enough interaction in the language.
+** instead of thinking about a card, you can think of a starting point on the network or web
+* Marketing
+** Start a language learning blog.
+** Setup DKIM.
+** Put source onto github.
+** Update twitter icon with favicon.
+** Clean up the text for what google displays as a summary for link pages.
+*** This page requires JavaScript for some functionality
+*** words running together
+** Add meta tags.
+** Update listing in the FSF directory.
+* Code Kaizen
+** Change $#images refs in sass files to just use relative paths (since css and images are served from the same host).
+** Setup a proper JS dependency system.
+** Make withRequiredMember generate 403 instead of 500.
+** Experiment with the App module automatically exporting the CGI module.
+** Switch to using bytestrings throughout.
+** Add NOT NULL constraints to REFERENCE columns that need it.
+** Switch muse articles from xhtml to html5
+** Switch to http://hackage.haskell.org/package/mime-mail
+** Switch to wai (+wai-handler-scgi), and possibly a different web server.
+** Look at getting rid of utf8-string (fromString, toString), possibly using blaze-builder as a replacement (has a fromString function).
+** Get rid of MissingH dependency.
+** Move Member/AuthToken to using new time and get rid of old-time in cabal.
+** Research transitioning away from old-locale.
+** Break review.js out into its own file to load only on review pages.
+** Consider renaming the App monad (clash with Template Haskell).
+** Evaluate moving non-HTML-utility functions (like header/footer stuff) out of Html module.
+** Common pattern: map partialLinkFromValues <$> $(queryRows' "...")
+** Setup http://hackage.haskell.org/package/web-routes
+** Release a new distribution of Vocabulink (tarball).
+** Fix review timing issue where time isn't calculated and stored before the recall button is pressed (results in 500 internal server error).
+** Make review code only run on review pages.
+** Show that you can press the space and number keys to speed up review.
+** Get rid of IE CSS (using width fix I bookmarked).
+** Submit patch to Text.XHtml
+> import Text.XHtml.Internals (HtmlTag(..))
+
+> addClass :: Html -> String -> Html
+> addClass html@(HtmlTag {markupAttrs = markupAttrs}) cls =
+>   html {markupAttrs = map addClass' markupAttrs}
+>  where addClass' (HtmlAttr "class" val)  = HtmlAttr "class" (val ++ " " ++ cls)
+>        addClass' _                       = id
+> addClass html _ = html
+** Remove code duplication in link operations js.
+** Fix empty response bodies (outputNothing) causing 500 errors
+** Notify UrlDisp authors about pathInfo used in evalUrlDisp returns nothing for me (using SCGI + cherokee), but uriPath `liftM` requestURI does.
+** Get rid of formlets.
+** Setup automatic jslint.
+** Try out UrlDisp
+*** http://www.haskell.org/haskellwiki/UrlDisp
+*** http://hackage.haskell.org/packages/archive/UrlDisp/0.1.7/doc/html/Network-UrlDisp.html#v%3ArunUrlDisp
+*** http://fmapfixreturn.wordpress.com/2008/05/21/some-concepts-behind-hvac/
+** Investigate switching to fetchAllRowsMap' for queries.
+** Fix /pack/new crashing without the link= parameter (in query string).
+** Add rule for automatically compiling js libraries to js Makefile.
+** Separate javascript libraries into a different directory from my code (for rgrep, etc.).
+** Investigate if Number(string) would be a better replacement for parseInt and parseFloat.
+** Move to a different doc type (HTML5?).
+*** The code is not validating as XHTML strict.
+** Get rid of styling information from the CGI.
+*** ./Vocabulink/Review/Html.lhs:48:>                                 thestyle "color: black" ] <<
+*** grep for more, there's plenty
+** Make a new metrics calculation that takes into account JS files.
+** Switch to using box-sizing (http://www.quirksmode.org/css/box.html) to simplify comment markup even more (get rid of unnecessary wrapper).
+** Trim incoming inputs where applicable (in CGI).
+** membername -> username (it's a more familiar term)
+** Make a type alias for link numbers.
+** Make a type alias for member numbers.
+** Create a makefile rule or script to check that all code is under Darcs control.
+** Put all member information into a hash in the App monad instead of separate records.
+*** Include the gravatar URL.
+*** Make a function to convert it to a safe JS object.
+** Create a general JSON return type (includes status, error message, data, etc.)
+*** Create a function that makes using it easy.
+** Make withRequiredMemberNumber output something sensible or the JS interpret the redirect in a way that the JS can give feedback to the user that they need to login in order to accomplish what they just tried to accomplish (cookie could have expired).
+** Move non-reset code out of page.ccss and into common.ccss and then rename page.ccss to reset.ccss
+** Disable warnings about defaulting fractionals to doubles.
+** Send bug report for 'ex' to clevercss author.
+** STARTED Move static images to /img/.
+   - State "STARTED"    [2009-09-09 Wed 23:07]
+** Clean up all the different commentBox div styling that's duplicated everywhere.
+** Move Article.lhs from using getModificationTime to something newer that uses the new time libraries.
+** Make `make install` depend on make.
+** Rewrite take stuff that was explicitly set to use Int to use genericTake (which can take Integers).
+** Build a library of common javascript routines.
+*** ajax POST
+*** ajax JSON GET
+** Setup automatic static file versioning.
+** Remove/warn about console.log() when compiling JavaScript.
+** Move the timer javascript out of Review.lhs and into a js file.
+** Fix forum overflow on small browser windows (CSS problem).
+** Check out http://kuribas.hcoop.net/haskell-indentation.el
+** Create type alias for member number.
+** Attempt to switch from old-locale/time.
+** See how often I use case ... Nothing -> noHtml and find a more concise replacement if it's common.
+** Add a database uniqueness constraint to catch duplicate link submissions (double-clicking submit).
+** Clean up the whole /pack/image confusion of concerns for link pack image uploads.
+** Move database password out of DB.lhs and into the config file.
+** In queryValue' distinguish between database failure and a genuine absense of value (Allow returning Just SqlNull).
+** See if there are any places that do manual partitioning where List.partition would work.
+** Make more correctly RESTful.
+*** /votes -> /votes/up (change in the anchor element so that the status bar shows a more meaningful link)
+*** comment/reply -> comment/comment_no/reply
+** Modularize the lhs2TeX process (lhs2TeX each individual file and TeX them separately)
+** Replace all quotes in the documentation with ``''
+** Remove empty CSS selectors from generated CSS files.
+** DEFERRED Move link colors out of the code and into CSS.
+   - State "DEFERRED"   [2009-09-08 Tue 09:59] \\
+     I've done it in 1 place, but I don't see a way to do it with SVG/VML.
+   - State "STARTED"    [2009-09-08 Tue 09:09]
+** Change error 500 -> error 4xx for "Username must have 3 characters or more".
+** Fix forum internal server errors on localhost.
+** Don't generate fieldset id="relationship" for new link page.
+** Make new user registration happen in a transaction (don't commit until email is sent successfully).
+** Clean up terminology between source/origin and destination
+** Strip comments from CSS.
+* Ideas
+** Setup a default ajax failure handler to output the message via toastmessage.
+** Make a 404 page?
+** Logout should probably redirect to the front page.
+** Users aren't always sure about what case (capitalization) to use for words.
+** Allow associations and soundalikes to be upgraded to linkwords.
+** Allow selecting between pronunciations (for the case of ambiguities).
+** Add the ability to change email address to the user page.
+** Add the ability to change password to the user page.
+** Show a list of links you've contributed to to the user page.
+** Show a list of links you're reviewing on the user page (or somewhere).
+** Add review statistics to the user page.
+** Create a message center.
+** Allow links to get upgraded to linkword links.
+** Switch to CKEditor.
+** Create an email function for emailing members that will hold or ignore the message until the user has confirmed their email.
+** Consider moving from ConfigFile to environment variables.
+** Game-like
+*** Achievements
+**** Allow "mastery" of different words (show progress along the way)
+** Do remote usability testing.
+** Add a javascript IRC client.
+** Setup page speed monitoring with http://www.webpagetest.org/ and/or http://www.showslow.org/
+** Make an introduction thread in the forums.
+** Test generator
+*** multiple-choice like found at mnemonicdictionary.com
+** [[http://www.aclweb.org/anthology/N/N01/N01-1014.pdf][Identifying Cognates by Phonetic and Semantic Similarity]]
+** Advice: Don't use the words in colloquial or idiomatic ways. We don't remember things like that. When creating a story for the maning "personally", don't write "Personally, I ...". That is not memorable because it's colloquial and abstract. Use the word in a more concrete context.
+** Evaluate switching to http://valums.com/ajax-upload/
+** Create something like a CGIResult type that is specifically for AJAX calls. It doesn't return HTML, but instead JSON, and it converts error calls to the appropriate structure.
+** Put login form in the header and instead of using labels, pre-fill the form fields with the label itself, then on gaining focus, blank them out.
+** Consider not pulling jQuery from Google for security reasons.
+** Document the fresh install process and make it part of the distribution.
+** Investigate more optimal voting colors.
+*** up/down arrows
+*** star ratings
+** Allow for the sign-up process to be more gradual.
+*** Add a big "Start Here" button that takes them through a mock review of some words.
+** Mine ideas from http://video.google.com/videoplay?docid=-8246463980976635143 (Human Computation))
+** Research smart.fm.
+** Read through http://github.com/jgm/gitit/tree/master
+http://hackage.haskell.org/cgi-bin/hackage-scripts/package/gitit
+** Build customized word frequency lists (and add hyperlinks to links) for different reading materials.   
+   [[file:~/project/vocabulink/mnemonics/あるく::But%20these%20weren%20t%20just%20any%20walks%20These%20were%20power%20walks%20You%20can%20just%20see%20the%20water%20splashing%20around%20as%20Noah%20furiously%20tried%20to%20walk%20as%20fast%20as%20possible%20on%20the%20ocean%20wearing%20his%20spandex%20and%20listening%20to%20his%20iPod][file:~/project/vocabulink/mnemonics/あるく::But these weren t just any walks These were power walks You can just see the water splashing around as Noah furiously tried to walk as fast as possible on the ocean wearing his spandex and listening to his iPod]]
+** Write a test suite (that acts as a user with a browser).
+   [[file:~/project/vocabulink/vocabulink.cgi/Vocabulink/Review.lhs::noLinksToReviewPage%20IConnection%20conn%20conn%20Integer%20CGI%20CGIResult][file:~/project/vocabulink/vocabulink.cgi/Vocabulink/Review.lhs::noLinksToReviewPage IConnection conn conn Integer CGI CGIResult]]
+** Setup a testing framework for XSS attacks.
+   
+   [[file:~/document/personal::*Setup%20escaping%20for%20all%20HTML%20echoed%20back%20to%20the%20user%20even%20the%20username][file:~/document/personal::*Setup escaping for all HTML echoed back to the user even the username]]
+** Reviews
+*** via email or SMS at the exact time necessary for review (with excludable ranges)
+** Link Sets
+*** 100 most common words
+** Use social rankings and rewards
+*** for creating associations and mnemonics
+*** for accumulating/reviewing words
+** Reading Review
+*** Search the internet for text that appears in your review stack for reading practice.
+** Directed Links
+Links should be either uni-directional or bi-directional, and represented as such with appropriate arrows (--> or <-->). A uni-directional link will only be reviewed or displayed in that orientation, a bi-directional link will show up as 2 review items.
+
+Simple associations, those with no mnemonic information attached, are bi-directional by default, but can be switched to uni-directional. Mnemonic associations are uni-directional by default, if the mnemonic makes sense in both directions. Otherwise, for bi-directional associations, there needs to be 2 mnemonics. It's important that you never try to study an association in the reverse direction with a uni-directional mnemonic.
+
+The most important associations you'll study are from foreign word -> native word. That will help your reading and listening comprehension. It is important to study native word -> foreign word or you will have a difficult time expressing yourself, but keep it simple in the beginning.
+
+(There should be an option to automatically add a review item in the reverse direction with no mnemonic once the mnemonic direction has become sufficiently stable. But we need to measure the effects.)
+** Words vs Lexemes
+Internally, we refer to the "thing" on either side of the association as a "lexeme" (define lexeme). This is because we review characters as well as words.
+
+Should we differentiate? Only time will tell, I think.
+** Vocabulink as an MMO
+*** levels based on number of memorized (non-trivial?) links
+*** lobby pairing system (like seen in Halo on XBox Live) for collaborative games
+**** real-time translation
+find a web page containing words in the shared pool of links for the gamers
+** add fuzzy search
+** do a fuzzy search when creating new links to avoid duplicates (and make a fuzzy search tool to find and combine similar links)
+** Flash games based on link sets
+*** RPG
+** Create a rating system for mnemonics (mature, etc).
+** Study livemocha.com.
+** Build Confidence in the Platform
+*** Allow export of data.
+*** Point to the fact that the source code is available.
+*** Show committment to stick around.
+
+** Research the comment-on-anything frameworks out there.
+** Apply game mechanics to the process of using Vocabulink http://www.youtube.com/watch?v=ihUt-163gZI
+*** collections
+*** points/levels
+*** feedback
+**** During review, good feedback for good results
+**** How they've been doing lately at the end of their review
+**** Allow them to exit the review early and get results
+*** exchanges
+*** customization
+And for objects:
+*** accessible (both easy to use and Open API)
+*** recombinant data objects (sets is just 1 way)
+*** syndicatable (can people publish their collections on another site)
+Direct and shape creation:
+*** spotlight and feature the best links (regularly, think Daily Deviations)
+** Add hints about keyboard shortcuts to the review page is some gradual and dismissable way.
+** Add a "Don't forget to confirm your email address" to the front page for new unconfirmed members.
+** Check possibility of a PostgreSQL view for retrieving links.
+   - automatically do language joins
+   - automatically exclude deleted links
+** See if using views can simplify the code, especially with Link Types.
+** Move static files to a CDN.
+   - cachefly.com?
+** Mine the conversation with shachaf for insight for articles/videos.
+[Wed May  6 2009]
+<shachaf> Good $TIME. :-)  [22:24]
+<jekor> Hi ;)
+<shachaf> So I'm trying to add a link to figure things out.  [22:25]
+<shachaf> In this case, kiitos (Finnish), which is "thank you" in English
+          (pronounced "key toss", so it works out pretty nicely).
+<jekor> OK  [22:26]
+<shachaf> Should I just have it linked to "thank you"? Or "thanks", or
+          something else?
+<jekor> Hmm...either one works. There's no definitive form to use. As long as
+        you get the proper meaning, it should be fine.  [22:27]
+<shachaf> Is there a particular recommended system (I just posted in Help
+          about this) for bold/italic text?
+<jekor> I would use "thank you" personally.
+<jekor> Ah. That's a good question.
+<jekor> What I do personally is italicize the link word (*key toss*) and bold
+        the meaning (**thank you**). But there's no theory or scientific
+        reasoning behind it.  [22:28]
+<shachaf> It's what I like also ("thanks" seems too casual), but I'm imagining
+          languages where "thank you" are two separate words.
+<jekor> Yes. I think maybe once the database has a lot more pairs than maybe
+        being more formal will become important.
+<shachaf> Well, the bold/italic was quite helpful for me (I wonder if it's
+          possible to do it automatically?).
+<jekor> Hmm...that's a good question.  [22:29]
+<jekor> The only challenge would be catching the different forms of certain
+        words and when they're part of compound words.
+<jekor> Perhaps there could be some sort of hinting system that makes
+        suggestions when you're creating a link.
+<jekor> But, I think that's down my list of priorities :)
+<shachaf> Markdown doesn't have some simple way to mark words for something
+          like this, does it?  [22:30]
+<jekor> I'm planning on making a feature voting system so that I can work on
+        things based on what everyone studying wants.
+<shachaf> Sure, of course.
+<jekor> Yes. Those asterisks I was showing, if I understand your question.
+<jekor> *italic* **bold**
+<shachaf> OK, so I'll stick with *i* and **b**.
+<jekor> :)
+<shachaf> Should I refrain from adding Hebrew until RTL is figured out?
+<shachaf> I suppose it's just a display thing.  [22:31]
+<jekor> You can always try. But no guarantees that it'll come out right when I
+        implement RTL :)
+<jekor> Do you know of any RTL resources? I've never worked with RTL languages
+        before.
+<jekor> Specifically for HTML?  [22:32]
+<jekor> If not, no worries, I'm sure I'll be able to find some information.
+<shachaf> Well, HTML does it pretty well on its own, now that I looked more
+          carefully.
+<shachaf> The main problem is the image that's generated by the Javascript.
+<shachaf> (I think.)
+<jekor> Ah...
+<jekor> I'll have to talk to the guy who wrote that JavaScript library then.
+                                                                        [22:33]
+<jekor> It generates SVG which might be not as well supported.
+<shachaf> So I would have Foreign: "kiitos", Native: "thank you", Link Word:
+          "key toss"?
+<jekor> If the HTML is OK, I suspect that the link will go into the database
+        correctly. And then I can just work on the JavaScript display and it
+        should get fixed.
+<jekor> Perfect.
+<shachaf> In "stories"/"links", are you for or against (or neither) mentioning
+          the language/country/something related to that in the story?  [22:35]
+<shachaf> I see that <http://www.vocabulink.com/link/4> mentions Japan,
+          actually, so it should be fine?  [22:36]
+<jekor> Hmmm...that might be helpful if you're planning to learn multiple
+        languages and don't want to jumble them up. But I'm not sure if it's
+        worth the extra effort. I mean, if the story lends itself naturally to
+        that, I think it's good.
+<jekor> As long as it doesn't introduce ambiguity.
+<jekor> Yes.
+<jekor> Yeah. I forgot that I've been sort of doing that.  [22:37]
+<jekor> I'm not doing it for any specific reason other than that I think
+        people who are studying Japanese might be more interested in a story
+        that relates to Japan somehow (and hence more likely to remember it).
+<shachaf> Might this be helpful for SVG?
+          http://www.w3.org/International/tutorials/svg-tiny-bidi/  [22:38]
+<jekor> Yes, I think so. If the JavaScript library maintainers don't have a
+        solution I think that that will definitely be helpful.  [22:39]
+<shachaf> I'm not sure how the Javascript (or SVG, for that matter) works, but
+          it might be relevant.
+<jekor> Very cool. This has been a very helpful conversation for me :) It's
+        too easy to assume things when you've been working on something for
+        this long. You're helping me get this stuff out of my head and on to
+        paper, so to speak.  [22:40]
+<jekor> Thanks.
+<shachaf> There's no particular preference for first-person/third-person or
+          anything like that in stories, is there?
+<jekor> Nope. I've just been trying to vary them up.
+<jekor> Although, these are all good questions.
+<shachaf> Sure -- I hope this becomes a helpful language-learning resource.
+          :-)  [22:41]
+<jekor> And it's something that I'm hoping the site will help answer. It may
+        be possible with enough data on reviews and such to figure out this
+        sort of thing statistically.
+<jekor> How long have you been studying Hebrew and Finnish?  [22:42]
+<shachaf> There *is* a preference for repeating both source and target
+          (origin/destination? foreign/native?) several times in the story,
+          yes?
+<jekor> And do you think an IRC channel would be useful?  [22:43]
+<jekor> Absolutely. I think it helps.
+<shachaf> I was born in Israel and speak Hebrew natively (I guess that's the
+          word?).
+<jekor> Ah. You speak English very fluently. I thought you were a native
+        English speaker :)
+<shachaf> Well, the story is a bit odd with that.  [22:44]
+<jekor> Regarding repeatition, I think it's useful to help the reader really
+        remember the important words in the story. I've found that it's easy
+        with short stories to accidentally remember the wrong meaning.
+<shachaf> (I'm told:) I learned English first, but then consciously decided to
+          forget it and speak only Hebrew when I was ~three. I relearned it
+          pretty quickly when I moved to the US when I was ~ten.  [22:45]
+<jekor> The most critical seems to be the meaning. Repeating the foreign word
+        and the link word I don't think is quite as important. After all, the
+        link word is meant to remind you of the meaning of the word when you
+        hear/read the foreign word.
+<jekor> Hahaha. That's interesting.
+<shachaf> Some of my family is Finnish, and I was there in the summer, but
+          haven't really studied the language.  [22:46]
+<shachaf> If I turn out to be eligible for Finnish citizenship (I'm not sure
+          how it works at this point), it seems to make sense that I'd speak
+          the language. :-)
+<jekor> That would make sense ;)
+<shachaf> (How is your nick pronounced?)  [22:48]
+<shachaf> A general question: Is this mainly for nouns, or
+          nouns/verbs/adverbs, or what?  [22:49]
+<jekor> However you like. Either yay-core (Esperanto pronunciation and how I
+        pronounce it) or jay-core, but some friends pronounce it jeh-core. I
+        answer to them all :)
+<jekor> Good question!
+<shachaf> I assume words like "the" shouldn't really be part of this.  [22:50]
+<jekor> Nouns are certainly the easiest to use stories for because they're so
+        concrete. But I think that particles are extremely important (and
+        difficult) to learn, and that's why I have so many simple Japanese
+        words.
+<jekor> It depends.
+<shachaf> Isn't the Esperanto pronunciation yeh-core?
+<shachaf> (Isn't it "e" as in "send"?)
+<jekor> That's probably a more correct spelling of the pronunciation.
+<jekor> Not quite, I don't think.  [22:51]
+<shachaf> Particles are words as in "the"?  [22:52]
+<jekor> I think it's a slightly longer a sound. But I haven't spoken Esperanto
+        in about 5 years.
+<jekor> Well...regarding "the"...
+<shachaf> I think those vary across languages even more than nouns.
+<shachaf> s/as in/like/
+<jekor> I think it's considered a particle, but it's such a common one that
+        it's probably not worth making a story for because anyone interested
+        in the language probably already knows it.
+<jekor> But other words such as "of" "through" "in" and such, I think stories
+        are useful for those.  [22:53]
+<jekor> Yes. They are definitely a challenge.
+<jekor> I don't worry about getting the meaning perfect. I suspect that you
+        only really learn the proper meaning for such words through usage.
+<jekor> But it doesn't hurt to have a good story to give you a head start.
+<shachaf> What about ones that don't exist in English? Like "את" (et) in
+          Hebrew?  [22:54]
+<shachaf> Wiktionary says "Used to introduce a semantically definite direct
+          object.", which doesn't mean much to me. :-)
+<jekor> For example, I wouldn't try to create stories for "は" or "が" because
+        they're just too nuanced.
+<jekor> Heh. That's a good question. I haven't really dealt with the challenge
+        yet.
+<jekor> I figure it's easier to put off ones like that until I've tackled all
+        of the easier words first! Heh.  [22:55]
+<shachaf> It's always annoying to try to translate it to English, because it
+          just doesn't exist (though it feels like it almost does/should).
+<shachaf> Sorry, I can't read Japanese. :_)
+<jekor> No problem.
+<shachaf> Though it's on my list of languages-I'd-like-to-look-into-someday.
+<jekor> Basically, those are similar. They really don't have a good English
+        equivalent.
+<jekor> They're the types of words that people write entire an entire chapter
+        of a book about :)  [22:56]
+<shachaf> I know very little about it (I did a bit of Aikido at one point, but
+          that involved minimal amounts of the language).
+<jekor> Ah! Aikido. I did a little bit too. Seems we have kindred spirits.
+<shachaf> Hmm, you are also in WA? At least your IRC client is.  [22:58]
+<jekor> You know, I'd be very interested in working with you on creating
+        mnemonics in the future. You seem to get it a lot more than the people
+        who have joined the site so far (no offense to them, you just seem to
+        be more experienced with language and learning).
+<jekor> Strange. I'm not, but I'm in Northern California. Maybe that was the
+        closest server :)
+<jekor> By the way, I intend to make the site more of a vocabulary-learning
+        marketplace over the coming months.  [22:59]
+<shachaf> s/experienced with/interested in/, perhaps. :-)
+<jekor> I'd like for people to be able to create and sell their links to
+        others for study. It seems like the only way to encourage really
+        high-quality mnemonics.
+<jekor> Sometimes the interest is more important than and will lead to the
+        experience ;)
+<jekor> I think it will be especially important if we want to really make
+        memorable links using illustrations and such.  [23:00]
+<jekor> The free functions and the ability for anyone to create links will
+        always be there though.
+<shachaf> By the way, when a person makes a link, it doesn't seem like their
+          username is shown with it (as far as I can see). Should it be?
+<jekor> Yes. It should. I'd also like to show other metadata like when it was
+        created. Also, I'd like to allow people to comment on and rate links.
+                                                                        [23:01]
+<jekor> You know, all of the social-networking type of stuff.
+<jekor> Just need to spend the time to do so :)
+<shachaf> I feel like I've been asking questions about the "small things"
+          rather a lot, by the way, because the "big things" felt too big to
+          ask in one question. :-)  [23:02]
+<jekor> No worries. That seems to be the only way to tackle the big things.
+<shachaf> Such as: Is this method of learning languages actually effective?
+<jekor> Hah! :)
+<jekor> In my experience, it is. And from direct experience with others, it is
+        as well.
+<jekor> Time will tell as I analyze the review statistics.
+<shachaf> Really, I'm not sure. I'm willing to go along with it for at least a
+          while to see if it is.  [23:03]
+<jekor> (The site is half about helping people learn language and half about
+        researching how people learn language.)
+<shachaf> So you've done this sort of thing in other contexts?
+<jekor> Yes. I used it for both Japanese and Esperanto. And I became fluent in
+        Esperanto with the help of it.
+<jekor> I think there's a bigger question.
+<shachaf> What about words that don't have easy mnemonics?
+<jekor> There's no doubt in my mind that the mnemonics help with language
+        learning. I've used all sorts of mnemonics for language learning in
+        the past. The bigger question is:  [23:04]
+<jekor> Is it worth the time investment?
+<jekor> I think that for individuals having to create their own stories, it's
+        probably not an effective use of time.
+<shachaf> Of reading the full stories, you mean? Or writing them?
+<jekor> Because really good mnemonics can take up to 30 minutes to create.
+<jekor> Creating them.
+<jekor> Yes. That's the whole point behind the site. Reading the mnemonics is
+        certainly worth the time.
+<jekor> It's much better than drilling the two words over and over.  [23:05]
+<shachaf> מים (bah, no RTL support in this IRC client) happens to be
+          pronounced like "mime", so it works. But my initial feeling (I might
+          be wrong!) is that most words wouldn't correspond that nicely.
+<jekor> Anyway, the site is about leveraging specialization.
+<jekor> Hmm...this would be so much easier to have a conversation via voice.
+        Do you have Skype?
+<jekor> Although, IRC is good too because then I have a log for putting this
+        all into an article.
+<jekor> There are so many things to say on this topic.  [23:06]
+<jekor> I've had conversations about this in my head for many hours. But my
+        wife is sick of hearing about it :)
+<jekor> First of all, only time will tell. Second, I think that most words
+        will actually fit the link word method with enough effort.
+<shachaf> I do have Skype (though I almost never use it), but I would be
+          worried about talking and waking people up at the moment, and I'd
+          need to work on setting up my microphone.  [23:07]
+<jekor> I've been going through a word frequency list for the Japanese
+        mnemonics. Not all of them were easy or obvious at first.
+<jekor> And I've had a lot of experience doing this already.
+<shachaf> What was the Esperanto resource with all the mnemonics that you
+          used?
+<jekor> Don't worry about it. Maybe some other day. Like I said, it's nice to
+        have someone interested in this to talk ideas out with.
+<jekor> The Esperanto ones were my own. I only published some of them, and I
+        think I lost them.  [23:08]
+<jekor> They were not as detailed or refined as the ones I've been creating on
+        Vocabulink though.
+<shachaf> Are stories always to be written in the "Native" language?
+<shachaf> So if you have English->Japanese, the story would be in Japanese?
+                                                                        [23:09]
+<jekor> But back to the point. If not everyone has to create their own
+        mnemonics and language learners can benefit from stories created by
+        other people, I definitely think it will be a more effective way to
+        learn language. I have no doubts. The challenge is building up enough
+        mnemonics. And that's why I think there needs to be a financial
+        incentive.
+<jekor> There will be a handful of people who are really good at creating
+        excellent memorable stories, and if they are compensated and motivated
+        to do so, everyone will benefit.  [23:10]
+<jekor> No, they don't I don't think.
+<jekor> In fact, I have personally used link words that were not in my native
+        language.
+<shachaf> So is this site English-centric?
+<shachaf> By Native I mean Target/Destination/Right-side-of-the-arrow.
+<jekor> I haven't put any on the site because I'm trying to focus only on ones
+        that will be generally useful to everyone, at least until there are a
+        lot more links up there.
+<jekor> Oh.
+<shachaf> What is the right term for that?  [23:11]
+<jekor> I think it's a good idea to do so, yes. If only because it will be
+        useful to far fewer people if you are using 2 languages.
+<shachaf> Er, what?
+ * shachaf is confused.
+<jekor> The site is English-centric in as much as the interface is currently
+        in English.
+<shachaf> What would be?
+<jekor> OK, sorry. I'll slow down and back up.  [23:12]
+<shachaf> I mean 06:11 <jekor> I think it's a good idea to do so, yes. If only
+          because it will be useful to far fewer people if you are using 2
+          languages.
+<shachaf> What would be useful to far fewer people?
+<jekor> So, I think it's fine to have, say, Finnish -> Hebrew where you were
+        learning a Finnish word with a Hebrew link word and story.
+<shachaf> OK, that's what I meant.  [23:13]
+<jekor> But I think that Finnish -> Hebrew with an English link word and
+        Hebrew story would be less useful to others. It could be great for you
+        though.
+<jekor> Yes, in that respect the site is not English-centric. And I hope at
+        some point to translate the interface into other languages as well.
+<shachaf> That doesn't seem to make much sense in general. I'd think the word
+          should match the story.
+<jekor> I just happen to create all links with English on the right side
+        ("destination") because I'm targetting English-speaking learners
+        first. I want to build a critical mass in a couple languages for
+        English learners before branching out. But that's just me personally.
+                                                                        [23:14]
+<jekor> I have however used Japanese -> English with a Japanese link word and
+        an English story.
+<jekor> But I didn't put any like that on the site because they require
+        someone to know that link word. Maybe I'll create some sort of
+        dependency for that one day.  [23:15]
+<shachaf> "Avoid making up words when you're searching for a link word." --
+          how strict is this?
+<jekor> Also, I've been experimenting with other link types other than
+        stories, but that's a whole other topic :)
+<jekor> Well, if it's your last resort, it's fine. But I've found that I tend
+        to forget the link word in those cases.
+<jekor> I'm trying to remember an example.  [23:16]
+<jekor> Oh, here's one:
+<jekor> けいたい (keitai "kay-tie")
+<shachaf> Oh, a small issue of time zone: We're both in Pacific time, but the
+          forum is showing something else. It's slightly confusing -- perhaps
+          something can be done about it?
+<jekor> It would be tempting to make up something like K-tie (a K-shaped tie),
+        and it might even work. But I'll look for something else first.
+<jekor> Yes. I have a plan for that as well. It's displaying times in UTC
+        right now I think. I want to have it display times in your time zone,
+        but that's going to require some more code.  [23:17]
+<jekor> But thanks for pointing it out.
+<jekor> Oh, on the subject of "do all words work for this". The link word
+        doesn't have to be exact.
+<shachaf> How about "Kate, I--"? (Where someone keeps being interrupted).
+          Would the glottal stop (it's called a glottal stop, right?) be a
+          problem?
+<jekor> That might work. I still wouldn't be totally satisfied with that one
+        since I'd have a hard time weaving it into a story. But it would work.
+        I'm not sure which would be better in this case "K-tie" or "Kate,
+        I--". It depends on what kind of story you could come up with.  [23:18]
+<shachaf> Or "Kate Eye". But I'd have a hard time thinking of anything else.
+                                                                        [23:19]
+<jekor> But you could search for a 2-word phrase that just starts with those
+        sounds. I'm trying to come up with one right now.
+<shachaf> Is the source in a darcs repository or something, by the way? Or
+          just tarballs?
+<jekor> (It sometimes takes me 5-10 minutes or longer to find a good link
+        word.)
+<jekor> I have a darcs repository. But I need to clean it up. It has some old
+        passwords and stuff in it that I need to get rid of before I publish
+        it.  [23:20]
+<jekor> So I take it you're a Haskeller?
+<jekor> Kate Eye is getting better.
+<shachaf> Yes, I came to the page through programming.reddit (I think).
+<jekor> I love reddit.
+<jekor> I waste way too much time on there.
+<shachaf> Same here, sadly enough.  [23:21]
+<jekor> Well, in this case, I would probably end up settling on one of those 3
+        phrases as a link word.
+<jekor> But maybe someone else would come along later with a better mnemonic
+        :)
+<shachaf> By the way, I know very little about how Japanese is written.
+                                                                        [23:22]
+<shachaf> But it's not phonetic, is it?
+<jekor> It is actually. It makes learning very easy.
+<jekor> Well...
+<jekor> The Kanji (borrowed Chinese characters) are not.
+<jekor> But too many Japanese learners get too tied up on the Kanji.
+<jekor> That's why all of the links are using hiragana (the phonetic script).
+                                                                        [23:23]
+<jekor> I myself made that mistake.
+<jekor> (I'm planning to write an article about learning Japanese as well.)
+<shachaf> I imagine Chinese and other non-phonetic languages could be a bit of
+          trouble here.
+<jekor> I spent months studying the Kanji, but it was mostly wasted time.
+                                                                        [23:24]
+<shachaf> Especially Chinese with the different spoken dialects.
+<jekor> Perhaps. But I've studied some Chinese as well. I think the solution
+        will be to use pinyin.
+<jekor> So, with both of them I would try to separate out the learning of
+        (spoken) vocabulary with learning the complex writing system.  [23:25]
+<jekor> Nowadays there are programs that will convert web pages into the
+        phoneticized script for tohse languages.
+<jekor> So you can learn the writing system as you go naturally while you read
+        websites you're interested in. I think that's a better solution than
+        torturing yourself with drilling the chinese characters.
+<shachaf> I'm reminded of something written by Tim Ferriss (that I only came
+          across recently?) where he recommends not using Pinyin (I think?).
+                                                                        [23:26]
+<shachaf> But another romanization.  [23:27]
+<shachaf> Probably this is getting too off-topic. :-)
+<jekor> I will look that up.
+<jekor> I think that as long as the writing system doesn't lead to
+        mispronunciation habits, it would be OK.
+<jekor> That's why I'm not using romanized Japanese.
+<jekor> No worries. I love discussing this sort of thing.  [23:28]
+<shachaf> Did you read what he said about learning languages? The talk on TED
+          was interesting but not very complete. I should look it up.
+<jekor> I think I might create a vocabulink IRC channel. Unless you know of
+        any good language learning channels that already exist.
+<jekor> Oh. I think I saw that one. The one about swimming, language, and
+        dancing?
+<shachaf> Yes.
+<jekor> I wish he would have gone into a little bit more detail on his method.
+        I'll need to read his blog.  [23:29]
+<jekor> But I gather that he approaches it somewhat scientifically.
+<jekor> I.e. here are the words and grammatical rules I'm going to really need
+        to know
+<shachaf> I would hardly be the person to ask about language-learning. :-) I'd
+          expect specific channels (like learning Japanese or Esperanto),
+          maybe, but not so much languages in general, and certainly not on
+          Freenode.
+<jekor> I haven't been on any other IRC networks in years... Freenode is so
+        stable :)  [23:30]
+<shachaf> Neither have I.  [23:31]
+<shachaf> Why did you (sort of) quit IRC? Big time-waster like Reddit? :-)
+ERC> /whois shachaf
+*** shachaf is Shachaf Ben-Kiki (n=shachaf@66.17.178.32)
+*** shachaf is on channel(s): #haskell 
+*** shachaf is/was on server irc.freenode.net (http://freenode.net/)
+*** shachaf is an identified user
+*** shachaf is an identified user
+<jekor> Yep!
+<jekor> I found that I spent so much time in programming language debate.
+                                                                        [23:32]
+<jekor> And that really, I was learning more by just writing code.
+<jekor> Now I have even less time because I work a 9-5 writing code for
+        another website.
+<jekor> So there's hardly any time for Vocabulink, let alone anything else.
+<shachaf> I've been much less active in #haskell too for some time, actually.
+          It's a surprising amount of effort to be a "regular" -- juggling
+          conversations, reading what everyone is saying.  [23:33]
+<jekor> Although I owe IRC for introducing me to Haskell about 10 years ago. I
+        wish I would have picked it up then, though.
+<jekor> Yeah. I think it was much easier to be on IRC when 1) the web was much
+        smaller and 2) I didn't have a full-time job and a wife :)  [23:34]
+<jekor> Now the mailing lists are so active, there's activity on the wiki,
+        there's tons of Haskell blogs...
+<jekor> I do ask questions in #haskell every once in a while though because
+        I'm generally too impatient to wait for a response on a mailing list
+        :D  [23:35]
+<jekor> But the guilt of having such a 1-way relationship with #haskell will
+        probably catch up with me eventually.
+<shachaf> 22:08 <lambdabot> I saw jekor leaving #haskell 5m 10d 3h 40m 43s
+          ago, and .
+<jekor> !  [23:36]
+<jekor> Not sure when that's counting from.
+<shachaf> Can there be multiple links between the same words, by the way?
+                                                                        [23:37]
+<jekor> Yes. That was my intention from the beginning. I don't know how long
+        it's going to take to get there.
+<jekor> The idea is that the "link graph" you see when you search for a link
+        can have a bunch of branches.  [23:38]
+<shachaf> I mean as in multiple paths from "kiitos" to "thank you".
+<jekor> There's no duplicate checking either. And the reason goes back to the
+        idea of creating and selling the links in packs. I don't want someone
+        to be blocked from creating a link by someone else.  [23:39]
+<jekor> (Even though it doesn't make sense to have 2 duplicate cognate links,
+        for instance. But that's just something I'm procrastinating on finding
+        a really good solution for.)
+<jekor> But yes, you can have multiple ways to do it.
+<jekor> Different people could have different links, and they could get
+        voted/rated differently where one would win out.  [23:40]
+<shachaf> OK.
+<shachaf> You said there would be editing in one form or another eventually?
+<jekor> Yes.  [23:41]
+<jekor> Sooner rather than later.
+<jekor> Anyway, I've got to get bed. But thanks for your questions and
+        interest. It has helped me focus and prioritize my todo list and given
+        my ideas for how to make the site more intuitive ;)
+<jekor> s/my ideas/me ideas/  [23:42]
+<shachaf> I'm wary about adding links that I can't edit later; I'm a bit of a
+          perfectionist sometimes. :-) Though that doesn't help much when
+          writing "stories" of any kind.
+<jekor> Me too. I totally understand.
+<shachaf> OK, glad I could help. I should go to bed too.
+<jekor> Kaizen is the only thing that gets me over my perfectionism.
+<jekor> Later!
+<shachaf> Bonan nokton. :-)
+<jekor> :D ! Bonan nokton, al vi ankaux!
+** Create a tutorial video.
+** Port over the "Latest Articles" sidebar from jekor.com.
+** Publish an article about studying Japanese.
+** Add a FAQ.
+   - How to update your gravatar.
+   - What algorithm is used for review.
+** Clean up the "Why Learn with Vocabulink" article.
+** Make a "free" badge for Esperanto link packs.
+** Create study plans/guides that use vocabulary lists that point to link packs.
+** Make sound-alikes bi-directional (the same for associations).
+** Create an article for each language and provide a link to it from the language browse or any language links.
+** Internationalize the site.
+** Research http://hackage.haskell.org/package/checkers
+** Instead of presenting an error on email uniqueness failure, send a change password confirmation email.
+** Add Twitter widget to a sidebox on the main non-member page.
+** Setup email character escaping for usernames and then add the username to the To: field.
+** Add a "Have a suggestion for a new link type?" to the link type selector.
+** Add the topic title of the most recent reply to the main forum page display.
+** Add a general discussion forum.
+** Add paging to the forum.
+** Move the links in the page header to a second-level page header.
+** Check that the input for a link component is more than just whitespace.
+** Setup login forms to use HTTPS.  
+   [[file:~/project/vocabulink/vocabulink.cgi/Vocabulink.lhs::TODO%20Add%20password%20constraints][file:~/project/vocabulink/vocabulink.cgi/Vocabulink.lhs::TODO Add password constraints]]
+** Allow for JavaScript dependencies to be added based on privilege.
+   - i.e. js for admin functionality should not be forced on everyone
+** Run HLint on the code.
+** Expand automatic synchronization to production.
+   - [ ] /etc/vocabulink.conf
+   - [ ] /etc/nginx/*.vocabulink.com
+** Get formlets to use friendlier input names.
+** Refactor the CSS
+   Fix em -> ex (CleverCSS problem)
+** Make signup page show you that you're already logged in if you're logged in.
+** Switch to storing some type of member structure in the App monad so things like email addresses don't necessarily have to be fetched right away (lazily) and so that gravatar-type code can go there. And then change with(Required)MemberNumber to with(Required)Member.
+** Build word frequency lists using TV/film transcripts, as well as written corpuses.
+** Automatically add rel="nofollow" to links in comments (via Pandoc).
+** Apply tips in http://www.noupe.com/php/beautiful-forms.html
+** Fix quot characters in CSS.   
+  [[file:~/project/vocabulink/articles/muse-init.el::setq%20muse%20xhtml%20header%20n%20h1%20lisp%20muse%20publishing%20directive%20title%20lisp%20h1%20n%20h2%20lisp%20muse%20publishing%20directive%20author%20lisp%20h2%20n][file:~/project/vocabulink/articles/muse-init.el::setq muse xhtml header n h1 lisp muse publishing directive title lisp h1 n h2 lisp muse publishing directive author lisp h2 n]]
+** Fix muse mode blockquote (pullquote) markup.
+** Make default link type (in link creation interface) be based on the member's own authored links (once they've authored enough).
+** Add a summary column to the Terms of Use like http://aviary.com/terms.
+** Defensify the JavaScript (put stuff in closures).
+Might need JavaScript versioning.
+** Display a gravatar in link copyright notices.
+** Add a "popular languages" sidebar?
+** Create an IRC channel and create channel logs.
+** Create a way to disambiguate items during review.
+** Get review working on mobile phones.
+** Add rationale for requiring/confirming email address to handbook and help/policy/whatever (gravatars, no spam, etc.).
+** Find out where the 72 password limit comes from (if anywhere).
+** Add a top hyperlink to browse random links.
+
+** Change the Discussion forum logo.
+** Vocabulink as a Language-Learning Marketplace
+*** Mnemonic "Packs"
+*** Create and sell mnemonic language learning aids
+*** Why pay for mnemonics?
+**** Vocabulary acquisition is the most time-consuming and tedious part of language learning.
+**** The average textbook contains __ words and costs $__. And it takes how long to get through it?
+**** Most time is spent studying. How valuable is your time?
+**** Pimsleur's, one of the most prestigious language learning programs, which does take advantage of spaced repitition, charges $300 for __ words and phrases.
+** How do I harness the natural desire of people to do work to impress and help others? That's the force behind deviantART. What is the equivalent for language learning? It's got to go beyond making links and mnemonic stories...or does it? How can language learners express themselves and build a reputation?
+** What do you do when you have a word that doesn't have a precise meaning in your native language or has multiple meanings?
+   [[file:~/project/vocabulink/mnemonics/base_aggregates.zip:base_aggregates.txt::363976]]
+** Setup a daily statistics report.
+** Add a writer monad for collecting page dependencies.
+*** Additionally, it could collect $(document).ready() code.
+** Add some login buttons where authentication is required for interaction.
+** Make a link pack for Esperanto particles and feature it.
+** Switch CSS/image files to vocabulink.net.
+** STARTED Setup withRequiredMemberNumber to require email confirmation and do appropriate redirect.
+   - State "STARTED"    [2009-09-09 Wed 23:11]
+     Ah, good. I did set it up to not allow unconfirmed members to take action. But I still need to handle things on the client side.
+** Add emoticons to comments.
+** Add a user info panel like on github.com
+*** avatar
+*** username
+*** messages
+*** editing links
+** Allow tagging links.
+** Add a page to show the links in your review set.
+** Allow user to specify timezone.
+** Show which packs a link is in on the links page.
+** Show which users are studying the link.
+** Add ability to add an image to link word mnemonic.
+** Add RSS feeds.
+   - [ ] Links search types.
+** Make links to comments display a comment thread with that comment number as the root.
+*** This will fix 404s and provide a way to link to comments.
+** Make reporting bugs easy and obvious.
+** Make it so that link packs don't require an image (default image with text somehow).
+** Add Tips, Tricks, and Trivia to the review complete page.
+*** Shortcut key (space) to reveal answer.
+*** Shortcut keys (0-5) to rate recall.
+** Create an admin tool to convert link types (most necessary is sound-alike to association) and then change throughout the site.
+** Add more constructed languages to the database.
+** After X seconds, show a bouncing "click to show the answer" arrow on review
+** Change times to "... ago" for recent times.
+** Make syncing place css and js in a holding area until make install is run at which point it should backup the old css/js.
+** Setup profiling.
+** Setup host monitoring (Cacti?).
+** Change AGPL license to BSD license.
+** Give credit on linkwords?
+* Resources
+** http://en.langolab.com/
+** http://en.wiktionary.org/wiki/Wiktionary:Frequency_lists
+** http://www.mnemonicdictionary.com/
+** http://www.w3.org/International/tutorials/svg-tiny-bidi/
+** http://www.fourhourworkweek.com/
+** http://99translations.com/
+** http://book.realworldhaskell.org/read/profiling-and-optimization.html
+** http://en.wikipedia.org/wiki/Most_common_words_in_Esperanto
+** http://learn-spanish-program.com/
+** http://www.livemocha.com/
+** http://smart.fm/
+** http://www.linkwordlanguages.com/
+** http://flashcarddb.com/
+** http://ichi2.net/anki/index.html
+** http://spicyelephant.com/
+** http://crammage.com/
+** http://people.pwf.cam.ac.uk/ssb22/gradint/
+** http://www.wordbuddy.com/
+** http://www.studystack.com/
+** http://www.flashcardexchange.com/
+** http://www.studycell.com/
+** http://www.flashcardmachine.com/
+** http://www.foreignlanguagehome.com/topics/learning/
+** http://www.amazon.com/Italian-Association-Michael-Gruneberg/dp/0844294489/ref=sr_1_1?ie=UTF8&s=books&qid=1225906864&sr=1-1
+** http://en.wikipedia.org/wiki/Mnemonic_goroawase_system
+** http://en.wikipedia.org/wiki/Giordano_Memorization_System_-_GMS
+** http://www.reddit.com/r/programming/comments/b4zel/hey_reddit_i_hate_memorizing_foreign_vocab_terms/
+** http://mp3languagelearning.com/
+*** Interesting premise that verbs are the most important and should be learned first because a language is abstract.
+1. 20,000 words -Beginner to advanced in one program No program gives you this many words, we give you the whole language. Most programs give you pet phrases about ordering at a resturant, but we teach you to actaully speak the language. No other program does this. Further, our the intial focus is learning verbs. Verbs are what you need to understand a language. A language is abstract and verb centered. Most programs start with nouns like farm animals and fruits. To understand a sentence you need verbs first, as this is the action and meaning of the sentence.
+
+2. 50 Songs - What is the easiest, fastest and most painless way to learn a language? With music. We have created beautiful songs in a specific way connecting the rhythm of the language to the rhythm of music. The easiest and most effective way to learn a language is with music.
+
+3. 3000 mnemonics - Have trouble remembering words, make words stick to your memory in a fun way with a memory system that goes back as far back as ancient Greece. The Ancient Greeks would remember entire epics by heart with mnemonics. It has been proven with the test of time for 3000 years as well as modern scientific studies.
+
+4. Etymology- a true breakthrough - Our etymology does not just teach you the history of words but its purpose is to give you connections to English. This way you remember a word not as a foreign word but a word that is related to your own native language. This is the most effective mnemonic there is. Your target foreign word can goes into your brain not as a foreign word but as simply a variation of English, your native language! This is a true breakthrough in language learning and no other program teaches in this way.
+
+5. Brainwaves - Have fun with this accelerated method of learning. We created specific brainwaves, delta-theta for deep learning.
+
+6. Fairy-tales - Be a child again and read about courageous princes and beautiful princesses.
+
+7. Stories– Short interesting or funny stories that use the words you learned in context. Using your words in context is important.
+
+8. Very practical conversation, Dialogues and the Socratic method - Learning key phrases and normal conversational situations will take you to a conversational level in your target language. But we use a form of the socratic method to draw make you think in the language.
+
+We show you what is really important based on actual frequency of occurrence in conversation; therefore you will learn what is modern and even slang.
+
+9. Grammar - Expressing complex things simply is the hallmark of creative effective design, this is what we have done with our grammar.
+
+10. Native speakers - It puzzles me to this day why almost every program I have herd uses non-native speakers with foreign accents, or speak unrealistically quick and soft.  LearnFast use crisp, clear beautifully native speakers, who annunciate every syllable; when you are learning a language this is very important.
+** https://addons.mozilla.org/en-US/firefox/addon/7208
+Kanji-lish 1.0
+Kanjilish is a Firefox add-on that allows you to practice Japanese kanji while you read English (or other languages). It helps you learn the meaning of kanji. Since you have to read sometimes in your native language, you might as well practice kanji while you do it. What the program does is simple. It replaces the first letter of a word with a kanji of similar meaning. For example, the word read might appear as )
+** https://addons.mozilla.org/en-US/firefox/addon/6178
+
+Furigana Injector 0.8
+** http://http://www.rhinospike.com/
+** http://www.rikai.com/
+* Taglines
+language learning with mnemonics
+rapid vocabulary acquisition
+faster language learning
+trick your mind into learning language
+harnessing the evolutionarily developed natural learning modes of your brain to learn language for great justice
+linking language to your brain
+build a foreign language vocabulary faster
+acquire a second language with link words
+language learning with all of your senses
+language learning made fun
+fun, fast, and easy
+funny language learning with mnemonics
+get conversational in a foreign language faster
+fast language learning with funny mnemonics
+fast language learning with memorable mnemonics
+language learning with less effort
+memory techniques for rapid language learning
+simple techniques to help you remember words in a foreign language
+language learning without forgetting
+language learning for adults
+learning languages with humor
+learning languages with vivid memory aids
+vivid stories to help you learn a language
+learn a language by reading memorable stories
+short stories that cement foreign language words to your mind
+short stories that will burn a foreign language directly into your cerebellum
+short stories that trick your mind into remembering foreign languages
+trick your mind into remembering words in a foreign language
+trick yourself into learning a foreign language
+trick your mind into learning a foreign language
+learning foreign language with fiction
+trick your mind into learning a second language
+trick your mind into learning another language
+trick your mind into learning a new language
+outrageous stories that will burn foreign words into your brain
+outrageous stories that will burn a foreign language into your brain
+trick your mind into learning a foreign language with outrageous stories
+trick your mind into a foreign language with outrageous stories
+think in a foreign language with outrageous stories
+linking vocabulary to your brain
+linking language vocabulary to your brain
+linking foreign vocabulary to your brain
+link a foreign language directly into your brain with outrageous stories
+outrageous stories that link foreign words directly into your brain
+outrageous stories that link foreign words directly to your brain
+link foreign words to your brain using words you already know
+silly stories for super fast shit
+language learned before you know it
+super fast memory techniques using outrageous stories that link foreign words directly to your brain
+learn foreign language whether you like it or not
+eat words for breakfast
+learn a foreign language like
+foreign words that stick to your brain
+foreign words that stick to your brain like a post-it
+foreign language sticky notes for your brain
+punch foreign language words directly into your skull
+outrageous stories that punch foreign language words directly into your fucking brain
+outrageous stories that punch a new language directly into your skull
+outrageous stories that sneak a new language into your mind
+outrageous stories that sneak a new language through the back door of your brain
+outrageous stories that sneak foreign words into the back door of your brain
+outrageous stories that sneak foreign words into your subconscious
+(logo/header idea: a little dude slapping words into your brain)
+outrageous stories that sneak words 
+outrageous stories that tattoo words directly onto your brain
+outrageous stories that tattoo words directly on your brain
+language learning with outrageous stories that tattoo words directly onto your brain
+learn a language with outrageous stories that tattoo words directly onto your brain
+* HOWTO
+** Crontab changes
+*** edit scripts/crontab
+*** darcs record
+*** sync
+*** (on server:) crontab crontab
+** Fresh Install
+*** runit
+**** yaourt --export /tmp -S runit
+**** pacman -U /tmp/runit*
+**** install -m0750 /etc/runit/2 /sbin/runsvdir-start
+**** mkdir /service
+**** edit /sbin/runsvdir-start
+Replace /etc/runit/runsvdir/current with /service
+**** edit /etc/inittab (add line)
+SV:123456:respawn:/sbin/runsvdir-start
+**** init q
+**** mkdir /etc/sv
+*** PostgreSQL setup
+**** pacman -S postgresql
+**** cp vocabulink/postgresql/*.so /usr/lib/postgresql/
+**** /etc/rc.d/postgresql start
+**** M-x sql-postgres
+***** user: postgres
+***** database: postgres
+***** host: localhost
+**** CREATE ROLE vocabulink WITH LOGIN ENCRYPTED PASSWORD '...';
+**** CREATE DATABASE vocabulink;
+**** GRANT ALL ON DATABASE vocabulink TO vocabulink;
+**** \c vocabulink postgres
+**** install pgcrypt (used for hashing passwords)
+***** \i ~/vocabulink/postgresql/pgcrypto.sql
+**** install tablefunc (used for storing trees)
+***** \i ~/vocabulink/postgresql/tablefunc.sql
+**** CREATE LANGUAGE plpgsql;
+**** \c vocabulink vocabulink
+**** \i path/to/vocabulink.sql
+**** query logging
+***** /var/lib/postgresql/data/postgresql.conf
+****** log_destination = 'stderr,csvlog'
+****** logging_collector = on
+****** log_min_duration_statement = 0
+****** log_line_prefix = '%m %d'
+*** Local Email Testing (outdated)
+**** Install sSMTP
+**** useradd ssmtp -g nobody -s /sbin/nologin -d /nonexistent -c "sSMTP pseudo-user"
+**** chown ssmtp:wheel /etc/ssmtp /etc/ssmtp/ssmtp.conf
+**** chmod 4750 /etc/ssmtp
+**** chmod 640 /etc/ssmtp/ssmtp.conf
+**** Edit /etc/ssmtp/ssmtp.conf
+MailHub=your.mail.server
+UseSTARTTLS=YES
+AuthUser=mailuser
+AuthPass=mailpassword
+**** chown ssmtp:nobody /usr/sbin/ssmtp
+**** chmod 4555 /usr/sbin/ssmtp
+*** Documentation Generation
+**** install lhs2TeX, texlive, texlive-latexextra (necessary for ucs)
+*** CSS
+**** Download the latest version of clevercss-hs
+**** cabal install
+*** Arch Linux
+**** pacman -S postgresql cherokee gnupg
+*** s3cmd
+**** as root
+***** curl -O http://aur.archlinux.org/packages/s3cmd/s3cmd/PKGBUILD
+***** makepkg --as-root -s
+***** pacman -U s3cmd*.xv
+**** as user
+***** s3cmd --configure
+*** GPG
+**** gpg --import scripts/gpg-pub-key
+*** Amazon SES (email)
+**** Download perl scripts
+**** extract to /usr/local/ses
+**** edit /usr/local/ses/aws-credentials
+**** pacman -S perl-uri perl-libwww perl-crypt-ssleay
+* Articles
+** article about why prepositions are important (why not words I'll need like bathroom and taxi, tap-tap tune fallacy, you think you'll be able to mime your meaning)
+
+** How to Write Mnemonics for Other People
+
+*** General Mnemonics Should Be Based on Shared Experience
+
+When inventing mnemonics for your own personal use, you can draw on your vast personal experience. You might be able to tie words to people you know, places you've visited, or experiences you've had. Sometimes these personal mnemonics are extremely effective, because you already have deep associations with these existing memories.
+
+But in order to make your mnemonics effective for others, they should be based on shared experience.
+
+If your mnemonic is based on personal experience, share it!
+
+Perhaps you'd like to create a mnemonic based on a movie you know well. You can't expect for a significant percentage of learners to have seen the same movie. There's no need to throw out the idea of using the movie. You can explain briefly the concept of the movie and how it applies to the mnemonic you're creating.
+** Mnemonic Templates
+
+Here are some templates to get you started or inspire you to write your own mnemonics.
+
+(Link to examples of each.)
+
+*** The Story
+
+The story is the most common mnemonic type on Vocabulink.
+
+First-person, third-person, and even second-person voices work well (although the second-person voice is more common for the following templates).
+
+(ni, 67)
+
+*** Philosophy
+
+It's somewhat rare to get a chance to use a link word and definition together to preach your philosophy. But when it happens, take the opportunity. The mnemonic might not resonate with everyone, but it gives you a chance to speak out on an issue while helping others to learn language. Someone else can always write a story for the word later.
+
+The challenge is to keep your rant on-topic. (Interestingly, this is probably also a challenge for all philosophical writing.)
+
+Don't worry if the topic of your rant is controversial. The more controversial, the more charged with emotion, the more memorable it is.
+
+(devi, 96)
+(nur, 65)
+
+*** Thought Experiments
+
+Invite
+
+(duo, 103)
+
+*** Entomology
+
+Though rare, sometimes the story of a word's origin is interesting and colorful enough.
+
+** Japanese Mnemonics
+
+*** Why Use Hiragana? Why Not Kanji or Romaji?
+
+programs to produce hiragana for kanji automatically, bad habits with romaji, don't want to get distracted by learning kanji which can come later better to start communicating now
+
+how much time I wasted with kanji
+
+good news though, kanji are easy to learn later with Heisig's method, but once you get past volume 1 you're going to need to have a solid vocabulary to proceed. If you don't have a solid vocabulary, you will have learned how to write a number of kanji, but you won't be able to use them, and then you'll begin to forget
+
+Using hiragana also disambiguates Kanji. When reviewing 人, is it ひと (person), じん (type of person), にん (counter for people), etc?
+
+You can still use mnemonics and spaced repetition for learning the Kanji. This breaks apart the process and leads to less confusion.
+
+** Misc
+
+Instructors confuse simple words with common words. Concepts that you learn at a young age might be simple and easy to grasp, but that does not mean that they'll be useful.
+
+Examples: colors, furniture, parts of clothing, body parts, animals
+
+We have to view vocabulary as a scarce resource. Each word takes time to learn and review. If it's not useful in practical (vs contrived) exercises, it should be left as something to learn once basic conversational skill/fluency is achieved.
+
+The useful words are the abstract ones. The ones that are difficult to draw a picture for in a text book.
+* Mnemonics
+** Make a new mnemonic type for lauxdi -> laudible?
+** audiaux -> adieu (Fr?) sound-alike
+** audiaux -> adios (Sp?) sound-alike=
+** ja -> jaweh (sp?) God of War

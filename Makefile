@@ -5,14 +5,15 @@ hses := cgi/Vocabulink.hs $(shell find cgi/Vocabulink -name "*.hs")
 sasses := $(shell find -name "*.sass" | grep -v lib.sass)
 csses := $(sources:.sass=.css)
 csslibs := css/lib.common.css css/lib.link.css css/lib.member.css
-jses := js/compiled/common.js js/compiled/link.js js/compiled/member.js js/compiled/raphael.js js/compiled/metrics.js js/compiled/review.js js/compiled/dashboard.js
+jses := $(shell find js -maxdepth 1 -name "*.js")
+minjses := js/compiled/common.js js/compiled/link.js js/compiled/member.js js/compiled/raphael.js js/compiled/metrics.js js/compiled/review.js js/compiled/dashboard.js
 muses := $(shell find -name "*.muse")
 articles := $(muses:.muse=.html)
 chapters:= $(shell ls handbook/chapters/*.tex)
 
-sync_options := -avz --exclude 'cgi/dist' --exclude 'upload/img/*' --exclude 'upload/audio/pronunciation/*' --exclude '*.sass' --exclude 'articles/Makefile' --exclude '*.el' --exclude 'css/Makefile' --exclude 'js/Makefile' --exclude 'cgi/*.pdf' --exclude 'cgi/TAGS' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --exclude '._*' --exclude '.DS_Store' --exclude '.sass-cache' --delete articles css etc img js s scripts vocabulink.cgi linode:vocabulink/
+sync_options := -avz --exclude 'cgi/dist' --exclude 'upload/img/*' --exclude 'upload/audio/pronunciation/*' --exclude '*.sass' --exclude 'articles/Makefile' --exclude '*.el' --exclude 'css/Makefile' --exclude 'js/Makefile' --exclude 'cgi/*.pdf' --exclude 'cgi/TAGS' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --exclude '._*' --exclude '.DS_Store' --exclude '.sass-cache' --delete articles css etc img js s scripts offline vocabulink.cgi linode:vocabulink/
 
-all : $(cgi) css js articles handbook
+all : $(cgi) css js articles handbook offline
 
 sync :
 	rsync $(sync_options)
@@ -34,7 +35,7 @@ css/lib.member.css : css/link-editor.css css/markitup-set.css css/markitup-skin.
 %.css : %.sass css/lib.sass
 	sass $< > $@
 
-js : $(jses)
+js : $(minjses)
 
 # This is getting large. I'd like to break it up and do deferred loading at some point.
 js/compiled/common.js : js/jquery-1.6.1.js js/jquery.cookie.js js/minform.js js/jquery.loadmask.js js/jquery.toastmessage.js js/common.js js/jquery.simplemodal-1.4.1.js
@@ -88,15 +89,25 @@ cgi/dist/setup-config : cgi/vocabulink.cabal
 
 cgi/dist/build/$(cgi)/$(cgi) : cgi/dist/setup-config $(hses)
 	cd cgi && TPG_DB="vocabulink" TPG_USER="vocabulink" cabal build
-	touch $@ # cabal doesn't always update the build (if it doesn't need to)
+	@touch $@ # cabal doesn't always update the build (if it doesn't need to)
 
 $(cgi) : cgi/dist/build/$(cgi)/$(cgi)
 	mv $(cgi) $(cgi).old
 	cp $^ $@
 	strip $@
 
+# TODO: Make lint rules so that the appropriate lint is run automatically when the file is changed (before proceeding to the compilation step).
+
 hlint : $(hses)
 	hlint -i "Redundant do" $^
+
+jslint : $(jses)
+	cat $^ | jslint
+
+offline : offline/lib.offline.js offline/offline.css
+
+offline/lib.offline.js : offline/jquery-1.7.1.js offline/offline.js
+	cat $^ | jsmin > $@
 
 clean :
 	rm handbook/*.aux handbook/*.ilg handbook/*.log handbook/*.out handbook/*.toc handbook/chapters/*.aux
