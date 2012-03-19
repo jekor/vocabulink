@@ -55,8 +55,8 @@
     var callback_ = function () {
       if (posted.length + failed.length === gradeQueue.length) {
         localStorage.setItem('gradeQueue', JSON.stringify(failed));
-        // Now, pull all upcoming reviews.
-        $.get('/review/upcoming')
+        // Now, pull all upcoming reviews for the next 24 hours.
+        $.get('/review/upcoming?until' + (nowS() + 86400))
          .done(function (links) {
            localStorage.setItem('reviewQueue', JSON.stringify(links));
            localStorage.setItem('lastSync', JSON.stringify(nowS()));
@@ -116,6 +116,7 @@
   function updateStatus() {
     var reviewQueue = getReviewQueue();
     $('#reviewsQueued').text(reviewQueue.length);
+    $('#reviewsDue').text(linksDueForReview().length);
     $('#gradesPending').text(getGradeQueue().length);
     var lastSync = localStorage.getItem('lastSync');
     $('#lastSync').text(lastSync ? new Date(JSON.parse(lastSync) * 1000).toLocaleString() : 'never');
