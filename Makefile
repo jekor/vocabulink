@@ -11,7 +11,7 @@ muses := $(shell find -name "*.muse")
 articles := $(muses:.muse=.html)
 chapters:= $(shell ls handbook/chapters/*.tex)
 
-sync_options := -avz --exclude 'cgi/dist' --exclude 'upload/img/*' --exclude 'upload/audio/pronunciation/*' --exclude '*.sass' --exclude 'articles/Makefile' --exclude '*.el' --exclude 'css/Makefile' --exclude 'js/Makefile' --exclude 'cgi/*.pdf' --exclude 'cgi/TAGS' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --exclude '._*' --exclude '.DS_Store' --exclude '.sass-cache' --delete articles css etc img js s scripts offline vocabulink.cgi linode:vocabulink/
+sync_options := -avz --exclude 'cgi/dist' --exclude 'upload/img/*' --exclude 'upload/audio/pronunciation/*' --exclude '*.sass' --exclude 'articles/Makefile' --exclude '*.el' --exclude 'css/Makefile' --exclude 'js/Makefile' --exclude 'cgi/*.pdf' --exclude 'cgi/TAGS' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --exclude '._*' --exclude '.DS_Store' --exclude '.sass-cache' --delete articles css etc img js s scripts offline vocabulink.cgi vocabulink.com:vocabulink/
 
 all : $(cgi) css js articles handbook offline
 
