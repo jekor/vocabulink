@@ -38,6 +38,7 @@ import qualified Data.Aeson.Generic
 import qualified Data.Aeson.Types
 import qualified Data.Text
 import Data.Time.Calendar (toGregorian)
+import qualified Data.Vector as V
 
 import Prelude hiding (div, span, id)
 
@@ -124,6 +125,7 @@ nextReview member = do
          ol <- linkForeignLanguage l
          dl <- linkFamiliarLanguage l
          pr <- pronounceable $ linkNumber l
+         let linkWord' = maybe Data.Aeson.Types.Null (\w -> [aesonQQ| <| w |> |]) $ linkWord l
          return [aesonQQ| {"linkNumber": <| linkNumber l |>
                           ,"foreign": <| linkForeignPhrase l |>
                           ,"foreignLang": <| linkForeignLang l |>
@@ -132,7 +134,7 @@ nextReview member = do
                           ,"familiarLang": <| linkFamiliarLang l |>
                           ,"familiarLanguage": <| dl |>
                           ,"linkType": <| linkTypeNameFromType $ linkType l |>
-                          ,"linkword": <| toJSON $ linkWord l |>
+                          ,"linkword": <<linkWord'>>
                           ,"pronunciation": <| pr |>
                           } |]
 
@@ -151,6 +153,7 @@ upcomingReviews member until' = do
          ol <- linkForeignLanguage l
          dl <- linkFamiliarLanguage l
          pr <- pronounceable $ linkNumber l
+         let linkWord' = maybe Data.Aeson.Types.Null (\w -> [aesonQQ| <| w |> |]) $ linkWord l
          return [aesonQQ| {"linkNumber": <| linkNumber l |>
                           ,"foreign": <| linkForeignPhrase l |>
                           ,"foreignLang": <| linkForeignLang l |>
@@ -159,7 +162,7 @@ upcomingReviews member until' = do
                           ,"familiarLang": <| linkFamiliarLang l |>
                           ,"familiarLanguage": <| dl |>
                           ,"linkType": <| linkTypeNameFromType $ linkType l |>
-                          ,"linkword": <| toJSON $ linkWord l |>
+                          ,"linkword": <<linkWord'>>
                           ,"pronunciation": <| pr |>
                           ,"targetTime": <| epochUTC t |>
                           } |]
@@ -247,9 +250,11 @@ detailedReviewStats member start end tzOffset = do
     \WHERE member_no = {memberNumber member} \
       \AND (target_time AT TIME ZONE {tzOffset})::date BETWEEN {start}::date AND {end}::date \
     \ORDER BY target_time")
-  r <- mapM reviewJSON reviews
-  s <- mapM scheduledJSON scheduled
-  outputJSON $ [aesonQQ| {"reviewed": <| r |>, "scheduled": <| s |>} |]
+  r' <- V.mapM reviewJSON (V.fromList reviews)
+  s' <- V.mapM scheduledJSON (V.fromList scheduled)
+  let r = Data.Aeson.Types.Array r'
+      s = Data.Aeson.Types.Array s'
+  outputJSON $ [aesonQQ| {"reviewed": <<r>>, "scheduled": <<s>>} |]
  where reviewJSON (linkNo, time, grade, foPhrase, faPhrase, foLang, faLang, type_) = do
          foLanguage <- fromJust <$> languageNameFromAbbreviation foLang
          faLanguage <- fromJust <$> languageNameFromAbbreviation faLang

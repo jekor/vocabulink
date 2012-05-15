@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -33,8 +33,9 @@ import Vocabulink.Html
 import Vocabulink.Member.Auth
 import Vocabulink.Utils
 
-import Network.Gravatar (gravatarWith, size)
-import qualified Network.Gravatar as Gravatar (gravatar)
+import Data.Default (def)
+import Data.Text (pack)
+import qualified Network.Gravatar as G
 import Text.Regex
 
 -- | Simple user-generated content permissions
@@ -90,8 +91,11 @@ gravatar size' email =
   img ! width (stringValue $ show size')
       ! height (stringValue $ show size')
       ! class_ "avatar"
-      ! src (stringValue $ gravatarWith (map toLower email)
-                                        Nothing (size size') (Just "wavatar"))
+      ! src (stringValue $ G.gravatar G.GravatarOptions {G.gSize = Just (G.Size size')
+                                                        ,G.gDefault = Just G.Wavatar
+                                                        ,G.gForceDefault = G.ForceDefault False
+                                                        ,G.gRating = Just G.X}
+                                      (pack $ map toLower email))
 
 -- The gravatar library will generate the entire URL, but sometimes we just
 -- need the hash. Rather than implement the hashing ourselves, we'll dissect
@@ -99,7 +103,7 @@ gravatar size' email =
 
 gravatarHash :: String -> Maybe String
 gravatarHash email =
-  let url = Gravatar.gravatar email
+  let url = G.gravatar def (pack email)
       matches = matchRegex (mkRegex "gravatar_id=([0-9a-f]+)") url in
   case matches of
     Just [hash] -> Just hash
