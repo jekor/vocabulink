@@ -1,4 +1,4 @@
--- Copyright 2010, 2011 Chris Forno
+-- Copyright 2010, 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -217,7 +217,7 @@ reviewBox :: Integer -- ^ the number of links due for review (presumably from nu
           -> Html
 reviewBox n = a ! href "/review" ! class_ "review-box" $ message n
   where message 1 = strong "1" >> " link to review"
-        message _ = strong (string $ prettyPrint n) >> " links to review"
+        message _ = strong (string $ show n) >> " links to review"
 
 -- This retrievs the number of links that a user has for review right now.
 
