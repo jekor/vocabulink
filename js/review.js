@@ -116,11 +116,13 @@ $(function () {
        var button = $('<button class="grade' + i + '" grade="' + (i / 5) + '" title="hotkey: ' + (i + 1) + '"><b></b><br>' + text + '</button>');
        button.click(function () {grade_(i / 5);});
        $(document).bind('keyup', (i + 1).toString(), function () {
-         button.addClass('pressed');
-         setTimeout(function () {
-           button.removeClass('pressed');
-           grade_(i / 5);
-         }, 250);
+         if ($('#grades:visible').length > 0) {
+           button.addClass('pressed');
+           setTimeout(function () {
+             button.removeClass('pressed');
+             grade_(i / 5);
+           }, 250);
+         }
        })
        grades.append(button);
      });
