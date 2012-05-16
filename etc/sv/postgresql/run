@@ -1,2 +1,0 @@
-#!/bin/sh
-exec chpst -upostgres:postgres /usr/bin/postmaster -D /var/lib/postgres/data 2>&1
