@@ -1,4 +1,4 @@
-// Copyright 2011 Chris Forno
+// Copyright 2011, 2012 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -67,7 +67,6 @@ $(function () {
      .fail(function (xhr) {V.toastError(xhr.responseText, false);});
   });
   cal.changeMonth(new Date());
-  dashboard.append(cal).append('<div class="clear"></div>');
   $('.today', cal).click();
 });
 

@@ -424,14 +424,11 @@ frontPage = do
          div ! class_ "top" $ do
            div ! id "word-cloud" $ do
              wordcloud
-             div ! class_ "clear" $ mempty
            div ! id "intro" $ do
              h1 $ "Build Vocabulary—Fast"
              p "Vocabulary building is the most important, but most time-consuming part of learning a language."
              p "We'll show you how to learn foreign words more quickly and easily than you imagined possible using 3 simple principles."
-             a ! id "try-now" ! href "/links" ! class_ "faint-gradient-button green" $ "Get Started"
-             div ! class_ "clear" $ mempty
-           div ! class_ "clear" $ mempty,
+             a ! id "try-now" ! href "/links" ! class_ "faint-gradient-button green" $ "Get Started",
          div ! class_ "bottom" $ do
            div ! class_ "three-column" $ do
              div ! class_ "column" $ do
@@ -451,6 +448,5 @@ frontPage = do
                  strong "3"
                  string "Important Words"
                p "Don't waste time learning words you'll rarely, if ever, use. We introduce words in order based on how common they are."
-               p $ a ! href "article/why-study-words-in-order-of-frequency" $ "Why study this way?"
-             div ! class_ "clear" $ mempty ]
+               p $ a ! href "article/why-study-words-in-order-of-frequency" $ "Why study this way?" ]
 

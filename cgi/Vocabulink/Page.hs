@@ -128,7 +128,6 @@ headerBar = do
       mconcat [a ! href "/link/new" ! class_ "new-link verified" $ string "new link", string " | "]
       review
       maybe loginBox logoutBox member
-    clear
 
 -- The footer displays a number of common (or what we believe to be common)
 -- hyperlinks for English speakers.

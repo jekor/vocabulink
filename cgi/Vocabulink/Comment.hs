@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -50,7 +50,6 @@ commentBox c = do
       gravatar 48 $ commentEmail c
       button ! class_ "reply light" $ "Reply"
       div ! class_ "speech-bubble left body" $ markdownToHtml (commentBody c)
-      clear
 
 -- Storing a comment establishes and returns its unique comment number.
 

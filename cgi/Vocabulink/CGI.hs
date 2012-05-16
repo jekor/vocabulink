@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -145,7 +145,6 @@ outputNotFound = do
                 Nothing -> mconcat [string "View the list of ", a ! href "http://www.vocabulink.com/links" $ "available languages", string "."]
                 Just r  -> mconcat [string "Go ", a ! href (stringValue r) $ "back", string "."]
             ]
-          clear
       script ! src "http://www.google-analytics.com/ga.js" $ mempty
 
 outputClientError :: (MonadCGI m, MonadIO m) => String -> m CGIResult

@@ -1,4 +1,4 @@
-// Copyright 2008, 2009, 2010, 2011 Chris Forno
+// Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -30,7 +30,6 @@ function createCommentBox(parentID) {
     + '<div class="speech-bubble left body">'
       + '<textarea name="body" required placeholder="Add your comment here."></textarea>'
     + '</div>'
-    + '<div class="clear"></div>'
   + '</form>');
   return box.minform();
 }

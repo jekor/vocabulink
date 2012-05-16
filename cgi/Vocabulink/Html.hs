@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -25,7 +25,7 @@
 -- functions. An example of this is |linkList|.
 
 module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList, tableOfPairs
-                       , menu, clear, markdownToHtml, inlineJS
+                       , menu, markdownToHtml, inlineJS
                        {- Text.Blaze.Html5 -}
                        , Html, (!), string, stringValue, preEscapedString, customAttribute
                        , div, p, h1, h2, h3, hr, blockquote, script
@@ -76,7 +76,7 @@ multiColumn cls =
               3 -> "three"
               _ -> "unsupported" in
   div ! class_ (stringValue $ num ++ "-column") $
-    mconcat (map (div ! class_ "column") cls ++ [clear])
+    mconcat (map (div ! class_ "column") cls)
 
 multiColumnList :: Int -> [Html] -> Html
 multiColumnList 1 xs  = multiColumn [unordList xs]
@@ -102,11 +102,6 @@ tableOfPairs pairs = table ! class_ "pairs" $ mconcat (map tr' pairs)
 menu :: [(String, String)] -> Html
 menu choices = select $ mconcat
   [ option ! value (stringValue $ fst choice) $ string (snd choice) | choice <- choices ]
-
--- Other Markup
-
-clear :: Html
-clear = div ! class_ "clear" $ mempty
 
 -- A modified version of Markdown (Pandoc Markdown) is used in comments and
 -- link bodies. We need to sanitize incoming HTML so that we don't end up with

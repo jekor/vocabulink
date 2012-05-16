@@ -64,7 +64,6 @@ renderStory n s member edited =
             $ string (memberName member)
           br
           span ! class_ "date" $ string $ prettyPrint edited
-        clear
 
 getStory :: Integer -- ^ story number
          -> App (Maybe String) -- ^ unformatted body

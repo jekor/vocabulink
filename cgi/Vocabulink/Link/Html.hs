@@ -1,4 +1,4 @@
--- Copyright 2011 Chris Forno
+-- Copyright 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -120,7 +120,6 @@ linkPage linkNo = do
               div ! id "linkword-stories" $ do
                 div ! class_ "header" $ h2 "Linkword Stories:"
                 stories
-            clear
             div ! id "comments" $ do
               h3 "Comments"
               comments

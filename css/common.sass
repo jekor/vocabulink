@@ -152,9 +152,6 @@ b, strong
 em
   font-style: oblique
 
-.clear
-  clear: both
-
 .even
   background-color: $bar_and_box_background
 tr.odd:hover, tr.even:hover
@@ -181,6 +178,7 @@ html, body
 
 #head
   width: 100%
+  overflow: hidden
   .logo
     display: block
     float: left
@@ -277,6 +275,7 @@ html, body
   #handy-links
     padding-bottom: 1em
     width: 66em
+    overflow: hidden
     margin:
       left: auto
       right: auto
@@ -401,6 +400,9 @@ button, input
   > .column
     width: 33%
     float: left
+
+.one-column, .two-column, .three-column
+  overflow: hidden
 
 button, input[type=submit]
   cursor: pointer
