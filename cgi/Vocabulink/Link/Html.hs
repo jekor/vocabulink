@@ -129,14 +129,14 @@ linksPage title' links = do
   simplePage title' [JS "link", CSS "lib.link", ReadyJS initJS] $ do
     partialLinksTable links
  where initJS = unlines
-                  ["var startPage = 1;"
+                  ["var options = {};"
                   ,"var pageHash = /^#page(\\d+)$/.exec(window.location.hash);"
                   ,"if (pageHash) {"
-                  ,"  startPage = parseInt(pageHash[1], 10);"
+                  ,"  options.startPage = parseInt(pageHash[1], 10);"
                   ,"}"
-                  ,"$('table').longtable().bind('longtable.pageChange', function (_, n) {"
+                  ,"$('table').longtable(options).bind('longtable.pageChange', function (_, n) {"
                   ,"  window.location.hash = 'page' + n;"
-                  ,"}).gotoPage(startPage);"
+                  ,"});"
                   ]
 
 partialLinksTable :: [(PartialLink, Maybe Integer, Bool)] -> Html
