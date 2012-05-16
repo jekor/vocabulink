@@ -104,7 +104,7 @@ gravatar size' email =
 gravatarHash :: String -> Maybe String
 gravatarHash email =
   let url = G.gravatar def (pack email)
-      matches = matchRegex (mkRegex "gravatar_id=([0-9a-f]+)") url in
+      matches = matchRegex (mkRegex "/avatar/([0-9a-f]+)") url in
   case matches of
     Just [hash] -> Just hash
     _           -> Nothing
