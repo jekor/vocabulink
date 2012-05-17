@@ -447,6 +447,6 @@ frontPage = do
                h2 $ do
                  strong "3"
                  string "Important Words"
-               p "Don't waste time learning words you'll rarely, if ever, use. We introduce words in order based on how common they are."
+               p "Don't waste time learning words you'll rarely, if ever, use. We introduce words in order of how common they are."
                p $ a ! href "article/why-study-words-in-order-of-frequency" $ "Why study this way?" ]
 
