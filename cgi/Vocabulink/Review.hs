@@ -120,7 +120,9 @@ nextReview member = do
   case rows of
     [] -> outputNotFound
     -- TODO: Make a version of getLink that can retrieve multiple links at once.
-    _  -> outputJSON =<< mapM linkJSON =<< (catMaybes <$> mapM getLink rows)
+    _  -> do
+     setHeader "Cache-Control" "no-cache"
+     outputJSON =<< mapM linkJSON =<< (catMaybes <$> mapM getLink rows)
  where linkJSON l = do
          ol <- linkForeignLanguage l
          dl <- linkFamiliarLanguage l
