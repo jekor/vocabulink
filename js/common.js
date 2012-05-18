@@ -1,4 +1,4 @@
-// Copyright 2009, 2010, 2011 Chris Forno
+// Copyright 2009, 2010, 2011, 2012 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -52,7 +52,7 @@ V.loggedIn = function () {
 
 V.memberGravatar = function () {
   if (V.gravatarHash) {
-    return 'http://www.gravatar.com/avatar.php?gravatar_id=' + V.gravatarHash + '&size=60&default=wavatar';
+    return 'http://www.gravatar.com/avatar/' + V.gravatarHash + '?s=60&d=wavatar&r=x';
   } else {
     return null;
   }
