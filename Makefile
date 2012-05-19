@@ -29,7 +29,7 @@ css/lib.common.css : css/common.css css/comment.css css/jquery.toastmessage.css 
 css/lib.link.css : css/link.css
 	cat $^ > $@
 
-css/lib.member.css : css/link-editor.css css/markitup-set.css css/markitup-skin.css css/fileuploader.css
+css/lib.member.css : css/link-editor.css css/markitup-set.css css/markitup-skin.css
 	cat $^ > $@
 
 %.css : %.sass css/lib.sass

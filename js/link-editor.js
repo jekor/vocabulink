@@ -1,4 +1,4 @@
-// Copyright 2008, 2009, 2010, 2011 Chris Forno
+// Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -61,12 +61,15 @@ var changePronunciation = function () {
     fetchPronunciation(lang.val(), word.val(), function (ps) {
       // For now, take the first pronunciation.
       var p = ps[0];
+      console.log(p);
+      console.log(ps);
       pronunciation.find('audio').empty()
-        .append('<source src="' + p.pathogg + '"></source>'
-              + '<source src="' + p.pathmp3 + '"></source>');
+        .append($('<source></source>').attr('src', p.pathogg))
+        .append($('<source></source>').attr('src', p.pathmp3));
       pronunciation.find('img').attr('src', 'http://s.vocabulink.lan/img/icon/audio.png');
-      pronunciation.append('<input type="hidden" name="ogg" value="' + p.pathogg + '">'
-                         + '<input type="hidden" name="mp3" value="' + p.pathmp3 + '">');
+      pronunciation
+        .append($('<input type="hidden" name="ogg">').val(p.pathogg))
+        .append($('<input type="hidden" name="mp3">').val(p.pathmp3));
     }, function () {
       pronunciation.remove();
     });

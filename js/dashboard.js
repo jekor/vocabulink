@@ -33,10 +33,10 @@ $(function () {
          var td = cal.findCell(new Date(stat.date[0], stat.date[1] - 1, stat.date[2]));
          if (td.length > 0) {
            if (stat.reviewed) {
-             td.find('> div').append('<div class="reviews-completed">' + stat.reviewed + '</div>');
+             td.find('> div').append($('<div class="reviews-completed"></div>').text(stat.reviewed));
            }
            if (stat.scheduled) {
-             td.find('> div').append('<div class="reviews-scheduled">' + stat.scheduled + '</div>');
+             td.find('> div').append($('<div class="reviews-scheduled"></div>').text(stat.scheduled));
            }
          }
        });
@@ -55,12 +55,21 @@ $(function () {
        var reviewedList = $('<table class="links reviewed"><thead><tr><th colspan="2">Reviewed</th></tr></thead><tbody></tbody></table>');
        var tbody = reviewedList.find('tbody');
        $.each(stats.reviewed, function (_, stat) {
-         $('<tr class="partial-link"><td><a href="/link/' + stat.linkNumber + '">' + stat.foreignPhrase + '</a></td><td><b class="grade grade' + stat.grade + '"></b></td></tr>').appendTo(tbody);
+         var tr = $(
+           '<tr class="partial-link">'
+           + '<td><a></a></td>'
+           + '<td><b class="grade"></b></td>'
+         + '</tr>');
+         tr.find('a').attr('href', '/link/' + stat.linkNumber).text(stat.foreignPhrase);
+         tr.find('b').addClass('grade' + stat.grade);
+         tbody.append(tr);
        });
        var scheduledList = $('<table class="links scheduled"><thead><tr><th>Scheduled</th></tr></thead><tbody></tbody></ol>');
        tbody = scheduledList.find('tbody');
        $.each(stats.scheduled, function (_, stat) {
-         $('<tr class="partial-link"><td><a href="/link/' + stat.linkNumber + '">' + stat.foreignPhrase + '</a></td></tr>').appendTo(tbody);
+         var tr = $('<tr class="partial-link"><td><a></a></td></tr>');
+         tr.find('a').attr('href', '/link/' + stat.linkNumber).text(stat.foreignPhrase);
+         tbody.append(tr);
        });
        dailyDetail.empty().append(reviewedList).append(scheduledList).append('<div class="clear"></div>');
      })
@@ -68,6 +77,7 @@ $(function () {
   });
   cal.changeMonth(new Date());
   $('.today', cal).click();
+  dashboard.append(cal);
 });
 
 })(jQuery);

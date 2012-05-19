@@ -1,4 +1,4 @@
-// Copyright 2009, 2010, 2011 Chris Forno
+// Copyright 2009, 2010, 2011, 2012 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -21,7 +21,7 @@ V.annotateLink = function (link) {
   link.children('.foreign, .familiar, .link').each(function () {
     var word = $(this);
     if (word.attr('title')) {
-      var caption = $('<span class="caption">' + word.attr('title') + '</span>');
+      var caption = $('<span class="caption"></span>').text(word.attr('title'));
       // We have to calculate these before we add content to them and screw up
       // the dimensions.
       var width = word.outerWidth();
@@ -71,13 +71,14 @@ function showNewStory() {
   var newStory =
     $('<div class="linkword-story-container">'
       + '<div class="linkword-story">'
-        + '<form method="post" action="/link/' + linkNumber() + '/stories">'
+        + '<form method="post">'
           + '<blockquote>'
             + '<textarea name="story" required placeholder="Add your own story here."></textarea>'
           + '</blockquote>'
         + '</form>'
       + '</div>'
     + '</div>');
+  newStory.find('form').attr('action', '/link/' + linkNumber() + '/stories');
   newStory.appendTo('#linkword-stories');
   newStory.find('textarea').one('focus', function () {
     $(this).animate({'height': '10em'}, 250, function () {
@@ -104,19 +105,19 @@ function editFrequency() {
   var lang = $('h1 .foreign').attr('lang');
   $.get('/list/frequency/' + lang)
    .done(function (lists) {
-     var list_opts = $.map(lists, function (list) {
-       return '<option value="' + list.number + '">' + list.name + '</option>';
-     }).join('');
      var editor = $(
-       '<form id="frequency-editor" action="/link/' + linkNumber() + '/frequencies" method="post" style="display: none">'
-       + '<select name="list" required style="min-width: 10em;">'
-         + list_opts
-       + '</select>'
+       '<form id="frequency-editor" method="post" style="display: none">'
        + '<button id="new-freq-list" class="light">New List</button> '
        + '<label>Rank:</label> <input name="rank" size="4" required> '
        + '<label>Frequency:</label> <input name="frequency" required> '
        + '<input class="light" type="submit" value="Set Frequency">'
      + '</form>').appendTo('#link-head-bar').slideDown();
+     var select = $('<select name="list" required style="min-width: 10em"></select>').prependTo(editor);
+     $.each(lists, function (_, list) {
+       var option = $('<option></option>').appendTo(select);
+       option.val(list.number).text(list.name);
+     });
+     editor.attr('action', '/link/' + linkNumber() + '/frequencies');
      editor.minform().submit(function (e) {
        e.preventDefault();
        editor.mask('Sending...');
@@ -133,12 +134,13 @@ function editFrequency() {
      editor.find('#new-freq-list').click(function () {
        var content = $(
          '<div><h1>New Frequency List</h1>'
-         + '<form action="/list/frequency/' + lang + '" method="post">'
+         + '<form method="post">'
            + '<label>Name:</label> <input name="name" required><br>'
            + '<label>Description:</label> <input name="description" required>'
            + '<input type="submit" class="light" value="Add List">'
          + '</form>'
        + '</div>');
+       content.find('form').attr('action', '/list/frequency/' + lang);
        $.modal(content);
        var modal = $('#simplemodal-container');
        content.find('form').minform().submit(function (e) {
@@ -240,15 +242,18 @@ $(function () {
                               story.unmask();
                               story.hide();
                               var form = $(
-                                '<form class="linkword-story" method="post" action="/link/story/' + storyNumber + '">'
+                                '<form class="linkword-story" method="post">'
                                 + '<blockquote>'
-                                  + '<textarea name="story" required>' + data + '</textarea>'
+                                  + '<textarea name="story" required></textarea>'
                                 + '</blockquote>'
                                 + '<div class="signature">'
                                   + '<input type="submit" value="Save" class="light">'
                                   + '<button class="cancel">cancel</button>'
                                 + '</div>'
-                              + '</form>').insertAfter(story).minform();
+                              + '</form>').insertAfter(story);
+                              form.attr('action', '/link/story/' + storyNumber);
+                              form.find('textarea').text(data);
+                              form.minform();
                               form.find('textarea').css('height', '10em').markItUp(mySettings);
                               form.find('.cancel').click(function () {
                                 form.remove();

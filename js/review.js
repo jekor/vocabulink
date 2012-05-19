@@ -61,20 +61,26 @@ function revealAnswer() {
 }
 
 function revealLink(link) {
-  var h1 = $('<h1 class="link" linkno="' + link.linkNumber + '" type="' + link.linkType + '">'
-             + '<span class="foreign" title="' + link.foreignLanguage + '">' + link.foreign + '</span>'
-             + '<span class="link"></span>'
-             + '<span class="familiar" title="' + link.familiarLanguage + '" familiar="' + link.familiar + '">?</span>'
-           + '</h1>');
+  var h1 = $(
+    '<h1 class="link">'
+    + '<span class="foreign"></span>'
+    + '<span class="link"></span>'
+    + '<span class="familiar">?</span>'
+  + '</h1>');
+  h1.attr('linkno', link.linkNumber).attr('type', link.linkType);
+  h1.find('.foreign').attr('title', link.foreignLanguage).text(link.foreign);
+  h1.find('.familiar').attr('title', link.familiarLanguage).text(link.familiar);
   h1.find('.link').attr('linkword', (link.linkword ? link.linkword : ''));
   if (link.pronunciation) {
-    $('<button id="pronounce" class="button light">'
-      + '<audio>'
-        + '<source src="http://s.vocabulink.com/audio/pronunciation/' + link.linkNumber + '.ogg">'
-        + '<source src="http://s.vocabulink.com/audio/pronunciation/' + link.linkNumber + '.mp3">'
-      + '</audio>'
+    var button = $(
+      '<button id="pronounce" class="button light">'
+      + '<audio></audio>'
       + '<img src="http://s.vocabulink.com/img/icon/audio.png">'
-    + '</button>').click(function () {
+    + '</button>');
+    button.find('audio')
+      .append($('<source></source>').attr('src', 'http://s.vocabulink.com/audio/pronunciation/' + link.linkNumber + '.ogg'))
+      .append($('<source></source>').attr('src', 'http://s.vocabulink.com/audio/pronunciation/' + link.linkNumber + '.mp3'));
+    button.click(function () {
       $(this).find('audio')[0].play();
     }).appendTo(h1.find('.foreign'));
   }
@@ -113,7 +119,9 @@ $(function () {
 
      var grades = $('<div id="grades"></div>').hide();
      $.each(['blank', 'wrong', 'almost', 'barely', 'good', 'perfect'], function (i, text) {
-       var button = $('<button class="grade' + i + '" grade="' + (i / 5) + '" title="hotkey: ' + (i + 1) + '"><b></b><br>' + text + '</button>');
+       var button = $('<button><b></b><br></button>');
+       button.addClass('grade' + i).attr('grade', i / 5).attr('title', 'hotkey: ' + (i + 1));
+       button.append(text);
        button.click(function () {grade_(i / 5);});
        $(document).bind('keyup', (i + 1).toString(), function () {
          if ($('#grades:visible').length > 0) {

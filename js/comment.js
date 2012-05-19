@@ -15,22 +15,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-// TODO: Move all forum-related functionality out to a separate file.
-
 (function ($) {
 
 function createCommentBox(parentID) {
   var box = $(
-    '<form method="post" action="/comment/' + parentID + '/reply" class="comment">'
+    '<form method="post" class="comment">'
     + '<div class="metadata">'
-      + '<span class="username">' + V.memberName + '</span>'
+      + '<span class="username"></span>'
     + '</div>'
-    + '<img class="avatar" width="48" height="48" src="' + V.memberGravatar() + '"/>'
+    + '<img class="avatar" width="48" height="48">'
     + '<input type="submit" value="Send" class="send light"></input>'
     + '<div class="speech-bubble left body">'
       + '<textarea name="body" required placeholder="Add your comment here."></textarea>'
     + '</div>'
   + '</form>');
+  box.attr('action', '/comment/' + parentID + '/reply');
+  box.find('.username').text(V.memberName);
+  box.find('.avatar').attr('src', V.memberGravatar(48));
   return box.minform();
 }
 
@@ -77,7 +78,7 @@ $(function () {
   $('.comment .reply').click(function () {
     addReplyCommentBox($(this).parent());
   });
-  if (V.memberGravatar()) {
+  if (V.verified()) {
     $('.comments').each(setupRootReply);
   }
 });

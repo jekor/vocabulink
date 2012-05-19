@@ -50,15 +50,15 @@ V.loggedIn = function () {
   return V.memberName !== null;
 };
 
-V.memberGravatar = function () {
+V.memberGravatar = function (size) {
   if (V.gravatarHash) {
-    return 'http://www.gravatar.com/avatar/' + V.gravatarHash + '?s=60&d=wavatar&r=x';
+    return 'http://www.gravatar.com/avatar/' + V.gravatarHash + '?s=' + size + '&d=wavatar&r=x';
   } else {
     return null;
   }
 };
 
-V.verified = V.memberGravatar;
+V.verified = function () {return V.memberGravatar(0);};
 
 // http://stackoverflow.com/questions/647259/javascript-query-string
 function queryString() {
@@ -74,7 +74,7 @@ function queryString() {
 V.query = queryString();
 
 V.incrLinksToReview = function (by) {
-  var num = parseInt($('#head .review-box strong').text(), 10) + by;
+  var num = parseInt($('#head .review-box strong').text(), 10) + parseInt(by, 10);
   if (num == 1) {
     $('#head .review-box').empty().append('<strong>1</strong> link to review');
   } else {
@@ -107,15 +107,16 @@ V.toastWarning = function (msg, sticky) {
 }
 
 function lostPasswordPopup() {
-  var content = $('<div><h1>Lost Password</h1>'
-          + '<form id="lost-password-form" action="/member/password/reset" method="post">'
-            + '<p>Enter the email address you signed up with, and we\'ll send you a link to reset your password with.</p>'
-            + '<table>'
-              + '<tr><th><label>Email:</label></th><td><input type="email" name="email" required autofocus style="width: 295px"></td></tr>'
-              + '<tr><td colspan="2" style="text-align: right"><input class="light" type="submit" value="Send Password Recovery" style="margin-bottom: 1em"></td></tr>'
-            + '</table>'
-          + '</form>'
-        + '</div>').css('width', '370px');
+  var content = $(
+    '<div><h1>Lost Password</h1>'
+    + '<form id="lost-password-form" action="/member/password/reset" method="post">'
+      + '<p>Enter the email address you signed up with, and we\'ll send you a link to reset your password with.</p>'
+      + '<table>'
+        + '<tr><th><label>Email:</label></th><td><input type="email" name="email" required autofocus style="width: 295px"></td></tr>'
+        + '<tr><td colspan="2" style="text-align: right"><input class="light" type="submit" value="Send Password Recovery" style="margin-bottom: 1em"></td></tr>'
+      + '</table>'
+    + '</form>'
+  + '</div>').css('width', '370px');
   $.modal(content);
   var form = $('#lost-password-form');
   var modal = $('#simplemodal-container');
@@ -210,17 +211,19 @@ V.signupPopup = function() {
 }
 
 V.contactPopup = function () {
-  var content = $('<div><h1>Contact Us</h1>'
-          + '<form id="contact-form" action="/contact" method="post">'
-            + '<input type="hidden" name="url" value="' + window.location + '">'
-            + '<table>'
-              + '<tr><th><label>Email:</label></th><td><input type="email" name="email" required autofocus style="width: 295px"></td></tr>'
-              + '<tr><th><label>Message:</label></th><td><textarea name="message" required style="width: 300px"></textarea></td></tr>'
-              + '<tr><td colspan="2" style="text-align: right"><input class="light" type="submit" value="Send" style="margin-bottom: 1em"></td></tr>'
-            + '</table>'
-          + '</form>'
-        + '</div>');
-  if (V.memberGravatar()) {
+  var content = $(
+    '<div><h1>Contact Us</h1>'
+    + '<form id="contact-form" action="/contact" method="post">'
+      + '<input type="hidden" name="url">'
+      + '<table>'
+        + '<tr><th><label>Email:</label></th><td><input type="email" name="email" required autofocus style="width: 295px"></td></tr>'
+        + '<tr><th><label>Message:</label></th><td><textarea name="message" required style="width: 300px"></textarea></td></tr>'
+        + '<tr><td colspan="2" style="text-align: right"><input class="light" type="submit" value="Send" style="margin-bottom: 1em"></td></tr>'
+      + '</table>'
+    + '</form>'
+  + '</div>');
+  content.find('input[name=url]').val(window.location);
+  if (V.verified()) {
     content.find('tr:first-child').remove();
   }
   $.modal(content);
