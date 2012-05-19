@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -49,17 +49,9 @@ data Member = Member { memberNumber :: Integer
 -- browser. The cookie is a digest of some state information. We then use the
 -- cookie for authenticating their identity on subsequent requests.
 
--- We don't want to associate personally-identifying information like IP
--- addresses to member names in our database. However, we do need to know which
--- IP address the member logged in from so that we can protect against request
--- spoofing. The solution is to store all of the session state stays in the
--- cookie. This also means we don't have to deal with storing session state on
--- our end.
-
 data AuthToken = AuthToken { authExpiry    :: Day
                            , authMemberNo  :: Integer
                            , authUsername  :: String
-                           , authIPAddress :: String
                            , authDigest    :: String
                            }
 
@@ -78,29 +70,25 @@ instance Show AuthToken where
   show a = "exp="   ++ showGregorian (authExpiry a)
         ++ "&no="   ++ show (authMemberNo a)
         ++ "&name=" ++ escapeURIString' (encodeString $ authUsername a)
-        ++ "&ip="   ++ authIPAddress a
         ++ "&mac="  ++ authDigest a
 
 -- | Create an AuthToken with the default expiration time, automatically
 -- calculating the digest.
 authToken :: Integer -- ^ member number
           -> String -- ^ username
-          -> String -- ^ IP address
           -> String -- ^ auth token key (from the config file)
           -> IO AuthToken
-authToken memberNo username ip key = do
+authToken memberNo username key = do
   now <- currentDay
   let expires = addDays cookieShelfLife now
       digest  = tokenDigest AuthToken { authExpiry    = expires
                                       , authMemberNo  = memberNo
                                       , authUsername  = username
-                                      , authIPAddress = ip
                                       , authDigest    = ""
                                       } key
   return AuthToken { authExpiry    = expires
                    , authMemberNo  = memberNo
                    , authUsername  = username
-                   , authIPAddress = ip
                    , authDigest    = digest
                    }
 
@@ -115,7 +103,6 @@ tokenDigest a key = showDigest $ hmacSha1 (pack key) (pack token)
   where token = showGregorian (authExpiry a)
              ++ show (authMemberNo a)
              ++ encodeString (authUsername a)
-             ++ authIPAddress a
 
 -- Setting the cookie is rather simple by this point. We just create the auth
 -- token and send it to the client.
@@ -154,47 +141,43 @@ deleteAuthCookie =
 -- Reading the Auth Token
 
 -- This retrieves the auth token from the HTTP request, verifies it, and if
--- valid, returns it. To verify an auth token, we verify the token digest,
--- check that the cookie hasn't expired, and check the requestor's IP address
--- against the one in the token.
+-- valid, returns it. To verify an auth token, we verify the token digest and
+-- check that the cookie hasn't expired.
 
 verifiedAuthToken :: (MonadCGI m, MonadIO m) => String -> m (Maybe AuthToken)
 verifiedAuthToken key = do
   cookie <- getCookie "auth"
-  ip <- remoteAddr
   case parseAuthToken =<< cookie of
     Nothing -> return Nothing
     Just a  -> do
       now <- liftIO currentDay
       let digest = tokenDigest a key
-      if digest == authDigest a && diffDays (authExpiry a) now > 0 && ip == authIPAddress a
+      if digest == authDigest a && diffDays (authExpiry a) now > 0
         then return $ Just a
         else return Nothing
 
 -- This is a Parsec parser for auth tokens (as stored in cookies). An auth
 -- token looks like:
--- exp=2009-12-01&no=1&name=jekor&ip=127.0.0.1&mac=d0170bc011b6260a1de7596bad1cd4de
+-- exp=2009-12-01&no=1&name=jekor&mac=d0170bc011b6260a1de7596bad1cd4de
 
 authTokenParser :: Parser AuthToken
 authTokenParser = permute
   (mkAuthToken <$$> authFrag "exp"
                <||> authFrag "no"
                <||> authFrag "name"
-               <||> authFrag "ip"
                <||> authFrag "mac")
  where authFrag key = do
          _ <- try $ string (key ++ "=")
          frag <- many1 $ noneOf "&"
          optional $ char '&'
          return frag
-       mkAuthToken exp' no name ip mac =
+       mkAuthToken exp' no name mac =
          let day = parseTime defaultTimeLocale (iso8601DateFormat Nothing) exp' in
          case day of
            Nothing -> error "Failed to parse expiration time"
            Just d  -> AuthToken { authExpiry    = d
                                 , authMemberNo  = read no
                                 , authUsername  = decodeString $ unEscapeString name
-                                , authIPAddress = ip
                                 , authDigest    = mac
                                 }
 

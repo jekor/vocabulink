@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -75,9 +75,8 @@ signup = do
                                     \WHERE member_no = {memberNo'}") c
                           return (Just memberNo')) res
       case memberNo of
-        Just mn -> do ip <- remoteAddr
-                      key <- fromJust <$> getOption "authtokenkey"
-                      authTok <- liftIO $ authToken mn username' ip key
+        Just mn -> do key <- fromJust <$> getOption "authtokenkey"
+                      authTok <- liftIO $ authToken mn username' key
                       setAuthCookie authTok
                       redirect "http://www.vocabulink.com/?signedup"
         Nothing -> error "Registration failure (this is not your fault). Please try again later."
@@ -118,13 +117,12 @@ login = do
                          \FROM member WHERE username = {username'}")
   case match of
     Just (Just True) -> do
-      ip      <- remoteAddr
       member' <- memberByName username'
       case member' of
         Nothing     -> error "Failed to lookup username."
         Just member -> do
           key <- fromJust <$> getOption "authtokenkey"
-          authTok <- liftIO $ authToken (memberNumber member) username' ip key
+          authTok <- liftIO $ authToken (memberNumber member) username' key
           setAuthCookie authTok
           redirect =<< referrerOrVocabulink
     _         -> do -- error "Username and password do not match (or don't exist)."
@@ -197,9 +195,8 @@ confirmEmail hash = do
                 -- We can't just look at the App's member object, since we just
                 -- updated it.
                 -- TODO: The logic isn't quite right on this.
-                ip <- remoteAddr
                 key <- fromJust <$> getOption "authtokenkey"
-                authTok <- liftIO $ authToken (memberNumber m) (memberName m) ip key
+                authTok <- liftIO $ authToken (memberNumber m) (memberName m) key
                 setAuthCookie authTok
                 redirect "http://www.vocabulink.com/?emailconfirmed"
         else error "Confirmation code does not match logged in user."
@@ -263,13 +260,12 @@ passwordReset hash = do
       $(execute' "UPDATE member SET password_hash = crypt({password}, password_hash) \
                  \WHERE member_no = {mn}")
       -- As a convenience, log the user in before redirecting them.
-      ip      <- remoteAddr
       member' <- memberByNumber mn
       case member' of
         Nothing     -> error "Failed to lookup member."
         Just member -> do
           key <- fromJust <$> getOption "authtokenkey"
-          authTok <- liftIO $ authToken (memberNumber member) (memberName member) ip key
+          authTok <- liftIO $ authToken (memberNumber member) (memberName member) key
           setAuthCookie authTok
           redirect "http://www.vocabulink.com/"
     _       -> error "Invalid or expired password reset."
