@@ -30,22 +30,6 @@ V.object = function (o) {
   return new F();
 };
 
-// This returns a component of the user's authtoken cookie or null if the
-// cookie does not exist or the component is not found.
-function authTokenPart(key) {
-  var authToken = $.cookie('auth');
-  if (authToken) {
-    var match = authToken.match(new RegExp(key + '=([^&]+)'));
-    if (match) {
-      return match[1];
-    } else {
-      return null;
-    }
-  } else {
-    return null;
-  }
-}
-
 V.loggedIn = function () {
   return V.memberName !== null;
 };
