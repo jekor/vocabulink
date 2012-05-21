@@ -1,17 +1,20 @@
-#title Privacy Policy
+% Privacy Policy
 
 We value privacy, and we do what we can to protect yours.
 
-* Information We Collect
+## Information We Collect
+
+### Email Address
 
 When you sign up as a member, we require your email address. This is used to
-display a globally unique avatar ([[http://en.gravatar.com/][Gravatar]]) on your contributions. We may also
-use it to communicate with you. We will not sell your email address to a 3rd
-party.
+display a globally unique avatar ([Gravatar](http://en.gravatar.com/)) on your
+contributions. We may also use it to communicate with you. We will not sell
+your email address to a 3rd party.
 
-** Logging
+### Logging
 
-We log each web request in a format similar to the [[http://en.wikipedia.org/wiki/Common_Log_Format][Common Log Format]], including
+We log each web request in a format similar to the
+[Common Log Format](http://en.wikipedia.org/wiki/Common_Log_Format), including
 the IP address and user agent. This is common practice for most websites. We
 intend to use this information to determine how people use the site in general,
 including what pages are popular, etc. We do not currently associate the
@@ -21,7 +24,7 @@ and member numbers.
 Log data may be examined in detail by developers in the course of solving a
 technical problem or investigating abuse.
 
-** Cookies
+### Cookies
 
 If you are a member, we use a cookie to identify you. This cookie is used for
 authentication. It contains your member number and IP address. Your IP address
@@ -31,7 +34,7 @@ they came from you.
 We also use Google Analytics which will set its own cookies. You may reject
 these cookies.
 
-** Study Statistics
+### Study Statistics
 
 We collect statistics on your link reviews (studying). Keeping a history of
 your past reviews is necessary for the review algorithm(s) to schedule your
@@ -42,7 +45,7 @@ future. We don't intend to look at this information for individual members, but
 it may be necessary for us to do so in order to understand how the algorithms
 are functioning.
 
-* Sharing Information with 3rd Parties
+## Sharing Information with 3rd Parties
 
 We will not sell your private information (email address) with any 3rd parties
 unless you agree to release the information, except when required by law.
@@ -52,7 +55,7 @@ anyone on the site. Do not post any private information you would not want to
 be publicly visible. Do not rely on content permissions to keep data you've
 posted private.
 
-* Deletion of Content
+## Deletion of Content
 
 Using the delete function on the site will not necessarily delete the
 underlying content. Typically, it will mark it for deletion at such a time as
@@ -66,7 +69,7 @@ stacks, but it will still be visible to users who are reviewing it. Only if no
 user has added a link to their review stack will the link be permanently
 deleted.
 
-* Changes and Updates
+## Changes and Updates
 
 We may update this privacy policy in the future. If we update our privacy
 policy, we will post a notice to the site.

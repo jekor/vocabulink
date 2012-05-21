@@ -1,13 +1,11 @@
-#title Understanding Link Types
-#section main
+% Understanding Link Types
+<!-- section: main -->
 
 Each link on Vocabulink has a type. The best way to understand link types is to
 look through links created by other members. Each link is color-coded so that
 you can see what it is at a glance.
 
-<contents>
-
-* <literal><span style="color: #13B1B3"></literal>Linkword<literal></span></literal>
+## <span style="color: #13B1B3">Linkword</span>
 
 The linkword is the most important type of link, because it's the one with the
 most mnemonic value. It's the type of link from which Vocabulink gets its name
@@ -37,20 +35,20 @@ Linkword associations always go from target (foreign) word (origin) to source
 (native) word (destination) because the linkword is triggered by the foreign
 word.
 
-* <literal><span style="color: #86CF6A"></literal>Soundalike<literal></span></literal>
+## <span style="color: #86CF6A">Soundalike</span>
 
 A soundalike is like an association, but it's easier to remember because the
 words sound the same. For example, the German word "milch" is a soundalike for
 "milk".
 
 Be careful that you're actually linking 2 words with the same meaning.
-Sometimes [[http://en.wikipedia.org/wiki/False_friend][false friends]] can crop up. The Parker Pen company learned this the
-hard way when they translated "embarrass" as "embarazar" in the Spanish version
-of their slogan. What they wanted to say was "It won't leak into your pocket
-and embarrass you" but they ended up saying "It won't leak in your pocket and
-make you pregnant."[1]
+Sometimes [false friends](http://en.wikipedia.org/wiki/False_friend) can crop
+up. The Parker Pen company learned this the hard way when they translated
+"embarrass" as "embarazar" in the Spanish version of their slogan. What they
+wanted to say was "It won't leak into your pocket and embarrass you" but they
+ended up saying "It won't leak in your pocket and make you pregnant."[^1]
 
-* <literal><span style="color: #000000"></literal>Association<literal></span></literal>
+## <span style="color: #000000">Association</span>
 
 An association is the least useful type of link. It only tells you that 2 words
 are related, but it gives you no information about how they are related.
@@ -61,22 +59,5 @@ all you get.
 Avoid creating association links. Only do so if you've exhausted all other
 possibilities but need to link the words for study.
 
-; * <literal><span style="color: #AA0077"></literal>Relationship<literal></span></literal>
-
-; The relationship link is an experimental link type. Vocabulink is about
-; research just as much as it's about learning, and in time we will be able to
-; figure out how useful this link type is. A relationship link says that 2 words
-; are related in the same or a similar way that 2 other words are related. If
-; you've taken an SAT test, you're probably familiar with these types of word
-; associations. For example:
-
-; > cat is to fish as
-; > snake is to mouse
-
-; These associations can be subjective. In fact, truly objective associations are
-; probably rare. Often times the association is multi-faceted and draws upon
-; subtle generalizations from your experience of the world.
-
-Footnotes: 
-[1]  Sandy Serva, [[http://www.econtentmag.com/Articles/ArticleReader.aspx?ArticleID=1038][iLanguage: Translations for Global Research]], Jan 2003, Vol. 26, Issue 1, p 51.
+[^1]:  Sandy Serva, [iLanguage: Translations for Global Research](http://www.econtentmag.com/Articles/ArticleReader.aspx?ArticleID=1038), Jan 2003, Vol. 26, Issue 1, p 51.
 

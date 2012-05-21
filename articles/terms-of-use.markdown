@@ -1,12 +1,12 @@
-#title Vocabulink Terms of Use
+% Vocabulink Terms of Use
 
-* 1. ACCEPTANCE OF TERMS
+## 1. ACCEPTANCE OF TERMS
 
 Please read this agreement carefully before you ("User") use this website,
 vocabulink.com (the "Site"). Your use of the Site constitutes agreement with
 the terms and conditions of use set forth herein (the "Terms").
 
-* 2. MODIFICATIONS TO THIS AGREEMENT
+## 2. MODIFICATIONS TO THIS AGREEMENT
 
 We reserve the right, at our sole discretion, to change, modify or otherwise
 alter these Terms at any time. Such modifications shall become effective
@@ -14,9 +14,9 @@ immediately upon the posting thereof. You must review this agreement on a
 regular basis to keep yourself apprised of any changes. You can find the most
 recent version of the Terms at:
 
-http://www.vocabulink.com/terms-of-use
+<http://www.vocabulink.com/terms-of-use>
 
-* 3. CONTENT
+## 3. CONTENT
 
 All materials displayed or performed on the Site, other than content developed
 or posted by User ("User Content") including, but not limited to text,
@@ -70,13 +70,13 @@ with Vocabulink in any way whatsoever can be responsible for the appearance of
 any inaccurate or libelous information or for your use of the information
 contained in or linked from these web pages.
 
-* 4. PRIVACY AND INFORMATION DISCLOSURE
+## 4. PRIVACY AND INFORMATION DISCLOSURE
 
 Vocabulink has established a Privacy Policy to explain to users how their
 information is collected and used, which is located at the following web
 address:
 
-http://www.vocabulink.com/privacy
+<http://www.vocabulink.com/privacy>
 
 Your use of the Site signifies acknowledgement of and agreement to our Privacy
 Policy. You further acknowledge and agree that Vocabulink may, in its sole
@@ -90,7 +90,7 @@ street address) of a third-party has been posted or transmitted without their
 consent or as a form of harassment; protect the rights, property, or personal
 safety of the Site, its users or the general public.
 
-* 5. OBJECTIONABLE CONTENT
+## 5. OBJECTIONABLE CONTENT
 
 You agree that mnemonics by nature must be emotive and provocative to be
 effective. As such, you acknowledge that some mnemonics may contain words or
@@ -107,7 +107,7 @@ images that:
 You waive any claim resulting from your exposure to material on the Site that
 is offensive, indecent, or otherwise objectionable.
 
-* 6. LIMITATIONS ON SERVICE
+## 6. LIMITATIONS ON SERVICE
 
 You acknowledge that Vocabulink may establish limits concerning use of the
 Site, including the maximum number of days that Content will be retained by the
@@ -120,7 +120,7 @@ modify or discontinue the Site (or any part thereof) with or without notice,
 and that Vocabulink shall not be liable to you or to any third party for any
 modification, suspension or discontinuance of the Site.
 
-* 7. TERMINATION OF SERVICE
+## 7. TERMINATION OF SERVICE
 
 You agree that Vocabulink, in its sole discretion, has the right (but not the
 obligation) to delete or deactivate your account, block your email or IP
@@ -133,7 +133,7 @@ you or any third-party for any termination of your access to the Site. Further,
 you agree not to attempt to use the Site after said termination. Sections 2,
 4, and 6-9 shall survive termination of the Terms.
 
-* 8. DISCLAIMER OF WARRANTIES
+## 8. DISCLAIMER OF WARRANTIES
 
 YOU AGREE THAT USE OF THE SITE IS ENTIRELY AT YOUR OWN RISK. THE SITE IS
 PROVIDED ON AN "AS IS" OR "AS AVAILABLE" BASIS, WITHOUT ANY WARRANTIES OF ANY
@@ -151,7 +151,7 @@ jurisdictions do not allow the disclaimer of implied warranties. In such
 jurisdictions, some of the foregoing disclaimers may not apply to you insofar
 as they relate to implied warranties.
 
-* 9. LIMITATIONS OF LIABILITY
+## 9. LIMITATIONS OF LIABILITY
 
 UNDER NO CIRCUMSTANCES SHALL VOCABULINK BE LIABLE FOR DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, CONSEQUENTIAL OR EXEMPLARY DAMAGES (EVEN IF VOCABULINK HAS

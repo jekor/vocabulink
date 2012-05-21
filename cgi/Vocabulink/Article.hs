@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -25,6 +25,7 @@ import Vocabulink.App
 import Vocabulink.CGI
 import Vocabulink.Utils hiding ((<$$>))
 
+import Control.Applicative ((<*), (*>))
 import Control.Monad (filterM)
 import System.Directory (getDirectoryContents)
 import qualified System.IO.UTF8 as IO.UTF8
@@ -128,7 +129,7 @@ isPublished f =
 articleFromFile :: String -> App (Maybe Article)
 articleFromFile path = do
   dir  <- (</> "articles") <$> asks appDir
-  muse <- liftIO $ IO.UTF8.readFile $ dir </> path <.> "muse"
+  muse <- liftIO $ IO.UTF8.readFile $ dir </> path <.> "markdown"
   case P.parse articleHeader "" muse of
     Left e    -> liftIO $ logError "parse" (show e) >> return Nothing
     Right hdr -> return $ Just $ hdr {  articleFilename  = path }
@@ -138,14 +139,14 @@ articleFromFile path = do
 
 -- An accepted article's first lines will consist of something like:
 
--- #title Why Learn with Vocabulink?
--- #section main
+-- % Why Learn with Vocabulink?
+-- <!-- section: main -->
 
--- #title:   is a freeform title.
--- #section: is the section of the site in to publish the article. For
---           static content ``articles'' such as the privacy policy, don't
---           include a section. For now, only ``main'' is supported with
---           our simple publishing system.
+-- %: is a freeform title.
+-- section: is the section of the site in to publish the article. For
+--          static content ``articles'' such as the privacy policy, don't
+--          include a section. For now, only ``main'' is supported with
+--          our simple publishing system.
 
 -- Parsing an article's metadata is pretty simple with Parsec's permutation
 -- combinators.
@@ -156,8 +157,8 @@ articleFromFile path = do
 
 articleHeader :: P.Parser Article
 articleHeader = permute
-  (mkArticle <$$> museDirective "title"
-             <|?> (Nothing, Just <$> museDirective "section"))
+  (mkArticle <$$> P.char '%' *> P.spaces *> P.manyTill P.anyChar P.newline
+             <|?> (Nothing, Just <$> (P.string "<!-- section: " *> P.many1 P.letter <* P.string " -->")))
     where mkArticle title section =
             Article { articleFilename    = undefined
                     , articleAuthor      = 1 -- currently only jekor can publish articles
@@ -166,14 +167,6 @@ articleHeader = permute
                     , articleSection     = section
                     , articleTitle       = title
                     }
-
--- A muse directive looks sort of like a C preprocessor directive.
-
-museDirective :: String -> P.Parser String
-museDirective dir = museDir dir >> P.manyTill P.anyChar P.newline
-
-museDir :: String -> P.Parser ()
-museDir dir = P.try (P.string ('#' : dir)) >> P.spaces
 
 -- Retrieving Articles
 

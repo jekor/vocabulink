@@ -1,57 +1,55 @@
-#title How Do Linkword Mnemonics Work?
-#section main
+% How Do Linkword Mnemonics Work?
+<!-- section: main -->
 
-<contents>
-
-* What Exactly Is a Linkword Mnemonic?
+## What Exactly Is a Linkword Mnemonic?
 
 In Spanish, the word for "to sit" is "sentar". It's pronounced sort of like the word "centaur" (a mythical half-human, half-horse creature). Centaurs only exist in ancient Greek mythology. But imagine the difficulties they'd have if they really did exist today in modern society. Where would they sit? We have handicapped seating, but even that wouldn't be sufficient for a poor centaur. Well, fortunately being half-horse, centaurs don't actually need to sit.
 
 Now, when you hear the word "sentar" or read it aloud in your head, instead of trying to remember what it means directly, you can just remember what it sounds like: "centaur". From there, you can remember that centaurs have a difficult time sitting. And then you have your meaning "to sit".
 
-* Are Mnemonics Worth It?
+## Are Mnemonics Worth It?
 
 After all, isn't it more work to try to remember the linkword and mnemonic than to just remember the translation? Not if the mnemonic is well thought-out.
 
 These mnemonics take advantage of what we've observed about memory:
 
-** We naturally remember stories, especially vivid and strange ones.
+### We naturally remember stories, especially vivid and strange ones.
 
 Your memory is especially receptive to stories. We pass verbal history down from generation to generation through stories. We teach lessons to children with stories. And experienced public speakers know that stories are essential for getting a point across and making it stick with an audience.
 
-** Deep learning lasts longer than rote learning.
+### Deep learning lasts longer than rote learning.
 
 The more time you spend exploring and probing an idea from different angles, the more time your brain has to let it sink in. However, just staring at a word isn't enough: your brain will get bored and start to think about other things. Stories keep your mind engaged while they subtly repeat and hint at what we want your brain to remember.
 
-** It's easier to associate related and familiar ideas than unrelated ones.
+## It's easier to associate related and familiar ideas than unrelated ones.
 
 Try to remember that "despues" means "later". What does your mind try to do to form this association? You could try staring at the words and repeating them over and over. This kind of study is called "rote learning". It's useful when you need to quickly remember a phone number to call, but it's not as useful for remembering things long-term.
 
 Linkword mnemonics break down this leap between 2 seemingly unrelated words into smaller, easier steps.
 
-; Illustration about the big leap between word and translation compared to small steps with mnemonics.
+<!-- Illustration about the big leap between word and translation compared to small steps with mnemonics. -->
 
-* The 3 Steps of Linkword Activation
+## The 3 Steps of Linkword Activation
 
-** Step 1: Remember the Linkword
+### Step 1: Remember the Linkword
 
 The most important property of a linkword is that it sounds similar to the foreign word you're learning. Since it does, it should be easy to remember it. When you hear the word "sentar", "centaur" should readily come to mind. A good linkword will be effortless to remember when you hear (or read aloud) the foreign word.
 
 In step 1, you shouldn't be worried about remembering the meaning of the foreign word, just the linkword.
 
-** Step 2: Remember the Story
+### Step 2: Remember the Story
 
 Once you've recalled the linkword, it should remind you of a scene and/or story. In our example, "centaur" reminds us of the idea of centaurs living in modern society. You probably have an image of what that would look like right now.
 
 The reason that this happens naturally is because English words, especially familiar ones, tend to have many associations in our brain. You might have seen a movie or read a book with a centaur in it. The story takes advantage of these existing associations to sort of piggy-back its way into your memory.
 
-** Step 3: Remember the Meaning
+### Step 3: Remember the Meaning
 
 Once you remember the story, and the scene it takes place in, the story should remind you of the meaning. What were the centaurs doing in the story? They were having difficulty finding a place to sit.
 
 That's it! Through the 3 steps (Linkword → Story → Meaning) you've gone from "sentar" to "to sit".
 
-* Aren't These Mnemonics Going to Slow Me Down?
+## Aren't These Mnemonics Going to Slow Me Down?
 
 OK, so using linkword mnemonics makes sense for first learning words, but what about when you try to use the language? If you spent the time to remember a story for every word, you wouldn't be able to keep up.
 
@@ -67,9 +65,9 @@ and finally, you'll be able to directly remember the meaning:
 
 → Meaning
 
-; Add an illustration with the intermediate steps fading away.
+<!-- Add an illustration with the intermediate steps fading away. -->
 
-* Can All Words Have Linkword Mnemonics?
+## Can All Words Have Linkword Mnemonics?
 
 After all, I could have just cherry-picked a good example.
 
@@ -79,7 +77,7 @@ In creating mnemonics for Vocabulink, I have so far encountered very few words (
 
 Linkwords are not always easy to come up with. Sometimes you have to get creative or use phrases. Fortunately, the English language is very rich in sounds, and linkwords will eventually present themselves.
 
-* What About Remembering in the Other Direction?
+## What About Remembering in the Other Direction?
 
 Linkword mnemonics are uni-directional by nature. They're not designed to help you remember the foreign word given the familiar meaning you want to express.
 
@@ -87,9 +85,10 @@ It is important to learn to communicate in a foreign language by forming sentenc
 
 Eventually, with enough reviews, you'll remember the meanings of words without using the mnemonic scaffolding. And at that point, when the words are more familiar, you'll be more prepared to make use of them in forming your own sentences.
 
-; * Deep Learning vs. Rote Learning
+<!-- ## Deep Learning vs. Rote Learning -->
 
-* Do Linkword Mnemonics Really Work?
+## Do Linkword Mnemonics Really Work?
 
 Well, what does "sentar" mean? If you managed to remember, then the mnemonic has done its job. Instead of sitting and drilling the word tens of times, you've committed it to memory in just the time it took you to read through the example. More importantly, you'll be more likely to remember what it means when you review it later using spaced repetition.
-; Link to the article on spaced repetition: [[how-does-spaced-repetition-work][spaced repetition]].
+
+<!-- Link to the article on spaced repetition: [spaced-repetition](how-does-spaced-repetition-work). -->

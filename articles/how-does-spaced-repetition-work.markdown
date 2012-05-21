@@ -1,11 +1,9 @@
-#title How Does Spaced Repetition Work?
-#section main
+% How Does Spaced Repetition Work?
+<!-- section: main -->
 
 Once you've learned a word, it's only useful to you if you can recall it when you need it. Spaced repetition keeps words fresh in your mind without excessive effort on your part.
 
-<contents>
-
-* Regular Review, but Only When You Need It
+## Regular Review, but Only When You Need It
 
 What would happen if you tried to review each word you'd learned every day? It would work for a while, but eventually the amount of time it takes would become overwhelming. It might take you a few minutes to review 10 words. But how long will it take you to review 100? 30 minutes? What about 1,000? 5 hours?
 
@@ -13,18 +11,19 @@ Before you know it you would be mentally exhausted and discouraged. One way to a
 
 No matter how strong your will or desire to learn a language, your mind can only focus on intense mental activity for so long. Spaced repetition keeps your daily review to a minimum.
 
-* What Does It Look Like?
+## What Does It Look Like?
 
 Spaced repetition doesn't require a computer. With traditional flashcards, you can make use of spaced repetition through a "memory box". The box is made up of steadily increasing slot sizes.
 
-; +-+--+----+--------+----------------+--------------------------------+
-; | |  |    |        |                |                                |
-; | |  |    |        |                |                                |
-; | |  |    |        |                |                                |
-; | |  |    |        |                |                                |
-; +-+--+----+--------+----------------+--------------------------------+
+<!--
+ +-+--+----+--------+----------------+--------------------------------+
+ | |  |    |        |                |                                |
+ | |  |    |        |                |                                |
+ | |  |    |        |                |                                |
+ | |  |    |        |                |                                |
+ +-+--+----+--------+----------------+--------------------------------+
+-->
 
-<literal>
 <table style="border-collapse: collapse; margin-left: auto; margin-right: auto;">
 <caption style="caption-side: bottom;"><p style="margin-top: 1ex;">an overhead view of a memory box</p></caption>
 <tr>
@@ -35,9 +34,8 @@ Spaced repetition doesn't require a computer. With traditional flashcards, you c
 <td style="width: 16em; height: 10ex; border: 1px solid #000000;"></td>
 </tr>
 </table>
-</literal>
 
-The 1st (leftmost) slot should fit roughly 10 flashcards. The 2nd slot should fit double that (20). The 3rd slot should fit double that again (40), and so on.[1]
+The 1st (leftmost) slot should fit roughly 10 flashcards. The 2nd slot should fit double that (20). The 3rd slot should fit double that again (40), and so on.[^1]
 
 When you first learn a word, you place its flashcard into the 1st (smallest) slot. Each day, you review all of the flashcards in the first slot. Each flashcard that you recall correctly goes into the 2nd slot. If you already had some cards in the second slot, you review 10 of those. Any that were correct move into the 3rd slot, and so on.
 
@@ -53,7 +51,7 @@ But the memory box has several limitations:
  4. It doesn't track your progress. You'd have to do that yourself with a notebook.
  5. It's inefficient. Any time you forget a word, you have to either put it back in the 1st slot or make a judgement call to put it into a higher slot.
 
-* Our Improved Memory Box
+## Our Improved Memory Box
 
 All of these problems can be solved with a computer, and that's what Vocabulink does:
 
@@ -63,12 +61,13 @@ All of these problems can be solved with a computer, and that's what Vocabulink 
  4. We keep a record of every time you've reviewed each word and the grade you gave yourself for how well you remembered the meaning.
  5. The algorithm we use is adaptive. Since we record every review time and grade from the past, the algorithm can take into account your entire review history when determining when to schedule the next review.
 
-Footnotes:
-[1]  Instead of using doubling slot sizes, you could base the sizes on the Fibonacci sequence.
-[2]  By default, we'll continue scheduling reviews for your entire lifetime. But don't worry, words you learn well will become so infrequent that years might pass between reviews.
-[3]  The algorithm we currently use is [[http://www.supermemo.com/english/ol/sm2.htm][Supermemo 2]].
+[^1]:  Instead of using doubling slot sizes, you could base the sizes on the Fibonacci sequence.
+[^2]:  By default, we'll continue scheduling reviews for your entire lifetime. But don't worry, words you learn well will become so infrequent that years might pass between reviews.
+[^3]:  The algorithm we currently use is [Supermemo 2](http://www.supermemo.com/english/ol/sm2.htm).
 
-; * It's Discouraging to Keep Getting Words Wrong (that I Don't Remember)
+<!--
+## It's Discouraging to Keep Getting Words Wrong (that I Don't Remember)
 
-; That's the point of the spaced repetition algorithm. We only give you words for review when we think you're on the brink of forgetting them. Time spent reviewing a word you remember well is time that could be spent on other things.
+That's the point of the spaced repetition algorithm. We only give you words for review when we think you're on the brink of forgetting them. Time spent reviewing a word you remember well is time that could be spent on other things.
+-->
 

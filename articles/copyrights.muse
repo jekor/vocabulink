@@ -1,7 +1,0 @@
-#title Copyright Policy
-
-By submitting content to Vocabulink, you agree to license it under the Creative Commons [[http://creativecommons.org/licenses/by-sa/3.0/][Attribution Share Alike]] license.
-
-This means that all mnemonics on Vocabulink are copyrighted by their original authors, but can be copied, modified, and redistributed as long as you attribute the work to the original author and distribute the resulting work under the Creative Commons Attribution Share Alike or compatible license.
-
-

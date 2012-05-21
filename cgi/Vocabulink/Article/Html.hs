@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -30,6 +30,7 @@ import Vocabulink.Utils hiding (readFile)
 
 import Data.ByteString (readFile)
 import Text.Blaze (unsafeByteString)
+import qualified Text.Blaze.Html5 as Html5
 
 import Prelude hiding (div, span, id, readFile)
 
@@ -61,7 +62,7 @@ articlePage path = do
                     Nothing   -> return mempty
       body <- articleBody a'
       stdPage (articleTitle a') [CSS "article"] mempty $ do
-        div ! class_ "article" $ body
+        Html5.article $ body
         div ! id "comments" $ do
           h3 "Comments"
           comments
@@ -77,7 +78,7 @@ articlesPage = do
                               input ! type_ "submit" ! name "" ! value "Refresh from filesystem."
                   _      -> mempty
   simplePage "Articles" [CSS "article"] $ do
-    div ! class_ "article" $ do
+    div ! id "central-column" $ do
       unordList $ map articleLinkHtml articles
       refresh
 

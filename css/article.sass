@@ -1,4 +1,4 @@
-// Copyright 2008, 2009, 2010, 2011 Chris Forno
+// Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -17,11 +17,29 @@
 
 @import lib.sass
 
-.article
-  width: 50em
+article
+  max-width: 60em
   margin:
     left: auto
     right: auto
+  .footnotes
+    font-size: 0.875em
+  blockquote
+    position: relative
+    min-height: 3ex
+    &:before
+      font-size: 64pt
+      font-family: 'Lucida Console', Monaco, monospace
+      color: #C5C5C5
+      position: absolute
+      content: "“"
+      left: 0
+      top: 0
+    > *
+      margin-left: 48pt
+      margin-right: 48pt
+  a[href="#TOC"]
+    color: #434343
   dl
     border: 3px double #CCC
     padding: 0.667em 0.667em 0 0.667em
@@ -49,49 +67,21 @@
   code
     font-family: Courier New, monospace
     font-weight: bold
-  .linkword-story
-    margin:
-      left: auto
-      right: auto
-    width: 50em
-    position: relative
-    &:before, &:after
-      font-size: 64pt
-      font-family: 'Lucida Console', Monaco, monospace
-      color: #C5C5C5
-      position: absolute
-    &:before
-      content: "“"
-      left: 0
-      top: 0
-    &:after
-      content: "”"
-      right: 0
-      bottom: -34pt
-    blockquote
-      line-height: 1.3
-      min-height: 32pt
-      margin:
-        left: 48pt
-        right: 48pt
-      > *:first-child
-        margin-top: 0
-      > *:last-child
-        margin-bottom: 0
-      textarea
-        width: 100%
-        height: 5em
 
 .contents
+  float: right
+  width: auto
+  max-width: 20em
+  margin:
+    left: 1em
+    bottom: 1em
+  background-color: #E5F5F5
+  padding: 0.667em
   h3
     text-align: center
     margin-bottom: 0.667em
     font-size: 1em
-  width: auto
-  display: inline-block
-  background-color: #E5F5F5
-  padding: 0.667em
-  ol
+  ul
     margin:
       top: 0
       bottom: 0
@@ -99,3 +89,6 @@
       margin:
         top: 0.333em
         bottom: 0.333em
+
+article + #comments
+  max-width: 60em

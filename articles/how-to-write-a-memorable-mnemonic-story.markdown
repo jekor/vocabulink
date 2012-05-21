@@ -1,26 +1,20 @@
-#title How to Write a Memorable Mnemonic Story
-#section main
+% How to Write a Memorable Mnemonic Story
+<!-- section: main -->
 
-<contents>
+<!--
+## Keys to Memorable Mnemonic Stories
 
-; * Keys to Memorable Mnemonic Stories
-
-; unambiguous/essential
-; vivid/concrete
-; interactive/personal
-; ridiculous/imaginative
+- unambiguous/essential
+- vivid/concrete
+- interactive/personal
+- ridiculous/imaginative
+-->
 
 Let's link the word "あるく" (pronounced "ah-roo-koo") to its meaning: "to walk".
 
 Here's our first attempt, using the linkword "ark":
 
-<literal>
-<div class="linkword-story">
-<blockquote>
-Noah walked around the ark.
-</blockquote>
-</div>
-</literal>
+> Noah walked around the ark.
 
 On its own, that would be a pretty weak mnemonic. While it might be somewhat vivid and memorable to you now, you may forget the association at some point. One end of the association is strong: When hearing あるく, you probably will think of "ark", which will probably make you think of Noah. But will you remember that the meaning was "to walk"?
 
@@ -28,19 +22,13 @@ To improve the mnemonic you could have Noah walking around the ark examining it 
 
 Focus on the essence of what "to walk" means to you or think of a way of linking Noah and/or the ark to the very clear, unmistakable act of walking. Then, add vivid detail. Don't be afraid to make the story weird or ridiculous. For example:
 
-<literal>
-<div class="linkword-story">
-<blockquote>
-<p>Imagine that Noah, while on his ark, needed to get some exercise. So he decided to go on walks every morning. But of course the earth was flooded, so he would put on his ark shoes (miniature arks, sort of like clogs) and go for a walk on the water.</p>
-
-<p>These weren't just any walks, they were power walks. You could imagine the water splashing around as Noah furiously tried to walk as fast as possible on the ocean, wearing spandex and listening to his iPod.</p>
-</blockquote>
-</div>
-</literal>
+> Imagine that Noah, while on his ark, needed to get some exercise. So he decided to go on walks every morning. But of course the earth was flooded, so he would put on his ark shoes (miniature arks, sort of like clogs) and go for a walk on the water.
+>
+> These weren't just any walks, they were power walks. You could imagine the water splashing around as Noah furiously tried to walk as fast as possible on the ocean, wearing spandex and listening to his iPod.
 
 It may seem that we've actually introduced even more ways to confuse your memory, but as long as the details of the story enhance the essence of the meaning "to walk", you'll have a much better chance remembering it (even if you remember all of the silly details first).
 
-* Use Concrete Objects
+## Use Concrete Objects
 
 The more concrete an object is, the easier it is to write a linkword story for it. Writing about "trees" is much easier than writing about "agreements".
 
@@ -58,7 +46,7 @@ Using the above, you could enhance the image of the agreement by:
  - Have it be written by hand by more than 1 person, rather than typed up beforehand.
  - Have everyone shake hands over the agreement after signing it, smiling.
 
-* Use Your Imagination
+## Use Your Imagination
 
 If you think your story is too ridiculous or too silly, it's probably good enough to be memorable. If it's not ridiculous or silly, it might not be as good as you think.
 
@@ -66,7 +54,7 @@ You're not trying to win a writing award, you want the story to stick.
 
 Think about the advertisements you see on TV. Most have been created by companies devoted to getting you to remember products. How many of them have silly animated characters, ridiculous premises, or imaginative settings?
 
-* Repetition: A Double-Edged Sword
+## Repetition: A Double-Edged Sword
 
 Don't let the sword become a crutch.
 
@@ -74,7 +62,7 @@ Repetition is a useful tool, and one that you might find yourself using more tha
 
 Like drums in a rock band, it holds the story together, but it can't stand alone. And when it's overused, it's annoying.
 
-* Mnemonics Can Be Long
+## Mnemonics Can Be Long
 
 ...as long as they're not ambiguous.
 
@@ -82,7 +70,7 @@ A story does not need to be short to be memorable. In fact, the opposite can be 
 
 The challenge is to add detail without introducing ambiguity. Balancing on this delicate line takes practice.
 
-* Your Main Adversary: Ambiguity
+## Your Main Adversary: Ambiguity
 
 Specific words overpower general ones.
 
@@ -90,23 +78,23 @@ While writing linkword stories, you'll be locked in a constant fight between ima
 
 Be especially careful of the words you use in the introduction and conclusion of your story (especially the last sentence).
 
-* Deliver a Memorable Punchline
+## Deliver a Memorable Punchline
 
 We tend to remember the beginning and end of a story more than the middle. Make use of this by putting your translation and/or linkword into those positions. Ideally you begin your story with the linkword and put the translation in the punchline.
 
 With a good introduction and a powerful punchline we reduce the risk of ambiguity in the story.
 
-* Activate as Many Senses as Possible
+## Activate as Many Senses as Possible
 
 Say that your linkword was "dough". Pizza dough would be a concrete representation. But Play-Doh might be even better. Since many of us played with it at a young age, we're more likely to remember its vivid colors, unique texture and interesting smell (and possibly taste, depending on how you played with Play-Doh).
 
-* The Practice of Mnemonic Writing
+## The Practice of Mnemonic Writing
 
-** Pace Yourself!
+### Pace Yourself!
 
 In the beginning, writing linkword stories is an addictive challenge. With time though, the challenge might fade into frustration.
 
-* What to Do if You're Stuck
+## What to Do if You're Stuck
 
 It might take a while before you can easily create memorable mnemonics. Don't worry. They will come more easily with time.
 
@@ -114,39 +102,39 @@ It's helpful to start writing as soon as you have a linkword, even if you think 
 
 You'll find that as you begin writing what you thought was a weak mnemonic, the very act of writing activates other regions of your mind, giving you more ideas for embellishment. It seems to be an unfailing trait of the mind that it is very hard to drag ideas from it when staring at a blank page, but that the ideas begin to flow freely once the first word is laid down.
 
-* Take Breaks
+## Take Breaks
 
 If you get stuck on coming up with a mnemonic for one word, try another. I keep a list of at least 10 mnemonics I'm working on at any given time. Sometimes I'll think of a good link word. Other times I'll think of a good story. Sometimes a word will sit for weeks and then a perfect link word and story will come to me in a flash.
 
 It helps to have a list of mnemonics that you're working on. If you can't come up with either a link word or mnemonic after 5 minutes, try another. There are plenty of words out there. Maybe tomorrow or the next day a mnemonic will come to mind immediately. That's how it works for me.
 
-* Writing Good Mnemonics Takes Practice
+## Writing Good Mnemonics Takes Practice
 
 Fortunately, spaced repetition gives us feedback on how well our mnemonics work. By writing mnemonics for words you want to learn, and then studying those words, you can learn from your own experience what works well and what doesn't.
 
-* What to Avoid
+## What to Avoid
 
-** Balance Vividness and Ambiguity
+### Balance Vividness and Ambiguity
 
 Avoid introducing similar meanings in the story if possible. This may be unavoidable in some cases where in English we don't distinguish between 2 meanings. In that case, don't worry about it. Experience will eventually differentiate the meaning. It's better to have some idea of what a word means initially, so that you can learn the nuance of its meaning through reading and listening.
 
 Try using a less-recognizable form of a word if you need to use a comparison. For example, if you're trying to write a story for みず ➝ water, instead of using the word "rain" use "downpour", "drenching", or another word that emphasizes water more than weather.
 
-* Other Notes
+## Other Notes
 
 Make sure that you're conveying the correct meaning of the word. Look through some example sentences in the dictionary to make sure that you're not mistranslating the word or applying native-language meanings that don't apply to the foreign-language word. This is especially important for short, common words.
 
-* What to Do About Abstract Words
+## What to Do About Abstract Words
 
 Some of the most common and useful words in a language are abstract.
 
-** Example Word -> Image Associations (for Abstract Words)
+### Example Word → Image Associations (for Abstract Words)
 
 Look to cliches if you have to.
 
-idea -> light bulb above someone's head
+idea → light bulb above someone's head
 
-* The Primary Criteria
+## The Primary Criteria
 
 The stories must be vivid and memorable.
 
@@ -158,16 +146,16 @@ Part of the fun comes from the challenge.
 
 A good mnemonic story is both vivid and unambiguous.
 
-* Let's Illustrate
+## Let's Illustrate
 
 We'll create a story to link the Spanish word "hecho" to its meaning: done/made.
 
-* Make Sure that You Have a Good Linkword
+## Make Sure that You Have a Good Linkword
 
 "hecho" is pronounced roughly like saying the letters "H.O." in English. For
 our story, we'll use the linkword "achoo" (the sound of a sneeze).
 
-* First Attempt
+## First Attempt
 
 "After he made the sound 'achoo', he was done sneezing."
 
@@ -178,7 +166,7 @@ in English ("done" and "made"), it has some problems. If you tried to study
 Think about the "story". Did you picture anything when you read it? Maybe you
 heard a sneeze, but that's probably all.
 
-* Attack the Senses
+## Attack the Senses
 
 "The small boy made a loud 'achoo'. Everyone around him stopped and looked in
 his direction. 'All done!' the boy exclaimed, exuberantly."
@@ -203,7 +191,7 @@ charged by the energy given off.
 
 The more you can activate your brain with the story, the better.
 
-* Strong Sparks
+## Strong Sparks
 
 Normal, everyday sensory input only create small sparks in the brain. To make
 strong, thunderous sparks, we need extraordinary sensory input.
@@ -214,13 +202,14 @@ you. Do the same with your story.
 
 Instead of a small boy, maybe he's a malnourished street urchin.
 
-; * Chain Lightning
+<!--
+## Chain Lightning
 
-; * First, Make Sure that You Understand the Definition
+## First, Make Sure that You Understand the Definition
 
-; * Layer in Multiple Meanings if Possible
+## Layer in Multiple Meanings if Possible
 
-; * Think of the Story as Uni-directional
+## Think of the Story as Uni-directional
 
-; hecho (Spanish, pronounced roughly like the 2 letters "H.O."), linkword "achoo" (the sound of a sneeze), meaning: done/made.
-
+## hecho (Spanish, pronounced roughly like the 2 letters "H.O."), linkword "achoo" (the sound of a sneeze), meaning: done/made.
+-->
