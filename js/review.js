@@ -69,7 +69,7 @@ function revealLink(link) {
   + '</h1>');
   h1.attr('linkno', link.linkNumber).attr('type', link.linkType);
   h1.find('.foreign').attr('title', link.foreignLanguage).text(link.foreign);
-  h1.find('.familiar').attr('title', link.familiarLanguage).text(link.familiar);
+  h1.find('.familiar').attr('title', link.familiarLanguage).attr('familiar', link.familiar);
   h1.find('.link').attr('linkword', (link.linkword ? link.linkword : ''));
   if (link.pronunciation) {
     var button = $(
