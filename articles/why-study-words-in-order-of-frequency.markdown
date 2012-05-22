@@ -34,6 +34,10 @@ Your interests might be in science fiction, sports, or celebrities. Rather than 
 
 When you actually make use of a language, you'll be using these common words over and over again. They'll become your close friends. These familiar words will appear scattered throughout everything you encounter. They'll provide a context and act as handholds and footholds for tackling the problems of words and sentences you haven't encountered before.
 
+## Communicate with More Confidence
+
+Sometimes there are multiple words for a meaning you're trying to express. If you've studied by frequency, you're more likely to use the most common word. This leads to a higher chance of being understood and reduces the risk of using words that would sound strange to a native speaker in the context you use them in.
+
 ## How Do You Know Which Words Are the Most Common?
 
 Luckily, linguists have been doing this for a while. Computer programs exist that will analyze a large body of text (such as from books or film transcripts). Vocabulink makes use of these "frequency lists" to order the words we introduce to you.
