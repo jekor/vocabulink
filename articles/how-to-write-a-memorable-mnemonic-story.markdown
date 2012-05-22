@@ -94,6 +94,14 @@ With a good introduction and a powerful punchline, you reduce the risk of ambigu
 
 Say that your linkword was "dough". Pizza dough would be a good representation. But Play-Doh might be even better. Since many of us played with it at a young age, we're more likely to remember its vivid colors, unique texture and interesting smell (and possibly taste, depending on how you played with Play-Doh).
 
+### *Italicize* the Linkword
+
+Italicizing a word forces the reader to slow down (perhaps imperceptibly) while reading it. It literally adds temporal emphasis to the word, especially if the reader is subvocalizing.
+
+### **Bold** the Target Word
+
+Seeing the bolded words helps remind the reader, at at least a semi-conscious level, what word or concept the story is trying to enforce. If you find a large chunk of your story without any bolded words, consider carefully if it's worth keeping; it might just be a distraction.
+
 ### Practice!
 
 Writing good mnemonics comes with practice: not just practice of writing, but the practice of using your own mnemonics. Nothing will show you what works and doesn't work better than forgetting your own stories!
