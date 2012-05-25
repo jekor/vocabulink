@@ -1,5 +1,4 @@
 % Why Study Words in Order of Frequency?
-
 <!-- section: main -->
 
 The Oxford English Dictionary defines [171,476 words](http://www.oxforddictionaries.com/page/93) currently in use. That seems like a daunting amount until you realize that the word "the" makes up 7% of the total words we read. Next, the word "of" accounts for 3.5%, "and" makes up another 2.8%, and so on. You only need to know about 135 words to recognize half the words in common written English.
