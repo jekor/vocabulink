@@ -125,7 +125,6 @@ headerBar = do
     div ! id "head-decoration" $ mempty
     div ! id "head-bar" $ do
       searchBox
-      mconcat [a ! href "/link/new" ! class_ "new-link verified" $ string "new link", string " | "]
       review
       maybe loginBox logoutBox member
 

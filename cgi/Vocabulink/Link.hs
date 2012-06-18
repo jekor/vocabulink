@@ -305,6 +305,7 @@ linkLanguages =
 
 createLink :: App CGIResult
 createLink = withRequiredMember $ \m -> do
+  when (memberNumber m /= 1) $ error "Access Denied"
   foreign'     <- getRequiredInput "foreign"
   foreignLang  <- getRequiredInput "foreign-lang"
   familiar     <- getRequiredInput "familiar"
