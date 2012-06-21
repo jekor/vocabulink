@@ -50,7 +50,6 @@ import Vocabulink.Html
 import Vocabulink.Link
 import Vocabulink.Link.Frequency
 import Vocabulink.Link.Html
-import Vocabulink.Link.Pronunciation
 import Vocabulink.Link.Story
 import Vocabulink.Member
 import Vocabulink.Member.Page
@@ -247,8 +246,6 @@ dispatch meth ("link":x:part) =
                    addFrequency n (read list) (read rank) (read freq)
                    outputNothing
                  (_       , _)                 -> outputNotFound
-
-dispatch "GET" ["pronunciations",lang,word] = getPronunciations lang word
 
 -- Searching
 

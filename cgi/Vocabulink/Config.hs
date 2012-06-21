@@ -1,4 +1,4 @@
--- Copyright 2009, 2010, 2011 Chris Forno
+-- Copyright 2009, 2010, 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -37,7 +37,7 @@ configFile = "/etc/vocabulink.conf"
 -- |forceEither $ get|.
 
 requiredConfigVars :: [String]
-requiredConfigVars = [ "dbpassword", "authtokenkey", "forvokey"
+requiredConfigVars = [ "dbpassword", "authtokenkey"
                      , "threads", "maindir", "supportaddress" ]
 
 -- This retrieves the config file and makes sure that it contains all of the

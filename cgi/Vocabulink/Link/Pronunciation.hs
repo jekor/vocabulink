@@ -1,4 +1,4 @@
--- Copyright 2011 Chris Forno
+-- Copyright 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -15,14 +15,10 @@
 -- You should have received a copy of the GNU Affero General Public License
 -- along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-module Vocabulink.Link.Pronunciation (pronounceable, addPronunciation, getPronunciations) where
+module Vocabulink.Link.Pronunciation (pronounceable) where
 
 import Vocabulink.App
-import Vocabulink.CGI
 import Vocabulink.Utils
-
-import System.Exit (ExitCode(..))
-import System.Process (system, readProcess)
 
 import Prelude hiding (writeFile)
 
@@ -37,21 +33,3 @@ pronunciationFile linkNo filetype = do
   -- the upload directory for now.
   dir <- (</> "upload" </> "audio" </> "pronunciation") <$> asks appDir
   return $ dir </> show linkNo <.> filetype
-
-addPronunciation :: Integer -> String -> String -> App (Maybe ())
-addPronunciation linkNo url filetype = do
-  f <- pronunciationFile linkNo filetype
-  s <- liftIO $ system ("wget -q -O " ++ f ++ " " ++ url)
-  case s of
-    ExitSuccess -> return $ Just ()
-    _           -> return Nothing
-
-getPronunciations :: String -> String -> App CGIResult
-getPronunciations lang word = do
-  key <- asks appForvoKey
-  let url = ("http://apifree.forvo.com/key/" ++ key
-          ++ "/format/json/action/word-pronunciations/word/"
-          ++ escapeURIString (\ _ -> False) (encodeString word)
-          ++ "/language/" ++ lang ++ "/order/rate-desc")
-  output <- liftIO $ readProcess "wget" ["-q", "-O", "-", url] ""
-  outputText output

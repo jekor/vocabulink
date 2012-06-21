@@ -165,9 +165,6 @@ footerBar = do
       span ! id "design-attribution" $ do
         string "Design by: "
         a ! href "http://www.designcharisma.com" $ "Design Charisma"
-      span ! id "forvo-attribution" $ do
-        string "Pronunciations by: "
-        a ! href "http://www.forvo.com/" $ "Forvo"
  where articleLinkHtml article =
          a ! href (stringValue $ "/article/" ++ articleFilename article) $
            string $ articleTitle article

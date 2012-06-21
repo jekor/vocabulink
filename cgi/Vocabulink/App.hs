@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -53,7 +53,6 @@ data AppEnv = AppEnv { appDB         :: Handle
                      , appStaticDeps :: [(Dependency, EpochTime)]
                      , appLanguages  :: [(String, String)]
                      , appMember     :: Maybe Member
-                     , appForvoKey   :: String
                      }
 
 -- The App monad is a combination of the CGI and Reader monads.
@@ -102,7 +101,6 @@ runApp :: Handle -- ^ this thread's database connection
 runApp h cp sd ls (AppT a) = do
   let dir   = forceEither $ get cp "DEFAULT" "maindir"
       key   = forceEither $ get cp "DEFAULT" "authtokenkey"
-      forvo = forceEither $ get cp "DEFAULT" "forvokey"
   token <- verifiedAuthToken key
   member <- case token of
               Nothing -> return Nothing
@@ -120,7 +118,6 @@ runApp h cp sd ls (AppT a) = do
                       , appStaticDeps  = sd
                       , appLanguages   = ls
                       , appMember      = member
-                      , appForvoKey    = forvo
                       }
 
 -- Here are some functions that abstract away even having to ask for values
