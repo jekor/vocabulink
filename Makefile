@@ -11,7 +11,7 @@ markdowns := $(shell find -name "*.markdown")
 articles := $(markdowns:.markdown=.html)
 chapters:= $(shell ls handbook/chapters/*.tex)
 
-sync_options := -avz --exclude 'cgi/dist' --exclude 'upload/img/*' --exclude 'upload/audio/pronunciation/*' --exclude '*.sass' --exclude '.sass-cache' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --exclude '._*' --exclude '.DS_Store' --delete articles css etc img js s scripts offline vocabulink.cgi vocabulink.com:vocabulink/
+sync_options := -avz --exclude 'cgi/dist' --exclude '*.sass' --exclude '.sass-cache' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --exclude '._*' --exclude '.DS_Store' --delete articles audio css etc img js s scripts offline vocabulink.cgi vocabulink.com:vocabulink/
 
 all : $(cgi) css js articles handbook offline
 
