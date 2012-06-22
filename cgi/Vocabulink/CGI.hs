@@ -102,7 +102,7 @@ outputError' c m = do
 
 -- TODO: Some of this HTML is duplicated from Page.hs. It would be nice to make
 -- Page.hs not depend on CGI.hs so that I could use its functionality here.
--- More importantly, lib.common.css needs to be included properly using the
+-- More importantly, common.css needs to be included properly using the
 -- dependency mechanisms.
 outputNotFound :: (MonadCGI m, MonadIO m) => m CGIResult
 outputNotFound = do
@@ -116,7 +116,7 @@ outputNotFound = do
     head $ do
       title "Vocabulink: Page Not Found"
       link ! rel "icon" ! type_ "image/png" ! href "http://s.vocabulink.com/img/favicon.png"
-      link ! rel "stylesheet" ! type_ "text/css" ! href "http://s.vocabulink.lan/css/lib.common.css"
+      link ! rel "stylesheet" ! type_ "text/css" ! href "http://s.vocabulink.com/css/common.css"
       style ! type_ "text/css" $ string $ unlines
         ["body {background-color: #2D2D2D; height: auto;}"
         ,"#body {background-color: #FFFFFF; margin-top: 15%; padding-bottom: 0;}"

@@ -2,7 +2,6 @@
 *.jpg
 *.gif
 *.css
-*.js
 *.html
 *.swf
 *.pdf
@@ -28,3 +27,7 @@
 /articles/in-progress
 /wordlists
 /lessons
+/js/external
+/js/compiled
+/css/external
+/css/compiled

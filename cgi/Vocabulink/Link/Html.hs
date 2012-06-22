@@ -44,7 +44,7 @@ newLinkPage = do
   foreignLangs  <- languageMenu $ Left ()
   familiarLangs <- languageMenu $ Right ()
   foreignWord <- getInputDefault "" "foreign"
-  simplePage "Create a New Link" [CSS "lib.link", JS "link"] $ do
+  simplePage "Create a New Link" [CSS "link", JS "link"] $ do
     form ! method "post" ! action "/link/new" $ do
       h1 ! class_ "link edit linkword" $ do
         span ! class_ "foreign" $ do
@@ -103,7 +103,7 @@ linkPage linkNo = do
                          ss <- linkWordStories (linkNumber l')
                          return $ mconcat $ map (\ (n, x, y, z) -> renderStory n x y z) ss
                        else return mempty
-          stdPage (fo ++ " → " ++ fa ++ " — " ++ foLang ++ " to " ++ faLang) [CSS "lib.link", JS "link"] mempty $ do
+          stdPage (fo ++ " → " ++ fa ++ " — " ++ foLang ++ " to " ++ faLang) [CSS "link", JS "link"] mempty $ do
             div ! id "link-head-bar" $ do
               h2 $ a ! href (stringValue $ "/links?ol=" ++ linkForeignLang l' ++ "&dl=" ++ linkFamiliarLang l') $
                 string (foLang ++ " to " ++ faLang ++ ":")
@@ -126,7 +126,7 @@ linkPage linkNo = do
 
 linksPage :: String -> [(PartialLink, Maybe Integer, Bool)] -> App CGIResult
 linksPage title' links = do
-  simplePage title' [JS "link", CSS "lib.link", ReadyJS initJS] $ do
+  simplePage title' [JS "link", CSS "link", ReadyJS initJS] $ do
     partialLinksTable links
  where initJS = unlines
                   ["var options = {};"
@@ -160,7 +160,7 @@ partialLinksTable links = table ! class_ "links" $ do
 languagePairsPage :: App CGIResult
 languagePairsPage = do
   languages' <- (groupBy groupByName . sortBy compareNames) <$> linkLanguages
-  simplePage "Links By Language" [CSS "lib.link"] $ do
+  simplePage "Links By Language" [CSS "link"] $ do
     mconcat $ map renderLanguageGroup $ sortBy compareSize languages'
  where compareNames ((_, ol1), (_, dl1), _) ((_, ol2), (_, dl2), _) =
          if dl1 == dl2

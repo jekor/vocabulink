@@ -1,4 +1,4 @@
--- Copyright 2009, 2010, 2011 Chris Forno
+-- Copyright 2009, 2010, 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -38,7 +38,7 @@ searchPage = do
   q <- getRequiredInput "q"
   links <- linksContaining q
   linksTable <- partialLinksTable' links
-  stdPage (q ++ " - Search Results") [JS "link", CSS "lib.link", CSS "search", ReadyJS initJS] mempty $ do
+  stdPage (q ++ " - Search Results") [JS "link", CSS "link", CSS "search", ReadyJS initJS] mempty $ do
     div ! id "results" $ do
       h2 $ string ("Found " ++ show (length links) ++ " Links Containing \"" ++ q ++ "\"")
       linksTable

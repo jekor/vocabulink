@@ -74,7 +74,7 @@ import Network.URI (URI(..), unEscapeString)
 
 -- When the program starts, it immediately begin listening for connections.
 -- |runSCGIConcurrent'| spawns up to some number of threads. This matches the
--- number that cherokee, running in front of vocabulink.cgi, is configured for.
+-- number that lighttpd, running in front of vocabulink.cgi, is configured for.
 
 -- Before forking, we read a configuration file. We pass this to runApp so that
 -- all threads have access to global configuration information.

@@ -48,8 +48,8 @@ stdPage title' deps head' body' = outputHtml =<< (do
   headerB <- headerBar
   footerB <- footerBar
   member <- asks appMember
-  let deps' = [CSS "lib.common", JS "common"]
-           ++ (isJust member ? [CSS "lib.member", JS "member"] $ [])
+  let deps' = [CSS "common", JS "common"]
+           ++ (isJust member ? [CSS "member", JS "member"] $ [])
            ++ deps
   cssDeps     <- mapM includeDep [ css | css@(CSS _) <- deps' ]
   jsDeps      <- mapM includeDep [ js  |  js@(JS _)  <- deps' ]
