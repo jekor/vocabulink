@@ -118,6 +118,9 @@ headerBar = do
               Nothing -> return mempty
               Just m  -> do box <- reviewBox <$> numLinksToReview m
                             return $ mconcat [box, string " | "]
+  dashboard <- case member of
+                 Nothing -> return mempty
+                 Just _  -> return $ mconcat [a ! href "/dashboard" $ "dashboard", string " | "]
   return $ do
     a ! href "/" ! accesskey "1" $
       img ! class_ "logo" ! alt "Vocabulink: Learn Languages through Fiction"
@@ -126,6 +129,7 @@ headerBar = do
     div ! id "head-bar" $ do
       searchBox
       review
+      dashboard
       maybe loginBox logoutBox member
 
 -- The footer displays a number of common (or what we believe to be common)
