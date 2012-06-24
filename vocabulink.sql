@@ -236,25 +236,12 @@ INSERT INTO language (abbr, name) VALUES
 ('zh','Chinese'),
 ('zu','Zulu');
 
-CREATE TABLE link_type (
-       name TEXT PRIMARY KEY,
-       description TEXT NOT NULL,
-       relation TEXT
-);
-COMMENT ON TABLE link_type IS 'There are different types of links between lexemes. From simple associations (just asserting that a link exists) to full-blown stories with pictures that use a native-language linkword.';
-COMMENT ON COLUMN link_type.relation IS 'For most link types, an individual link carries with it extra information. We use a separate table for each to store the extra information for each link. I considered using PostgreSQL''s inheritance features, but they seem to be problematic and I don''t know how well they perform. More than 1 link type can share the same table.';
-INSERT INTO link_type (name, description, relation)
-     VALUES ('association', 'A simple association with no attached meaning', NULL),
-            ('soundalike', 'A soundalike or borrowed word', NULL),
-            ('linkword', 'A story derived from a native-language linkword', 'link_type_linkword');
-
 CREATE TABLE link (
        link_no SERIAL PRIMARY KEY,
-       foreign_phrase TEXT NOT NULL CHECK (length(foreign_phrase) > 0),
-       familiar_phrase TEXT NOT NULL CHECK (length(familiar_phrase) > 0),
-       foreign_language CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE NOT NULL,
-       familiar_language CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE NOT NULL,
-       link_type TEXT REFERENCES link_type (name) ON UPDATE CASCADE NOT NULL,
+       learn TEXT NOT NULL CHECK (length(foreign_phrase) > 0),
+       known TEXT NOT NULL CHECK (length(familiar_phrase) > 0),
+       learn_lang CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE NOT NULL,
+       known_lang CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE NOT NULL,
        author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE NOT NULL,
        created TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        updated TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
@@ -287,17 +274,9 @@ CREATE TABLE link_linkword (
        linkword TEXT NOT NULL
 );
 
-CREATE RULE "replace linkword" AS
-    ON INSERT TO "link_linkword"
-    WHERE EXISTS (SELECT TRUE FROM link_linkword WHERE link_no = NEW.link_no)
-    DO INSTEAD (UPDATE link_linkword SET linkword = NEW.linkword
-                WHERE link_no = NEW.link_no);
-
-CREATE RULE "update linktype linkword" AS
-    ON INSERT TO "link_linkword"
-    WHERE NOT EXISTS (SELECT TRUE FROM link WHERE link_no = NEW.link_no AND link_type = 'linkword')
-    DO ALSO (UPDATE link SET link_type = 'linkword'
-             WHERE link_no = NEW.link_no);
+CREATE TABLE link_soundalike (
+       link_no INTEGER REFERENCES link (link_no) NOT NULL PRIMARY KEY
+);
 
 CREATE TABLE linkword_story (
        story_no SERIAL PRIMARY KEY,

@@ -100,72 +100,8 @@ function showNewStory() {
   $('form', newStory).minform();
 }
 
-function editFrequency() {
-  // Grab the existing frequency lists.
-  var lang = $('h1 .foreign').attr('lang');
-  $.get('/list/frequency/' + lang)
-   .done(function (lists) {
-     var editor = $(
-       '<form id="frequency-editor" method="post" style="display: none">'
-       + '<button id="new-freq-list" class="light">New List</button> '
-       + '<label>Rank:</label> <input name="rank" size="4" required> '
-       + '<label>Frequency:</label> <input name="frequency" required> '
-       + '<input class="light" type="submit" value="Set Frequency">'
-     + '</form>').appendTo('#link-head-bar').slideDown();
-     var select = $('<select name="list" required style="min-width: 10em"></select>').prependTo(editor);
-     $.each(lists, function (_, list) {
-       var option = $('<option></option>').appendTo(select);
-       option.val(list.number).text(list.name);
-     });
-     editor.attr('action', '/link/' + linkNumber() + '/frequencies');
-     editor.minform().submit(function (e) {
-       e.preventDefault();
-       editor.mask('Sending...');
-       $.post($(this).attr('action'), $(this).serialize())
-        .done(function () {
-          window.location.reload();
-        })
-        .fail(function (xhr) {
-          editor.unmask();
-          V.toastError(xhr.responseText, true);
-        });
-       return false;
-     });
-     editor.find('#new-freq-list').click(function () {
-       var content = $(
-         '<div><h1>New Frequency List</h1>'
-         + '<form method="post">'
-           + '<label>Name:</label> <input name="name" required><br>'
-           + '<label>Description:</label> <input name="description" required>'
-           + '<input type="submit" class="light" value="Add List">'
-         + '</form>'
-       + '</div>');
-       content.find('form').attr('action', '/list/frequency/' + lang);
-       $.modal(content);
-       var modal = $('#simplemodal-container');
-       content.find('form').minform().submit(function (e) {
-         e.preventDefault();
-         modal.mask('Sending...');
-         $.post($(this).attr('action'), $(this).serialize())
-          .done(function () {
-            $.modal.close();
-            V.toastSuccess('List created successfully');
-            $('#frequency-editor').remove();
-            editFrequency();
-          })
-          .fail(function (xhr) {
-            modal.unmask();
-            V.toastError(xhr.responseText, true);
-          });
-         return false;
-       });
-       return false;
-     });
-   });
-}
-
 $(function () {
-  V.annotateLink($('h1.link:visible:not(.edit)'));
+  V.annotateLink($('h1.link:visible'));
 
   $('#pronounce').click(function () {
     $(this).find('audio')[0].play();
@@ -178,97 +114,8 @@ $(function () {
     }
   });
 
-  // Quick hack to allow "admin" edits.
-  if (V.memberName === 'jekor') {
-    $('#rank').click(editFrequency);
-    var edit = function () {
-      var $this = $(this);
-      var save = $this.clone();
-      var text = $this.clone().children().remove().end().text();
-      var input = $('<input>').attr('value', text);
-      var cancel = function () {
-        $this.replaceWith(save);
-        save.click(edit);
-      };
-      input.keyup(function (e) {
-        if (e.keyCode === 27) { // Esc
-          cancel();
-        }
-				if (e.keyCode === 13 || e.keyCode === 10) { // Enter
-          $this.mask('Saving...');
-          if ($this.hasClass('foreign')) {
-            var part = 'foreign';
-          } else if ($this.hasClass('familiar')) {
-            var part = 'familiar';
-          } else if ($this.hasClass('link')) {
-            var part = 'linkword';
-          } else {
-            return false;
-          }
-          $.ajax({'type': 'PUT',
-                  'url':  window.location.pathname + '/' + part,
-                  'data': input.val(),
-                  'contentType': 'text/plain'})
-           .done(function () {
-             window.location.reload();
-           })
-           .fail(function (xhr) {
-             $this.unmask();
-             V.toastError(xhr.responseText, true);
-           });
-        }
-      })
-      input.focusout(cancel);
-      $this.empty().append(input);
-      input.focus().select();
-    }
-    $('.link:not(.edit) .foreign, .link:not(.edit) .familiar, .link:not(.edit) .link').one('click', edit);
-  }
-
   if (V.loggedIn() && $('#linkword-stories').length) {
     showNewStory();
-    $('.linkword-story').each(function () {
-      // Quick hack to allow "admin" edits.
-      if ($(this).find('.username').text() === V.memberName || V.memberName === 'jekor') {
-        var sig = $(this).find('.signature');
-        var editButton = $('<button class="light">Edit</button>');
-        editButton.click(function () {
-          var story = $(this).parents('.linkword-story');
-          var storyNumber = parseInt(story.parent().find('a:first').attr('id'), 10);
-          story.mask('Loading...');
-          var body = $.ajax({ 'type': 'GET'
-                            , 'url': '/link/story/' + storyNumber
-                            , 'success': function (data) {
-                              story.unmask();
-                              story.hide();
-                              var form = $(
-                                '<form class="linkword-story" method="post">'
-                                + '<blockquote>'
-                                  + '<textarea name="story" required></textarea>'
-                                + '</blockquote>'
-                                + '<div class="signature">'
-                                  + '<input type="submit" value="Save" class="light">'
-                                  + '<button class="cancel">cancel</button>'
-                                + '</div>'
-                              + '</form>').insertAfter(story);
-                              form.attr('action', '/link/story/' + storyNumber);
-                              form.find('textarea').text(data);
-                              form.minform();
-                              form.find('textarea').css('height', '10em').markItUp(mySettings);
-                              form.find('.cancel').click(function () {
-                                form.remove();
-                                story.show();
-                              });
-                            }
-                            , 'error': function () {
-                              story.unmask();
-                              alert('Error retrieving story.');
-                            }
-                           });
-        });
-        sig.prepend(editButton);
-      }
-    });
   }
 
   // "add to review"
@@ -288,23 +135,6 @@ $(function () {
        op.text("Failed!");
        V.toastError(xhr.responseText);
      });
-    return false;
-  });
-
-  // "delete link"
-  $('#link-op-delete.enabled').click(function () {
-    var op = $(this);
-    op.mask('Deleting...');
-    $.ajax({'type': 'DELETE'
-           ,'url': '/link/' + linkNumber()
-           ,'success': function () {
-             op.text('Deleted.');
-           }
-           ,'error': function () {
-             op.addClass('failed');
-             op.text('Failed!');
-           }
-          });
     return false;
   });
 });

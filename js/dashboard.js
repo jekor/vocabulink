@@ -56,7 +56,7 @@ $(function () {
        var tbody = reviewedList.find('tbody');
        $.each(stats.reviewed, function (_, stat) {
          var tr = $(
-           '<tr class="partial-link">'
+           '<tr class="inline-link">'
            + '<td><a></a></td>'
            + '<td><b class="grade"></b></td>'
          + '</tr>');
@@ -67,7 +67,7 @@ $(function () {
        var scheduledList = $('<table class="links scheduled"><thead><tr><th>Scheduled</th></tr></thead><tbody></tbody></ol>');
        tbody = scheduledList.find('tbody');
        $.each(stats.scheduled, function (_, stat) {
-         var tr = $('<tr class="partial-link"><td><a></a></td></tr>');
+         var tr = $('<tr class="inline-link"><td><a></a></td></tr>');
          tr.find('a').attr('href', '/link/' + stat.linkNumber).text(stat.foreignPhrase);
          tbody.append(tr);
        });

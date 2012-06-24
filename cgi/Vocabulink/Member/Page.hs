@@ -1,4 +1,4 @@
--- Copyright 2011 Chris Forno
+-- Copyright 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -38,7 +38,6 @@ memberPage username = do
     Nothing -> outputNotFound
     Just m  -> do
       let avatar = fromMaybe mempty (memberAvatar 60 m)
-      links <- mapM renderPartialLink =<< memberLinks (memberNumber m) 0 10
       stories <- latestStories m
       studyStats' <- studyStats m
       stdPage (memberName m ++ "'s Page") [CSS "member-page", CSS "link"] mempty $ do
@@ -53,15 +52,11 @@ memberPage username = do
              h2 "Study Stats"
              studyStats',
              mempty]
-        multiColumn
-          [div $ do
-             h2 $ string ("Latest Links by " ++ memberName m)
-             unordList links ! class_ "links",
-           div $ do
-             h2 $ string ("Latest Stories by " ++ memberName m)
-             case stories of
-               [] -> string "no stories"
-               _  -> unordList stories ! class_ "stories"]
+        div $ do
+          h2 $ string ("Latest Stories by " ++ memberName m)
+          case stories of
+            [] -> string "no stories"
+            _  -> unordList stories ! class_ "stories"
 
 latestStories :: Member -> App [Html]
 latestStories m = map renderStory <$> $(queryTuples'

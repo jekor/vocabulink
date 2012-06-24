@@ -15,7 +15,7 @@
 -- You should have received a copy of the GNU Affero General Public License
 -- along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-module Vocabulink.Config (getConfig, staticDeps, languagesFromDB) where
+module Vocabulink.Config (getConfig, staticDeps, langNameFromAbbr) where
 
 import Vocabulink.App
 import Vocabulink.Utils
@@ -101,6 +101,5 @@ modificationTimes dir ext = do
   modTimes <- mapM (liftM modificationTime . getFileStatus . (dir </>)) files
   return $ zip files modTimes
 
-languagesFromDB :: Handle -> IO [(String, String)]
-languagesFromDB = $(queryTuples "SELECT abbr, name FROM language ORDER BY name")
-
+langNameFromAbbr :: String -> App (Maybe String)
+langNameFromAbbr abbr = $(queryTuple' "SELECT name FROM language WHERE abbr = {abbr}")

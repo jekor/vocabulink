@@ -57,7 +57,6 @@ import Vocabulink.Member.Registration
 import Vocabulink.Metrics
 import Vocabulink.Page
 import Vocabulink.Review
-import Vocabulink.Search
 import Vocabulink.Utils
 
 import Prelude hiding (div, span, id)
@@ -92,8 +91,7 @@ main = do
   sd <- staticDeps cp
   runSCGIConcurrent' forkIO threads (PortNumber 10033) (do
     h <- liftIO $ pgConnect "localhost" (PortNumber 5432) "vocabulink" "vocabulink" pw
-    ls <- liftIO $ languagesFromDB h
-    handleErrors h (runApp h cp sd ls handleRequest))
+    handleErrors h (runApp h cp sd handleRequest))
 
 -- |handleRequest| ``digests'' the requested URI before passing it to the
 --  dispatcher.
@@ -187,32 +185,21 @@ dispatch "POST" ["articles"] = refreshArticles
 -- listing of links. However, the dispatching is complicated by the fact that
 -- members can operate upon links (we need to handle the @POST@ method).
 
--- If we could rely on the @DELETE@ method being supported by all browsers, this
--- would be a little less ugly. However, I've decided to only use @GET@ and
--- @POST@. All other methods are appended as an extra path component (here, as
--- |method'|).\footnote{I'm not 100\% satisfied with this design decision, but I
--- haven't thought of a better way yet.}
-
 -- For clarity, this dispatches:
 
--- GET    /link/new              → form to create a new link
--- TODO: Change to POST /links
--- POST   /link/new              → create a new link
 -- GET    /link/10               → link page
 -- POST   /link/10/stories       → add a linkword story
--- POST   /link/10/pronunciation → add a pronunciation
--- DELETE /link/10               → delete link
--- PUT    /link/10/foreign       → update the foreign side of the link
--- PUT    /link/10/familiar      → update the familiar side of the link
--- PUT    /link/10/linkword      → update the linkword of the link, or add a
---                                 linkword if one didn't exist before
 
--- Creating a new link is a 2-step process. First, the member requests a page
--- on which to enter information about the link. Then they @POST@ the details
--- to establish the link. (Previewing is done through the @GET@ as well.)
-
-dispatch "GET"  ["link","new"] = withRequiredMember $ \ _ -> newLinkPage
-dispatch "POST" ["link","new"] = createLink
+dispatch meth ("link":x:part) =
+  case maybeRead x of
+    Nothing -> outputNotFound
+    Just n  -> case (meth, part) of
+                 ("GET"   , [])                -> linkPage n
+                 ("POST"  , ["stories"])       -> do
+                   story <- getRequiredInput "story"
+                   addStory n story
+                   redirect $ "/link/" ++ show n
+                 (_       , _)                 -> outputNotFound
 
 dispatch meth ["link","story",x] =
   case maybeRead x of
@@ -225,28 +212,6 @@ dispatch meth ["link","story",x] =
                    getRequiredInput "story" >>= editStory n
                    referrerOrVocabulink >>= redirect
                  _     -> outputNotFound
-
-dispatch meth ("link":x:part) =
-  case maybeRead x of
-    Nothing -> outputNotFound
-    Just n  -> case (meth, part) of
-                 ("GET"   , [])                -> linkPage n
-                 ("DELETE", [])                -> deleteLink n
-                 ("PUT"   , ["foreign"])       -> getBody >>= linkUpdateForeign n
-                 ("PUT"   , ["familiar"])      -> getBody >>= linkUpdateFamiliar n
-                 ("PUT"   , ["linkword"])      -> getBody >>= linkAddOrUpdateLinkword n
-                 ("POST"  , ["stories"])       -> do
-                   story <- getRequiredInput "story"
-                   addStory n story
-                   redirect $ "/link/" ++ show n
-                 ("POST"  , ["frequencies"])   -> do
-                   list <- getRequiredInput "list"
-                   rank <- getRequiredInput "rank"
-                   freq <- getRequiredInput "frequency"
-                   addFrequency n (read list) (read rank) (read freq)
-                   outputNothing
-                 (_       , _)                 -> outputNotFound
-
 -- Searching
 
 -- Retrieving a listing of links is easier.
@@ -256,16 +221,23 @@ dispatch "GET" ["links"] = do
   dl <- getInput "dl"
   case (ol, dl) of
     (Just ol', Just dl')  -> do
-      ol'' <- languageNameFromAbbreviation ol'
-      dl'' <- languageNameFromAbbreviation dl'
+      ol'' <- langNameFromAbbr ol'
+      dl'' <- langNameFromAbbr dl'
       case (ol'', dl'') of
-        (Just ol''', Just dl''') -> linksPage ("Links from " ++ ol''' ++ " to " ++ dl''') =<< languagePairLinks ol' dl'
+        (Just ol''', Just dl''') -> do db <- asks appDB
+                                       mn <- memberNumber <$$> asks appMember
+                                       links <- liftIO $ languagePairLinks mn ol' dl' db
+                                       linksPage ("Links from " ++ ol''' ++ " to " ++ dl''') links
         _                        -> outputNotFound
     _                        -> languagePairsPage
 
 -- Site-wide search is done separately for now.
 
-dispatch "GET" ["search"] = searchPage
+dispatch "GET" ["search"] = do
+  q <- getRequiredInput "q"
+  db <- asks appDB
+  links <- liftIO $ linksContaining q db
+  linksPage (q ++ " - Search Results") links
 
 -- Languages
 
@@ -305,12 +277,6 @@ dispatch meth ("review":rpath) = do
       case (meth,rpath) of
         ("GET",  [])           -> reviewPage
         ("GET",  ["next"])     -> nextReview member
-        ("GET",  ["upcoming"]) -> do
-          until' <- getInput "until"
-          until <- case until' of
-                     Nothing -> liftIO getCurrentTime
-                     Just u' -> return $ readTime defaultTimeLocale "%s" u'
-          upcomingReviews member until
         ("GET",  ["stats"])    -> reviewStats member
         ("GET",  ["stats",x])  -> do
           start <- readRequiredInput "start"

@@ -19,8 +19,9 @@
 -- it. We need a way to present links to members for regular (scheduled)
 -- reviews.
 
-module Vocabulink.Review (newReview, nextReview, scheduleNextReview, upcomingReviews
-                         ,reviewPage, reviewStats, dailyReviewStats, detailedReviewStats) where
+module Vocabulink.Review ( newReview, nextReview, scheduleNextReview
+                         , reviewPage, reviewStats, dailyReviewStats, detailedReviewStats
+                         ) where
 
 -- For now, we have only 1 review algorithm (SuperMemo 2).
 
@@ -105,68 +106,41 @@ scheduleNextReview member linkNo recallGrade recallTime reviewedAt = do
 -- others that get left until later. However, in my experience, having the
 -- links displayed in the same order each time is a bigger problem because they
 -- get memorized in groups. For example, one link might cue the recognition for
--- the next link, which is not what we want. A better solution for this would
--- be to introduce a little drift/fuzziness instead of an entire random
--- shuffling.
-
--- TODO: Come up with a less thorough shuffling method than RANDOM().
+-- the next link, which is not what we want.
 
 nextReview :: Member -> App CGIResult
 nextReview member = do
-  rows <- $(queryTuples'
-    "SELECT link_no FROM link_to_review \
+  links <- map linkFromTuple <$> $(queryTuples'
+    "SELECT l.link_no, learn, known, \
+           \learn_lang, known_lang, ll.name, kl.name, \
+           \s.link_no IS NOT NULL, COALESCE(linkword) \
+    \FROM link_to_review l \
+    \INNER JOIN link USING (link_no) \
+    \INNER JOIN language ll ON (ll.abbr = learn_lang) \
+    \INNER JOIN language kl ON (kl.abbr = known_lang) \
+    \LEFT JOIN link_soundalike s USING (link_no) \
+    \LEFT JOIN link_linkword w USING (link_no) \
     \WHERE member_no = {memberNumber member} AND current_timestamp >= target_time \
     \ORDER BY RANDOM()")
-  case rows of
+  case links of
     [] -> outputNotFound
     -- TODO: Make a version of getLink that can retrieve multiple links at once.
     _  -> do
      setHeader "Cache-Control" "no-cache"
-     outputJSON =<< mapM linkJSON =<< (catMaybes <$> mapM getLink rows)
+     outputJSON =<< mapM linkJSON links
  where linkJSON l = do
-         ol <- linkForeignLanguage l
-         dl <- linkFamiliarLanguage l
-         pr <- pronounceable $ linkNumber l
-         let linkWord' = maybe Data.Aeson.Types.Null (\w -> [aesonQQ| <| w |> |]) $ linkWord l
-         return [aesonQQ| {"linkNumber": <| linkNumber l |>
-                          ,"foreign": <| linkForeignPhrase l |>
-                          ,"foreignLang": <| linkForeignLang l |>
-                          ,"foreignLanguage": <| ol |>
-                          ,"familiar": <| linkFamiliarPhrase l |>
-                          ,"familiarLang": <| linkFamiliarLang l |>
-                          ,"familiarLanguage": <| dl |>
-                          ,"linkType": <| linkTypeNameFromType $ linkType l |>
+         pr <- pronounceable $ link_no l
+         let linkWord' = maybe Data.Aeson.Types.Null (\w -> [aesonQQ| <| w |> |]) $ linkword l
+         return [aesonQQ| {"linkNumber": <| link_no l |>
+                          ,"foreign": <| learn l |>
+                          ,"foreignLang": <| learn_lang l |>
+                          ,"foreignLanguage": <| learn_language l |>
+                          ,"familiar": <| known l |>
+                          ,"familiarLang": <| known_lang l |>
+                          ,"familiarLanguage": <| known_language l |>
+                          ,"linkType": <| linkTypeName l |>
                           ,"linkword": <<linkWord'>>
                           ,"pronunciation": <| pr |>
-                          } |]
-
-upcomingReviews :: Member -> UTCTime -> App CGIResult
-upcomingReviews member until' = do
-  rows <- $(queryTuples'
-    "SELECT link_no, target_time FROM link_to_review \
-    \WHERE member_no = {memberNumber member} AND {until'} >= target_time")
-  outputJSON =<< mapM linkJSON =<< (catMaybes <$> mapM linksAndTimes rows)
- where linksAndTimes (l, t) = do
-         link <- getLink l
-         case link of
-           Nothing -> return Nothing
-           Just l' -> return $ Just (l', t)
-       linkJSON (l, t) = do
-         ol <- linkForeignLanguage l
-         dl <- linkFamiliarLanguage l
-         pr <- pronounceable $ linkNumber l
-         let linkWord' = maybe Data.Aeson.Types.Null (\w -> [aesonQQ| <| w |> |]) $ linkWord l
-         return [aesonQQ| {"linkNumber": <| linkNumber l |>
-                          ,"foreign": <| linkForeignPhrase l |>
-                          ,"foreignLang": <| linkForeignLang l |>
-                          ,"foreignLanguage": <| ol |>
-                          ,"familiar": <| linkFamiliarPhrase l |>
-                          ,"familiarLang": <| linkFamiliarLang l |>
-                          ,"familiarLanguage": <| dl |>
-                          ,"linkType": <| linkTypeNameFromType $ linkType l |>
-                          ,"linkword": <<linkWord'>>
-                          ,"pronunciation": <| pr |>
-                          ,"targetTime": <| epochUTC t |>
                           } |]
 
 -- In order to determine the next review interval, the review scheduling
@@ -238,7 +212,7 @@ detailedReviewStats :: Member -> Day -> Day -> String -> App CGIResult
 detailedReviewStats member start end tzOffset = do
   reviews <- $(queryTuples'
     "SELECT link_no, COALESCE(extract(epoch from actual_time))::int, recall_grade, \
-           \foreign_phrase, familiar_phrase, foreign_language, familiar_language, link_type \
+           \learn, known \
     \FROM link_review \
     \INNER JOIN link USING (link_no) \
     \WHERE member_no = {memberNumber member} \
@@ -246,7 +220,7 @@ detailedReviewStats member start end tzOffset = do
     \ORDER BY actual_time")
   scheduled <- $(queryTuples'
     "SELECT link_no, COALESCE(extract(epoch from target_time))::int, \
-           \foreign_phrase, familiar_phrase, foreign_language, familiar_language, link_type \
+           \learn, known \
     \FROM link_to_review \
     \INNER JOIN link USING (link_no) \
     \WHERE member_no = {memberNumber member} \
@@ -257,32 +231,18 @@ detailedReviewStats member start end tzOffset = do
   let r = Data.Aeson.Types.Array r'
       s = Data.Aeson.Types.Array s'
   outputJSON $ [aesonQQ| {"reviewed": <<r>>, "scheduled": <<s>>} |]
- where reviewJSON (linkNo, time, grade, foPhrase, faPhrase, foLang, faLang, type_) = do
-         foLanguage <- fromJust <$> languageNameFromAbbreviation foLang
-         faLanguage <- fromJust <$> languageNameFromAbbreviation faLang
+ where reviewJSON (linkNo, time, grade, learn, known) = do
          return [aesonQQ| {"linkNumber": <| linkNo::Integer |>
                           ,"time": <| (fromJust time)::Integer |>
                           ,"grade": <| (round (grade * 5))::Integer |>
-                          ,"foreignPhrase": <| foPhrase |>
-                          ,"familiarPhrase": <| faPhrase |>
-                          ,"foreignLang": <| foLang |>
-                          ,"foreignLanguage": <| foLanguage |>
-                          ,"familiarLang": <| faLang |>
-                          ,"familiarLanguage": <| faLanguage |>
-                          ,"linkType": <| type_ |>
+                          ,"foreignPhrase": <| learn |>
+                          ,"familiarPhrase": <| known |>
                           } |]
-       scheduledJSON (linkNo, time, foPhrase, faPhrase, foLang, faLang, type_) = do
-         foLanguage <- fromJust <$> languageNameFromAbbreviation foLang
-         faLanguage <- fromJust <$> languageNameFromAbbreviation faLang
+       scheduledJSON (linkNo, time, learn, known) = do
          return [aesonQQ| {"linkNumber": <| linkNo::Integer |>
                           ,"time": <| (fromJust time)::Integer |>
-                          ,"foreignPhrase": <| foPhrase |>
-                          ,"familiarPhrase": <| faPhrase |>
-                          ,"foreignLang": <| foLang |>
-                          ,"foreignLanguage": <| foLanguage |>
-                          ,"familiarLang": <| faLang |>
-                          ,"familiarLanguage": <| faLanguage |>
-                          ,"linkType": <| type_ |>
+                          ,"foreignPhrase": <| learn |>
+                          ,"familiarPhrase": <| known |>
                           } |]
 
 reviewPage :: App CGIResult

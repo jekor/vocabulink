@@ -6,7 +6,7 @@ jses := $(shell find js -maxdepth 1 -name "*.js")
 minjses := js/compiled/common.js js/compiled/link.js js/compiled/member.js js/compiled/raphael.js js/compiled/metrics.js js/compiled/review.js js/compiled/dashboard.js
 sasses := $(shell find css -maxdepth 1 -name "*.sass" | grep -v lib.sass)
 csses := $(sasses:.sass=.css)
-csslibs := css/compiled/common.css css/compiled/link.css css/compiled/member.css css/compiled/metrics.css css/compiled/search.css css/compiled/article.css css/compiled/dashboard.css css/compiled/member-page.css css/compiled/review.css css/compiled/front.css
+csslibs := css/compiled/common.css css/compiled/link.css css/compiled/member.css css/compiled/metrics.css css/compiled/article.css css/compiled/dashboard.css css/compiled/member-page.css css/compiled/review.css css/compiled/front.css
 markdowns := $(shell find -name "*.markdown")
 articles := $(markdowns:.markdown=.html)
 chapters:= $(shell ls handbook/chapters/*.tex)
@@ -36,9 +36,6 @@ css/compiled/member.css : css/link-editor.css css/external/markitup-set.css css/
 	cat $^ > $@
 
 css/compiled/metrics.css : css/metrics.css
-	cat $^ > $@
-
-css/compiled/search.css : css/search.css
 	cat $^ > $@
 
 css/compiled/article.css : css/article.css

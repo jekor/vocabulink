@@ -15,8 +15,8 @@
 -- You should have received a copy of the GNU Affero General Public License
 -- along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-module Vocabulink.Link.Html ( newLinkPage, linkPage, linksPage, languagePairsPage
-                            , renderLink, renderPartialLink, partialLinksTable
+module Vocabulink.Link.Html ( renderLink, linksTable
+                            , linkPage, linksPage, languagePairsPage
                             , wordCloud
                             ) where
 
@@ -39,28 +39,54 @@ import Text.Blaze.Html5.Attributes (preload)
 
 import Prelude hiding (div, span, id, words)
 
-newLinkPage :: App CGIResult
-newLinkPage = do
-  foreignLangs  <- languageMenu $ Left ()
-  familiarLangs <- languageMenu $ Right ()
-  foreignWord <- getInputDefault "" "foreign"
-  simplePage "Create a New Link" [CSS "link", JS "link"] $ do
-    form ! method "post" ! action "/link/new" $ do
-      h1 ! class_ "link edit linkword" $ do
-        span ! class_ "foreign" $ do
-          input ! name "foreign" ! required mempty ! placeholder "Foreign Word" ! tabindex "1" ! value (stringValue foreignWord)
-          br
-          foreignLangs ! name "foreign-lang" ! required mempty
-        span ! class_ "link" $ do
-          input ! name "linkword" ! required mempty ! placeholder "Link Word" ! tabindex "2"
-          br
-          menu (zip activeLinkTypes activeLinkTypes) ! name "link-type" ! required mempty
-        span ! class_ "familiar" $ do
-          input ! name "familiar" ! required mempty ! placeholder "Translation" ! tabindex "3"
-          br
-          familiarLangs ! name "familiar-lang" ! required mempty
-      p ! style "text-align: center" $
-        input ! type_ "submit" ! class_ "light" ! value "Save" ! tabindex "4"
+-- Displaying Links
+
+-- <h1 class="link linkword">
+--     <span class="foreign" title="Esperanto">nur</span>
+--     <span class="link" title="linkword">newer</span>
+--     <span class="familiar" title="English">only</span>
+-- </h1>
+
+-- <h2 class="link soundalike">
+--     <span class="foreign" title="Esperanto">lingvo</span>
+--     <span class="link" title="soundalike"></span>
+--     <span class="familiar" title="English">language</span>
+-- </h2>
+
+renderLink :: Link -> Bool -> App Html
+renderLink link pronounceable' = do
+  return $ h1 ! class_ (stringValue $ "link " ++ linkTypeName link) $ do
+    span ! class_ "foreign" ! customAttribute "lang" (stringValue $ learn_lang link) ! title (stringValue $ learn_language link) $ do
+      string $ learn link
+      pronunciation
+    span ! class_ "link" ! title (stringValue $ linkTypeName link) $
+      renderLinkExtra link
+    span ! class_ "familiar" ! customAttribute "lang" (stringValue $ known_lang link) ! title (stringValue $ known_language link) $ string $ known link
+ where renderLinkExtra :: Link -> Html
+       renderLinkExtra link = case linkword link of
+                                Nothing -> mempty
+                                Just w  -> string w
+       pronunciation = if pronounceable'
+                         then button ! id "pronounce" ! class_ "button light" $ do
+                                audio ! preload "auto" $ do
+                                  source ! src (stringValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (link_no link) ++ ".ogg") $ mempty
+                                  source ! src (stringValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (link_no link) ++ ".mp3") $ mempty
+                                img ! src "http://s.vocabulink.com/img/icon/audio.png"
+                         else mempty
+
+linksTable :: [Link] -> Html
+linksTable links = table ! class_ "links" $ do
+  thead $ do
+    tr $ do
+      th "Foreign"
+      th "Familiar"
+      th "Link Type"
+  tbody $ mconcat $ map linkRow links
+ where linkRow link = let url = "/link/" ++ show (link_no link) in
+         tr ! class_ (stringValue $ "inline-link " ++ (linkTypeName link)) $ do
+           td $ a ! href (stringValue url) $ string $ learn link
+           td $ a ! href (stringValue url) $ string $ known link
+           td $ a ! href (stringValue url) $ string $ linkTypeName link
 
 -- Each link gets its own URI and page. Most of the extra code in the following is
 -- for handling the display of link operations (``review'', ``delete'', etc.),
@@ -72,62 +98,71 @@ newLinkPage = do
 linkPage :: Integer -> App CGIResult
 linkPage linkNo = do
   memberNo <- memberNumber <$$> asks appMember
-  l <- getLink linkNo
-  case l of
+  db <- asks appDB
+  row <- liftIO $ linkDetails linkNo db
+  case row of
     Nothing -> outputNotFound
-    Just l' -> do
-      viewable <- canView l'
-      if not viewable
-        then outputNotFound
-        else do
-          let owner' = maybe False (linkAuthor l' ==) memberNo
-          ops <- linkOperations l'
-          hasPronunciation <- pronounceable linkNo
-          foLang <- linkForeignLanguage l'
-          faLang <- linkFamiliarLanguage l'
-          let fo = linkForeignPhrase l'
-              fa = linkFamiliarPhrase l'
-          row <- $(queryTuple' "SELECT root_comment \
-                               \FROM link_comment \
-                               \WHERE link_no = {linkNo}")
-          comments <- case row of
-                        Just root  -> renderComments root
-                        Nothing    -> return mempty
-          renderedLink <- renderLink l' hasPronunciation
-          -- Only worry about 1 listed frequency for now.
-          rank <- $(queryTuple' "SELECT MIN(rank) \
-                                \FROM link_frequency \
-                                \WHERE link_no = {linkNo}")
-          stories <- if isLinkword l'
-                       then do
-                         ss <- linkWordStories (linkNumber l')
-                         return $ mconcat $ map (\ (n, x, y, z) -> renderStory n x y z) ss
-                       else return mempty
-          stdPage (fo ++ " → " ++ fa ++ " — " ++ foLang ++ " to " ++ faLang) [CSS "link", JS "link"] mempty $ do
-            div ! id "link-head-bar" $ do
-              h2 $ a ! href (stringValue $ "/links?ol=" ++ linkForeignLang l' ++ "&dl=" ++ linkFamiliarLang l') $
-                string (foLang ++ " to " ++ faLang ++ ":")
-              div ! id "link-ops" $ do
-                span ! id "rank" $ do
-                  case fromJust rank of
-                    Just r  -> string $ "Rank: " ++ show r
-                    Nothing -> if memberNo == Just 1 || memberNo == Just 2
-                                 then string "Rank: ?"
-                                 else mempty
-                ops
-            renderedLink
-            when (isLinkword l') $
-              div ! id "linkword-stories" $ do
-                div ! class_ "header" $ h2 "Linkword Stories:"
-                stories
-            div ! id "comments" $ do
-              h3 "Comments"
-              comments
+    Just link -> do
+      hasPronunciation <- pronounceable linkNo
+      ops <- linkOperations link
+      row <- $(queryTuple' "SELECT root_comment \
+                           \FROM link_comment \
+                           \WHERE link_no = {linkNo}")
+      comments <- case row of
+                    Just root  -> renderComments root
+                    Nothing    -> return mempty
+      stories <- do ss <- linkWordStories linkNo
+                    return $ mconcat $ map (\ (n, x, y, z) -> renderStory n x y z) ss
+      rendered <- renderLink link hasPronunciation
+      stdPage ((learn link) ++ " → " ++ known link ++ " — " ++ learn_language link ++ " to " ++ known_language link) [CSS "link", JS "link"] mempty $ do
+        div ! id "link-head-bar" $ do
+          h2 $ a ! href (stringValue $ "/links?ol=" ++ learn_lang link ++ "&dl=" ++ known_lang link) $
+            string (learn_language link ++ " to " ++ known_language link ++ ":")
+          div ! id "link-ops" $ do
+            ops
+        rendered
+        div ! id "linkword-stories" $ do
+          div ! class_ "header" $ h2 "Linkword Stories:"
+          stories
+        div ! id "comments" $ do
+          h3 "Comments"
+          comments
 
-linksPage :: String -> [(PartialLink, Maybe Integer, Bool)] -> App CGIResult
+linkOperations :: Link -> App Html
+linkOperations link = do
+  member <- asks appMember
+  reviewing' <- reviewing link
+  let review  = linkAction "add to review" "add"
+  return $ do
+    case (member, reviewing') of
+      (_,       True) -> review False ! title "already reviewing this link"
+      (Just _,  _)    -> review True  ! id "link-op-review"
+                                      ! title "add this link to be quizzed on it later"
+      (Nothing, _)    -> review False ! title "login to review"
+ where reviewing :: Link -> App Bool
+       reviewing l = do
+         member <- asks appMember
+         case member of
+           Nothing -> return False
+           Just m  -> (/= []) <$> $(queryTuples'
+             "SELECT link_no FROM link_to_review \
+             \WHERE member_no = {memberNumber m} AND link_no = {link_no l} \
+             \LIMIT 1")
+
+linkAction :: String -> String -> Bool -> Html
+linkAction label' icon' enabled =
+  let icon = "http://s.vocabulink.com/img/icon/" ++
+             icon' ++
+             (enabled ? "" $ "-disabled") ++
+             ".png" in
+  a ! class_ (stringValue $ "operation login-required " ++ (enabled ? "enabled" $ "disabled")) ! href "" $ do
+    img ! src (stringValue icon) ! class_ "icon"
+    string label'
+
+linksPage :: String -> [Link] -> App CGIResult
 linksPage title' links = do
   simplePage title' [JS "link", CSS "link", ReadyJS initJS] $ do
-    partialLinksTable links
+    linksTable links
  where initJS = unlines
                   ["var options = {};"
                   ,"var pageHash = /^#page(\\d+)$/.exec(window.location.hash);"
@@ -139,27 +174,10 @@ linksPage title' links = do
                   ,"});"
                   ]
 
-partialLinksTable :: [(PartialLink, Maybe Integer, Bool)] -> Html
-partialLinksTable links = table ! class_ "links" $ do
-  thead $ do
-    tr $ do
-      th "Foreign"
-      th "Familiar"
-      th "Link Type"
-      th "Reviewing"
-      th "Rank"
-  tbody $ mconcat $ map linkRow links
- where linkRow (link, rank, reviewing) = let url = "/link/" ++ show (linkNumber $ pLink link) in
-         tr ! class_ (stringValue $ "partial-link " ++ (linkTypeName $ pLink link)) $ do
-           td $ a ! href (stringValue url) $ string $ linkForeignPhrase $ pLink link
-           td $ a ! href (stringValue url) $ string $ linkFamiliarPhrase $ pLink link
-           td $ a ! href (stringValue url) $ string $ linkTypeName $ pLink link
-           td $ a ! href (stringValue url) ! class_ (stringValue (reviewing ? "reviewing" $ "")) $ string (reviewing ? "yes" $ "no")
-           td $ a ! href (stringValue url) $ string $ maybe "" show rank
-
 languagePairsPage :: App CGIResult
 languagePairsPage = do
-  languages' <- (groupBy groupByName . sortBy compareNames) <$> linkLanguages
+  db <- asks appDB
+  languages' <- liftIO ((groupBy groupByName . sortBy compareNames) <$> linkLanguages db)
   simplePage "Links By Language" [CSS "link"] $ do
     mconcat $ map renderLanguageGroup $ sortBy compareSize languages'
  where compareNames ((_, ol1), (_, dl1), _) ((_, ol2), (_, dl2), _) =
@@ -177,159 +195,6 @@ languagePairsPage = do
          a ! class_ "faint-gradient-button blue language-button" ! href (stringValue $ "/links?ol=" ++ oa ++ "&dl=" ++ da) $
            string $ on
 
-linkOperations :: Link -> App Html
-linkOperations link = do
-  member <- asks appMember
-  deletable  <- canDelete link
-  reviewing' <- reviewing link
-  let review  = linkAction "add to review" "add"
-  return $ do
-    case (member, reviewing') of
-      (_,       True) -> review False ! title "already reviewing this link"
-      (Just _,  _)    -> review True  ! id "link-op-review"
-                                      ! title "add this link to be quizzed on it later"
-      (Nothing, _)    -> review False ! title "login to review"
-    when deletable $ linkAction "delete link" "delete" True
-                       ! id "link-op-delete"
-                       ! title "delete this link (it will still be visibles to others who are reviewing it)"
- where reviewing :: Link -> App Bool
-       reviewing l = do
-         member <- asks appMember
-         case member of
-           Nothing -> return False
-           Just m  -> (/= []) <$> $(queryTuples'
-             "SELECT link_no FROM link_to_review \
-             \WHERE member_no = {memberNumber m} AND link_no = {linkNumber l} \
-             \LIMIT 1")
-
--- Each lexeme needs to be annotated with its language (to aid with
--- disambiguation, searching, and sorting). Most members are going to be
--- studying a single language, and it would be cruel to make them scroll
--- through a huge list of languages each time they wanted to create a new link.
--- So what we do is sort languages that the member has already used to the top
--- of the list (based on frequency).
-
--- This takes an either parameter to signify whether you want foreign language
--- (Left) or familiar language (Right). They are sorted separately.
-
-languageMenu :: Either () () -> App Html
-languageMenu side = do
-  member <- asks appMember
-  allLangs <- asks appLanguages
-  langs <- case member of
-    Nothing -> return []
-    Just m  -> case side of
-      Left  _ -> $(queryTuples'
-        "SELECT abbr, name \
-        \FROM link, language \
-        \WHERE language.abbr = link.foreign_language \
-          \AND link.author = {memberNumber m} \
-        \GROUP BY foreign_language, abbr, name \
-        \ORDER BY MAX(created) DESC")
-      Right _ -> $(queryTuples'
-        "SELECT abbr, name \
-        \FROM link, language \
-        \WHERE language.abbr = link.familiar_language \
-          \AND link.author = {memberNumber m} \
-        \GROUP BY familiar_language, abbr, name \
-        \ORDER BY MAX(created) DESC")
-  -- Default to English as the familiar language to make things easier and more
-  -- obvious for new users.
-  let langs' = case (langs, side) of
-                 ([], Right _) -> [("en", "English")]
-                 _             -> langs
-      prompt = case side of
-                 Left _  -> "Pick foreign language"
-                 Right _ -> "Pick familiar language"
-  return $ menu $ langs' ++ [("", prompt)] ++ allLangs
-
--- Displaying Links
-
--- <h1 class="link linkword">
---     <span class="foreign" title="Esperanto">nur</span>
---     <span class="link" title="linkword">newer</span>
---     <span class="familiar" title="English">only</span>
--- </h1>
-
--- <h2 class="link soundalike">
---     <span class="foreign" title="Esperanto">lingvo</span>
---     <span class="link" title="soundalike"></span>
---     <span class="familiar" title="English">language</span>
--- </h2>
-
--- We really shouldn't need to allow for passing class names. However, the !
--- function has a problem in that it will add another class attribute instead of
--- extending the existing one, which at least jquery doesn't like.
-
-renderLink :: Link -> Bool -> App Html
-renderLink link pronounceable' = do
-  foLang <- linkForeignLanguage link
-  faLang <- linkFamiliarLanguage link
-  (prevLink, nextLink) <- adjacentLinkNumbers link
-  return $ h1 ! class_ (stringValue $ "link " ++ linkTypeName link) $ do
-    a ! href (stringValue $ show prevLink) ! class_ "prev"
-      ! title (stringValue $ "Previous " ++ foLang ++ "→" ++ faLang ++ " Link") $ mempty
-    span ! class_ "foreign" ! customAttribute "lang" (stringValue $ linkForeignLang link) ! title (stringValue foLang) $ do
-      string $ linkForeignPhrase link
-      pronunciation
-    span ! class_ "link" ! title (stringValue $ linkTypeName link) $
-      renderLinkType (linkType link)
-    span ! class_ "familiar" ! customAttribute "lang" (stringValue $ linkFamiliarLang link) ! title (stringValue faLang) $ string $ linkFamiliarPhrase link
-    a ! href (stringValue $ show nextLink) ! class_ "next"
-      ! title (stringValue $ "Next " ++ foLang ++ "→" ++ faLang ++ " Link") $ mempty
- where renderLinkType :: LinkType -> Html
-       renderLinkType (Linkword word) = string word
-       renderLinkType _               = mempty
-       pronunciation = if pronounceable'
-                         then button ! id "pronounce" ! class_ "button light" $ do
-                                audio ! preload "auto" $ do
-                                  source ! src (stringValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".ogg") $ mempty
-                                  source ! src (stringValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".mp3") $ mempty
-                                img ! src "http://s.vocabulink.com/img/icon/audio.png"
-                         else mempty
-
-renderPartialLink :: PartialLink -> App Html
-renderPartialLink (PartialLink l) = do
-  foLang <- linkForeignLanguage l
-  faLang <- linkFamiliarLanguage l
-  return $
-    a ! class_ (stringValue $ "partial-link " ++ linkTypeName l)
-      ! href (stringValue $ "/link/" ++ show (linkNumber l))
-      ! title (stringValue $ foLang ++ " → " ++ faLang) $ do
-      span ! class_ "foreign" $ string $ linkForeignPhrase l
-      string " → "
-      span ! class_ "familiar" $ string $ linkFamiliarPhrase l
-
--- Displaying an entire link involves not just drawing a graphical
--- representation of the link but displaying its type-level details as well.
-
-displayLink :: Link -> App Html
-displayLink l = do
-  renderedLink <- renderLink l False
-  return $ do
-    renderedLink
-    div ! class_ "link-details htmlfrag" $ linkTypeHtml (linkType l)
-
-linkTypeHtml :: LinkType -> Html
-linkTypeHtml _ = mempty
-
--- Each link can be ``operated on''. It can be reviewed (added to the member's
--- review set) and deleted (marked as deleted). In the future, I expect
--- operations such as ``tag'', ``rate'', etc.
-
--- The |Bool| parameter indicates whether or not the currently logged-in member
--- (if the client is logged in) is the owner of the link.
-
-linkAction :: String -> String -> Bool -> Html
-linkAction label' icon' enabled =
-  let icon = "http://s.vocabulink.com/img/icon/" ++
-             icon' ++
-             (enabled ? "" $ "-disabled") ++
-             ".png" in
-  a ! class_ (stringValue $ "operation login-required " ++ (enabled ? "enabled" $ "disabled")) ! href "" $ do
-    img ! src (stringValue icon) ! class_ "icon"
-    string label'
-
 -- Generate a cloud of words from links in the database.
 
 data WordStyle = WordStyle (Float, Float) (Float, Float) Int Int
@@ -338,7 +203,7 @@ data WordStyle = WordStyle (Float, Float) (Float, Float) Int Int
 wordCloud :: Int -> Int -> Int -> Int -> Int -> Int -> App Html
 wordCloud n width' height' fontMin fontMax numClasses = do
   words <- $(queryTuples'
-    "SELECT foreign_phrase, link_no FROM link \
+    "SELECT learn, link_no FROM link \
     \WHERE NOT deleted AND link_no IN \
      \(SELECT DISTINCT link_no FROM linkword_story) \
     \ORDER BY random() LIMIT {n}")
