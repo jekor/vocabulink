@@ -3,10 +3,10 @@
 cgi := vocabulink.cgi
 hses := cgi/Vocabulink.hs $(shell find cgi/Vocabulink -name "*.hs")
 jses := $(shell find js -maxdepth 1 -name "*.js")
-minjses := js/compiled/common.js js/compiled/link.js js/compiled/member.js js/compiled/raphael.js js/compiled/metrics.js js/compiled/review.js js/compiled/dashboard.js
+minjses := js/compiled/common.js js/compiled/link.js js/compiled/member.js js/compiled/review.js js/compiled/dashboard.js
 sasses := $(shell find css -maxdepth 1 -name "*.sass" | grep -v lib.sass)
 csses := $(sasses:.sass=.css)
-csslibs := css/compiled/common.css css/compiled/link.css css/compiled/member.css css/compiled/metrics.css css/compiled/article.css css/compiled/dashboard.css css/compiled/member-page.css css/compiled/review.css css/compiled/front.css
+csslibs := css/compiled/common.css css/compiled/link.css css/compiled/member.css css/compiled/article.css css/compiled/dashboard.css css/compiled/member-page.css css/compiled/review.css css/compiled/front.css
 markdowns := $(shell find -name "*.markdown")
 articles := $(markdowns:.markdown=.html)
 chapters:= $(shell ls handbook/chapters/*.tex)
@@ -35,9 +35,6 @@ css/compiled/link.css : css/link.css
 css/compiled/member.css : css/link-editor.css css/external/markitup-set.css css/external/markitup-skin.css
 	cat $^ > $@
 
-css/compiled/metrics.css : css/metrics.css
-	cat $^ > $@
-
 css/compiled/article.css : css/article.css
 	cat $^ > $@
 
@@ -64,24 +61,14 @@ js/compiled/link.js : js/link.js js/external/longtable.js
 	cat $^ | jsmin > $@
 
 # This is for email-verified members.
-js/compiled/member.js : js/external/jquery.markitup.js js/external/markdown.set.js js/external/showdown.js js/ajax.js js/external/chartviz.js js/comment.js js/link-editor.js
+js/compiled/member.js : js/external/jquery.markitup.js js/external/markdown.set.js js/external/showdown.js js/ajax.js js/comment.js js/link-editor.js
 	cat $^ | jsmin > $@
 
 js/compiled/review.js : js/review.js js/external/jquery.hotkeys.js
 	cat $^ | jsmin > $@
 
-js/compiled/raphael.js : js/external/raphael.js
-	cat $^ | jsmin > $@
-
-js/compiled/metrics.js : js/metrics.js
-	cat $^ | jsmin > $@
-
 js/compiled/dashboard.js : js/external/drcal.js js/dashboard.js
 	cat $^ | jsmin > $@
-
-# TODO: Switch these to git submodules?
-js/external/chartviz.js : /home/jekor/project/chartviz/chartviz.js
-	cp $^ $@
 
 js/external/minform.js : /home/jekor/project/minform/minform.js
 	cp $^ $@
@@ -92,7 +79,7 @@ js/external/longtable.js : /home/jekor/project/longtable/longtable.js
 js/external/drcal.js : /home/jekor/project/drcal/drcal.js
 	cp $^ $@
 
-# TODO: Add command to fetch raphael, jquery, jquery plugins, showdown, etc. into external/
+# TODO: Add command to fetch jquery, jquery plugins, showdown, etc. into external/
 
 handbook : handbook/handbook.pdf
 

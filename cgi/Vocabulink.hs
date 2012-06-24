@@ -54,7 +54,6 @@ import Vocabulink.Link.Story
 import Vocabulink.Member
 import Vocabulink.Member.Page
 import Vocabulink.Member.Registration
-import Vocabulink.Metrics
 import Vocabulink.Page
 import Vocabulink.Review
 import Vocabulink.Utils
@@ -347,16 +346,6 @@ dispatch meth ("comment":x:meth') =
     Just n  -> case (meth, meth') of
                  ("POST", ["reply"]) -> replyToComment n
                  (_     , _)         -> outputNotFound
-
--- Administrative Pages
-
-dispatch "GET" ("admin":xs) = do
-  memberNo <- memberNumber <$$> asks appMember
-  case memberNo of
-    Just 1 -> case xs of
-                ["metrics"] -> metricsPage
-                _           -> outputNotFound
-    _      -> outputUnauthorized
 
 -- Everything Else
 
