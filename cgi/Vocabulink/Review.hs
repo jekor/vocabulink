@@ -231,18 +231,18 @@ detailedReviewStats member start end tzOffset = do
   let r = Data.Aeson.Types.Array r'
       s = Data.Aeson.Types.Array s'
   outputJSON $ [aesonQQ| {"reviewed": <<r>>, "scheduled": <<s>>} |]
- where reviewJSON (linkNo, time, grade, learn, known) = do
+ where reviewJSON (linkNo, time, grade, learn', known') = do
          return [aesonQQ| {"linkNumber": <| linkNo::Integer |>
                           ,"time": <| (fromJust time)::Integer |>
                           ,"grade": <| (round (grade * 5))::Integer |>
-                          ,"foreignPhrase": <| learn |>
-                          ,"familiarPhrase": <| known |>
+                          ,"foreignPhrase": <| learn' |>
+                          ,"familiarPhrase": <| known' |>
                           } |]
-       scheduledJSON (linkNo, time, learn, known) = do
+       scheduledJSON (linkNo, time, learn', known') = do
          return [aesonQQ| {"linkNumber": <| linkNo::Integer |>
                           ,"time": <| (fromJust time)::Integer |>
-                          ,"foreignPhrase": <| learn |>
-                          ,"familiarPhrase": <| known |>
+                          ,"foreignPhrase": <| learn' |>
+                          ,"familiarPhrase": <| known' |>
                           } |]
 
 reviewPage :: App CGIResult

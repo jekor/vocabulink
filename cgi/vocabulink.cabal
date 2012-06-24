@@ -48,7 +48,7 @@ Executable vocabulink.cgi
                  SHA,
                  split,
                  template-haskell,
-                 templatepg >= 0.2,
+                 templatepg >= 0.2.2,
                  text,
                  time,
                  unix,
@@ -62,4 +62,4 @@ Executable vocabulink.cgi
                  TemplateHaskell,
                  TypeSynonymInstances,
                  QuasiQuotes
-  GHC-Options:   -Wall -fno-warn-type-defaults -threaded -O2
+  GHC-Options:   -Wall -fno-warn-type-defaults -fno-warn-unused-do-bind -threaded -O2

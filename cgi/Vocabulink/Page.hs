@@ -104,6 +104,7 @@ includeDep d = do
         JS  js  -> script ! src (toValue $ "http://s.vocabulink.com/js/" ++ js ++ ".js?" ++ v) 
                           $ mempty
         ReadyJS _ -> error "Can't include inline JS."
+        InlineCSS _ -> error "Can't include inline CSS."
 
 -- The standard header bar shows the Vocabulink logo (currently just some
 -- text), a list of hyperlinks, a search box, and either a login/sign up button

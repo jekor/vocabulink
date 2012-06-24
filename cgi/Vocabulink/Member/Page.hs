@@ -17,13 +17,11 @@
 
 -- | Member Page
 
-module Vocabulink.Member.Page (memberPage) where
+module Vocabulink.Member.Page (memberPage, dashboardPage) where
 
 import Vocabulink.App
 import Vocabulink.CGI
 import Vocabulink.Html
-import Vocabulink.Link
-import Vocabulink.Link.Html
 import Vocabulink.Member
 import Vocabulink.Page
 import Vocabulink.Utils
@@ -75,3 +73,8 @@ studyStats m = do
   return $ tableOfPairs [("# of links in review", prettyPrint (numLinks::Integer))
                         ,("# of reviews", prettyPrint (numReviews::Integer))
                         ]
+
+dashboardPage :: App CGIResult
+dashboardPage = withRequiredMember $ \_ -> do
+  stdPage "Dashboard" [JS "dashboard", CSS "dashboard"] mempty $ do
+    mempty

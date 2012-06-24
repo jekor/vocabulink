@@ -63,9 +63,9 @@ renderLink link pronounceable' = do
       renderLinkExtra link
     span ! class_ "familiar" ! customAttribute "lang" (toValue $ known_lang link) ! title (toValue $ known_language link) $ toHtml $ known link
  where renderLinkExtra :: Link -> Html
-       renderLinkExtra link = case linkword link of
-                                Nothing -> mempty
-                                Just w  -> toHtml w
+       renderLinkExtra link' = case linkword link' of
+                                 Nothing -> mempty
+                                 Just w  -> toHtml w
        pronunciation = if pronounceable'
                          then button ! id "pronounce" ! class_ "button light" $ do
                                 audio ! preload "auto" $ do
@@ -105,10 +105,10 @@ linkPage linkNo = do
     Just link -> do
       hasPronunciation <- pronounceable linkNo
       ops <- linkOperations link
-      row <- $(queryTuple' "SELECT root_comment \
-                           \FROM link_comment \
-                           \WHERE link_no = {linkNo}")
-      comments <- case row of
+      row' <- $(queryTuple' "SELECT root_comment \
+                            \FROM link_comment \
+                            \WHERE link_no = {linkNo}")
+      comments <- case row' of
                     Just root  -> renderComments root
                     Nothing    -> return mempty
       stories <- do ss <- linkWordStories linkNo

@@ -45,7 +45,6 @@ import Vocabulink.Article.Html
 import Vocabulink.CGI
 import Vocabulink.Comment
 import Vocabulink.Config
-import Vocabulink.Dashboard
 import Vocabulink.Html
 import Vocabulink.Link
 import Vocabulink.Link.Frequency
@@ -189,17 +188,6 @@ dispatch "POST" ["articles"] = refreshArticles
 -- GET    /link/10               → link page
 -- POST   /link/10/stories       → add a linkword story
 
-dispatch meth ("link":x:part) =
-  case maybeRead x of
-    Nothing -> outputNotFound
-    Just n  -> case (meth, part) of
-                 ("GET"   , [])                -> linkPage n
-                 ("POST"  , ["stories"])       -> do
-                   story <- getRequiredInput "story"
-                   addStory n story
-                   redirect $ "/link/" ++ show n
-                 (_       , _)                 -> outputNotFound
-
 dispatch meth ["link","story",x] =
   case maybeRead x of
     Nothing -> outputNotFound
@@ -211,7 +199,17 @@ dispatch meth ["link","story",x] =
                    getRequiredInput "story" >>= editStory n
                    referrerOrVocabulink >>= redirect
                  _     -> outputNotFound
--- Searching
+
+dispatch meth ("link":x:part) =
+  case maybeRead x of
+    Nothing -> outputNotFound
+    Just n  -> case (meth, part) of
+                 ("GET"   , [])                -> linkPage n
+                 ("POST"  , ["stories"])       -> do
+                   story <- getRequiredInput "story"
+                   addStory n story
+                   redirect $ "/link/" ++ show n
+                 (_       , _)                 -> outputNotFound
 
 -- Retrieving a listing of links is easier.
 
@@ -230,7 +228,7 @@ dispatch "GET" ["links"] = do
         _                        -> outputNotFound
     _                        -> languagePairsPage
 
--- Site-wide search is done separately for now.
+-- Searching
 
 dispatch "GET" ["search"] = do
   q <- getRequiredInput "q"

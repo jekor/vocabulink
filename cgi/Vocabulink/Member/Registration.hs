@@ -33,7 +33,7 @@ import Vocabulink.Page
 import Vocabulink.Utils
 
 import Prelude hiding (div, id, span)
-import Network.URI (parseURI, query)
+import Network.URI (parseURI)
 
 -- Once a user registers, they can log in. However, they won't be able to use
 -- most member-specific functions until they've confirmed their email address.
@@ -128,7 +128,7 @@ login = do
     _         -> do -- error "Username and password do not match (or don't exist)."
       uri' <- parseURI <$> referrerOrVocabulink
       case uri' of
-        Just uri -> let query' = case query uri of
+        Just uri -> let query' = case uriQuery uri of
                                    "" -> "?badlogin"
                                    q' -> "?" ++ q' ++ "&badlogin" in
                     redirect $ show $ uri {uriQuery = query'}

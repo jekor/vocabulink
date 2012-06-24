@@ -23,7 +23,6 @@ module Vocabulink.Link ( Link(..), linkDetails, linkFromTuple
                        , linkLanguages, linkTypeName
                        ) where
 
-import Vocabulink.Member
 import Vocabulink.Utils
 
 data Link = Link { link_no    :: Integer
