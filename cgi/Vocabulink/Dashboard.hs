@@ -1,4 +1,4 @@
--- Copyright 2011 Chris Forno
+-- Copyright 2011, 2012 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -20,7 +20,6 @@ module Vocabulink.Dashboard ( dashboardPage
 
 import Vocabulink.App
 import Vocabulink.CGI
-import Vocabulink.Html
 import Vocabulink.Member
 import Vocabulink.Page
 import Vocabulink.Utils

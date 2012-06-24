@@ -54,16 +54,16 @@ renderStory :: Integer -- ^ story number
             -> Html -- ^ output block
 renderStory n s member edited =
   div ! class_ "linkword-story-container" $ do
-    a ! id (stringValue $ show n) $ mempty
+    a ! id (toValue n) $ mempty
     div ! class_ "linkword-story" $ do
       blockquote $ markdownToHtml s
       div ! class_ "signature" $ do
         fromJust $ memberAvatar 32 member
         div ! class_ "details" $ do
-          a ! class_ "username" ! href (stringValue $ "/user/" ++ memberName member)
-            $ string (memberName member)
+          a ! class_ "username" ! href (toValue $ "/user/" ++ memberName member)
+            $ toHtml (memberName member)
           br
-          span ! class_ "date" $ string $ prettyPrint edited
+          span ! class_ "date" $ toHtml $ prettyPrint edited
 
 getStory :: Integer -- ^ story number
          -> App (Maybe String) -- ^ unformatted body

@@ -386,19 +386,19 @@ frontPage = do
              div ! class_ "column" $ do
                h2 $ do
                  strong "1"
-                 string "Outrageous Stories"
+                 "Outrageous Stories"
                p "We use fictional stories to make new words stick. They might seem silly at first, but they're surprisingly effective."
                p $ a ! href "article/how-do-linkword-mnemonics-work" $ "How do they work?"
              div ! class_ "column" $ do
                h2 $ do
                  strong "2"
-                 string "Spaced Repetition"
+                 "Spaced Repetition"
                p "It's tedious to drill the same flashcards day after day. We use tested algorithms to keep quizzes to a minimum."
                p $ a ! href "article/how-does-spaced-repetition-work" $ "How does it work?"
              div ! class_ "column" $ do
                h2 $ do
                  strong "3"
-                 string "Important Words"
+                 "Important Words"
                p "Don't waste time learning words you'll rarely, if ever, use. We introduce words in order of how common they are."
                p $ a ! href "article/why-study-words-in-order-of-frequency" $ "Why study this way?" ]
 

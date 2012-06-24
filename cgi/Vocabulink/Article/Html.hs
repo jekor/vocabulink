@@ -84,4 +84,4 @@ articlesPage = do
 
 articleLinkHtml :: Article -> Html
 articleLinkHtml article =
-  a ! href (stringValue $ "/article/" ++ articleFilename article) $ string $ articleTitle article
+  a ! href (toValue $ "/article/" ++ articleFilename article) $ toHtml $ articleTitle article

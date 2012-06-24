@@ -1,5 +1,5 @@
 Name:          Vocabulink
-Version:       2012.5.15
+Version:       2012.6.24
 Cabal-Version: >= 1.2
 License:       OtherLicense
 License-File:  ../COPYING
@@ -25,7 +25,7 @@ Executable vocabulink.cgi
                  aeson-qq,
                  applicative-extras,
                  base >= 4,
-                 blaze-html >= 0.4,
+                 blaze-html >= 0.4.3 && < 0.5,
                  bytestring,
                  cgi >= 3001.1.8.2,
                  ConfigFile,

@@ -43,9 +43,9 @@ memberPage username = do
       stdPage (memberName m ++ "'s Page") [CSS "member-page", CSS "link"] mempty $ do
         div ! id "avatar" $ do
           avatar
-          span ! class_ "username" $ string $ memberName m
+          span ! class_ "username" $ toHtml $ memberName m
           when isSelf $ do br
-                           span $ do string "Change your avatar at "
+                           span $ do "Change your avatar at "
                                      a ! href "http://gravatar.com" $ "gravatar.com"
         multiColumn
           [div $ do
@@ -53,9 +53,9 @@ memberPage username = do
              studyStats',
              mempty]
         div $ do
-          h2 $ string ("Latest Stories by " ++ memberName m)
+          h2 $ toHtml ("Latest Stories by " ++ memberName m)
           case stories of
-            [] -> string "no stories"
+            [] -> "no stories"
             _  -> unordList stories ! class_ "stories"
 
 latestStories :: Member -> App [Html]
@@ -63,7 +63,7 @@ latestStories m = map renderStory <$> $(queryTuples'
   "SELECT story_no, link_no, story FROM linkword_story \
   \WHERE author = {memberNumber m} \
   \ORDER BY edited DESC LIMIT 10")
- where renderStory (sn, ln, s) = a ! href (stringValue $ "/link/" ++ show ln ++ "#" ++ show sn)
+ where renderStory (sn, ln, s) = a ! href (toValue $ "/link/" ++ show ln ++ "#" ++ show sn)
                                    $ markdownToHtml s
 
 studyStats :: Member -> App Html

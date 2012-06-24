@@ -55,7 +55,7 @@ stdPage title' deps head' body' = outputHtml =<< (do
   jsDeps      <- mapM includeDep [ js  |  js@(JS _)  <- deps' ]
   return $ docTypeHtml $ do
     head $ do
-      title $ string title'
+      title $ toHtml title'
       link ! rel "icon" ! type_ "image/png" ! href "http://s.vocabulink.com/img/favicon.png"
       mconcat cssDeps
       inlineCSS $ intercalate "\n" [ css | InlineCSS css <- deps' ]
@@ -77,12 +77,12 @@ stdPage title' deps head' body' = outputHtml =<< (do
                  , "};"
                  ]
        readyJS js = inlineJS $ "(function ($) {$(function () {" ++ js ++ "})})(jQuery);"
-       inlineCSS = (style ! type_ "text/css") . string
+       inlineCSS = (style ! type_ "text/css") . toHtml
 
 -- Often we just need a simple page where the title and header are the same.
 
 simplePage :: String -> [Dependency] -> Html -> App CGIResult
-simplePage t deps body' = stdPage t deps mempty $ mappend (h1 $ string t) body'
+simplePage t deps body' = stdPage t deps mempty $ mappend (h1 $ toHtml t) body'
 
 -- Each dependency is expressed as the path from the root of the static files
 -- subdomain (for now, @s.vocabulink.com@) to the file. Do not include the file
@@ -98,11 +98,11 @@ includeDep d = do
     Nothing -> inlineJS $ "alert('Dependency \"" ++ show d ++"\" not found.');"
     Just v  ->
       case d of
-        CSS css -> link ! href (stringValue $ "http://s.vocabulink.com/css/" ++ css ++ ".css?" ++ v)
+        CSS css -> link ! href (toValue $ "http://s.vocabulink.com/css/" ++ css ++ ".css?" ++ v)
                         ! rel "stylesheet"
                         ! type_ "text/css"
-        JS  js  -> script ! src (stringValue $ "http://s.vocabulink.com/js/" ++ js ++ ".js?" ++ v) $
-                     mempty
+        JS  js  -> script ! src (toValue $ "http://s.vocabulink.com/js/" ++ js ++ ".js?" ++ v) 
+                          $ mempty
         ReadyJS _ -> error "Can't include inline JS."
 
 -- The standard header bar shows the Vocabulink logo (currently just some
@@ -117,10 +117,10 @@ headerBar = do
   review <- case member of
               Nothing -> return mempty
               Just m  -> do box <- reviewBox <$> numLinksToReview m
-                            return $ mconcat [box, string " | "]
+                            return $ mconcat [box, " | "]
   dashboard <- case member of
                  Nothing -> return mempty
-                 Just _  -> return $ mconcat [a ! href "/dashboard" $ "dashboard", string " | "]
+                 Just _  -> return $ mconcat [a ! href "/dashboard" $ "dashboard", " | "]
   return $ do
     a ! href "/" ! accesskey "1" $
       img ! class_ "logo" ! alt "Vocabulink: Learn Languages through Fiction"
@@ -142,8 +142,8 @@ languageLinks = do
                           \ORDER BY freq DESC LIMIT 11")
   return $ map languageLink rows' ++ [a ! href "/links" $ "more..."]
  where languageLink (abbr', name') =
-         a ! href (stringValue $ "/links?ol=" ++ fromJust abbr' ++ "&dl=en") $
-           string $ fromJust name'
+         a ! href (toValue $ "/links?ol=" ++ fromJust abbr' ++ "&dl=en")
+           $ toHtml $ fromJust name'
 
 footerBar :: App Html
 footerBar = do
@@ -167,11 +167,11 @@ footerBar = do
     p $ do
       copy
       span ! id "design-attribution" $ do
-        string "Design by: "
+        "Design by: "
         a ! href "http://www.designcharisma.com" $ "Design Charisma"
  where articleLinkHtml article =
-         a ! href (stringValue $ "/article/" ++ articleFilename article) $
-           string $ articleTitle article
+         a ! href (toValue $ "/article/" ++ articleFilename article)
+           $ toHtml $ articleTitle article
 
 -- We want a copyright notice at the bottom of every page. Since this is a
 -- copyright notice for dynamic content, we want it to be up-to-date with the
@@ -181,8 +181,8 @@ copyrightNotice :: IO Html
 copyrightNotice = do
   year <- currentYear
   return $ span ! class_ "copyright" $ do
-    string "Copyright 2008–"
-    string (show year ++ " ")
+    "Copyright 2008–"
+    toHtml (show year ++ " ")
     a ! href "http://jekor.com/" $ "Chris Forno"
 
 -- The following are just login and signup buttons.
@@ -190,7 +190,7 @@ copyrightNotice = do
 loginBox :: Html
 loginBox = span ! class_ "auth-box login" $ do
   a ! id "login-button" ! href "" $ "Log in"
-  string " | "
+  " | "
   a ! id "signup-button" ! href "" $ "Sign up"
 
 -- For logged-in members, we provide a logout button (with an indicator of your
@@ -198,7 +198,7 @@ loginBox = span ! class_ "auth-box login" $ do
 
 logoutBox :: Member -> Html
 logoutBox member = form ! class_ "auth-box logout" ! action "/member/logout" ! method "post" $ do
-  a ! href (stringValue $ "/user/" ++ memberName member) $ (string $ memberName member)
+  a ! href (toValue $ "/user/" ++ memberName member) $ (toHtml $ memberName member)
   input ! type_ "submit" ! id "logout-button" ! class_ "button dark" ! value "Log Out"
 
 -- Students with a goal in mind will want to search for words they're studying
@@ -209,14 +209,14 @@ searchBox :: Html
 searchBox = form ! class_ "search-box" ! action "/search" $ do
   div $ do
     input ! type_ "search" ! name "q" ! accesskey "s"
-    string " "
+    " "
     input ! type_ "submit" ! class_ "button dark" ! value "Search"
 
 reviewBox :: Integer -- ^ the number of links due for review (presumably from numLinksToReview)
           -> Html
 reviewBox n = a ! href "/review" ! class_ "review-box" $ message n
   where message 1 = strong "1" >> " link to review"
-        message _ = strong (string $ show n) >> " links to review"
+        message _ = strong (toHtml n) >> " links to review"
 
 -- This retrievs the number of links that a user has for review right now.
 
@@ -273,11 +273,11 @@ pager pg n total = do
   return $ p ! class_ "pager" $
     span ! class_ "controls" $ do
       if pg > 1
-        then a ! href (stringValue $ path ++ prev) ! class_ "prev" $ "Previous"
+        then a ! href (toValue $ path ++ prev) ! class_ "prev" $ "Previous"
         else span ! class_ "prev" $ "Previous"
-      string " "
+      " "
       if pg * n < total
-        then a ! href (stringValue $ path ++ next) ! class_ "next" $ "Next"
+        then a ! href (toValue $ path ++ next) ! class_ "next" $ "Next"
         else span ! class_ "next" $ "Next"
 
 -- Creating the query string involves keeping the existing query string intact as

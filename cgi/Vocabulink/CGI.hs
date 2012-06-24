@@ -62,7 +62,7 @@ import Network.CGI hiding (getInput, readInput, getBody, Html, output, outputNot
 import qualified Network.CGI as CGI
 import Network.CGI.Monad (CGIT(..))
 import Network.CGI.Protocol (CGIResult(..))
-import Text.Blaze.Html5 (docTypeHtml, head, body, title, style, link, string, stringValue)
+import Text.Blaze.Html5 (docTypeHtml, head, body, title, style, link)
 import Text.Blaze.Html5.Attributes (rel)
 import Text.Blaze.Renderer.Utf8 (renderHtml)
 import Text.Regex
@@ -117,7 +117,7 @@ outputNotFound = do
       title "Vocabulink: Page Not Found"
       link ! rel "icon" ! type_ "image/png" ! href "http://s.vocabulink.com/img/favicon.png"
       link ! rel "stylesheet" ! type_ "text/css" ! href "http://s.vocabulink.com/css/common.css"
-      style ! type_ "text/css" $ string $ unlines
+      style ! type_ "text/css" $ toHtml $ unlines
         ["body {background-color: #2D2D2D; height: auto;}"
         ,"#body {background-color: #FFFFFF; margin-top: 15%; padding-bottom: 0;}"
         ,"#message {width: 55em; margin-left: auto; margin-right: auto; padding-top: 5ex; padding-bottom: 5ex;}"
@@ -132,18 +132,18 @@ outputNotFound = do
           h1 "Page Not Found"
           p "The page you're looking for does not exist. You probably ended up here because of:"
           unordList $ case referrer of
-                        Nothing -> [string "a mis-typed address"
-                                   ,string "an out-of-date bookmark"
+                        Nothing -> [ "a mis-typed address"
+                                   , "an out-of-date bookmark"
                                    ]
                         Just _  -> if internal
-                                     then [string "an error on our part (a broken link)"]
-                                     else [string "an incorrect referral to this site (a broken link)"]
+                                     then ["an error on our part (a broken link)"]
+                                     else ["an incorrect referral to this site (a broken link)"]
           p "You might find one of the following useful:"
           unordList
-            [mconcat [string "Return to the ", a ! href "http://www.vocabulink.com/" $ "homepage", string "."]
+            [mconcat ["Return to the ", a ! href "http://www.vocabulink.com/" $ "homepage", "."]
             ,case referrer of
-                Nothing -> mconcat [string "View the list of ", a ! href "http://www.vocabulink.com/links" $ "available languages", string "."]
-                Just r  -> mconcat [string "Go ", a ! href (stringValue r) $ "back", string "."]
+                Nothing -> mconcat ["View the list of ", a ! href "http://www.vocabulink.com/links" $ "available languages", "."]
+                Just r  -> mconcat ["Go ", a ! href (toValue r) $ "back", "."]
             ]
       script ! src "http://www.google-analytics.com/ga.js" $ mempty
 

@@ -40,13 +40,13 @@ commentBox :: Comment -> App Html
 commentBox c = do
   let indent = show (fromIntegral (commentLevel c) * (1.3 :: Double)) ++ "em"
   return $
-    div ! id (stringValue $ "comment-" ++ show (commentNo c))
+    div ! id (toValue $ "comment-" ++ show (commentNo c))
         ! class_ "comment"
-        ! customAttribute "comment" (stringValue $ show $ commentNo c)
-        ! style (stringValue $ "margin-left: " ++ indent) $ do
+        ! customAttribute "comment" (toValue $ commentNo c)
+        ! style (toValue $ "margin-left: " ++ indent) $ do
       div ! class_ "metadata" $ do
-        span ! class_ "username" $ string $ commentUsername c
-        span ! class_ "timestamp" $ string $ prettyPrint (commentTime c)
+        span ! class_ "username" $ toHtml $ commentUsername c
+        span ! class_ "timestamp" $ toHtml $ prettyPrint (commentTime c)
       gravatar 48 $ commentEmail c
       button ! class_ "reply light" $ "Reply"
       div ! class_ "speech-bubble left body" $ markdownToHtml (commentBody c)
@@ -99,7 +99,7 @@ renderComments root = do
                else map (\c -> c {commentLevel = commentLevel c - 1}) cs -- pseudo root
   invitation <- invitationLink "Comment"
   cs'' <- mapM commentBox cs'
-  return $ div ! id (stringValue $ "comments-" ++ show root) ! class_ "comments" $
+  return $ div ! id (toValue $ "comments-" ++ show root) ! class_ "comments" $
     mconcat (cs'' ++ [invitation])
 
 -- Replying to a comment is also a complex matter (are you noticing a trend
@@ -142,11 +142,11 @@ invitationLink text = do
   member <- asks appMember
   case member of
     Nothing -> do
-      return $ a ! class_ "login-required" ! href "" $ string ("Login to " ++ text)
+      return $ a ! class_ "login-required" ! href "" $ toHtml ("Login to " ++ text)
     Just m  -> case memberEmail m of
                  Nothing -> do
-                   return $ a ! class_ "verified" ! href "" $
-                              string ("Verify Email to " ++ text)
+                   return $ a ! class_ "verified" ! href ""
+                              $ toHtml ("Verify Email to " ++ text)
                  Just _  -> return mempty
 
 contactUs :: App CGIResult

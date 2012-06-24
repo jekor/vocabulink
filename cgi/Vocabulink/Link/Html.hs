@@ -55,22 +55,22 @@ import Prelude hiding (div, span, id, words)
 
 renderLink :: Link -> Bool -> App Html
 renderLink link pronounceable' = do
-  return $ h1 ! class_ (stringValue $ "link " ++ linkTypeName link) $ do
-    span ! class_ "foreign" ! customAttribute "lang" (stringValue $ learn_lang link) ! title (stringValue $ learn_language link) $ do
-      string $ learn link
+  return $ h1 ! class_ (toValue $ "link " ++ linkTypeName link) $ do
+    span ! class_ "foreign" ! customAttribute "lang" (toValue $ learn_lang link) ! title (toValue $ learn_language link) $ do
+      toHtml $ learn link
       pronunciation
-    span ! class_ "link" ! title (stringValue $ linkTypeName link) $
+    span ! class_ "link" ! title (toValue $ linkTypeName link) $
       renderLinkExtra link
-    span ! class_ "familiar" ! customAttribute "lang" (stringValue $ known_lang link) ! title (stringValue $ known_language link) $ string $ known link
+    span ! class_ "familiar" ! customAttribute "lang" (toValue $ known_lang link) ! title (toValue $ known_language link) $ toHtml $ known link
  where renderLinkExtra :: Link -> Html
        renderLinkExtra link = case linkword link of
                                 Nothing -> mempty
-                                Just w  -> string w
+                                Just w  -> toHtml w
        pronunciation = if pronounceable'
                          then button ! id "pronounce" ! class_ "button light" $ do
                                 audio ! preload "auto" $ do
-                                  source ! src (stringValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (link_no link) ++ ".ogg") $ mempty
-                                  source ! src (stringValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (link_no link) ++ ".mp3") $ mempty
+                                  source ! src (toValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (link_no link) ++ ".ogg") $ mempty
+                                  source ! src (toValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (link_no link) ++ ".mp3") $ mempty
                                 img ! src "http://s.vocabulink.com/img/icon/audio.png"
                          else mempty
 
@@ -83,10 +83,10 @@ linksTable links = table ! class_ "links" $ do
       th "Link Type"
   tbody $ mconcat $ map linkRow links
  where linkRow link = let url = "/link/" ++ show (link_no link) in
-         tr ! class_ (stringValue $ "inline-link " ++ (linkTypeName link)) $ do
-           td $ a ! href (stringValue url) $ string $ learn link
-           td $ a ! href (stringValue url) $ string $ known link
-           td $ a ! href (stringValue url) $ string $ linkTypeName link
+         tr ! class_ (toValue $ "inline-link " ++ (linkTypeName link)) $ do
+           td $ a ! href (toValue url) $ toHtml $ learn link
+           td $ a ! href (toValue url) $ toHtml $ known link
+           td $ a ! href (toValue url) $ toHtml $ linkTypeName link
 
 -- Each link gets its own URI and page. Most of the extra code in the following is
 -- for handling the display of link operations (``review'', ``delete'', etc.),
@@ -116,8 +116,8 @@ linkPage linkNo = do
       rendered <- renderLink link hasPronunciation
       stdPage ((learn link) ++ " → " ++ known link ++ " — " ++ learn_language link ++ " to " ++ known_language link) [CSS "link", JS "link"] mempty $ do
         div ! id "link-head-bar" $ do
-          h2 $ a ! href (stringValue $ "/links?ol=" ++ learn_lang link ++ "&dl=" ++ known_lang link) $
-            string (learn_language link ++ " to " ++ known_language link ++ ":")
+          h2 $ a ! href (toValue $ "/links?ol=" ++ learn_lang link ++ "&dl=" ++ known_lang link)
+             $ toHtml $ learn_language link ++ " to " ++ known_language link ++ ":"
           div ! id "link-ops" $ do
             ops
         rendered
@@ -155,9 +155,9 @@ linkAction label' icon' enabled =
              icon' ++
              (enabled ? "" $ "-disabled") ++
              ".png" in
-  a ! class_ (stringValue $ "operation login-required " ++ (enabled ? "enabled" $ "disabled")) ! href "" $ do
-    img ! src (stringValue icon) ! class_ "icon"
-    string label'
+  a ! class_ (toValue $ ("operation login-required "::String) ++ (enabled ? "enabled" $ "disabled")) ! href "" $ do
+    img ! src (toValue icon) ! class_ "icon"
+    toHtml label'
 
 linksPage :: String -> [Link] -> App CGIResult
 linksPage title' links = do
@@ -188,12 +188,12 @@ languagePairsPage = do
        languageSize = sum . map (\(_, _, c) -> c)
        groupByName ((_, _), (_, dl1), _) ((_, _), (_, dl2), _) = dl1 == dl2
        renderLanguageGroup g = div ! class_ "group-box languages" $ do
-         h2 $ string $ "in " ++ (groupLanguage g) ++ ":"
+         h2 $ toHtml $ "in " ++ (groupLanguage g) ++ ":"
          multiColumnList 3 $ map renderLanguage g
        groupLanguage = (\((_, _), (_, n), _) -> n) . head
        renderLanguage ((oa, on), (da, _), _) =
-         a ! class_ "faint-gradient-button blue language-button" ! href (stringValue $ "/links?ol=" ++ oa ++ "&dl=" ++ da) $
-           string $ on
+         a ! class_ "faint-gradient-button blue language-button" ! href (toValue $ "/links?ol=" ++ oa ++ "&dl=" ++ da)
+           $ toHtml $ on
 
 -- Generate a cloud of words from links in the database.
 
@@ -215,10 +215,10 @@ wordCloud n width' height' fontMin fontMax numClasses = do
        wordTag (word, linkNo) (WordStyle (x, y) _ classNum fontSize) =
          let style' = "font-size: " ++ show fontSize ++ "px; "
                    ++ "left: " ++ show x ++ "%; " ++ "top: " ++ show y ++ "%;" in
-         a ! href (stringValue $ "/link/" ++ show linkNo)
-           ! class_ (stringValue $ "class-" ++ show classNum)
-           ! style (stringValue style')
-           $ string word
+         a ! href (toValue $ "/link/" ++ show linkNo)
+           ! class_ (toValue $ "class-" ++ show classNum)
+           ! style (toValue style')
+           $ toHtml word
        wordStyle :: String -> State (StdGen, [WordStyle]) (Maybe WordStyle)
        wordStyle word = do
          let fontRange = fontMax - fontMin

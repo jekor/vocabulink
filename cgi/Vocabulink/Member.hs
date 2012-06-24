@@ -69,7 +69,7 @@ memberFromTuple (n, u, e) = Member { memberNumber = n
 memberAvatar :: Int -- ^ size (square) in pixels
              -> Member
              -> Maybe Html
-memberAvatar size' member = (\ e -> a ! href (stringValue $  "/user/" ++ memberName member)
+memberAvatar size' member = (\ e -> a ! href (toValue $ "/user/" ++ memberName member)
                                       $ gravatar size' e) <$> memberEmail member
 
 -- | Only perform the given action if the user is authenticated and has
@@ -88,14 +88,14 @@ gravatar :: Int -- ^ size (square) in pixels
          -> String -- ^ email address
          -> Html
 gravatar size' email =
-  img ! width (stringValue $ show size')
-      ! height (stringValue $ show size')
+  img ! width (toValue size')
+      ! height (toValue size')
       ! class_ "avatar"
-      ! src (stringValue $ G.gravatar G.GravatarOptions {G.gSize = Just (G.Size size')
-                                                        ,G.gDefault = Just G.Wavatar
-                                                        ,G.gForceDefault = G.ForceDefault False
-                                                        ,G.gRating = Just G.X}
-                                      (pack $ map toLower email))
+      ! src (toValue $ G.gravatar G.GravatarOptions {G.gSize = Just (G.Size size')
+                                                    ,G.gDefault = Just G.Wavatar
+                                                    ,G.gForceDefault = G.ForceDefault False
+                                                    ,G.gRating = Just G.X}
+                                  (pack $ map toLower email))
 
 -- The gravatar library will generate the entire URL, but sometimes we just
 -- need the hash. Rather than implement the hashing ourselves, we'll dissect

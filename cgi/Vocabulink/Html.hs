@@ -26,8 +26,10 @@
 
 module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList, tableOfPairs
                        , menu, markdownToHtml, inlineJS
+                       {- Text.Blaze -}
+                       , toHtml, toValue
                        {- Text.Blaze.Html5 -}
-                       , Html, (!), string, stringValue, preEscapedString, customAttribute
+                       , Html, (!), preEscapedString, customAttribute
                        , div, p, h1, h2, h3, hr, blockquote, script
                        , span, a, img, br, strong
                        , table, thead, tbody, tfoot, tr, td, th
@@ -41,7 +43,8 @@ module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList
 
 import Vocabulink.Utils
 
-import Text.Blaze.Html5 ( Html, (!), string, stringValue, preEscapedString, customAttribute
+import Text.Blaze (toHtml, toValue)
+import Text.Blaze.Html5 ( Html, (!), preEscapedString, customAttribute
                         , div, p, h1, h2, h3, hr, blockquote, script
                         , span, a, img, br, strong
                         , table, thead, tbody, tfoot, tr, td, th
@@ -75,7 +78,7 @@ multiColumn cls =
               2 -> "two"
               3 -> "three"
               _ -> "unsupported" in
-  div ! class_ (stringValue $ num ++ "-column") $
+  div ! class_ (toValue $ num ++ ("-column"::String)) $
     mconcat (map (div ! class_ "column") cls)
 
 multiColumnList :: Int -> [Html] -> Html
@@ -91,8 +94,8 @@ multiColumnList _ _   = error "Unsupported number of columns."
 tableOfPairs :: [(String, String)] -> Html
 tableOfPairs pairs = table ! class_ "pairs" $ mconcat (map tr' pairs)
  where tr' (h, d) = tr $ do
-                      th $ string h
-                      td $ string d
+                      th $ toHtml h
+                      td $ toHtml d
 
 -- Form Helpers
 
@@ -101,7 +104,7 @@ tableOfPairs pairs = table ! class_ "pairs" $ mconcat (map tr' pairs)
 
 menu :: [(String, String)] -> Html
 menu choices = select $ mconcat
-  [ option ! value (stringValue $ fst choice) $ string (snd choice) | choice <- choices ]
+  [ option ! value (toValue $ fst choice) $ toHtml (snd choice) | choice <- choices ]
 
 -- A modified version of Markdown (Pandoc Markdown) is used in comments and
 -- link bodies. We need to sanitize incoming HTML so that we don't end up with

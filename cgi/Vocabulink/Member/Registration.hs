@@ -240,7 +240,7 @@ passwordResetPage hash = do
                             \WHERE hash = {hash} AND expires > current_timestamp")
   case memberNo of
     Just _  -> simplePage "Change Your Password" [] $ do
-                 form ! action (stringValue $ "/member/password/reset/" ++ hash)
+                 form ! action (toValue $ "/member/password/reset/" ++ hash)
                       ! method "post"
                       ! style "width: 33em; margin-left: auto; margin-right: auto; text-align: center" $ do
                    label "Choose a new password: "
