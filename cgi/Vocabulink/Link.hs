@@ -25,15 +25,15 @@ module Vocabulink.Link ( Link(..), linkDetails, linkFromTuple
 
 import Vocabulink.Utils
 
-data Link = Link { link_no    :: Integer
-                 , learn      :: String
-                 , known      :: String
-                 , learn_lang :: String
-                 , known_lang :: String
+data Link = Link { link_no        :: Integer
+                 , learn          :: String
+                 , known          :: String
+                 , learn_lang     :: String
+                 , known_lang     :: String
                  , learn_language :: String
                  , known_language :: String
-                 , soundalike :: Bool
-                 , linkword   :: Maybe String
+                 , soundalike     :: Bool
+                 , linkword       :: Maybe String
                  }
 
 linkDetails :: Integer -> Handle -> IO (Maybe Link)
@@ -134,8 +134,7 @@ linkLanguages db =
  where linkLanguages' (oa, on, da, dn, c) = ((oa, on), (da, dn), fromJust c)
 
 linkTypeName :: Link -> String
-linkTypeName link = if isJust (linkword link)
-                       then "linkword"
-                       else if soundalike link
-                               then "soundalike"
-                               else "association"
+linkTypeName link
+  | isJust (linkword link) = "linkword"
+  | soundalike link        = "soundalike"
+  | otherwise              = "association"

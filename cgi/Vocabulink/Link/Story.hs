@@ -87,9 +87,9 @@ editStory :: Integer -- ^ story number
           -> App CGIResult
 editStory n s = do
   editable <- storyEditable n
-  case editable of
-    False -> outputUnauthorized -- Might be 404, but not concerned with that now.
-    True  -> do $(execute' "UPDATE linkword_story \
-                           \SET story = {s}, edited = NOW() \
-                           \WHERE story_no = {n}")
-                outputNothing
+  if editable
+    then do $(execute' "UPDATE linkword_story \
+                       \SET story = {s}, edited = NOW() \
+                       \WHERE story_no = {n}")
+            outputNothing
+    else outputUnauthorized -- Might be 404, but not concerned with that now.

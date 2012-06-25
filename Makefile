@@ -106,7 +106,7 @@ $(cgi) : cgi/dist/build/$(cgi)/$(cgi)
 # TODO: Make lint rules so that the appropriate lint is run automatically when the file is changed (before proceeding to the compilation step).
 
 hlint : $(hses)
-	hlint -i "Redundant do" $^
+	hlint -i "Redundant do" -i "Use camelCase" $^
 
 jslint : $(jses)
 	cat $^ | jslint

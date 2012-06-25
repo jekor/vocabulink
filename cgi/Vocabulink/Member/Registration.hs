@@ -55,8 +55,8 @@ signup = do
       terms'    <- getInput "terms"
       userAvail <- usernameAvailable username'
       emailAvail <- emailAvailable email'
-      when (not userAvail) $ error "The username you chose is unavailable or invalid."
-      when (not emailAvail) $ error "The email address you gave is unavailable or invalid."
+      unless userAvail $ error "The username you chose is unavailable or invalid."
+      unless emailAvail $ error "The email address you gave is unavailable or invalid."
       when (isNothing terms') $ error "You must accept the Terms of Use."
       memberNo <- withConnection $ \c -> do
         withTransaction c $ do

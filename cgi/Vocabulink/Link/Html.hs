@@ -83,7 +83,7 @@ linksTable links = table ! class_ "links" $ do
       th "Link Type"
   tbody $ mconcat $ map linkRow links
  where linkRow link = let url = "/link/" ++ show (link_no link) in
-         tr ! class_ (toValue $ "inline-link " ++ (linkTypeName link)) $ do
+         tr ! class_ (toValue $ "inline-link " ++ linkTypeName link) $ do
            td $ a ! href (toValue url) $ toHtml $ learn link
            td $ a ! href (toValue url) $ toHtml $ known link
            td $ a ! href (toValue url) $ toHtml $ linkTypeName link
@@ -114,7 +114,7 @@ linkPage linkNo = do
       stories <- do ss <- linkWordStories linkNo
                     return $ mconcat $ map (\ (n, x, y, z) -> renderStory n x y z) ss
       rendered <- renderLink link hasPronunciation
-      stdPage ((learn link) ++ " → " ++ known link ++ " — " ++ learn_language link ++ " to " ++ known_language link) [CSS "link", JS "link"] mempty $ do
+      stdPage (learn link ++ " → " ++ known link ++ " — " ++ learn_language link ++ " to " ++ known_language link) [CSS "link", JS "link"] mempty $ do
         div ! id "link-head-bar" $ do
           h2 $ a ! href (toValue $ "/links?ol=" ++ learn_lang link ++ "&dl=" ++ known_lang link)
              $ toHtml $ learn_language link ++ " to " ++ known_language link ++ ":"
@@ -188,12 +188,12 @@ languagePairsPage = do
        languageSize = sum . map (\(_, _, c) -> c)
        groupByName ((_, _), (_, dl1), _) ((_, _), (_, dl2), _) = dl1 == dl2
        renderLanguageGroup g = div ! class_ "group-box languages" $ do
-         h2 $ toHtml $ "in " ++ (groupLanguage g) ++ ":"
+         h2 $ toHtml $ "in " ++ groupLanguage g ++ ":"
          multiColumnList 3 $ map renderLanguage g
        groupLanguage = (\((_, _), (_, n), _) -> n) . head
        renderLanguage ((oa, on), (da, _), _) =
          a ! class_ "faint-gradient-button blue language-button" ! href (toValue $ "/links?ol=" ++ oa ++ "&dl=" ++ da)
-           $ toHtml $ on
+           $ toHtml on
 
 -- Generate a cloud of words from links in the database.
 
@@ -223,8 +223,8 @@ wordCloud n width' height' fontMin fontMax numClasses = do
        wordStyle word = do
          let fontRange = fontMax - fontMin
          fontSize <- (\ s -> fontMax - round (logBase 1.15 ((s * (1.15 ^ fontRange)::Float) + 1))) <$> getRandomR 0.0 1.0
-         let widthP  = (100.0 / (fromIntegral width')::Float)  * genericLength word * fromIntegral fontSize
-             heightP = (100.0 / (fromIntegral height')::Float) * fromIntegral fontSize
+         let widthP  = (100.0 / fromIntegral width')  * genericLength word * fromIntegral fontSize
+             heightP = (100.0 / fromIntegral height') * fromIntegral fontSize
          x        <- getRandomR 0 (max (100 - widthP) 1)
          y        <- getRandomR 0 (max (100 - heightP) 1)
          class'   <- getRandomR 1 numClasses

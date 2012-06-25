@@ -62,7 +62,7 @@ articlePage path = do
                     Nothing   -> return mempty
       body <- articleBody a'
       stdPage (articleTitle a') [CSS "article"] mempty $ do
-        Html5.article $ body
+        Html5.article body
         div ! id "comments" $ do
           h3 "Comments"
           comments

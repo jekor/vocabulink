@@ -375,7 +375,7 @@ frontPage = do
            div ! id "word-cloud" $ do
              wordcloud
            div ! id "intro" $ do
-             h1 $ "Build Vocabulary—Fast"
+             h1 "Build Vocabulary—Fast"
              p "Vocabulary building is the most important, but most time-consuming part of learning a language."
              p "We'll show you how to learn foreign words more quickly and easily than you imagined possible using 3 simple principles."
              a ! id "try-now" ! href "/links" ! class_ "faint-gradient-button green" $ "Get Started",

@@ -37,7 +37,7 @@ module Vocabulink.Utils ( (?), (<$$>)
                         {- Control.Arrow -}
                         , first, second, (***)
                         {- Control.Monad -}
-                        , liftM, Control.Monad.join, msum, when, replicateM
+                        , liftM, Control.Monad.join, msum, when, unless, replicateM
                         {- Control.Monad.Trans -}
                         , liftIO, MonadIO
                         {- Data.Bool.HT -}
@@ -173,11 +173,11 @@ every3rd = foldr (\a ~(x,y,z) -> (a:z,x,y)) ([],[],[])
 
 partitionHalves :: [a] -> ([a], [a])
 partitionHalves x = (take len x, drop len x)
- where len = ceiling $ (fromIntegral $ length x) / 2
+ where len = ceiling $ fromIntegral (length x) / 2
 
 partitionThirds :: [a] -> ([a], [a], [a])
 partitionThirds x = (take len x, take len (drop len x), drop (len * 2) x)
- where len = ceiling $ (fromIntegral $ length x) / 3
+ where len = ceiling $ fromIntegral (length x) / 3
 
 -- This is like the Unix tr utility. It takes a list of search/replacements and
 -- then performs them on the list.
