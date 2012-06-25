@@ -25,17 +25,13 @@ V.annotateLink = function (link) {
       // We have to calculate these before we add content to them and screw up
       // the dimensions.
       var width = word.outerWidth();
-      if (word.hasClass('foreign') || word.hasClass('familiar')) {
-        var y = word.outerHeight() + 4;
-      } else {
-        var y = word.height() + 8;
-      }
+      var y = (word.hasClass('foreign') || word.hasClass('familiar')) ? word.outerHeight() + 4 : word.height() + 8;
       caption.appendTo(word);
       var x = (width - caption.width()) / 2;
       caption.css({'position': 'absolute', 'left': x, 'top': y});
     }
   });
-}
+};
 
 function linkNumber() {
   return window.location.pathname.split('/').pop();

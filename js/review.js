@@ -21,7 +21,7 @@ function progressBar(total) {
   var barDiv = $('<div class="progress-bar" id="review-progress"><div style="width: 0%"></div></div>');
   var counter = 0;
   return [barDiv, function () {
-    $('div', barDiv).animate({'width': (++counter)/total * 100 + '%'}, 'fast');
+    $('div', barDiv).animate({'width': (++counter / total) * 100 + '%'}, 'fast');
   }];
 }
 
@@ -70,7 +70,7 @@ function revealLink(link) {
   h1.attr('linkno', link.linkNumber).attr('type', link.linkType);
   h1.find('.foreign').attr('title', link.foreignLanguage).text(link.foreign);
   h1.find('.familiar').attr('title', link.familiarLanguage).attr('familiar', link.familiar);
-  h1.find('.link').attr('linkword', (link.linkword ? link.linkword : ''));
+  h1.find('.link').attr('linkword', (link.linkword || ''));
   if (link.pronunciation) {
     var button = $(
       '<button id="pronounce" class="button light">'
@@ -131,7 +131,7 @@ $(function () {
              grade_(i / 5);
            }, 250);
          }
-       })
+       });
        grades.append(button);
      });
      $('#recall-area').append(grades);

@@ -47,24 +47,24 @@ V.verified = function () {return V.memberGravatar(0);};
 // http://stackoverflow.com/questions/647259/javascript-query-string
 function queryString() {
   var result = {},
-      queryString = location.search.substring(1),
+      query = location.search.substring(1),
       re = /([^&=]+)(=([^&]*))?/g,
       m;
-  while (m = re.exec(queryString)) {
+  while (m = re.exec(query)) {
     result[decodeURIComponent(m[1])] = m[3] ? decodeURIComponent(m[3]) : true;
   }
   return result;
-};
+}
 V.query = queryString();
 
 V.incrLinksToReview = function (by) {
   var num = parseInt($('#head .review-box strong').text(), 10) + parseInt(by, 10);
-  if (num == 1) {
+  if (num === 1) {
     $('#head .review-box').empty().append('<strong>1</strong> link to review');
   } else {
     $('#head .review-box').empty().append('<strong>' + num + '</strong> links to review');
   }
-}
+};
 
 V.toastMessage = function (type, msg, sticky) {
   return $().toastmessage('showToast', {'text': msg
@@ -72,23 +72,23 @@ V.toastMessage = function (type, msg, sticky) {
                                        ,'sticky': sticky
                                        ,'position': 'top-center'
                                        });
-}
+};
 
 V.toastNotice = function (msg, sticky) {
   return V.toastMessage('notice', msg, sticky);
-}
+};
 
 V.toastSuccess = function (msg, sticky) {
   return V.toastMessage('success', msg, sticky);
-}
+};
 
 V.toastError = function (msg, sticky) {
   return V.toastMessage('error', msg, sticky);
-}
+};
 
 V.toastWarning = function (msg, sticky) {
   return V.toastMessage('warning', msg, sticky);
-}
+};
 
 function lostPasswordPopup() {
   var content = $(
@@ -192,7 +192,7 @@ V.signupPopup = function() {
        }
      });
   });
-}
+};
 
 V.contactPopup = function () {
   var content = $(
@@ -251,14 +251,14 @@ $(function () {
   });
 
   // Check for signals in the query string.
-  if (V.query['badlogin'] && !V.loggedIn()) {
+  if (V.query.badlogin && !V.loggedIn()) {
     V.toastError("Username and password do not match (or don't exist).");
     V.loginPopup();
   }
-  if (V.query['signedup']) {
+  if (V.query.signedup) {
     V.toastSuccess("Welcome! Please check your email to confirm your account.", true);
   }
-  if (V.query['emailconfirmed']) {
+  if (V.query.emailconfirmed) {
     V.toastSuccess("Congratulations! You've confirmed your account.", true);
   }
 

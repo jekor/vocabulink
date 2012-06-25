@@ -108,8 +108,10 @@ $(cgi) : cgi/dist/build/$(cgi)/$(cgi)
 hlint : $(hses)
 	hlint -i "Redundant do" -i "Use camelCase" $^
 
-jslint : $(jses)
-	cat $^ | jslint
+# For jslint, go to http://www.jslint.com/
+# /*jslint browser: true, devel: true, nomen: true, plusplus: true, regexp: true, sloppy: true, vars: true, white: true, indent: 2 */
+# jslint : $(jses)
+#	cat $^ | jslint
 
 offline : offline/lib.offline.js offline/offline.css
 

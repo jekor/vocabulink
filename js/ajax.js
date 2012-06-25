@@ -1,4 +1,4 @@
-// Copyright 2010 Chris Forno
+// Copyright 2010, 2012 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
+(function ($) {
+
 $.postJSON = function (url, args, callback) {
   $.ajax({
     type: 'POST',
@@ -29,3 +31,5 @@ $.postJSON = function (url, args, callback) {
     }
   });
 };
+
+})(jQuery);
