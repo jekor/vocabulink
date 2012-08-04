@@ -1,10 +1,10 @@
 # Vocabulink site
 
+cgi := vocabulink.cgi
 all : $(cgi) js css articles handbook
 
 # Haskell
 
-cgi := vocabulink.cgi
 hses := cgi/Vocabulink.hs $(shell find cgi/Vocabulink -name "*.hs")
 
 cgi/dist/setup-config : cgi/vocabulink.cabal
@@ -15,7 +15,7 @@ cgi/dist/build/$(cgi)/$(cgi) : cgi/dist/setup-config $(hses)
 	@touch $@ # cabal doesn't always update the build (if it doesn't need to)
 
 $(cgi) : cgi/dist/build/$(cgi)/$(cgi)
-	mv $(cgi) $(cgi).old
+	if [ -f $(cgi) ]; then mv $(cgi) $(cgi).old; fi
 	cp $^ $@
 	strip $@
 

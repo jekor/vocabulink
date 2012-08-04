@@ -1,5 +1,5 @@
 Name:          Vocabulink
-Version:       2012.6.24
+Version:       2012.8.2
 Cabal-Version: >= 1.2
 License:       OtherLicense
 License-File:  ../COPYING
@@ -16,7 +16,7 @@ Description:   This is Vocabulink, the SCGI program that handles all web
                learn languages through fiction. It provides a mnemonics
                database, spaced repition (review) tools, and a forum for
                learners to collaborate.
-Tested-With:   GHC == 7.4.1
+Tested-With:   GHC == 7.4.2
 Build-Type:    Simple
 
 Executable vocabulink.cgi
