@@ -69,6 +69,7 @@ stdPage title' deps head' body' = outputHtml =<< (do
       inlineJS $ memberJS member
       script ! src "http://www.google-analytics.com/ga.js" $ mempty
       mconcat jsDeps
+      inlineJS $ intercalate "\n" [ js | InlineJS js <- deps' ]
       readyJS $ intercalate "\n" [ js | ReadyJS js <- deps' ])
  where memberJS m =
          unlines [ "var V = {" -- the Vocabulink object
@@ -76,8 +77,8 @@ stdPage title' deps head' body' = outputHtml =<< (do
                  , "  gravatarHash: " ++ maybe "null" (\h -> "'" ++ h ++ "'") (gravatarHash =<< memberEmail =<< m)
                  , "};"
                  ]
-       readyJS js = inlineJS $ "(function ($) {$(function () {" ++ js ++ "})})(jQuery);"
        inlineCSS = (style ! type_ "text/css") . toHtml
+       readyJS js = inlineJS $ "(function ($) {$(function () {" ++ js ++ "})})(jQuery);"
 
 -- Often we just need a simple page where the title and header are the same.
 
@@ -103,8 +104,7 @@ includeDep d = do
                         ! type_ "text/css"
         JS  js  -> script ! src (toValue $ "http://s.vocabulink.com/js/" ++ js ++ ".js?" ++ v) 
                           $ mempty
-        ReadyJS _ -> error "Can't include inline JS."
-        InlineCSS _ -> error "Can't include inline CSS."
+        _ -> error "Can only include CSS and JS."
 
 -- The standard header bar shows the Vocabulink logo (currently just some
 -- text), a list of hyperlinks, a search box, and either a login/sign up button
@@ -193,6 +193,8 @@ loginBox = span ! class_ "auth-box login" $ do
   a ! id "login-button" ! href "" $ "Log in"
   " | "
   a ! id "signup-button" ! href "" $ "Sign up"
+  " | "
+  a ! href "/learn?learn=es&known=en" $ "Learn Spanish"
 
 -- For logged-in members, we provide a logout button (with an indicator of your
 -- username to show that you're logged in).
@@ -215,7 +217,7 @@ searchBox = form ! class_ "search-box" ! action "/search" $ do
 
 reviewBox :: Integer -- ^ the number of links due for review (presumably from numLinksToReview)
           -> Html
-reviewBox n = a ! href "/review" ! class_ "review-box" $ message n
+reviewBox n = a ! href "/learn?learn=es&known=en" ! class_ "review-box" $ message n
   where message 1 = strong "1" >> " link to review"
         message _ = strong (toHtml n) >> " links to review"
 

@@ -19,8 +19,9 @@
 -- it. We need a way to present links to members for regular (scheduled)
 -- reviews.
 
-module Vocabulink.Review ( newReview, nextReview, scheduleNextReview
-                         , reviewPage, reviewStats, dailyReviewStats, detailedReviewStats
+module Vocabulink.Review ( newReview, scheduleNextReview
+                         , reviewStats, dailyReviewStats, detailedReviewStats
+                         , learnPage, learnReviews, learnNew
                          ) where
 
 -- For now, we have only 1 review algorithm (SuperMemo 2).
@@ -29,15 +30,20 @@ import qualified Vocabulink.Review.SM2 as SM2
 
 import Vocabulink.App
 import Vocabulink.CGI
-import Vocabulink.Page
+import Vocabulink.Config
+import Vocabulink.Html
 import Vocabulink.Link
-import Vocabulink.Link.Pronunciation
-import Vocabulink.Member.Auth
+import Vocabulink.Link.Html
+import Vocabulink.Member
+import Vocabulink.Page
 import Vocabulink.Utils
 
+import qualified Data.Aeson.Encode
 import qualified Data.Aeson.Generic
 import qualified Data.Aeson.Types
 import qualified Data.Text
+import qualified Data.Text.Lazy
+import Data.Text.Lazy.Builder (toLazyText)
 import Data.Time.Calendar (toGregorian)
 import qualified Data.Vector as V
 
@@ -94,54 +100,133 @@ scheduleNextReview member linkNo recallGrade recallTime reviewedAt = do
       \SET target_time = {reviewedAt}::timestamp with time zone + {diff}::interval \
       \WHERE member_no = {memberNumber member} AND link_no = {linkNo}") h
 
--- Review Pages
+dueForReview :: Maybe Member -> String -> String -> Int -> App [Link]
+dueForReview member learn' known' n =
+  case member of
+    Nothing -> return []
+    Just m  -> map linkFromTuple <$> $(queryTuples'
+      "SELECT l.link_no, learn, known, \
+             \learn_lang, known_lang, ll.name, kl.name, \
+             \s.link_no IS NOT NULL, COALESCE(linkword) \
+      \FROM link_to_review l \
+      \INNER JOIN link USING (link_no) \
+      \INNER JOIN language ll ON (ll.abbr = learn_lang) \
+      \INNER JOIN language kl ON (kl.abbr = known_lang) \
+      \LEFT JOIN link_soundalike s USING (link_no) \
+      \LEFT JOIN link_linkword w USING (link_no) \
+      \WHERE member_no = {memberNumber m} AND current_timestamp >= target_time \
+        \AND learn_lang = {learn'} AND known_lang = {known'} \
+      \ORDER BY random() \
+      \LIMIT {n}")
 
--- Here's the entry point for the client to request reviews. It's pretty
--- simple: we just request the next link from @link_to_review@ by
--- @target_time@. If there's none, we send the member to a ``congratulations''
--- page. If there is a link for review, we send them to the review page.
-
--- The links are returned in random order for now. This is not ideal if the
--- learner gets behind, as they might have links that need review more than
--- others that get left until later. However, in my experience, having the
--- links displayed in the same order each time is a bigger problem because they
--- get memorized in groups. For example, one link might cue the recognition for
--- the next link, which is not what we want.
-
-nextReview :: Member -> App CGIResult
-nextReview member = do
-  links <- map linkFromTuple <$> $(queryTuples'
-    "SELECT l.link_no, learn, known, \
-           \learn_lang, known_lang, ll.name, kl.name, \
-           \s.link_no IS NOT NULL, COALESCE(linkword) \
-    \FROM link_to_review l \
-    \INNER JOIN link USING (link_no) \
-    \INNER JOIN language ll ON (ll.abbr = learn_lang) \
-    \INNER JOIN language kl ON (kl.abbr = known_lang) \
-    \LEFT JOIN link_soundalike s USING (link_no) \
-    \LEFT JOIN link_linkword w USING (link_no) \
-    \WHERE member_no = {memberNumber member} AND current_timestamp >= target_time \
-    \ORDER BY RANDOM()")
-  case links of
-    [] -> outputNotFound
-    -- TODO: Make a version of getLink that can retrieve multiple links at once.
-    _  -> do
-     setHeader "Cache-Control" "no-cache"
-     outputJSON =<< mapM linkJSON links
- where linkJSON l = do
-         pr <- pronounceable $ link_no l
-         let linkWord' = maybe Data.Aeson.Types.Null (\w -> [aesonQQ| <| w |> |]) $ linkword l
-         return [aesonQQ| {"linkNumber": <| link_no l |>
-                          ,"foreign": <| learn l |>
-                          ,"foreignLang": <| learn_lang l |>
-                          ,"foreignLanguage": <| learn_language l |>
-                          ,"familiar": <| known l |>
-                          ,"familiarLang": <| known_lang l |>
-                          ,"familiarLanguage": <| known_language l |>
-                          ,"linkType": <| linkTypeName l |>
-                          ,"linkword": <<linkWord'>>
-                          ,"pronunciation": <| pr |>
-                          } |]
+-- First, use words with existing stories. Second, use linkwords or
+-- soundalikes. Finally, use whatever.
+newForReview :: Maybe Member -> String -> String -> Int -> App [Link]
+newForReview member learn' known' n =
+  case member of
+    Nothing -> do
+      storied <- map linkFromTuple <$> $(queryTuples'
+        "SELECT l.link_no, learn, known, \
+               \learn_lang, known_lang, ll.name, kl.name, \
+               \s.link_no IS NOT NULL, COALESCE(linkword) \
+        \FROM link l \
+        \INNER JOIN language ll ON (ll.abbr = learn_lang) \
+        \INNER JOIN language kl ON (kl.abbr = known_lang) \
+        \LEFT JOIN link_soundalike s ON (s.link_no = l.link_no) \
+        \LEFT JOIN link_linkword w ON (w.link_no = l.link_no) \
+        \INNER JOIN linkword_story ss ON (ss.link_no = l.link_no) \
+        \WHERE learn_lang = {learn'} AND known_lang = {known'} \
+          \AND NOT deleted \
+        \ORDER BY random() LIMIT {n}")
+      if length storied >= n
+        then return storied
+        else do
+          special <- map linkFromTuple <$> $(queryTuples'
+            "SELECT l.link_no, learn, known, \
+                   \learn_lang, known_lang, ll.name, kl.name, \
+                   \s.link_no IS NOT NULL, COALESCE(linkword) \
+            \FROM link l \
+            \INNER JOIN language ll ON (ll.abbr = learn_lang) \
+            \INNER JOIN language kl ON (kl.abbr = known_lang) \
+            \LEFT JOIN link_soundalike s ON (s.link_no = l.link_no) \
+            \LEFT JOIN link_linkword w ON (w.link_no = l.link_no) \
+            \LEFT JOIN linkword_story ss ON (ss.link_no = l.link_no) \
+            \WHERE learn_lang = {learn'} AND known_lang = {known'} \
+              \AND ss.link_no IS NULL \
+              \AND (s.link_no IS NOT NULL OR w.link_no IS NOT NULL) \
+              \AND NOT deleted \
+            \ORDER BY random() LIMIT {n - length storied}")
+          if length storied + length special >= n
+            then return $ storied ++ special
+            else do
+              plain <- map linkFromTuple <$> $(queryTuples'
+                "SELECT l.link_no, learn, known, \
+                       \learn_lang, known_lang, ll.name, kl.name, \
+                       \s.link_no IS NOT NULL, COALESCE(linkword) \
+                \FROM link l \
+                \INNER JOIN language ll ON (ll.abbr = learn_lang) \
+                \INNER JOIN language kl ON (kl.abbr = known_lang) \
+                \LEFT JOIN link_soundalike s ON (s.link_no = l.link_no) \
+                \LEFT JOIN link_linkword w ON (w.link_no = l.link_no) \
+                \WHERE learn_lang = {learn'} AND known_lang = {known'} \
+                  \AND (s.link_no IS NULL AND w.link_no IS NULL) \
+                  \AND NOT deleted \
+                \ORDER BY random() LIMIT {n - length storied - length special}")
+              return $ storied ++ special ++ plain
+    Just m -> do
+      storied <- map linkFromTuple <$> $(queryTuples'
+        "SELECT l.link_no, learn, known, \
+               \learn_lang, known_lang, ll.name, kl.name, \
+               \s.link_no IS NOT NULL, COALESCE(linkword) \
+        \FROM link l \
+        \LEFT JOIN link_to_review r ON (r.link_no = l.link_no AND r.member_no = {memberNumber m}) \
+        \INNER JOIN language ll ON (ll.abbr = learn_lang) \
+        \INNER JOIN language kl ON (kl.abbr = known_lang) \
+        \LEFT JOIN link_soundalike s ON (s.link_no = l.link_no) \
+        \LEFT JOIN link_linkword w ON (w.link_no = l.link_no) \
+        \INNER JOIN linkword_story ss ON (ss.link_no = l.link_no) \
+        \WHERE learn_lang = {learn'} AND known_lang = {known'} \
+          \AND r.link_no IS NULL \
+          \AND NOT deleted \
+        \ORDER BY random() LIMIT {n}")
+      if length storied >= n
+        then return storied
+        else do
+          special <- map linkFromTuple <$> $(queryTuples'
+            "SELECT l.link_no, learn, known, \
+                   \learn_lang, known_lang, ll.name, kl.name, \
+                   \s.link_no IS NOT NULL, COALESCE(linkword) \
+            \FROM link l \
+            \LEFT JOIN link_to_review r ON (r.link_no = l.link_no AND r.member_no = {memberNumber m}) \
+            \INNER JOIN language ll ON (ll.abbr = learn_lang) \
+            \INNER JOIN language kl ON (kl.abbr = known_lang) \
+            \LEFT JOIN link_soundalike s ON (s.link_no = l.link_no) \
+            \LEFT JOIN link_linkword w ON (w.link_no = l.link_no) \
+            \LEFT JOIN linkword_story ss ON (ss.link_no = l.link_no) \
+            \WHERE learn_lang = {learn'} AND known_lang = {known'} \
+              \AND r.link_no IS NULL AND ss.link_no IS NULL \
+              \AND (s.link_no IS NOT NULL OR w.link_no IS NOT NULL) \
+              \AND NOT deleted \
+            \ORDER BY random() LIMIT {n - length storied}")
+          if length storied + length special >= n
+            then return $ storied ++ special
+            else do
+              plain <- map linkFromTuple <$> $(queryTuples'
+                "SELECT l.link_no, learn, known, \
+                       \learn_lang, known_lang, ll.name, kl.name, \
+                       \s.link_no IS NOT NULL, COALESCE(linkword) \
+                \FROM link l \
+                \LEFT JOIN link_to_review r ON (r.link_no = l.link_no AND r.member_no = {memberNumber m}) \
+                \INNER JOIN language ll ON (ll.abbr = learn_lang) \
+                \INNER JOIN language kl ON (kl.abbr = known_lang) \
+                \LEFT JOIN link_soundalike s ON (s.link_no = l.link_no) \
+                \LEFT JOIN link_linkword w ON (w.link_no = l.link_no) \
+                \WHERE learn_lang = {learn'} AND known_lang = {known'} \
+                  \AND r.link_no IS NULL \
+                  \AND (s.link_no IS NULL AND w.link_no IS NULL) \
+                  \AND NOT deleted \
+                \ORDER BY random() LIMIT {n - length storied - length special}")
+              return $ storied ++ special ++ plain
 
 -- In order to determine the next review interval, the review scheduling
 -- algorithm may need to know how long the last review period was (in fact, any
@@ -245,5 +330,41 @@ detailedReviewStats member start end tzOffset = do
                           ,"familiarPhrase": <| known' |>
                           } |]
 
-reviewPage :: App CGIResult
-reviewPage = stdPage "Review Your Links" [JS "review", CSS "review", JS "link", CSS "link"] mempty mempty
+learnPage :: App CGIResult
+learnPage = do
+  learn' <- getRequiredInput "learn"
+  known' <- getRequiredInput "known"
+  learn'' <- langNameFromAbbr learn'
+  known'' <- langNameFromAbbr known'
+  case (learn'', known'') of
+    (Just l, Just _) -> do
+      m <- asks appMember
+      -- Send the initial batch of data with this page.
+      due <- mapM compactLinkJSON =<< dueForReview m learn' known' 20
+      new <- mapM compactLinkJSON =<< newForReview m learn' known' (20 - length due)
+      let vars = "var review = " ++ Data.Text.Lazy.unpack (toLazyText (Data.Aeson.Encode.fromValue (Data.Aeson.Types.Array (V.fromList due)))) ++ ";\n" ++
+                 "var learn = " ++ Data.Text.Lazy.unpack (toLazyText (Data.Aeson.Encode.fromValue (Data.Aeson.Types.Array (V.fromList new)))) ++ ";"
+      stdPage ("Learning " ++ l ++ " Words") [JS "learn", CSS "learn", JS "link", CSS "link", InlineJS vars] mempty $ do
+        div ! id "learn-header" $ do
+          h2 $ "Loading..."
+          when (isNothing m) $ div ! id "signup-invitation" $ do
+            p $ "Once you're created an account, you'll get:"
+            unordList [ "Access to More Spanish Words"
+                      , "Automatically Scheduled Reviews"
+                      , "A Dashboard and Study Stats"
+                      ]
+    _ -> outputNotFound
+
+learnReviews :: App CGIResult
+learnReviews = do
+  learn' <- getRequiredInput "learn"
+  known' <- getRequiredInput "known"
+  m <- asks appMember
+  outputJSON =<< mapM compactLinkJSON =<< dueForReview m learn' known' 20
+
+learnNew :: App CGIResult
+learnNew = do
+  learn' <- getRequiredInput "learn"
+  known' <- getRequiredInput "known"
+  m <- asks appMember
+  outputJSON =<< mapM compactLinkJSON =<< newForReview m learn' known' 20

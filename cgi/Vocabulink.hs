@@ -205,6 +205,10 @@ dispatch meth ("link":x:part) =
     Nothing -> outputNotFound
     Just n  -> case (meth, part) of
                  ("GET"   , [])                -> linkPage n
+                 ("GET"   , ["stories"])       -> do
+                   -- TODO: Support HTML/JSON output based on content-type negotiation.
+                   stories <- linkWordStories n
+                   outputHtml $ mconcat $ map (\(a', b', c', d') -> renderStory a' b' c' d') stories
                  ("POST"  , ["stories"])       -> do
                    story <- getRequiredInput "story"
                    addStory n story
@@ -249,6 +253,12 @@ dispatch "GET" ["languages"] = permRedirect "/links"
 dispatch "GET"  ["list","frequency",lang] = frequencyLists lang
 dispatch "POST" ["list","frequency",lang] = addFrequencyList lang
 
+-- Learning
+
+dispatch "GET" ["learn"] = learnPage
+dispatch "GET" ["learn", "reviews"] = learnReviews
+dispatch "GET" ["learn", "new"] = learnNew
+
 -- Link Review
 
 -- Members review their links by interacting with the site in a vaguely
@@ -272,8 +282,6 @@ dispatch meth ("review":rpath) = do
     Nothing     -> outputNotFound
     Just member ->
       case (meth,rpath) of
-        ("GET",  [])           -> reviewPage
-        ("GET",  ["next"])     -> nextReview member
         ("GET",  ["stats"])    -> reviewStats member
         ("GET",  ["stats",x])  -> do
           start <- readRequiredInput "start"
@@ -378,7 +386,10 @@ frontPage = do
              h1 "Build Vocabulary—Fast"
              p "Vocabulary building is the most important, but most time-consuming part of learning a language."
              p "We'll show you how to learn foreign words more quickly and easily than you imagined possible using 3 simple principles."
-             a ! id "try-now" ! href "/links" ! class_ "faint-gradient-button green" $ "Get Started",
+             a ! id "try-now" ! href "/learn?learn=es&known=en" ! class_ "faint-gradient-button green" $ do
+               "Get Started"
+               br
+               "with Spanish",
          div ! class_ "bottom" $ do
            div ! class_ "three-column" $ do
              div ! class_ "column" $ do

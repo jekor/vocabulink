@@ -26,7 +26,7 @@ module Vocabulink.CGI ( outputText, outputHtml, outputJSON
                       , outputNotFound, outputUnauthorized, outputClientError, outputServerError
                       , getInput, getRequiredInput, getInputDefault, getRequiredInputFPS
                       , readInput, readRequiredInput, readInputDefault, getBody
-                      , urlify, referrerOrVocabulink, permRedirect
+                      , urlify, referrerOrVocabulink, referrerOrVocabulink', permRedirect
                       , handleErrors, escapeURIString'
                       {- Data.Aeson.QQ -}
                       , aesonQQ
@@ -57,11 +57,11 @@ import Data.Aeson.Types (ToJSON(..))
 import Data.ByteString.Lazy (ByteString)
 import Data.ByteString.Lazy.UTF8 (fromString, toString)
 import Data.Char (isAlphaNum)
-import Network.URI (uriPath, uriQuery, escapeURIString, isUnescapedInURI)
 import Network.CGI hiding (getInput, readInput, getBody, Html, output, outputNotFound, handleErrors)
 import qualified Network.CGI as CGI
 import Network.CGI.Monad (CGIT(..))
 import Network.CGI.Protocol (CGIResult(..))
+import Network.URI (uriPath, uriQuery, escapeURIString, isUnescapedInURI, URI(..), URIAuth(..), parseURI)
 import Text.Blaze.Html5 (docTypeHtml, head, body, title, style, link)
 import Text.Blaze.Html5.Attributes (rel)
 import Text.Blaze.Renderer.Utf8 (renderHtml)
@@ -233,6 +233,20 @@ urlify = map toLower . filter (\e -> isAlphaNum e || e `elem` "-.") . translate 
 referrerOrVocabulink :: MonadCGI m => m String
 referrerOrVocabulink =
   maybe "http://www.vocabulink.com/" decodeString `liftM` getVar "HTTP_REFERER"
+
+referrerOrVocabulink' :: MonadCGI m => m URI
+referrerOrVocabulink' = do
+  ref <- maybe Nothing (parseURI . decodeString) `liftM` getVar "HTTP_REFERER"
+  return $ case ref of
+             Nothing -> URI { uriScheme = "http:"
+                            , uriAuthority = Just (URIAuth { uriUserInfo = ""
+                                                           , uriRegName = "//www.vocabulink.com"
+                                                           , uriPort = ""
+                                                           })
+                            , uriPath = "/"
+                            , uriQuery = ""
+                            , uriFragment = "" }
+             Just uri -> uri
 
 permRedirect :: (MonadCGI m, MonadIO m) => String -> m CGIResult
 permRedirect url = do

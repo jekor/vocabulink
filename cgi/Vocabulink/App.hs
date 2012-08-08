@@ -135,7 +135,7 @@ runApp h cp sd (AppT a) = do
 -- dependencies). I'm hesitant to add them here, but I can't think of a better
 -- place at the moment.
 
-data Dependency = CSS FilePath | JS FilePath | InlineCSS String | ReadyJS String
+data Dependency = CSS FilePath | JS FilePath | InlineCSS String | InlineJS String | ReadyJS String
                   deriving (Eq, Show)
 
 dependencyVersion :: Dependency -> App (Maybe String)

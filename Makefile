@@ -7,6 +7,8 @@ all : $(cgi) js css articles handbook
 
 hses := cgi/Vocabulink.hs $(shell find cgi/Vocabulink -name "*.hs")
 
+cgi : $(cgi)
+
 cgi/dist/setup-config : cgi/vocabulink.cabal
 	cd cgi && cabal configure
 
@@ -21,13 +23,13 @@ $(cgi) : cgi/dist/build/$(cgi)/$(cgi)
 
 # JavaScript
 
-jslibs := common link member review dashboard
+jslibs := common link member dashboard learn
 # Common is getting large. I'd like to break it up and maybe do deferred loading at some point.
 js_common := external/jquery-1.6.1 external/jquery.cookie external/minform external/jquery.loadmask external/jquery.toastmessage external/jquery.simplemodal-1.4.1 common
 js_link := external/longtable link
 js_member := external/jquery.markitup external/markdown.set external/showdown ajax comment link-editor
-js_review := external/jquery.hotkeys review
 js_dashboard := external/drcal dashboard
+js_learn := external/jquery.hotkeys learn
 
 define js_template =
 js/compiled/$(1).js : $$(js_$(1):%=js/%.js)
@@ -52,15 +54,15 @@ js/external/drcal.js : /home/jekor/project/drcal/drcal.js
 
 # CSS
 
-csslibs := common member link article dashboard member-page review front
+csslibs := common member link article dashboard member-page front learn
 css_common := common comment external/jquery.toastmessage external/jquery-loadmask external/jquery.simplemodal
 css_member := link-editor external/markitup-set external/markitup-skin
 css_link := link
 css_article := article
 css_dashboard := dashboard
 css_member-page := member-page
-css_review := review
 css_front := front
+css_learn := learn
 
 define css_template =
 css/compiled/$(1).css : $$(css_$(1):%=css/%.sass)
@@ -96,7 +98,7 @@ hlint : $(hses)
 # For jslint, go to http://www.jslint.com/
 # /*jslint browser: true, devel: true, nomen: true, plusplus: true, regexp: true, sloppy: true, vars: true, white: true, indent: 2 */
 
-sync_options := -avz --exclude 'cgi/dist' --exclude '*.sass' --exclude '.sass-cache' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --exclude '._*' --exclude '.DS_Store' --delete articles audio css etc img js s scripts offline vocabulink.cgi vocabulink.com:vocabulink/
+sync_options := -avz --exclude 'cgi/dist' --exclude '*.sass' --exclude '.sass-cache' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --exclude '._*' --exclude '.DS_Store' --delete articles audio css etc img js s scripts vocabulink.cgi vocabulink.com:vocabulink/
 
 sync :
 	rsync $(sync_options)

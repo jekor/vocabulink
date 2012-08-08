@@ -23,6 +23,18 @@ if (!window.console) {
 
 (function ($) {
 
+V.uniq = function (arr) {
+  var ret = [];
+  arr.sort();
+  ret.push(arr[0])
+  for (var i = 1; i < arr.length; i++) {
+    if (arr[i - 1] !== arr[i]) {
+      ret.push(arr[i]);
+    }
+  }
+  return ret;
+}
+
 // Crockford's prototypal inheritance operator
 V.object = function (o) {
   function F() {}
@@ -192,6 +204,11 @@ V.signupPopup = function() {
        }
      });
   });
+  // Populate the form with any already studied links.
+  $('<input type="hidden" name="learned">').val(localStorage['learnQueue']).appendTo(popup);
+  // $.each(uniq(V.getLocal('learnQueue', [])), function (_, linkNum) {
+  //   popup.append($('<input type="hidden" name="learned[]">').val(linkNum));
+  // });
 };
 
 V.contactPopup = function () {
@@ -234,6 +251,15 @@ V.verificationPopup = function () {
   $.modal(content);
 };
 
+V.getLocal = function (key, def) {
+  var val = localStorage.getItem(key);
+  return val ? JSON.parse(val) : def;
+}
+
+V.setLocal = function (key, val) {
+  localStorage[key] = JSON.stringify(val);
+}
+
 // initialization for every page
 $(function () {
   try {
@@ -256,6 +282,7 @@ $(function () {
     V.loginPopup();
   }
   if (V.query.signedup) {
+    localStorage.removeItem('learnQueue');
     V.toastSuccess("Welcome! Please check your email to confirm your account.", true);
   }
   if (V.query.emailconfirmed) {

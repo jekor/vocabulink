@@ -418,7 +418,7 @@ button, input[type=submit]
     border: 0
   &:hover
     text-decoration: none
-  &:active
+  &:active, &.pressed
     position: relative
     top: 1px
   &:focus
@@ -429,7 +429,7 @@ button, input[type=submit]
     @include vertical_half_gradient(#686868, #000000)
     &:hover
       @include vertical_half_gradient(#444444, #000000)
-    &:active
+    &:active, &.pressed
       @include vertical_half_gradient(#000000, #444444)
       color: darken(#6ACFD8, 20%)
   &.light
@@ -438,7 +438,7 @@ button, input[type=submit]
     @include vertical_half_gradient(#FFFFFF, #DFDFDF)
     &:hover
       @include vertical_half_gradient(#F6F6F6, #DFDFDF)
-    &:active
+    &:active, &.pressed
       @include vertical_half_gradient(#DFDFDF, #F6F6F6)
       color: darken(#666666, 20%)
   // Cancel buttons are like button except that they're downplayed (drawn without
@@ -527,7 +527,7 @@ a.username
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3)
   &:hover
     text-decoration: none
-  &:active
+  &:active, &.pressed
     position: relative
     top: 1px
   &.green
@@ -535,14 +535,14 @@ a.username
     &:hover
       text-decoration: none
       @include vertical_gradient(darken(#A6DE66, 5%), #79BB27)
-    &:active
+    &:active, &.pressed
       @include vertical_gradient(#79BB27, #A6DE66)
   &.blue
     @include vertical_gradient(#60D2DB, #29A5AA)
     &:hover
       text-decoration: none
       @include vertical_gradient(darken(#60D2DB, 5%), #29A5AA)
-    &:active
+    &:active, &.pressed
       @include vertical_gradient(#29A5AA, #60D2DB)
 // Temporary fix
 a.faint-gradient-button

@@ -15,7 +15,7 @@
 -- You should have received a copy of the GNU Affero General Public License
 -- along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-module Vocabulink.Link.Html ( renderLink, linksTable
+module Vocabulink.Link.Html ( renderLink, linksTable, compactLinkJSON
                             , linkPage, linksPage, languagePairsPage
                             , wordCloud
                             ) where
@@ -32,7 +32,11 @@ import Vocabulink.Page
 import Vocabulink.Utils
 
 import Control.Monad.State (State, runState, get, put)
+import Data.Aeson.Types (object, Value(..))
+import Data.Aeson.Generic (toJSON)
 import Data.List (find, genericLength, sortBy, groupBy)
+import Data.Text (pack)
+import Data.Vector (fromList)
 import System.Random
 import Text.Blaze.Html5 (audio, source)
 import Text.Blaze.Html5.Attributes (preload)
@@ -88,6 +92,23 @@ linksTable links = table ! class_ "links" $ do
            td $ a ! href (toValue url) $ toHtml $ known link
            td $ a ! href (toValue url) $ toHtml $ linkTypeName link
 
+compactLinkJSON :: Link -> App Value
+compactLinkJSON link = do
+  -- I opted for an array representation because it's more compact. We could be
+  -- sending a lot of these in a single response.
+  -- We don't need to send the language information as the new review process only
+  -- operates on 1 set of languages at a time.
+  let e = linkExtra link
+  return [aesonQQ| [ <| link_no link |>
+                   , <| learn link |>
+                   , <| known link |>
+                   , <<e>>
+                   ] |]
+ where linkExtra l
+         | isJust (linkword l) = [aesonQQ| {"linkword": <| fromJust (linkword l) |>} |]
+         | soundalike link     = [aesonQQ| {"soundalike": <| True |>} |]
+         | otherwise           = Null
+
 -- Each link gets its own URI and page. Most of the extra code in the following is
 -- for handling the display of link operations (``review'', ``delete'', etc.),
 -- dealing with retrieval exceptions, etc.
@@ -104,7 +125,6 @@ linkPage linkNo = do
     Nothing -> outputNotFound
     Just link -> do
       hasPronunciation <- pronounceable linkNo
-      ops <- linkOperations link
       row' <- $(queryTuple' "SELECT root_comment \
                             \FROM link_comment \
                             \WHERE link_no = {linkNo}")
@@ -115,11 +135,6 @@ linkPage linkNo = do
                     return $ mconcat $ map (\ (n, x, y, z) -> renderStory n x y z) ss
       rendered <- renderLink link hasPronunciation
       stdPage (learn link ++ " → " ++ known link ++ " — " ++ learn_language link ++ " to " ++ known_language link) [CSS "link", JS "link"] mempty $ do
-        div ! id "link-head-bar" $ do
-          h2 $ a ! href (toValue $ "/links?ol=" ++ learn_lang link ++ "&dl=" ++ known_lang link)
-             $ toHtml $ learn_language link ++ " to " ++ known_language link ++ ":"
-          div ! id "link-ops" $ do
-            ops
         rendered
         div ! id "linkword-stories" $ do
           div ! class_ "header" $ h2 "Linkword Stories:"
@@ -127,37 +142,6 @@ linkPage linkNo = do
         div ! id "comments" $ do
           h3 "Comments"
           comments
-
-linkOperations :: Link -> App Html
-linkOperations link = do
-  member <- asks appMember
-  reviewing' <- reviewing link
-  let review  = linkAction "add to review" "add"
-  return $ do
-    case (member, reviewing') of
-      (_,       True) -> review False ! title "already reviewing this link"
-      (Just _,  _)    -> review True  ! id "link-op-review"
-                                      ! title "add this link to be quizzed on it later"
-      (Nothing, _)    -> review False ! title "login to review"
- where reviewing :: Link -> App Bool
-       reviewing l = do
-         member <- asks appMember
-         case member of
-           Nothing -> return False
-           Just m  -> (/= []) <$> $(queryTuples'
-             "SELECT link_no FROM link_to_review \
-             \WHERE member_no = {memberNumber m} AND link_no = {link_no l} \
-             \LIMIT 1")
-
-linkAction :: String -> String -> Bool -> Html
-linkAction label' icon' enabled =
-  let icon = "http://s.vocabulink.com/img/icon/" ++
-             icon' ++
-             (enabled ? "" $ "-disabled") ++
-             ".png" in
-  a ! class_ (toValue $ ("operation login-required "::String) ++ (enabled ? "enabled" $ "disabled")) ! href "" $ do
-    img ! src (toValue icon) ! class_ "icon"
-    toHtml label'
 
 linksPage :: String -> [Link] -> App CGIResult
 linksPage title' links = do

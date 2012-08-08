@@ -30,10 +30,13 @@ import Vocabulink.Html
 import Vocabulink.Member
 import Vocabulink.Member.Auth
 import Vocabulink.Page
+import Vocabulink.Review
 import Vocabulink.Utils
 
 import Prelude hiding (div, id, span)
 import Network.URI (parseURI)
+import Data.Aeson (decode)
+import Data.ByteString.Lazy.UTF8 (fromString)
 
 -- Once a user registers, they can log in. However, they won't be able to use
 -- most member-specific functions until they've confirmed their email address.
@@ -53,6 +56,7 @@ signup = do
       email'    <- getRequiredInput "email"
       password' <- getRequiredInput "password"
       terms'    <- getInput "terms"
+      learned   <- maybe [] parseLearned <$> getInput "learned"
       userAvail <- usernameAvailable username'
       emailAvail <- emailAvailable email'
       unless userAvail $ error "The username you chose is unavailable or invalid."
@@ -68,6 +72,7 @@ signup = do
                                  "INSERT INTO member_confirmation (member_no, hash, email) \
                                  \VALUES ({memberNo'}, md5(random()::text), {email'}) \
                                  \RETURNING hash") c
+          return $ Just memberNo'
           res <- liftIO $ sendConfirmationEmail email' username' hash
           maybe (rollback c >> return Nothing)
                 (\_ -> do $(execute "UPDATE member_confirmation \
@@ -75,11 +80,22 @@ signup = do
                                     \WHERE member_no = {memberNo'}") c
                           return (Just memberNo')) res
       case memberNo of
-        Just mn -> do key <- fromJust <$> getOption "authtokenkey"
-                      authTok <- liftIO $ authToken mn username' key
-                      setAuthCookie authTok
-                      redirect "http://www.vocabulink.com/?signedup"
+        Just mn -> do
+          let m = Member { memberNumber = mn
+                         , memberName   = username'
+                         , memberEmail  = Nothing
+                         }
+          mapM_ (newReview m) learned
+          key <- fromJust <$> getOption "authtokenkey"
+          authTok <- liftIO $ authToken mn username' key
+          setAuthCookie authTok
+          dest <- referrerOrVocabulink'
+          redirect $ show $ if uriQuery dest == ""
+                              then dest {uriQuery = "?signedup"}
+                              else dest {uriQuery = uriQuery dest ++ "&signedup"}
         Nothing -> error "Registration failure (this is not your fault). Please try again later."
+ where parseLearned :: String -> [Integer]
+       parseLearned s = fromMaybe [] $ decode $ fromString s
 
 sendConfirmationEmail :: String -> String -> String -> IO (Maybe ())
 sendConfirmationEmail email username hash =

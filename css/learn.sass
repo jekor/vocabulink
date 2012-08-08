@@ -7,7 +7,6 @@
 
 #body
   margin-top: 0
-  position: relative
   border-top: 1px solid #DFDFDF
   > *:last-child
     margin-bottom: 4em
@@ -20,36 +19,40 @@
       top: 0.578em
       bottom: 0.578em
 
-.progress-bar
+#learn-header
   margin:
-    left: auto
-    right: auto
-  height: 12px
-  background-color: #FFFFFF
-  border: 1px solid #2D2D2D
-  @include rounded(6px)
-  overflow: hidden
-  div
-    min-width: 4px
-    height: 12px
-    @include vertical_gradient(#A6DE66, #79BB27)
-
-#review-progress
-  width: 33.3%
-  position: absolute
-  top: -7px
-  left: 33.3%
-
-#recall-area
+    top: -1.5ex
+    bottom: 0
   text-align: center
-  button
-    background-color: #FFFFFF
-    border-width: 1px
-  #reveal
-    height: 60px
-    font-family: Verdana, sans-serif
-    font-size: 14pt
-    border-width: 2px
+  h2
+    display: inline-block
+    margin: 0
+    padding:
+      top: 2px
+      bottom: 2px
+      left: 3em
+      right: 3em
+    font-size: 12pt
+    text-align: center
+    background-color: white
+    color: #ACACAC
+    @include rounded(0.5em)
+    border: 1px solid #DFDFDF
+
+#action-area
+  text-align: center
+  margin-bottom: 3em
+
+#confirm
+  border-width: 2px
+  font-size: 14pt
+  height: 60px
+
+#linkword-stories
+  margin-top: 1em
+
+.loading
+  text-align: center
 
 #grades
   display: inline-block
@@ -62,6 +65,8 @@
     height: 30px
     background-image: url(/img/grades.png)
   button
+    background-color: #FFFFFF
+    border-width: 1px
     width: 60px
     height: 60px
     padding: 0
@@ -96,3 +101,8 @@
       background-position: -120px -30px
     &.grade5:hover b, &.grade5:active b, &.grade5.pressed b
       background-position: -150px -30px
+
+#signup-invitation
+  display: none
+  ul
+    list-style-type: disc

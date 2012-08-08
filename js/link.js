@@ -99,7 +99,7 @@ function showNewStory() {
 $(function () {
   V.annotateLink($('h1.link:visible'));
 
-  $('#pronounce').click(function () {
+  $('#pronounce, button.pronounce').click(function () {
     $(this).find('audio')[0].play();
     return false;
   });
