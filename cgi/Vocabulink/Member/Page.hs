@@ -75,6 +75,6 @@ studyStats m = do
                         ]
 
 dashboardPage :: App CGIResult
-dashboardPage = withRequiredMember $ \_ -> do
+dashboardPage = withRequiredMember' $ \_ -> do
   stdPage "Dashboard" [JS "dashboard", CSS "dashboard"] mempty $ do
     mempty

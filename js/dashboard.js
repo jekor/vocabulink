@@ -22,8 +22,8 @@ $(function () {
   var dashboard = $('<div id="dashboard"></div>').appendTo('#body');
   var dailyDetail = $('<div id="daily-detail"></div>').appendTo(dashboard);
   var cal = $.drcal();
-  cal.bind('drcal.monthRender', function () {
-    cal.find('td').each(function (_, td) {
+  cal.bind('drcal.weekRender', function (_, tr) {
+    $('td', tr).each(function (_, td) {
       $(td).append('<div><div class="daynum">' + $(td).attr('day') + '</div></div>');
     });
     cal.mask('Loading...');
@@ -43,9 +43,7 @@ $(function () {
        cal.unmask();
      })
      .fail(function (xhr) {cal.unmask(); V.toastError(xhr.responseText, false);});
-  }).bind('drcal.monthChange', function () {
-    cal.find('td').removeClass('selected');
-  });
+  }).changeMonth(new Date());
   cal.find('.prev, .next').addClass('light');
   cal.delegate('td', 'click', function () {
     cal.find('td').removeClass('selected');

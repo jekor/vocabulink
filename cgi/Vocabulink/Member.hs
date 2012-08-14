@@ -22,7 +22,7 @@
 
 module Vocabulink.Member ( UserContent(..)
                          , memberByName, memberByNumber, memberAvatar
-                         , withRequiredMember
+                         , withRequiredMember, withRequiredMember'
                          , gravatar, gravatarHash
                          {- Vocabulink.Member.Auth -}
                          , Member(..)
@@ -83,6 +83,13 @@ withRequiredMember f = do
     Just m  -> case memberEmail m of
                  Nothing -> error "Please verify your email address."
                  Just _  -> f m
+
+withRequiredMember' :: (Member -> App a) -> App a
+withRequiredMember' f = do
+  member <- asks appMember
+  case member of
+    Nothing -> error "Please log in."
+    Just m  -> f m
 
 gravatar :: Int -- ^ size (square) in pixels
          -> String -- ^ email address
