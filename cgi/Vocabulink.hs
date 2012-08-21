@@ -157,6 +157,7 @@ dispatch "GET" ["privacy"]      = articlePage "privacy"
 dispatch "GET" ["terms-of-use"] = articlePage "terms-of-use"
 dispatch "GET" ["source"]       = articlePage "source"
 dispatch "GET" ["api"]          = articlePage "api"
+dispatch "GET" ["download"]     = redirect "https://github.com/jekor/vocabulink/tarball/master"
 
 dispatch "POST" ["contact"]     = contactUs
 
@@ -377,37 +378,32 @@ dispatch _ _ = outputNotFound
 frontPage :: App CGIResult
 frontPage = do
   cloud <- wordCloud 40 261 248 12 32 6
-  stdPage "Foreign Language Vocabulary — Stories, Spaced Repetition, and Important Words" [CSS "front"] mempty (page cloud)
- where page wordcloud = mconcat [
-         div ! class_ "top" $ do
-           div ! id "word-cloud" $ do
-             wordcloud
-           div ! id "intro" $ do
-             h1 "Build Vocabulary—Fast"
-             p "Vocabulary building is the most important, but most time-consuming part of learning a language."
-             p "We'll show you how to learn foreign words more quickly and easily than you imagined possible using 3 simple principles."
-             a ! id "try-now" ! href "/learn?learn=es&known=en" ! class_ "faint-gradient-button green" $ do
-               "Get Started"
-               br
-               "with Spanish",
-         div ! class_ "bottom" $ do
-           div ! class_ "three-column" $ do
-             div ! class_ "column" $ do
-               h2 $ do
-                 strong "1"
-                 "Outrageous Stories"
-               p "We use fictional stories to make new words stick. They might seem silly at first, but they're surprisingly effective."
-               p $ a ! href "article/how-do-linkword-mnemonics-work" $ "How do they work?"
-             div ! class_ "column" $ do
-               h2 $ do
-                 strong "2"
-                 "Spaced Repetition"
-               p "It's tedious to drill the same flashcards day after day. We use tested algorithms to keep quizzes to a minimum."
-               p $ a ! href "article/how-does-spaced-repetition-work" $ "How does it work?"
-             div ! class_ "column" $ do
-               h2 $ do
-                 strong "3"
-                 "Important Words"
-               p "Don't waste time learning words you'll rarely, if ever, use. We introduce words in order of how common they are."
-               p $ a ! href "article/why-study-words-in-order-of-frequency" $ "Why study this way?" ]
+  nEsLinks <- fromJust . fromJust <$> $(queryTuple' "SELECT COUNT(*) FROM link WHERE learn_lang = 'es' AND known_lang = 'en' AND NOT deleted")
+  nReviews <- fromJust . fromJust <$> $(queryTuple' "SELECT COUNT(*) FROM link_review")
+  nLinkwords <- fromJust . fromJust <$> $(queryTuple' "SELECT COUNT(*) FROM link_linkword ll INNER JOIN link l ON (l.link_no = ll.link_no AND NOT deleted)")
+  nStories <- fromJust . fromJust <$> $(queryTuple' "SELECT COUNT(*) FROM linkword_story INNER JOIN link USING (link_no) WHERE NOT deleted")
+  stdPage "Build Vocabulary Fast with Linkword Mnemonics" [CSS "front"] mempty $
+    mconcat [
+      div ! class_ "top" $ do
+        div ! id "word-cloud" $ do
+          cloud
+        div ! id "intro" $ do
+          h1 "Build Vocabulary—Fast"
+          p $ do
+            toHtml $ "Learn foreign words with " ++ prettyPrint (nLinkwords::Integer) ++ " "
+            a ! href "article/how-do-linkword-mnemonics-work" $ "linkword mnemonics"
+            toHtml $ " and " ++ prettyPrint (nStories::Integer) ++ " accompanying stories."
+          p $ do
+            "Retain the words through "
+            a ! href "article/how-does-spaced-repetition-work" $ "spaced repetition"
+            toHtml $ " (" ++ prettyPrint (nReviews::Integer) ++ " reviews to-date)."
+          p $ do
+            toHtml $ prettyPrint (nEsLinks::Integer) ++ " of the "
+            a ! href "article/why-study-words-in-order-of-frequency" $ "most common"
+            " Spanish words await you. More mnemonics and stories are being added daily. The service is free."
+          p ! id "try-now" $ do
+            a ! href "/learn?learn=es&known=en" ! class_ "faint-gradient-button green" $ do
+              "Get Started"
+              br
+              "with Spanish" ]
 
