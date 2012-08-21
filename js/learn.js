@@ -160,51 +160,48 @@
   }
 
   function fetchReviews() {
-    // Are there already items to review?
-    if (review.length === 0) {
-      // Don't re-add items that have been reviewed between now...
-      var currentLinkNums = $.map(review, function (_, link) {
-        return link[0];
-      });
-      currentLinkNums.push(parseInt($('h1').attr('linkno'), 10));
-      $.get('/learn/reviews' + location.search)
-       .done(function (links) {
-         // ...and now. Because they might have been reviewed in the meantime.
-         review = review.concat($.grep(links, function (link) {
-           return $.inArray(link[0], currentLinkNums) === -1;
-         }));
-       })
-       .fail(function (xhr) {
-         // Fail silently for now.
-       });
-    }
+    // Don't re-add items that have been reviewed between now...
+    var currentLinkNums = $.map(review, function (_, link) {
+      return link[0];
+    });
+    currentLinkNums.push(parseInt($('h1').attr('linkno'), 10));
+    $.get('/learn/reviews' + location.search)
+     .done(function (links) {
+       // Randomize the links so that the learner doesn't get too used to the
+       // order they arrive in.
+       links.sort(function () {return Math.round(Math.random()) - 0.5;});
+       // ...and now. Because they might have been reviewed in the meantime.
+       review = review.concat($.grep(links, function (link) {
+         return $.inArray(link[0], currentLinkNums) === -1;
+       }));
+     })
+     .fail(function (xhr) {
+       // Fail silently for now.
+     });
   }
 
   function fetchLearns(nextAction) {
-    // Are there already items to review?
-    if (learn.length === 0) {
-      // Don't re-add items that have been learned between now...
-      var currentLinkNums = $.map(review, function (_, link) {
-        return link[0];
-      });
-      currentLinkNums.push(parseInt($('h1').attr('linkno'), 10));
-      $.get('/learn/new' + location.search)
-       .done(function (links) {
-         // ...and now. Because they might have been reviewed in the meantime.
-         learn = learn.concat($.grep(links, function (link) {
-           return $.inArray(link[0], currentLinkNums) === -1;
-         }));
-         if (learn.length > 0) {
-           nextAction();
-         } else {
-           // TODO: The user is done with this language. We have no more words
-           // for them to learn.
-         }
-       })
-       .fail(function (xhr) {
-         V.toastError('Failed to fetch more words to learn.')
-       });
-    }
+    // Don't re-add items that have been learned between now...
+    var currentLinkNums = $.map(review, function (_, link) {
+      return link[0];
+    });
+    currentLinkNums.push(parseInt($('h1').attr('linkno'), 10));
+    $.get('/learn/new' + location.search)
+     .done(function (links) {
+       // ...and now. Because they might have been reviewed in the meantime.
+       learn = learn.concat($.grep(links, function (link) {
+         return $.inArray(link[0], currentLinkNums) === -1;
+       }));
+       if (learn.length > 0) {
+         nextAction();
+       } else {
+         // TODO: The user is done with this language. We have no more words
+         // for them to learn.
+       }
+     })
+     .fail(function (xhr) {
+       V.toastError('Failed to fetch more words to learn.')
+     });
   }
 
   $(function () {
@@ -222,6 +219,9 @@
     });
     nextAction = function () {
       if (review.length > 0) {
+        if (review.length == 1) {
+          fetchReviews();
+        }
         doReview(review.pop());
       } else if (learn.length > 0) {
         doLearn(learn.pop());
@@ -285,7 +285,12 @@
     nextAction();
     // Check for new links to review every 10 minutes.
     if (V.loggedIn()) {
-      setInterval(fetchReviews, 1000 * 60 * 10);
+      setInterval(function () {
+        // Are there already items to review?
+        if (review.length <= 1) {
+          fetchReviews();
+        }
+      }, 1000 * 60 * 10);
     }
   });
 

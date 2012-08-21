@@ -116,7 +116,7 @@ dueForReview member learn' known' n =
       \LEFT JOIN link_linkword w USING (link_no) \
       \WHERE member_no = {memberNumber m} AND current_timestamp >= target_time \
         \AND learn_lang = {learn'} AND known_lang = {known'} \
-      \ORDER BY random() \
+      \ORDER BY target_time ASC \
       \LIMIT {n}")
 
 -- First, use words with existing stories. Second, use linkwords or
