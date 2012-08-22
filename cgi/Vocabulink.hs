@@ -238,8 +238,10 @@ dispatch "GET" ["links"] = do
 dispatch "GET" ["search"] = do
   q <- getRequiredInput "q"
   db <- asks appDB
-  links <- liftIO $ linksContaining q db
-  linksPage (q ++ " - Search Results") links
+  links <- if q == ""
+              then return []
+              else liftIO $ linksContaining q db
+  linksPage ("Search Results for \"" ++ q ++ "\"") links
 
 -- Languages
 

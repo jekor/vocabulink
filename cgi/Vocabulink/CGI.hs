@@ -175,9 +175,7 @@ getInputDefault d n = do
   i <- getInput n
   return $ case i of
              Nothing -> d
-             Just i' -> case i' of
-                          "" -> d
-                          _  -> i'
+             Just i' -> i'
 
 -- As a convenience, |getRequiredInput| will throw an error on a missing input.
 -- It allows us to write simpler code, but eventually most calls to this should
