@@ -146,7 +146,7 @@ login = do
       case uri' of
         Just uri -> let query' = case uriQuery uri of
                                    "" -> "?badlogin"
-                                   q' -> "?" ++ q' ++ "&badlogin" in
+                                   q' -> q' ++ "&badlogin" in
                     redirect $ show $ uri {uriQuery = query'}
         Nothing  -> redirect "http://www.vocabulink.com/?badlogin"
 
