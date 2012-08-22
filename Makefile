@@ -27,7 +27,7 @@ jslibs := common link member dashboard learn
 # Common is getting large. I'd like to break it up and maybe do deferred loading at some point.
 js_common := external/jquery-1.6.1 external/jquery.cookie external/minform external/jquery.loadmask external/jquery.toastmessage external/jquery.simplemodal-1.4.1 common
 js_link := external/longtable link
-js_member := external/jquery.markitup external/markdown.set external/showdown ajax comment link-editor
+js_member := external/jquery.markitup external/markdown.set external/showdown ajax comment
 js_dashboard := external/drcal dashboard
 js_learn := external/jquery.hotkeys learn
 
@@ -56,7 +56,7 @@ js/external/drcal.js : /home/jekor/project/drcal/drcal.js
 
 csslibs := common member link article dashboard member-page front learn
 css_common := common comment external/jquery.toastmessage external/jquery-loadmask external/jquery.simplemodal
-css_member := link-editor external/markitup-set external/markitup-skin
+css_member := external/markitup-set external/markitup-skin
 css_link := link
 css_article := article
 css_dashboard := dashboard

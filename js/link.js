@@ -113,26 +113,6 @@ $(function () {
   if (V.loggedIn() && $('#linkword-stories').length) {
     showNewStory();
   }
-
-  // "add to review"
-  $('#link-op-review.enabled').click(function (e) {
-    var op = $(this);
-    op.mask("Adding...");
-    var linkNum = window.location.pathname.split('/').pop();
-    $.ajax('/review/' + linkNum, {'type': 'PUT'})
-     .done(function () {
-       op.unmask();
-       op.text("now reviewing");
-       V.incrLinksToReview(1);
-     })
-     .fail(function (xhr) {
-       op.unmask();
-       op.addClass("failed");
-       op.text("Failed!");
-       V.toastError(xhr.responseText);
-     });
-    return false;
-  });
 });
 
 })(jQuery);
