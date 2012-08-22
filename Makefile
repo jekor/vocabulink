@@ -111,7 +111,7 @@ clean :
 
 jses := $(shell find js -maxdepth 1 -name "*.js")
 
-metrics : $(hses) $(jses) $(csses)
-	cloc $(hses) $(jses) $(csses)
+metrics : $(hses) $(jses) $(CSS)
+	cloc $(hses) $(jses) $(CSS)
 	ls -l js/compiled/*.js
 	ls -l css/compiled/*.css
