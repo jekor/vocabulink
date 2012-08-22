@@ -112,6 +112,48 @@ $(function () {
 
   if (V.loggedIn() && $('#linkword-stories').length) {
     showNewStory();
+    $('.linkword-story').each(function () {
+      // Quick hack to allow "admin" edits.
+      if ($(this).find('.username').text() === V.memberName || V.memberName === 'jekor') {
+        var sig = $(this).find('.signature');
+        var editButton = $('<button class="light">Edit</button>');
+        editButton.click(function () {
+          var story = $(this).parents('.linkword-story');
+          var storyNumber = parseInt(story.parent().find('a:first').attr('id'), 10);
+          story.mask('Loading...');
+          var body = $.ajax({ 'type': 'GET'
+                            , 'url': '/link/story/' + storyNumber
+                            , 'success': function (data) {
+                              story.unmask();
+                              story.hide();
+                              var form = $(
+                                '<form class="linkword-story" method="post">'
+                                + '<blockquote>'
+                                  + '<textarea name="story" required></textarea>'
+                                + '</blockquote>'
+                                + '<div class="signature">'
+                                  + '<input type="submit" value="Save" class="light">'
+                                  + '<button class="cancel">cancel</button>'
+                                + '</div>'
+                              + '</form>').insertAfter(story);
+                              form.attr('action', '/link/story/' + storyNumber);
+                              form.find('textarea').text(data);
+                              form.minform();
+                              form.find('textarea').css('height', '10em').markItUp(mySettings);
+                              form.find('.cancel').click(function () {
+                                form.remove();
+                                story.show();
+                              });
+                            }
+                            , 'error': function () {
+                              story.unmask();
+                              alert('Error retrieving story.');
+                            }
+                           });
+        });
+        sig.prepend(editButton);
+      }
+    });
   }
 });
 
