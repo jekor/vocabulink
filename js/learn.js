@@ -28,7 +28,7 @@
   function link() {
     return $(
       '<h1 class="link association" linkno="">'
-      + '<span class="foreign">'
+      + '<span class="foreign" title="' + learnLanguage + '">'
         + '<span class="foreign-word"></span>'
         + '<button class="pronounce button light">'
           + '<audio>'
@@ -40,7 +40,7 @@
       + '</span>'
       + '<span class="link">'
       + '</span>'
-      + '<span class="familiar">'
+      + '<span class="familiar" title="' + knownLanguage + '">'
         + '<span class="familiar-word"></span>'
       + '</span>'
     + '</h1>');
@@ -292,6 +292,100 @@
         }
       }, 1000 * 60 * 10);
     }
+
+    // Start the tour for new users.
+    if (!V.loggedIn()) {
+      tour();
+    }
   });
+
+  function tooltipBelow(source, target) {
+    var pos = target.position();
+    var width = target.outerWidth();
+    target.after(source);
+    var x = pos.left + (width - source.outerWidth()) / 2;
+    var y = pos.top + target.outerHeight() + 10;
+    source.css({'position': 'absolute', 'top': y, 'left': x});
+    $('<div class="nib top"></div>').prependTo(source).css({'position': 'absolute', 'top': -14, 'left': (source.outerWidth() - 14) / 2});
+    $('<a href="" class="close">x</a>').prependTo(source).click(function () {
+      source.remove();
+      return false;
+    });
+  }
+
+  function tooltipAbove(source, target) {
+    var pos = target.position();
+    var width = target.outerWidth();
+    target.after(source);
+    var x = pos.left + (width - source.outerWidth()) / 2;
+    var y = pos.top - 10 - source.outerHeight();
+    source.css({'position': 'absolute', 'top': y, 'left': x});
+    $('<div class="nib bottom"></div>').prependTo(source).css({'position': 'absolute', 'bottom': -14, 'left': (source.outerWidth() - 14) / 2});
+    $('<a href="" class="close">x</a>').prependTo(source).click(function () {
+      source.remove();
+      return false;
+    });
+  }
+
+  function tour() {
+    var tip = $('<div class="tip">'
+                + '<p><img src="//s.vocabulink.com/img/wizard.png" style="float: left; margin-right: 0.5em; margin-bottom: 0.5em;">First time here? Not sure what to do? I can walk you through the basics.</p>'
+                + '<p style="text-align: right"><button class="button dark">Start the Tour</button></p>'
+              + '</div>').css({'max-width': '16em'
+                              ,'position': 'absolute'
+                              ,'top': $('h1').position().top
+                              ,'left': 20});
+    $('<a href="" class="close">x</a>').prependTo(tip).click(function () {
+      tip.remove();
+      return false;
+    });
+    tip.appendTo('body');
+    $('button', tip).click(function () {
+      $(this).closest('.tip').remove();
+      var tip = $('<div class="tip">'
+                  + '<p>This is the ' + learnLanguage + ' word you\'re going to learn. You can click the speaker icon next to it to hear its pronunciation.</p>'
+                  + '<p style="text-align: right"><button class="button dark">Next: Translation</button></p>'
+                + '</div>').css({'max-width': '16em'});
+      $('button', tip).click(function () {
+        $(this).closest('.tip').remove();
+        var tip = $('<div class="tip">'
+                    + '<p>This is the ' + knownLanguage + ' translation. It\'s what you\'re going to try to remember (you will be quizzed on it later).</p>'
+                    + '<p style="text-align: right"><button class="button dark">Next: Linkword</button></p>'
+                  + '</div>').css({'max-width': '16em'});
+        $('button', tip).click(function () {
+          $(this).closest('.tip').remove();
+          var tip = $('<div class="tip">'
+                      + '<p>And this is the "linkword". It\'s a word or phrase in ' + knownLanguage + ' that sounds a little like the ' + learnLanguage + ' word. With a story, it\'s going to link the sound of the ' + learnLanguage + ' word to its meaning.</p>'
+                      + '<p style="text-align: right"><button class="button dark">Next: Story</button></p>'
+                    + '</div>').css({'max-width': '20em'});
+          $('button', tip).click(function () {
+            $(this).closest('.tip').remove();
+            var tip = $('<div class="tip">'
+                        + '<p>These are the linkword stories. Read the story and notice that it uses both the linkword and the translation. Why read the story? Because your brain remembers stories better than isolated words.</p>'
+                        + '<p style="text-align: right"><button class="button dark">Next: Stories</button></p>'
+                      + '</div>').css({'max-width': '20em'});
+            $('button', tip).click(function () {
+              $(this).closest('.tip').remove();
+              var tip = $('<div class="tip">'
+                          + '<p>Click this button once you think you\'ve committed this word to memory, and we\'ll move on to the next word.</p>'
+                          + '<p style="text-align: right"><button class="button dark">Finish</button></p>'
+                        + '</div>').css({'max-width': '20em'});
+              $('button', tip).click(function () {
+                $(this).closest('.tip').remove();
+              });
+              tooltipBelow(tip, $('#confirm'));
+            });
+            tooltipAbove(tip, $('.linkword-story-container:first'));
+            return false;
+          });
+          tooltipBelow(tip, $('h1 .link'));
+          return false;
+        });
+        tooltipBelow(tip, $('h1 .familiar'));
+        return false;
+      });
+      tooltipBelow(tip, $('h1 .foreign'));
+    });
+  }
 
 })(jQuery);

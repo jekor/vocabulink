@@ -337,13 +337,15 @@ learnPage = do
   learn'' <- langNameFromAbbr learn'
   known'' <- langNameFromAbbr known'
   case (learn'', known'') of
-    (Just l, Just _) -> do
+    (Just l, Just k) -> do
       m <- asks appMember
       -- Send the initial batch of data with this page.
       due <- mapM compactLinkJSON =<< dueForReview m learn' known' 10
       new <- mapM compactLinkJSON =<< newForReview m learn' known' (10 - length due)
       let vars = "var review = " ++ Data.Text.Lazy.unpack (toLazyText (Data.Aeson.Encode.fromValue (Data.Aeson.Types.Array (V.fromList due)))) ++ ";\n" ++
-                 "var learn = " ++ Data.Text.Lazy.unpack (toLazyText (Data.Aeson.Encode.fromValue (Data.Aeson.Types.Array (V.fromList new)))) ++ ";"
+                 "var learn = " ++ Data.Text.Lazy.unpack (toLazyText (Data.Aeson.Encode.fromValue (Data.Aeson.Types.Array (V.fromList new)))) ++ ";" ++
+                 "var learnLanguage = '" ++ l ++ "';" ++
+                 "var knownLanguage = '" ++ k ++ "';"
       stdPage ("Learning " ++ l ++ " Words") [JS "learn", CSS "learn", JS "link", CSS "link", InlineJS vars] mempty $ do
         div ! id "learn-header" $ do
           h2 $ "Loading..."

@@ -106,3 +106,38 @@
   display: none
   ul
     list-style-type: disc
+
+.tip
+  display: inline-block
+  @include rounded(4px)
+  background-color: #2D2D2D
+  color: #9D9C9C
+  font-size: 11pt
+  font-weight: normal
+  z-index: 2
+  padding:
+    top: 8px
+    bottom: 6px
+    left: 10px
+    right: 20px
+  p
+    text-align: left
+    margin:
+      top: 0
+      left: 0
+      right: 0
+      bottom: 6px
+  .nib
+    border: 7px solid transparent
+  .nib.top
+    border:
+      bottom: 7px solid #2D2D2D
+  .nib.bottom
+    border:
+      top: 7px solid #2D2D2D
+  .close
+    display: block
+    position: absolute
+    top: 3px
+    right: 5px
+    font-size: 12px
