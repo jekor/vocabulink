@@ -20,6 +20,7 @@
   var confirm = function () {};
   var nextAction = function () {};
   var recallTime = 0;
+  var firstLink = null; // Used for first timers.
 
   function header(text) {
     $('#learn-header h2').text(text);
@@ -66,14 +67,19 @@
 
   function grade(g) {
     $('#grades').hide();
-    $.ajax('/review/' + $('h1').attr('linkno')
-          ,{'type': 'POST'
-           ,'data': {'grade': g
-                    ,'time': recallTime}})
-     .fail(function () {V.toastError('Failed to record grade.');});
-    if (g >= 0.5) {
-      // Update the "X links to review" in the header.
-      V.incrLinksToReview(-1);
+    if (!V.loggedIn()) {
+      firstLink = null;
+      $('.tip').remove();
+    } else {
+      $.ajax('/review/' + $('h1').attr('linkno')
+            ,{'type': 'POST'
+             ,'data': {'grade': g
+                      ,'time': recallTime}})
+       .fail(function () {V.toastError('Failed to record grade.');});
+      if (g >= 0.5) {
+        // Update the "X links to review" in the header.
+        V.incrLinksToReview(-1);
+      }
     }
     nextAction();
   }
@@ -224,22 +230,34 @@
         }
         doReview(review.pop());
       } else if (learn.length > 0) {
-        doLearn(learn.pop());
-      } else {
-        // Clear the learning area.
-        $('h1, #action-area, #linkword-stories').hide();
-        if (V.loggedIn()) {
-          header('Loading More Words...');
-          fetchLearns(nextAction);
-        } else {
+        if (!V.loggedIn()) {
+          var queue = V.getLocal('learnQueue', []);
+        }
+        if (!V.loggedIn() && queue.length == 2 && firstLink) {
+          doReview(firstLink);
+          tourReview();
+          $('#confirm').one('click', function () {
+            $('.tip').remove();
+          });
+        } else if (!V.loggedIn() && queue.length == 5) {
+          // Clear the learning area.
+          $('h1, #action-area, #linkword-stories').hide();
           // Display an invitation to join the site.
           header('Sign Up to Continue');
           $('#signup-invitation').show();
           $('#signup-button').click();
+        } else {
+          doLearn(learn.pop());
         }
+      } else {
+        // Clear the learning area.
+        $('h1, #action-area, #linkword-stories').hide();
+        header('Loading More Words...');
+        fetchLearns(nextAction);
       }
     };
     var doReview = function (link) {
+      $('#linkword-stories').hide();
       var answer = link[2];
       var extra = link[3];
       link[2] = '?';
@@ -262,6 +280,9 @@
       };
     }
     var doLearn = function (link) {
+      if (!V.loggedIn() && !firstLink) {
+        firstLink = link;
+      }
       linkEl.hide();
       updateLink(linkEl, link);
       updateStories(storiesEl, link);
@@ -295,7 +316,7 @@
 
     // Start the tour for new users.
     if (!V.loggedIn()) {
-      tour();
+      tourLearn();
     }
   });
 
@@ -327,9 +348,9 @@
     });
   }
 
-  function tour() {
+  function tourLearn() {
     var tip = $('<div class="tip">'
-                + '<p><img src="//s.vocabulink.com/img/wizard.png" style="float: left; margin-right: 0.5em; margin-bottom: 0.5em;">First time here? Not sure what to do? I can walk you through the basics.</p>'
+                + '<p><img src="//s.vocabulink.com/img/wizard.png" style="float: left; margin-right: 0.75em; margin-bottom: 0.5em;">First time here? Not sure what to do? I can walk you through the basics.</p>'
                 + '<p style="text-align: right"><button class="button dark">Start the Tour</button></p>'
               + '</div>').css({'max-width': '16em'
                               ,'position': 'absolute'
@@ -356,22 +377,21 @@
           $(this).closest('.tip').remove();
           var tip = $('<div class="tip">'
                       + '<p>And this is the "linkword". It\'s a word or phrase in ' + knownLanguage + ' that sounds a little like the ' + learnLanguage + ' word. With a story, it\'s going to link the sound of the ' + learnLanguage + ' word to its meaning.</p>'
-                      + '<p style="text-align: right"><button class="button dark">Next: Story</button></p>'
+                      + '<p style="text-align: right"><button class="button dark">Next: Stories</button></p>'
                     + '</div>').css({'max-width': '20em'});
           $('button', tip).click(function () {
             $(this).closest('.tip').remove();
             var tip = $('<div class="tip">'
                         + '<p>These are the linkword stories. Read the story and notice that it uses both the linkword and the translation. Why read the story? Because your brain remembers stories better than isolated words.</p>'
-                        + '<p style="text-align: right"><button class="button dark">Next: Stories</button></p>'
+                        + '<p style="text-align: right"><button class="button dark">Next: Finish</button></p>'
                       + '</div>').css({'max-width': '20em'});
             $('button', tip).click(function () {
               $(this).closest('.tip').remove();
               var tip = $('<div class="tip">'
                           + '<p>Click this button once you think you\'ve committed this word to memory, and we\'ll move on to the next word.</p>'
-                          + '<p style="text-align: right"><button class="button dark">Finish</button></p>'
                         + '</div>').css({'max-width': '20em'});
-              $('button', tip).click(function () {
-                $(this).closest('.tip').remove();
+              $('#confirm').one('click', function () {
+                $('.tip').remove();
               });
               tooltipBelow(tip, $('#confirm'));
             });
@@ -388,4 +408,40 @@
     });
   }
 
+  function tourReview() {
+    $('.tip').remove();
+    var tip = $('<div class="tip">'
+                + '<p><img src="//s.vocabulink.com/img/wizard.png" style="float: left; margin-right: 0.75em; margin-bottom: 0.5em;">Every time we show you a word, we keep track of that word for you and occasionally remind you to review it.</p>'
+                + '<p style="text-align: right"><button class="button dark">Show Me How</button></p>'
+              + '</div>').css({'max-width': '16em'
+                              ,'position': 'absolute'
+                              ,'top': $('h1').position().top
+                              ,'left': 20});
+    $('<a href="" class="close">x</a>').prependTo(tip).click(function () {
+      tip.remove();
+      return false;
+    });
+    tip.appendTo('body');
+    $('button', tip).click(function () {
+      $(this).closest('.tip').remove();
+      var tip = $('<div class="tip">'
+                  + '<p>Do you remember what this word means? If you\'re having trouble, try remembering what the word sounds like (the linkword) and the story you read. Don\'t worry if you don\'t remember, but don\'t give up immediately.</p>'
+                  + '<p style="text-align: right"><button class="button dark">Next: The Reveal</button></p>'
+                + '</div>').css({'max-width': '20em'});
+      $('button', tip).click(function () {
+        $(this).closest('.tip').remove();
+        var tip = $('<div class="tip">'
+                    + '<p>Now, whether you remembered or not, it\'s time to reveal the answer. Click "Reveal Answer" or press the Enter key to continue.</p>'
+                  + '</div>').css({'max-width': '20em'});
+        $('#confirm').one('click', function () {
+          var tip = $('<div class="tip">'
+                      + '<p>Now that the answer has been revealed, how well did you remember it? If you remembered clearly and immediately, choose "perfect". If you had to struggle to remember, choose "barely". If your couldn\'t remember anything at all about the word, choose "blank".</p>'
+                    + '</div>').css({'max-width': '25em'});
+          tooltipBelow(tip, $('#grades'));
+        });
+        tooltipBelow(tip, $('#confirm'));
+      });
+      tooltipBelow(tip, $('h1 .foreign'));
+    });
+  }
 })(jQuery);
