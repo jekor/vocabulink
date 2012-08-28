@@ -20,7 +20,6 @@ module Vocabulink.Page ( stdPage, simplePage
                        ) where
 
 import Vocabulink.App
-import Vocabulink.Article
 import Vocabulink.CGI
 import Vocabulink.Html hiding (title, style)
 import Vocabulink.Member
@@ -136,33 +135,17 @@ headerBar = do
 -- The footer displays a number of common (or what we believe to be common)
 -- hyperlinks for English speakers.
 
-languageLinks :: App [Html]
-languageLinks = do
-  rows' <- $(queryTuples' "SELECT abbr, name \
-                          \FROM language_frequency_to_english \
-                          \ORDER BY freq DESC LIMIT 11")
-  return $ map languageLink rows' ++ [a ! href "/links" $ "more..."]
- where languageLink (abbr', name') =
-         a ! href (toValue $ "/links?ol=" ++ fromJust abbr' ++ "&dl=en")
-           $ toHtml $ fromJust name'
-
 footerBar :: App Html
 footerBar = do
-  langLinks <- languageLinks
-  articles <- (map articleLinkHtml . take 3) <$> getArticles
   copy <- liftIO copyrightNotice
   return $ do
-    div ! id "handy-links-background" $ do
-      multiColumn [ do h2 $ a ! href "/links" $ "Browse Links by Language"
-                       multiColumnList 3 langLinks
-                  , do h2 $ a ! href "/articles" $ "Latest Articles"
-                       multiColumnList 1 (articles ++ [a ! href "/articles" $ "more..."])
-                  ] ! id "handy-links"
     unordList [ a ! href "https://getsatisfaction.com/vocabulink" $ "help"
+              , a ! href "/links" $ "languages"
+              , a ! href "/articles" $ "articles"
               , a ! href "" ! class_ "contact-us" $ "contact us"
               , a ! href "/privacy" $ "privacy policy"
               , a ! href "/terms-of-use" $ "terms of use"
-              , a ! href "/source" $ "source"
+              , a ! href "/source" $ "source code"
               -- , a ! href "/api" $ "API"
               ] ! class_ "hyperlinks"
     p $ do
@@ -170,9 +153,6 @@ footerBar = do
       span ! id "design-attribution" $ do
         "Design by: "
         a ! href "http://www.designcharisma.com" $ "Design Charisma"
- where articleLinkHtml article =
-         a ! href (toValue $ "/article/" ++ articleFilename article)
-           $ toHtml $ articleTitle article
 
 -- We want a copyright notice at the bottom of every page. Since this is a
 -- copyright notice for dynamic content, we want it to be up-to-date with the
