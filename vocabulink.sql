@@ -39,10 +39,6 @@ CREATE TABLE password_reset_token (
 );
 COMMENT ON COLUMN password_reset_token.hash IS 'This is a random hash that we can email to the user (in the form of a link) to ensure that they''ve actually received the password reset email. It should be random so that it''s not guessable';
 
--- For our purposes, a lexeme is any text or symbol which can be linked. Each lexeme has a lemma, which is the canonical representation of different forms of the lexeme.
--- Lexemes include "日本語", "語", "五", "5", "five", "language", "にほんご" and "に".
--- Lexemes automatically exist. They are not represented by a relation.
-
 CREATE TABLE link (
        link_no SERIAL PRIMARY KEY,
        learn TEXT NOT NULL CHECK (length(foreign_phrase) > 0),
@@ -54,7 +50,7 @@ CREATE TABLE link (
        updated TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
-COMMENT ON TABLE link IS 'A link is an association between 2 ideas in a single direction. (A reverse association would require another link.)';
+COMMENT ON TABLE link IS 'A link is an association between 2 words (or phrases) in a single direction.';
 COMMENT ON COLUMN link.deleted IS 'We need a way to delete links, but we don''t want to destroy people''s review decks. This allows us to mark deleted links so that we don''t display them to people who aren''t already reviewing them and we can later sweep ones with no references.';
 -- We're going to search by these often.
 CREATE INDEX link_foreign_phrase_index ON link (foreign_phrase);

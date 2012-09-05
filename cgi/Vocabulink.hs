@@ -17,15 +17,15 @@
 
 -- Introduction
 
--- This is Vocabulink, the SCGI program that handles all web requests for\\*
--- \url{http://www.vocabulink.com/}. The site helps people learn languages
--- through fiction. It provides a mnemonics database and spaced repetion
--- (review) tools.
+-- This is Vocabulink, the SCGI program that handles all web requests for
+-- http://www.vocabulink.com/. The site helps people learn languages through
+-- fiction. It provides a mnemonics database and spaced repetion (review)
+-- tools.
 
 -- Architecture
 
--- Requests arrive via a webserver.\footnote{I'm currently using lighttpd, but
--- it should work with any server that supports SCGI.} They are passed to the
+-- Requests arrive via a webserver. (I'm currently using lighttpd, but it
+-- should work with any server that supports SCGI.) They are passed to the
 -- vocabulink.cgi process (this program) on TCP port 10033 of the local
 -- loopback interface.
 
@@ -34,8 +34,8 @@
 -- request). We then examine the request for an authentication cookie. If it
 -- exists and is valid, we consider the request to have originated from an
 -- authenticated member. We pack both the database handle and the authenticated
--- member information into our ``App'' monad (\autoref{App}) and then pass
--- control to a function based on the request method and URI.
+-- member information into our App monad and then pass control to a function
+-- based on the request method and URI.
 
 module Main where
 
@@ -101,9 +101,8 @@ handleRequest = do
   dispatch' meth (pathList uri)
 
 -- We extract the path part of the URI, ``unescape it'' (convert % codes back
--- to characters), decode it (convert \mbox{UTF-8} characters to Unicode
--- Chars), and finally parse it into directory and filename components. For
--- example,
+-- to characters), decode it (convert UTF-8 characters to Unicode Chars), and
+-- finally parse it into directory and filename components. For example,
 
 -- /some/directory/and/a/filename
 
@@ -122,9 +121,7 @@ pathList = splitOn "/" . decodeString . unEscapeString . uriPath
 
 -- Before we actually dispatch the request, we use the opportunity to clean up
 -- the URI and redirect the client if necessary. This handles cases like
--- trailing slashes. We want only one URI to point to a resource.\footnote{I'm
--- not sure that this is the right thing to do. Would it be better just to give
--- the client a 404?}
+-- trailing slashes. We want only one URI to point to a resource.
 
 dispatch' :: String -> [String] -> App CGIResult
 dispatch' meth path =
