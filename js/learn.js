@@ -315,7 +315,7 @@
     }
 
     // Start the tour for new users.
-    if (!V.loggedIn()) {
+    if (!V.loggedIn() && V.getLocal('learnQueue').length < 5) {
       tourLearn();
     }
   });
