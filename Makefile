@@ -29,7 +29,7 @@ js_common := external/jquery-1.6.1 external/jquery.cookie external/minform exter
 js_link := external/longtable link
 js_member := external/jquery.markitup external/markdown.set external/showdown ajax comment
 js_dashboard := external/drcal dashboard
-js_learn := external/jquery.hotkeys learn
+js_learn := external/jquery.hotkeys external/jquery.easing.1.3 learn
 
 define js_template =
 js/compiled/$(1).js : $$(js_$(1):%=js/%.js)

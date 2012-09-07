@@ -291,7 +291,7 @@
       $('#confirm').text('OK, Got it').show();
       confirm = function () {
         addToReview(link[0]);
-        nextAction();
+        addToLearnCloud($('h1'), nextAction);
       };
       linkEl.show();
       storiesEl.show();
@@ -443,5 +443,41 @@
       });
       tooltipBelow(tip, $('h1 .foreign'));
     });
+  }
+
+  function addToLearnCloud(linkEl, nextAction) {
+    var learnCloud = $('#learn-cloud');
+    if (learnCloud.length === 0) {
+      var headBar = $('#head-bar');
+      learnCloud = $(
+        '<div id="learn-cloud">'
+        + '<h3>Words Learned</h3>'
+        + '<ul></ul>'
+      + '</div>').hide().appendTo(headBar).slideDown('slow');
+      learnCloud.css({'top': headBar.offset().top + headBar.outerHeight()
+                     ,'left': headBar.offset().left + headBar.outerWidth() - learnCloud.outerWidth() - 3});
+    }
+    var foreignWord = $('.foreign-word', linkEl);
+    // Put the word into place to figure out its position.
+    var word = $('<li></li>').text(foreignWord.text()).css({'opacity': 0}).appendTo($('ul', learnCloud));
+    var start = foreignWord.offset();
+    var end = word.offset();
+    // Fly the word from its element into the cloud.
+    var flier = foreignWord.clone().css({'position': 'absolute'
+                                        ,'left': foreignWord.position().left
+                                        ,'top': foreignWord.position().top}).insertAfter(foreignWord);
+    foreignWord.css({'opacity': 0});
+    // Fly into position.
+    flier.animate({'left': '+=' + Math.round(end.left - start.left)
+                  ,'top': '+=' + Math.round(end.top - start.top)
+                  ,'font-size': '6pt'
+                  }, 'slow', 'swing', function () {
+                    // Now, pop into place.
+                    flier.remove();
+                    word.css({'opacity': 1
+                             ,'font-size': '6pt'}).animate({'font-size': '12pt'}, 'slow', 'easeOutBack');
+                    foreignWord.css({'opacity': 1});
+                    nextAction();
+                  });
   }
 })(jQuery);
