@@ -59,7 +59,7 @@
   function actionArea() {
     var box = $(
       '<div id="action-area">'
-      + '<button id="confirm" class="faint-gradient-button green" title="hotkey: enter"></button>'
+      + '<button id="confirm" class="faint-gradient-button green" title="hotkey: enter or space"></button>'
     + '</div>');
     box.append(gradeBar().hide());
     return box;
@@ -215,14 +215,16 @@
     var actionEl = actionArea().hide().appendTo('#body');
     var storiesEl = stories().hide().appendTo('#body');
     $('#confirm').click(function () {confirm();});
-    $(document).bind('keyup', 'return', function () {
+    var keyConfirm = function () {
       var button = $('#confirm');
       button.addClass('pressed');
       setTimeout(function () {
          button.removeClass('pressed');
          confirm();
       }, 200);
-    });
+    }
+    $(document).bind('keyup', 'return', keyConfirm);
+    $(document).bind('keyup', 'space', keyConfirm);
     nextAction = function () {
       if (review.length > 0) {
         if (review.length == 1) {
