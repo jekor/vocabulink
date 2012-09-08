@@ -86,22 +86,6 @@ V.toastMessage = function (type, msg, sticky) {
                                        });
 };
 
-V.toastNotice = function (msg, sticky) {
-  return V.toastMessage('notice', msg, sticky);
-};
-
-V.toastSuccess = function (msg, sticky) {
-  return V.toastMessage('success', msg, sticky);
-};
-
-V.toastError = function (msg, sticky) {
-  return V.toastMessage('error', msg, sticky);
-};
-
-V.toastWarning = function (msg, sticky) {
-  return V.toastMessage('warning', msg, sticky);
-};
-
 function lostPasswordPopup() {
   var content = $(
     '<div><h1>Lost Password</h1>'
@@ -121,8 +105,8 @@ function lostPasswordPopup() {
         modal.mask('Sending...');
         e.preventDefault();
         $.post($(this).attr('action'), $(this).serialize())
-          .done(function () {$.modal.close(); V.toastSuccess('Password recovery instructions sent.');})
-          .fail(function (xhr) {modal.unmask(); V.toastError(xhr.responseText, true);});
+          .done(function () {$.modal.close(); V.toastMessage('success', 'Password recovery instructions sent.');})
+          .fail(function (xhr) {modal.unmask(); V.toastMessage('error', xhr.responseText, true);});
         return false;
       });
 }
@@ -172,11 +156,11 @@ V.signupPopup = function() {
   popup.minform();
   popup.submit(function () {
     if (!usernameOK) {
-      V.toastError("Your chosen username is unavailable or invalid.");
+      V.toastMessage('error', 'Your chosen username is unavailable or invalid.');
       return false;
     }
     if (!emailOK) {
-      V.toastError("Your chosen email address is unavailable or invalid.");
+      V.toastMessage('error', 'Your chosen email address is unavailable or invalid.');
       return false;
     }
   });
@@ -235,8 +219,8 @@ V.contactPopup = function () {
         modal.mask('Sending...');
         e.preventDefault();
         $.post($(this).attr('action'), $(this).serialize())
-          .done(function () {$.modal.close(); V.toastSuccess('Message sent.');})
-          .fail(function (xhr) {modal.unmask(); V.toastError(xhr.responseText, true);});
+          .done(function () {$.modal.close(); V.toastMessage('success', 'Message sent.');})
+          .fail(function (xhr) {modal.unmask(); V.toastMessage('error', xhr.responseText, true);});
         return false;
       });
 };
@@ -278,15 +262,15 @@ $(function () {
 
   // Check for signals in the query string.
   if (V.query.badlogin && !V.loggedIn()) {
-    V.toastError("Username and password do not match (or don't exist).");
+    V.toastMessage('error', "Username and password do not match (or don't exist).");
     V.loginPopup();
   }
   if (V.query.signedup) {
     localStorage.removeItem('learnQueue');
-    V.toastSuccess("Welcome! Please check your email to confirm your account.", true);
+    V.toastMessage('success', "Welcome! Please check your email to confirm your account.", true);
   }
   if (V.query.emailconfirmed) {
-    V.toastSuccess("Congratulations! You've confirmed your account.", true);
+    V.toastMessage('success', "Congratulations! You've confirmed your account.", true);
   }
 
   $('#signup-button').click(function () {

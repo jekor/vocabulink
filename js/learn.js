@@ -145,7 +145,7 @@
      })
      .fail(function (xhr) {
        $('#linkword-stories > p').remove();
-       V.toastError(xhr);
+       V.toastMessage('error', xhr);
      });
   }
 
@@ -156,7 +156,7 @@
          V.incrLinksToReview(1);
        })
        .fail(function (xhr) {
-         V.toastError(xhr.responseText);
+         V.toastMessage('error', xhr.responseText);
        });
     } else {
       var queue = V.getLocal('learnQueue', []);
@@ -206,7 +206,7 @@
        }
      })
      .fail(function (xhr) {
-       V.toastError('Failed to fetch more words to learn.')
+       V.toastMessage('error', 'Failed to fetch more words to learn.');
      });
   }
 

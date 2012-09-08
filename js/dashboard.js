@@ -42,7 +42,7 @@ $(function () {
        });
        cal.unmask();
      })
-     .fail(function (xhr) {cal.unmask(); V.toastError(xhr.responseText, false);});
+     .fail(function (xhr) {cal.unmask(); V.toastMessage('error', xhr.responseText, false);});
   }).changeMonth(new Date());
   cal.find('.prev, .next').addClass('light');
   cal.delegate('td', 'click', function () {
@@ -71,7 +71,7 @@ $(function () {
        });
        dailyDetail.empty().append(reviewedList).append(scheduledList).append('<div class="clear"></div>');
      })
-     .fail(function (xhr) {V.toastError(xhr.responseText, false);});
+     .fail(function (xhr) {V.toastMessage('error', xhr.responseText, false);});
   });
   cal.changeMonth(new Date());
   $('.today', cal).click();
