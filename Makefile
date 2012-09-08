@@ -25,9 +25,9 @@ $(cgi) : cgi/dist/build/$(cgi)/$(cgi)
 
 jslibs := common link member dashboard learn
 # Common is getting large. I'd like to break it up and maybe do deferred loading at some point.
-js_common := external/jquery-1.6.1 external/jquery.cookie external/minform external/jquery.loadmask external/jquery.toastmessage external/jquery.simplemodal-1.4.1 common
+js_common := external/jquery-1.6.1 external/jquery.cookie external/minform external/jquery.loadmask external/jquery.toastmessage external/jquery.simplemodal-1.4.1 common loggedout
 js_link := external/longtable link
-js_member := external/jquery.markitup external/markdown.set external/showdown ajax comment
+js_member := external/jquery.markitup external/markdown.set external/showdown loggedin ajax comment
 js_dashboard := external/drcal dashboard
 js_learn := external/jquery.hotkeys external/jquery.easing.1.3 learn
 
