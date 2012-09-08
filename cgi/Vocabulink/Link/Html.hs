@@ -184,13 +184,8 @@ languagePairsPage = do
 data WordStyle = WordStyle (Float, Float) (Float, Float) Int Int
   deriving (Show, Eq)
 
-wordCloud :: Int -> Int -> Int -> Int -> Int -> Int -> App Html
-wordCloud n width' height' fontMin fontMax numClasses = do
-  words <- $(queryTuples'
-    "SELECT learn, link_no FROM link \
-    \WHERE NOT deleted AND link_no IN \
-     \(SELECT DISTINCT link_no FROM linkword_story) \
-    \ORDER BY random() LIMIT {n}")
+wordCloud :: [(String, Integer)] -> Int -> Int -> Int -> Int -> Int -> App Html
+wordCloud words width' height' fontMin fontMax numClasses = do
   gen <- liftIO getStdGen
   let (styles, (newGen, _)) = runState (mapM (wordStyle . fst) words) (gen, [])
   liftIO $ setStdGen newGen

@@ -57,7 +57,7 @@ import Vocabulink.Page
 import Vocabulink.Review
 import Vocabulink.Utils
 
-import Prelude hiding (div, span, id)
+import Prelude hiding (div, span, id, words)
 
 import Control.Concurrent (forkIO)
 import Data.ConfigFile (get)
@@ -376,7 +376,23 @@ dispatch _ _ = outputNotFound
 
 frontPage :: App CGIResult
 frontPage = do
-  cloud <- wordCloud 40 261 248 12 32 6
+  m <- asks appMember
+  let limit = 40
+  words <- case m of
+    -- Logged in? Use the words the person has learned.
+    Just m'  -> $(queryTuples'
+      "SELECT learn, link_no FROM link \
+      \WHERE NOT deleted AND link_no IN \
+       \(SELECT DISTINCT link_no FROM link_to_review \
+        \WHERE member_no = {memberNumber m'}) \
+        \ORDER BY random() LIMIT {limit}")
+    -- Not logged in? Use words with stories.
+    Nothing -> $(queryTuples'
+      "SELECT learn, link_no FROM link \
+      \WHERE NOT deleted AND link_no IN \
+       \(SELECT DISTINCT link_no FROM linkword_story) \
+        \ORDER BY random() LIMIT {limit}")
+  cloud <- wordCloud words 261 248 12 32 6
   nEsLinks <- fromJust . fromJust <$> $(queryTuple' "SELECT COUNT(*) FROM link WHERE learn_lang = 'es' AND known_lang = 'en' AND NOT deleted")
   nReviews <- fromJust . fromJust <$> $(queryTuple' "SELECT COUNT(*) FROM link_review")
   nLinkwords <- fromJust . fromJust <$> $(queryTuple' "SELECT COUNT(*) FROM link_linkword ll INNER JOIN link l ON (l.link_no = ll.link_no AND NOT deleted)")
