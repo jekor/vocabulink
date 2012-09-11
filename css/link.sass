@@ -44,7 +44,9 @@
 
 h1.link
   margin: 1.5em auto 2em
-  white-space: nowrap
+  // Prevent the link from being broken into components.
+  // TODO: Find another method that doesn't break child elements (like tour tooltips).
+  // white-space: nowrap
   .foreign, .familiar, .link
     position: relative
     input
