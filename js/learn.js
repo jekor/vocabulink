@@ -211,7 +211,6 @@
   }
 
   $(function () {
-    V.setLocal('learnQueue', []);
     var linkEl = link().hide().appendTo('#body');
     var actionEl = actionArea().hide().appendTo('#body');
     var storiesEl = stories().hide().appendTo('#body');
