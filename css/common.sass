@@ -192,7 +192,7 @@ html, body
     height: 2px
     background-color: #2D2D2D
     border-bottom: 3px solid #61C6CF
-  #head-bar, #login-popup, #signup-popup, #learn-cloud
+  #head-bar, #learn-cloud
     display: inline-block
     background-color: #2D2D2D
     border:
@@ -217,39 +217,31 @@ html, body
       margin-right: 1em
     .auth-box.logout input
       margin-left: 1em
-  #login-popup, #signup-popup, #learn-cloud
+  #learn-cloud
     position: absolute
     color: #BABABA
-    label
-      float: right
-    input[type=submit]
-      float: left
-      margin:
-        left: 1.5em
-        bottom: 0.667em
-    .cancel
-      float: right
-      font-size: 9pt
-      padding: 0.5em 1em
-  #login-popup
-    td input
-      width: 10em
-  #signup-popup
-    padding: 0.5em 2em 1em 2em
-    h2
-      margin:
-        top: 0.5em
-        bottom: 0.5em
-    #signup-username, #signup-email, #signup-password
-      width: 15em
-    td:last-child
-      width: 16px
-    input[type=checkbox]
-      float: right
-      margin-right: 0.66em
-    input[type=submit]
-      float: right
-      margin: 0
+
+#login, #signup
+  label
+    float: right
+  input[type=submit]
+    margin-top: 0.5em
+    border: 1px solid white
+
+#login
+  input[type=submit]
+    float: right
+    font-size: 11pt
+    margin-right: 1em
+
+#signup
+  td:last-child
+    width: 16px
+  input[type=checkbox]
+    float: right
+    margin-right: 0.66em
+  input[type=submit]
+    font-size: 12pt
 
 #foot
   position: absolute
@@ -352,8 +344,8 @@ form
     margin:
       left: auto
       right: auto
-    input[type=text], input[type=password], textarea
-      width: 25em
+    input[type=text], input[type=password], textarea, input[type=email]
+      width: 15em
     textarea
       height: 10em
   > ul

@@ -71,7 +71,7 @@
       firstLink = null;
       $('.tip').remove();
     } else {
-      $.ajax('/review/' + $('h1').attr('linkno')
+      $.ajax('/review/' + $('h1.link').attr('linkno')
             ,{'type': 'POST'
              ,'data': {'grade': g
                       ,'time': recallTime}})
@@ -170,7 +170,7 @@
     var currentLinkNums = $.map(review, function (_, link) {
       return link[0];
     });
-    currentLinkNums.push(parseInt($('h1').attr('linkno'), 10));
+    currentLinkNums.push(parseInt($('h1.link').attr('linkno'), 10));
     $.get('/learn/reviews' + location.search)
      .done(function (links) {
        // Randomize the links so that the learner doesn't get too used to the
@@ -191,7 +191,7 @@
     var currentLinkNums = $.map(review, function (_, link) {
       return link[0];
     });
-    currentLinkNums.push(parseInt($('h1').attr('linkno'), 10));
+    currentLinkNums.push(parseInt($('h1.link').attr('linkno'), 10));
     $.get('/learn/new' + location.search)
      .done(function (links) {
        // ...and now. Because they might have been reviewed in the meantime.
@@ -211,6 +211,7 @@
   }
 
   $(function () {
+    V.setLocal('learnQueue', []);
     var linkEl = link().hide().appendTo('#body');
     var actionEl = actionArea().hide().appendTo('#body');
     var storiesEl = stories().hide().appendTo('#body');
@@ -242,18 +243,13 @@
             $('.tip').remove();
           });
         } else if (!V.loggedIn() && queue.length == 5) {
-          // Clear the learning area.
-          $('h1, #action-area, #linkword-stories').hide();
-          // Display an invitation to join the site.
-          header('Sign Up to Continue');
-          $('#signup-invitation').show();
-          $('#signup-button').click();
+          $('#signup-invitation').append(V.signupForm()).modal({'close': false});
         } else {
           doLearn(learn.pop());
         }
       } else {
         // Clear the learning area.
-        $('h1, #action-area, #linkword-stories').hide();
+        $('h1.link, #action-area, #linkword-stories').hide();
         header('Loading More Words...');
         fetchLearns(nextAction);
       }
@@ -293,7 +289,7 @@
       $('#confirm').text('OK, Got it').show();
       confirm = function () {
         addToReview(link[0]);
-        addToLearnCloud($('h1'), nextAction);
+        addToLearnCloud($('h1.link'), nextAction);
       };
       linkEl.show();
       storiesEl.show();
@@ -356,7 +352,7 @@
                 + '<p style="text-align: right"><button class="button dark">Start the Tour</button></p>'
               + '</div>').css({'max-width': '16em'
                               ,'position': 'absolute'
-                              ,'top': $('h1').position().top
+                              ,'top': $('h1.link').position().top
                               ,'left': 20});
     $('<a href="" class="close">x</a>').prependTo(tip).click(function () {
       tip.remove();
@@ -403,10 +399,10 @@
           tooltipBelow(tip, $('h1 .link'));
           return false;
         });
-        tooltipBelow(tip, $('h1 .familiar'));
+        tooltipBelow(tip, $('h1.link .familiar'));
         return false;
       });
-      tooltipBelow(tip, $('h1 .foreign'));
+      tooltipBelow(tip, $('h1.link .foreign'));
     });
   }
 
@@ -417,7 +413,7 @@
                 + '<p style="text-align: right"><button class="button dark">Show Me How</button></p>'
               + '</div>').css({'max-width': '16em'
                               ,'position': 'absolute'
-                              ,'top': $('h1').position().top
+                              ,'top': $('h1.link').position().top
                               ,'left': 20});
     $('<a href="" class="close">x</a>').prependTo(tip).click(function () {
       tip.remove();
@@ -443,7 +439,7 @@
         });
         tooltipBelow(tip, $('#confirm'));
       });
-      tooltipBelow(tip, $('h1 .foreign'));
+      tooltipBelow(tip, $('h1.link .foreign'));
     });
   }
 

@@ -350,10 +350,10 @@ learnPage = do
         div ! id "learn-header" $ do
           h2 $ "Loading..."
           when (isNothing m) $ div ! id "signup-invitation" $ do
-            p $ "Once you're created an account, you'll get:"
-            unordList [ "Access to More Spanish Words"
-                      , "Automatically Scheduled Reviews"
-                      , "A Dashboard and Study Stats"
+            h1 $ "Ready for More?"
+            unordList [ "Learn More Words"
+                      , "Get Regular Review"
+                      , "Track Your Progress"
                       ]
     _ -> outputNotFound
 
