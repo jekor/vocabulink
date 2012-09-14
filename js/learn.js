@@ -165,48 +165,38 @@
     }
   }
 
-  function fetchReviews() {
+  function fetchUpcoming(nextAction) {
     // Don't re-add items that have been reviewed between now...
     var currentLinkNums = $.map(review, function (_, link) {
       return link[0];
     });
     currentLinkNums.push(parseInt($('h1.link').attr('linkno'), 10));
-    $.get('/learn/reviews' + location.search)
+    $.get('/learn/upcoming' + location.search + '&n=10') // location.search preserves the learn/known parameters
      .done(function (links) {
-       // Randomize the links so that the learner doesn't get too used to the
-       // order they arrive in.
-       links.sort(function () {return Math.round(Math.random()) - 0.5;});
-       // ...and now. Because they might have been reviewed in the meantime.
-       review = review.concat($.grep(links, function (link) {
-         return $.inArray(link[0], currentLinkNums) === -1;
-       }));
-     })
-     .fail(function (xhr) {
-       // Fail silently for now.
-     });
-  }
-
-  function fetchLearns(nextAction) {
-    // Don't re-add items that have been learned between now...
-    var currentLinkNums = $.map(review, function (_, link) {
-      return link[0];
-    });
-    currentLinkNums.push(parseInt($('h1.link').attr('linkno'), 10));
-    $.get('/learn/new' + location.search)
-     .done(function (links) {
-       // ...and now. Because they might have been reviewed in the meantime.
-       learn = learn.concat($.grep(links, function (link) {
-         return $.inArray(link[0], currentLinkNums) === -1;
-       }));
-       if (learn.length > 0) {
+       if (links.review.length > 0) {
+         // Randomize the links so that the learner doesn't get too used to the
+         // order they arrive in.
+         links.review.sort(function () {return Math.round(Math.random()) - 0.5;});
+         // ...and now. Because they might have been reviewed in the meantime.
+         review = review.concat($.grep(links.review, function (link) {
+           return $.inArray(link[0], currentLinkNums) === -1;
+         }));
          nextAction();
-       } else {
+       }
+       if (links.learn.length > 0) {
+         learn = learn.concat($.grep(links.learn, function (link) {
+           return $.inArray(link[0], currentLinkNums) === -1;
+         }));
+       }
+       if (links.review.length === 0 && links.learn.length === 0) {
          // TODO: The user is done with this language. We have no more words
          // for them to learn.
+       } else {
+         nextAction();
        }
      })
      .fail(function (xhr) {
-       V.toastMessage('error', 'Failed to fetch more words to learn.');
+       // Fail silently for now.
      });
   }
 
@@ -227,9 +217,6 @@
     $(document).bind('keyup', 'space', keyConfirm);
     nextAction = function () {
       if (review.length > 0) {
-        if (review.length == 1) {
-          fetchReviews();
-        }
         doReview(review.pop());
       } else if (learn.length > 0) {
         if (!V.loggedIn()) {
@@ -250,7 +237,7 @@
         // Clear the learning area.
         $('h1.link, #action-area, #linkword-stories').hide();
         header('Loading More Words...');
-        fetchLearns(nextAction);
+        fetchUpcoming(nextAction);
       }
     };
     var doReview = function (link) {

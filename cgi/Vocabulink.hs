@@ -256,8 +256,7 @@ dispatch "POST" ["list","frequency",lang] = addFrequencyList lang
 -- Learning
 
 dispatch "GET" ["learn"] = learnPage
-dispatch "GET" ["learn", "reviews"] = learnReviews
-dispatch "GET" ["learn", "new"] = learnNew
+dispatch "GET" ["learn", "upcoming"] = upcomingLinks
 
 -- Link Review
 

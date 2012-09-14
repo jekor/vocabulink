@@ -21,7 +21,7 @@
 
 module Vocabulink.Review ( newReview, scheduleNextReview
                          , reviewStats, dailyReviewStats, detailedReviewStats
-                         , learnPage, learnReviews, learnNew
+                         , learnPage, upcomingLinks
                          ) where
 
 -- For now, we have only 1 review algorithm (SuperMemo 2).
@@ -357,16 +357,15 @@ learnPage = do
                       ]
     _ -> outputNotFound
 
-learnReviews :: App CGIResult
-learnReviews = do
+upcomingLinks :: App CGIResult
+upcomingLinks = do
   learn' <- getRequiredInput "learn"
   known' <- getRequiredInput "known"
+  n <- readRequiredInput "n"
   m <- asks appMember
-  outputJSON =<< mapM compactLinkJSON =<< dueForReview m learn' known' 20
-
-learnNew :: App CGIResult
-learnNew = do
-  learn' <- getRequiredInput "learn"
-  known' <- getRequiredInput "known"
-  m <- asks appMember
-  outputJSON =<< mapM compactLinkJSON =<< newForReview m learn' known' 20
+  due <- mapM compactLinkJSON =<< dueForReview m learn' known' n
+  new <- mapM compactLinkJSON =<< newForReview m learn' known' (n - length due)
+  let due' = Data.Aeson.Types.Array $ V.fromList due
+      new' = Data.Aeson.Types.Array $ V.fromList new
+  outputJSON [aesonQQ| {"review": <<due'>>
+                       ,"learn": <<new'>>} |]
