@@ -127,18 +127,22 @@ resendConfirmEmail = do
 
 login :: App CGIResult
 login = do
-  username' <- getRequiredInput "username"
+  userid' <- getRequiredInput "userid"
   password' <- getRequiredInput "password"
-  match <- $(queryTuple' "SELECT password_hash = crypt({password'}, password_hash) \
-                         \FROM member WHERE username = {username'}")
+  match' <- $(queryTuple' "SELECT username, password_hash = crypt({password'}, password_hash) \
+                          \FROM member WHERE username = {userid'} OR email = {userid'}")
+  match <- if' (isJust match') match' <$> $(queryTuple' "SELECT username, password_hash = crypt({password'}, password_hash) \
+                                                        \FROM member \
+                                                        \INNER JOIN member_confirmation mc USING (member_no) \
+                                                        \WHERE mc.email = {userid'}")
   case match of
-    Just (Just True) -> do
-      member' <- memberByName username'
+    Just (username, Just True) -> do
+      member' <- memberByName username
       case member' of
         Nothing     -> error "Failed to lookup username."
         Just member -> do
           key <- fromJust <$> getOption "authtokenkey"
-          authTok <- liftIO $ authToken (memberNumber member) username' key
+          authTok <- liftIO $ authToken (memberNumber member) username key
           setAuthCookie authTok
           redirect =<< referrerOrVocabulink
     _         -> do -- error "Username and password do not match (or don't exist)."
@@ -168,6 +172,7 @@ usernameAvailable :: String -> App Bool
 usernameAvailable u =
   if' (length u < 4)  (return False) $
   if' (length u > 24) (return False) $
+  if' ('@' `elem` u) (return False) $
   isNothing <$> $(queryTuple' "SELECT username FROM member \
                               \WHERE username ILIKE {u}")
 

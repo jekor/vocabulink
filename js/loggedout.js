@@ -5,7 +5,7 @@
       '<form id="login" action="https://www.vocabulink.com/member/login" method="post">'
       + '<h1>Login</h1>'
       + '<table>'
-        + '<tr><td><label for="login-username">Username:</label></td><td><input id="login-username" name="username" type="text" required autofocus></td></tr>'
+        + '<tr><td><label for="login-userid">Username or Email:</label></td><td><input id="login-userid" name="userid" type="text" required autofocus></td></tr>'
         + '<tr><td><label for="login-password">Password:</label></td><td><input id="login-password" type="password" type="text" name="password" required></td></tr>'
       + '</table>'
       + '<a id="lost-password" href="" style="font-size: 10pt; display: inline-block; margin-top: 1.5em;">lost password?</a>'
