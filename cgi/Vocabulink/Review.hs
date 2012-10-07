@@ -350,11 +350,18 @@ learnPage = do
         div ! id "learn-header" $ do
           h2 $ "Loading..."
           when (isNothing m) $ div ! id "signup-invitation" $ do
-            h1 $ "Ready for More?"
+            h1 $ "Join the Free Beta"
+            img ! src "//s.vocabulink.com/img/wizard.png"
             unordList [ "Learn More Words"
                       , "Get Regular Review"
                       , "Track Your Progress"
                       ]
+            p $ do
+              "Once the beta is over, the price will go"
+              br
+              "up to $10 per month. Join now and get"
+              br
+              "it all for free."
     _ -> outputNotFound
 
 upcomingLinks :: App CGIResult
