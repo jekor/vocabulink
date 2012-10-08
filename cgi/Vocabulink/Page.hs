@@ -122,9 +122,9 @@ headerBar = do
                  Nothing -> return mempty
                  Just _  -> return $ mconcat [a ! href "/dashboard" $ "dashboard", " | "]
   return $ do
-    a ! href "/" ! accesskey "1" $
+    a ! href "/" ! accesskey "1" $ do
       img ! class_ "logo" ! alt "Vocabulink: Learn Languages through Fiction"
-                          ! src "http://s.vocabulink.com/img/logo-compact.png"
+                          ! src "http://s.vocabulink.com/img/logo-compact-beta.png"
     div ! id "head-decoration" $ mempty
     div ! id "head-bar" $ do
       searchBox
