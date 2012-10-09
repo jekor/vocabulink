@@ -80,7 +80,7 @@ languagePairLinks memberNumber learnLang knownLang db = do
 
 linksContaining :: String -> Handle -> IO [Link]
 linksContaining q db = do
-  let q' = "%" ++ q ++ "%"
+  let fuzzy = "%" ++ q ++ "%"
   exacts <- map linkFromTuple <$> $(queryTuples
     "SELECT l.link_no, learn, known, \
            \learn_lang, known_lang, ll.name, kl.name, \
@@ -91,8 +91,8 @@ linksContaining q db = do
     \LEFT JOIN link_soundalike s USING (link_no) \
     \LEFT JOIN link_linkword w USING (link_no) \
     \WHERE NOT deleted \
-      \AND (learn ~~* {q} OR known ~~* {q} \
-        \OR unaccent(learn) ~~* {q} OR unaccent(known) ~~* {q})") db
+      \AND (learn ILIKE {q} OR known ILIKE {q} OR linkword ILIKE {q} \
+        \OR unaccent(learn) ILIKE {q} OR unaccent(known) ILIKE {q} OR unaccent(linkword) ILIKE {q})") db
   closes <- map linkFromTuple <$> $(queryTuples
     "SELECT l.link_no, learn, known, \
            \learn_lang, known_lang, ll.name, kl.name, \
@@ -103,10 +103,10 @@ linksContaining q db = do
     \LEFT JOIN link_soundalike s USING (link_no) \
     \LEFT JOIN link_linkword w USING (link_no) \
     \WHERE NOT deleted \
-      \AND (learn !~~* {q} AND known !~~* {q} \
-        \AND unaccent(learn) !~~* {q} AND unaccent(known) !~~* {q}) \
-      \AND (learn ~~* {q'} OR known ~~* {q'} \
-        \OR unaccent(learn) ~~* {q'} OR unaccent(known) ~~* {q'}) \
+      \AND (learn NOT ILIKE {q} AND known NOT ILIKE {q} AND linkword NOT ILIKE {q} \
+        \AND unaccent(learn) NOT ILIKE {q} AND unaccent(known) NOT ILIKE {q} AND unaccent(linkword) NOT ILIKE {q}) \
+      \AND (learn ILIKE {fuzzy} OR known ILIKE {fuzzy} OR linkword ILIKE {fuzzy} \
+        \OR unaccent(learn) ILIKE {fuzzy} OR unaccent(known) ILIKE {fuzzy} OR unaccent(linkword) ILIKE {fuzzy}) \
     \GROUP BY l.link_no, learn, known, learn_lang, known_lang, ll.name, kl.name, s.link_no, linkword \
     \ORDER BY char_length(learn)") db
   return $ exacts ++ closes

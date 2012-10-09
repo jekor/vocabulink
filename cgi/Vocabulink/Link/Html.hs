@@ -84,13 +84,13 @@ linksTable links = table ! class_ "links" $ do
     tr $ do
       th "Foreign"
       th "Familiar"
-      th "Link Type"
+      th "Linkword"
   tbody $ mconcat $ map linkRow links
  where linkRow link = let url = "/link/" ++ show (link_no link) in
          tr ! class_ (toValue $ "inline-link " ++ linkTypeName link) $ do
            td $ a ! href (toValue url) $ toHtml $ learn link
            td $ a ! href (toValue url) $ toHtml $ known link
-           td $ a ! href (toValue url) $ toHtml $ linkTypeName link
+           td $ a ! href (toValue url) $ toHtml $ fromMaybe "" $ linkword link
 
 compactLinkJSON :: Link -> App Value
 compactLinkJSON link = do
