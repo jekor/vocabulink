@@ -396,13 +396,13 @@ frontPage = do
   nReviews <- fromJust . fromJust <$> $(queryTuple' "SELECT COUNT(*) FROM link_review")
   nLinkwords <- fromJust . fromJust <$> $(queryTuple' "SELECT COUNT(*) FROM link_linkword ll INNER JOIN link l ON (l.link_no = ll.link_no AND NOT deleted)")
   nStories <- fromJust . fromJust <$> $(queryTuple' "SELECT COUNT(*) FROM linkword_story INNER JOIN link USING (link_no) WHERE NOT deleted")
-  stdPage "Build Vocabulary Fast with Linkword Mnemonics" [CSS "front"] mempty $
+  stdPage "Learn Vocabulary Fast with Linkword Mnemonics" [CSS "front"] mempty $
     mconcat [
       div ! class_ "top" $ do
         div ! id "word-cloud" $ do
           cloud
         div ! id "intro" $ do
-          h1 "Build Vocabulary—Fast"
+          h1 "Learn Vocabulary—Fast"
           p $ do
             toHtml $ "Learn foreign words with " ++ prettyPrint (nLinkwords::Integer) ++ " "
             a ! href "article/how-do-linkword-mnemonics-work" $ "linkword mnemonics"
