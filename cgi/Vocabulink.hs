@@ -156,8 +156,6 @@ dispatch "GET" ["source"]       = articlePage "source"
 dispatch "GET" ["api"]          = articlePage "api"
 dispatch "GET" ["download"]     = redirect "https://github.com/jekor/vocabulink/tarball/master"
 
-dispatch "POST" ["contact"]     = contactUs
-
 -- Other articles are dynamic and can be created without recompilation. We just
 -- have to rescan the filesystem for them. They also live in the @/article@
 -- namespace (specifically at @/article/title@).

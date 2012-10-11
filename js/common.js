@@ -77,36 +77,6 @@ V.toastMessage = function (type, msg, sticky) {
                                        });
 };
 
-V.contactPopup = function () {
-  var content = $(
-    '<div><h1>Contact Us</h1>'
-    + '<form id="contact-form" action="/contact" method="post">'
-      + '<input type="hidden" name="url">'
-      + '<table>'
-        + '<tr><th><label>Email:</label></th><td><input type="email" name="email" required autofocus style="width: 295px"></td></tr>'
-        + '<tr><th><label>Message:</label></th><td><textarea name="message" required style="width: 300px"></textarea></td></tr>'
-        + '<tr><td colspan="2" style="text-align: right"><input class="light" type="submit" value="Send" style="margin-bottom: 1em"></td></tr>'
-      + '</table>'
-    + '</form>'
-  + '</div>');
-  content.find('input[name=url]').val(window.location);
-  if (V.verified()) {
-    content.find('tr:first-child').remove();
-  }
-  $.modal(content);
-  var form = $('#contact-form');
-  var modal = $('#simplemodal-container');
-  form.minform()
-      .submit(function (e) {
-        modal.mask('Sending...');
-        e.preventDefault();
-        $.post($(this).attr('action'), $(this).serialize())
-          .done(function () {$.modal.close(); V.toastMessage('success', 'Message sent.');})
-          .fail(function (xhr) {modal.unmask(); V.toastMessage('error', xhr.responseText, true);});
-        return false;
-      });
-};
-
 V.verificationPopup = function () {
   var content = $(
     '<div><h1>Email Verification Required</h1>'
@@ -148,8 +118,6 @@ $(function () {
       return false;
     });
   }
-
-  $('.contact-us').live('click', function () {V.contactPopup(); return false;});
 });
 
 })(jQuery);
