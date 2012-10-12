@@ -171,11 +171,8 @@ copyrightNotice = do
 
 loginBox :: Html
 loginBox = span ! class_ "auth-box login" $ do
-  a ! id "login-button" ! href "" $ "Log in"
-  " | "
-  a ! id "signup-button" ! href "" $ "Sign up"
-  " | "
-  a ! href "/learn?learn=es&known=en" $ "Learn Spanish"
+  a ! id "login-button" ! class_ "faint-gradient-button green" ! href "" $ "Log In"
+  a ! id "signup-button" ! class_ "faint-gradient-button blue" ! href "" $ "Sign Up"
 
 -- For logged-in members, we provide a logout button (with an indicator of your
 -- username to show that you're logged in).
@@ -183,7 +180,7 @@ loginBox = span ! class_ "auth-box login" $ do
 logoutBox :: Member -> Html
 logoutBox member = form ! class_ "auth-box logout" ! action "/member/logout" ! method "post" $ do
   a ! href (toValue $ "/user/" ++ memberName member) $ toHtml (memberName member)
-  input ! type_ "submit" ! id "logout-button" ! class_ "button dark" ! value "Log Out"
+  input ! type_ "submit" ! id "logout-button" ! class_ "faint-gradient-button green" ! value "Log Out"
 
 -- Students with a goal in mind will want to search for words they're studying
 -- rather than browse randomly. We display a search box for them at the top of the
