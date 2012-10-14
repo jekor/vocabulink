@@ -113,7 +113,7 @@ import System.IO (Handle, hPutStr, hPutStrLn, hClose, stderr)
 import System.Locale (defaultTimeLocale)
 import System.Posix.Time (epochTime)
 import System.Posix.Types (EpochTime)
-import System.Process (createProcess, waitForProcess, proc, cwd, std_in, StdStream(..))
+import System.Process (createProcess, waitForProcess, proc, std_in, StdStream(..))
 
 import Prelude hiding (readFile, writeFile)
 
@@ -258,14 +258,11 @@ isFileReadable f = do
 
 sendMail :: String -> String -> String -> IO (Maybe ())
 sendMail address subject body = do
-  (Just inF, _, _, pr) <- createProcess (proc "/usr/local/ses/ses-send-email.pl"
-                                              ["-f", "\"Vocabulink\" <support@vocabulink.com>"
+  (Just inF, _, _, pr) <- createProcess (proc "mail"
+                                              ["-r", "\"Vocabulink\" <support@vocabulink.com>"
                                               ,"-s", subject
-                                              ,"-k", "aws-credentials"
                                               ,address])
-                                        {cwd = Just "/usr/local/ses"
-                                        ,std_in = CreatePipe
-                                        }
+                                        {std_in = CreatePipe}
   hPutStr inF body >> hClose inF
   status <- waitForProcess pr
   case status of
