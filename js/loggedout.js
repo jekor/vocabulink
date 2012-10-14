@@ -6,11 +6,11 @@
       + '<h1>Login</h1>'
       + '<table>'
         + '<tr><td><label for="login-userid">Username or Email:</label></td><td><input id="login-userid" name="userid" type="text" required autofocus></td></tr>'
-        + '<tr><td><label for="login-password">Password:</label></td><td><input id="login-password" type="password" type="text" name="password" required></td></tr>'
+        + '<tr><td><label for="login-password">Password:</label></td><td><input id="login-password" type="password" name="password" required></td></tr>'
       + '</table>'
       + '<a id="lost-password" href="" style="font-size: 10pt; display: inline-block; margin-top: 1.5em;">lost password?</a>'
       + '<input type="submit" value="Login" class="faint-gradient-button green">'
-    + '</form>').minform()
+    + '</form>').minform();
     $('#lost-password', form).click(function () {
       form.attr('action', '/member/password/reset');
       $('table', form).empty().prepend('<tr><td><label for="login-email">Email:</label></td><td><input id="login-email" name="email" type="email" required autofocus></td></tr>').before('<p style="margin-bottom: 0">Enter the email address you signed up with.</p>');
@@ -41,8 +41,7 @@
         + '<tr><td colspan="2"><label for="signup-terms">I agree to the <a href="/terms-of-use" target="_blank">Terms of Use</a>.</label><input id="signup-terms" name="terms" type="checkbox" required></td></tr>'
         + '<tr><td colspan="3" style="text-align: center"><input type="submit" value="Sign Up for Free" class="faint-gradient-button green"></td></tr>'
       + '</table>'
-    + '</form>');
-    form.minform();
+    + '</form>').minform();
     form.submit(function () {
       if (!usernameOK) {
         V.toastMessage('error', 'Your chosen username is unavailable or invalid.');

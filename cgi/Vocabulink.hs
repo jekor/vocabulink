@@ -316,6 +316,11 @@ dispatch "GET" ["dashboard"] = dashboardPage
 
 -- Becoming a member is simply a matter of filling out a form.
 
+-- Note that in some places where I would use a PUT I've had to append a verb
+-- to the URL and use a POST instead because these requests are often made to
+-- HTTPS pages from HTTP pages and can't be done in JavaScript without a lot of
+-- not-well-supported cross-domain policy hacking.
+
 dispatch "POST" ["member","signup"] = signup
 
 -- But to use most of the site, we require email confirmation.
@@ -334,6 +339,8 @@ dispatch "POST" ["member","logout"] = logout
 dispatch "POST" ["member","password","reset"] = sendPasswordReset
 dispatch "GET"  ["member","password","reset",x] = passwordResetPage x
 dispatch "POST" ["member","password","reset",x] = passwordReset x
+dispatch "POST" ["member","password","change"] = changePassword
+dispatch "POST" ["member","email","change"] = changeEmail
 
 -- Member Pages
 

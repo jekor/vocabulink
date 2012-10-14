@@ -26,8 +26,8 @@ module Vocabulink.CGI ( outputText, outputHtml, outputJSON
                       , outputNotFound, outputUnauthorized, outputClientError, outputServerError
                       , getInput, getRequiredInput, getInputDefault, getRequiredInputFPS
                       , readInput, readRequiredInput, readInputDefault, getBody
-                      , urlify, referrerOrVocabulink, referrerOrVocabulink', permRedirect
-                      , handleErrors, escapeURIString'
+                      , urlify, referrerOrVocabulink, referrerOrVocabulink', redirect', permRedirect
+                      , handleErrors, escapeURIString', addToQueryString
                       {- Data.Aeson.QQ -}
                       , aesonQQ
                       {- Data.Aeson.Types -}
@@ -246,6 +246,9 @@ referrerOrVocabulink' = do
                             , uriFragment = "" }
              Just uri -> uri
 
+redirect' :: MonadCGI m => URI -> m CGIResult
+redirect' = redirect . show
+
 permRedirect :: (MonadCGI m, MonadIO m) => String -> m CGIResult
 permRedirect url = do
   setStatus 301 "Moved Permanently"
@@ -289,3 +292,10 @@ outputException' h ex = do
 
 escapeURIString' :: String -> String
 escapeURIString' = escapeURIString isUnescapedInURI
+
+addToQueryString :: String -> URI -> URI
+addToQueryString s uri =
+  let query' = case uriQuery uri of
+                 "" -> "?" ++ s
+                 q' -> q' ++ "&" ++ s in
+  uri {uriQuery = query'}

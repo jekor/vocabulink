@@ -22,6 +22,7 @@ module Vocabulink.Member.Registration ( usernameAvailable, emailAvailable
                                       , signup, confirmEmail, resendConfirmEmail
                                       , login, logout
                                       , sendPasswordReset, passwordResetPage, passwordReset
+                                      , changeEmail, changePassword
                                       ) where
 
 import Vocabulink.App
@@ -179,10 +180,9 @@ usernameAvailable u =
 -- TODO: Validate email addresses.
 emailAvailable :: String -> App Bool
 emailAvailable e =
+  -- We could check if the address exists in member_confirmation, but that
+  -- would allow someone who doesn't control an address to block its use.
   isNothing <$> $(queryTuple' "(SELECT email FROM member \
-                               \WHERE email ILIKE {e}) \
-                              \UNION \
-                              \(SELECT email FROM member_confirmation \
                                \WHERE email ILIKE {e})")
 
 -- This is the place that the dispatcher will send the client to if they click
@@ -290,3 +290,40 @@ passwordReset hash = do
           setAuthCookie authTok
           redirect "http://www.vocabulink.com/"
     _       -> error "Invalid or expired password reset."
+
+changeEmail :: App CGIResult
+changeEmail = withRequiredMember' $ \ m -> do
+  email <- getRequiredInput "email"
+  password <- getRequiredInput "password"
+  match <- $(queryTuple' "SELECT password_hash = crypt({password}, password_hash) \
+                         \FROM member WHERE member_no = {memberNumber m}")
+  case match of
+    Just (Just True) -> do
+      success <- withConnection $ \c -> do
+        withTransaction c $ do
+          $(execute "UPDATE member SET email = NULL WHERE member_no = {memberNumber m}") c
+          $(execute "DELETE FROM member_confirmation WHERE member_no = {memberNumber m}") c
+          hash' <- fromJust <$> $(queryTuple
+                                 "INSERT INTO member_confirmation (member_no, hash, email) \
+                                 \VALUES ({memberNumber m}, md5(random()::text), {email}) \
+                                 \RETURNING hash") c
+          res <- liftIO $ sendConfirmationEmail email (memberName m) hash'
+          maybe (rollback c >> return False)
+                (\_ -> do $(execute "UPDATE member_confirmation \
+                                    \SET email_sent = current_timestamp \
+                                    \WHERE member_no = {memberNumber m}") c
+                          return True) res
+      redirect' . addToQueryString (success ? "emailchanged" $ "emailchangefailed") =<< referrerOrVocabulink'
+    _ -> redirect' . addToQueryString "badpassword" =<< referrerOrVocabulink'
+
+changePassword :: App CGIResult
+changePassword = withRequiredMember' $ \ m -> do
+  oldPassword <- getRequiredInput "old-password"
+  newPassword <- getRequiredInput "new-password"
+  match <- $(queryTuple' "SELECT password_hash = crypt({oldPassword}, password_hash) \
+                         \FROM member WHERE member_no = {memberNumber m}")
+  case match of
+    Just (Just True) -> do
+      $(execute' "UPDATE member SET password_hash = crypt({newPassword}, gen_salt('bf'))")
+      redirect' . addToQueryString "passwordchanged" =<< referrerOrVocabulink'
+    _ -> redirect' . addToQueryString "badpassword" =<< referrerOrVocabulink'

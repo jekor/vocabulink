@@ -3,8 +3,22 @@
     left: 1em
     right: 1em
 
-#avatar
-  img
+h2
+  text-align: center
+  margin-top: 0
+
+#body
+  width: 66em
+  margin:
+    top: 3em
+    left: auto
+    right: auto
+
+#member-details
+  width: 66%
+  float: left
+  overflow: hidden
+  img.avatar
     float: left
     vertical-align: top
     margin-right: 1em
@@ -12,16 +26,19 @@
     font-size: 24pt
     font-weight: bold
     line-height: 1.3em
+  ul
+    margin: 0
+    li
+      margin:
+        top: 0.25em
+        bottom: 0.25em
 
-h2
-  text-align: center
+#study-stats
+  float: right
 
-#body .two-column
-  clear: left
-  .column:first-child *
-    margin-right: 0.5em
-  .column:last-child *
-    margin-left: 0.5em
+#latest-stories
+  clear: both
+  margin-top: 1em
 
 ul.stories
   li
@@ -46,3 +63,7 @@ table.pairs
   td
     padding-left: 3em
     text-align: right
+
+#change-email-form
+  td
+    min-width: 16px

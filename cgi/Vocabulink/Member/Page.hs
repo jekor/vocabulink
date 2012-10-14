@@ -35,22 +35,21 @@ memberPage username = do
   case member of
     Nothing -> outputNotFound
     Just m  -> do
-      let avatar = fromMaybe mempty (memberAvatar 60 m)
+      let avatar = fromMaybe mempty (memberAvatar 128 m)
       stories <- latestStories m
       studyStats' <- studyStats m
-      stdPage (memberName m ++ "'s Page") [CSS "member-page", CSS "link"] mempty $ do
-        div ! id "avatar" $ do
+      stdPage (memberName m ++ "'s Page") [JS "member-page", CSS "member-page", CSS "link"] mempty $ do
+        div ! id "member-details" $ do
           avatar
           span ! class_ "username" $ toHtml $ memberName m
-          when isSelf $ do br
-                           span $ do "Change your avatar at "
-                                     a ! href "http://gravatar.com" $ "gravatar.com"
-        multiColumn
-          [div $ do
-             h2 "Study Stats"
-             studyStats',
-             mempty]
-        div $ do
+          when isSelf $ unordList [
+            a ! href "http://gravatar.com" $ "Change Avatar",
+            a ! id "change-email" ! href "" $ "Change Email Address",
+            a ! id "change-password" ! href "" $ "Change Password" ]
+        div ! id "study-stats" $ do
+          h2 "Study Stats"
+          studyStats'
+        div ! id "latest-stories" $ do
           h2 $ toHtml ("Latest Stories by " ++ memberName m)
           case stories of
             [] -> "no stories"
