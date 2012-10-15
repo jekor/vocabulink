@@ -1,2 +1,0 @@
-0 1 * * * /home/jekor/vocabulink/scripts/backup-database-to-s3.sh
-0 2 * * * /home/jekor/vocabulink/scripts/rotate-backups.sh
