@@ -138,7 +138,8 @@ headerBar = do
 footerBar :: App Html
 footerBar = do
   copy <- liftIO copyrightNotice
-  mailto <- (("mailto:support@vocabulink.com?subject=support%20request" ++) . maybe "" (\m -> "%20from%20" ++ escapeURIString' (memberName m)) <$> asks appMember)::(App String)
+  addr <- fromJust <$> getOption "supportaddress"
+  mailto <- ((("mailto:" ++ addr ++ "?subject=support%20request") ++) . maybe "" (\m -> "%20from%20" ++ escapeURIString' (memberName m)) <$> asks appMember)::(App String)
   return $ do
     unordList [ a ! href "https://getsatisfaction.com/vocabulink" $ "help"
               , a ! href "/links" $ "languages"
@@ -147,7 +148,6 @@ footerBar = do
               , a ! href "/privacy" $ "privacy policy"
               , a ! href "/terms-of-use" $ "terms of use"
               , a ! href "/source" $ "source code"
-              -- , a ! href "/api" $ "API"
               ] ! class_ "hyperlinks"
     p $ do
       copy

@@ -109,6 +109,10 @@
       V.toastMessage('error', "Username and password do not match (or don't exist).");
       loginPopup();
     }
+    if (V.query.accountdeleted) {
+      V.toastMessage('success', "Your account was successfully deleted.", true);
+      loginPopup();
+    }
 
   });
 

@@ -336,6 +336,8 @@ dispatch "POST" ["member","login"] = login
 
 dispatch "POST" ["member","logout"] = logout
 
+dispatch "POST" ["member","delete"] = deleteAccount
+
 dispatch "POST" ["member","password","reset"] = sendPasswordReset
 dispatch "GET"  ["member","password","reset",x] = passwordResetPage x
 dispatch "POST" ["member","password","reset",x] = passwordReset x

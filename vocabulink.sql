@@ -23,7 +23,7 @@ INSERT INTO member (member_no, username, password_hash)
 VALUES (0, 'anonymous', '');
 
 CREATE TABLE member_confirmation (
-       member_no INTEGER REFERENCES member (member_no) NOT NULL PRIMARY KEY,
+       member_no INTEGER REFERENCES member (member_no) NOT NULL PRIMARY KEY ON DELETE CASCADE,
        hash TEXT NOT NULL,
        email TEXT NOT NULL,
        email_sent TIMESTAMP (0) WITH TIME ZONE
@@ -33,7 +33,7 @@ COMMENT ON COLUMN member_confirmation.hash IS 'This is a random hash that we can
 COMMENT ON COLUMN member_confirmation.email_sent IS 'email_sent is the time a confirmation email was successfully sent (or at least when our MTA says it was sent).';
 
 CREATE TABLE password_reset_token (
-       member_no INTEGER REFERENCES member (member_no) NOT NULL PRIMARY KEY,
+       member_no INTEGER REFERENCES member (member_no) NOT NULL PRIMARY KEY ON DELETE CASCADE,
        hash TEXT NOT NULL,
        expires TIMESTAMP (0) WITH TIME ZONE
 );
@@ -43,9 +43,9 @@ CREATE TABLE link (
        link_no SERIAL PRIMARY KEY,
        learn TEXT NOT NULL CHECK (length(foreign_phrase) > 0),
        known TEXT NOT NULL CHECK (length(familiar_phrase) > 0),
-       learn_lang CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE NOT NULL,
-       known_lang CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE NOT NULL,
-       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE NOT NULL,
+       learn_lang CHARACTER VARYING (3) REFERENCES language (abbr) NOT NULL ON UPDATE CASCADE,
+       known_lang CHARACTER VARYING (3) REFERENCES language (abbr) NOT NULL ON UPDATE CASCADE,
+       author INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE ON DELETE CASCADE,
        created TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        updated TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        deleted BOOLEAN NOT NULL DEFAULT FALSE
@@ -58,14 +58,14 @@ CREATE INDEX link_familiar_phrase_index ON link (familiar_phrase);
 
 CREATE TABLE link_frequency_list (
        list_no SERIAL PRIMARY KEY,
-       lang CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE NOT NULL,
+       lang CHARACTER VARYING (3) REFERENCES language (abbr) NOT NULL ON UPDATE CASCADE,
        list_name TEXT NOT NULL,
        description TEXT NOT NULL,
        UNIQUE (lang, list_name)
 );
 
 CREATE TABLE link_frequency (
-       link_no INTEGER REFERENCES link (link_no) NOT NULL,
+       link_no INTEGER REFERENCES link (link_no) NOT NULL ON DELETE CASCADE,
        list_no INTEGER REFERENCES link_frequency_list (list_no) NOT NULL,
        rank INTEGER NOT NULL,
        frequency REAL NOT NULL,
@@ -73,26 +73,26 @@ CREATE TABLE link_frequency (
 );
 
 CREATE TABLE link_linkword (
-       link_no INTEGER REFERENCES link (link_no) NOT NULL PRIMARY KEY,
+       link_no INTEGER REFERENCES link (link_no) NOT NULL PRIMARY KEY ON DELETE CASCADE,
        linkword TEXT NOT NULL
 );
 
 CREATE TABLE link_soundalike (
-       link_no INTEGER REFERENCES link (link_no) NOT NULL PRIMARY KEY
+       link_no INTEGER REFERENCES link (link_no) NOT NULL PRIMARY KEY ON DELETE CASCADE
 );
 
 CREATE TABLE linkword_story (
        story_no SERIAL PRIMARY KEY,
-       link_no INTEGER REFERENCES link_type_linkword (link_no) NOT NULL,
-       author INTEGER REFERENCES member (member_no) NOT NULL,
+       link_no INTEGER REFERENCES link_type_linkword (link_no) NOT NULL ON DELETE CASCADE,
+       author INTEGER REFERENCES member (member_no) NOT NULL ON DELETE CASCADE,
        created TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        edited  TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        story TEXT NOT NULL
 );
 
 CREATE TABLE link_to_review (
-       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE NOT NULL,
-       link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE NOT NULL,
+       member_no INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE ON DELETE CASCADE,
+       link_no INTEGER REFERENCES link (link_no) NOT NULL ON UPDATE CASCADE ON DELETE CASCADE,
        target_time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        added_time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        PRIMARY KEY (member_no, link_no)
@@ -101,8 +101,8 @@ COMMENT ON COLUMN link_to_review.member_no IS 'Anonymous members cannot schedule
 COMMENT ON COLUMN link_to_review.target_time IS 'Target is the date and time at which this link should come up for review. The link will be reviewed sometime after that. All new links for review are currently scheduled for immediate review.';
 
 CREATE TABLE link_review (
-       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE NOT NULL,
-       link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE NOT NULL,
+       member_no INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE ON DELETE CASCADE,
+       link_no INTEGER REFERENCES link (link_no) NOT NULL ON UPDATE CASCADE ON DELETE CASCADE,
        target_time TIMESTAMP (0) WITH TIME ZONE NOT NULL,
        actual_time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        recall_grade REAL NOT NULL,
@@ -113,8 +113,8 @@ COMMENT ON COLUMN link_review.recall IS 'Recall is a measure of how easy or comp
 COMMENT ON COLUMN link_review.recall_time IS 'Recall time is the amount of time (in milliseconds) taken to recall (or not) the destination of a link. It could be measured as the time between when the page is displayed and when the destination lexeme is shown (using JavaScript).';
 
 CREATE TABLE link_sm2 (
-       member_no INTEGER REFERENCES member (member_no) ON UPDATE CASCADE NOT NULL,
-       link_no INTEGER REFERENCES link (link_no) ON UPDATE CASCADE NOT NULL,
+       member_no INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE ON DELETE CASCADE,
+       link_no INTEGER REFERENCES link (link_no) NOT NULL ON UPDATE CASCADE ON DELETE CASCADE,
        n SMALLINT NOT NULL DEFAULT 1,
        EF REAL NOT NULL DEFAULT 2.5,
        PRIMARY KEY (member_no, link_no)
@@ -127,7 +127,7 @@ COMMENT ON COLUMN link_sm2.n IS 'This member is in review interval n. They may h
 
 CREATE TABLE article (
        filename TEXT PRIMARY KEY,
-       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE NOT NULL,
+       author INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE ON DELETE CASCADE,
        publish_time TIMESTAMP (0) WITH TIME ZONE NOT NULL,
        update_time TIMESTAMP (0) WITH TIME ZONE NOT NULL,
        section TEXT,
@@ -145,7 +145,7 @@ CREATE RULE "replace article" AS
 
 CREATE TABLE article_comment (
   filename TEXT REFERENCES article (filename) NOT NULL,
-  root_comment INTEGER REFERENCES comment (comment_no) NOT NULL,
+  root_comment INTEGER REFERENCES comment (comment_no) NOT NULL ON DELETE CASCADE,
   PRIMARY KEY (filename, root_comment)
 );
 
@@ -163,7 +163,7 @@ EXECUTE PROCEDURE create_article_root_comment();
 
 CREATE TABLE comment (
        comment_no SERIAL PRIMARY KEY,
-       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE NOT NULL,
+       author INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE ON DELETE CASCADE,
        time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        body TEXT,
        parent_no INTEGER REFERENCES comment (comment_no) ON DELETE CASCADE
@@ -208,8 +208,8 @@ BEGIN
 END; $$ LANGUAGE plpgsql;
 
 CREATE TABLE link_comment (
-       link_no INTEGER REFERENCES link (link_no) NOT NULL,
-       root_comment INTEGER REFERENCES comment (comment_no) NOT NULL,
+       link_no INTEGER REFERENCES link (link_no) NOT NULL ON DELETE CASCADE,
+       root_comment INTEGER REFERENCES comment (comment_no) NOT NULL ON DELETE CASCADE,
        PRIMARY KEY (link_no, root_comment)
 );
 

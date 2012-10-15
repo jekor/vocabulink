@@ -45,7 +45,8 @@ memberPage username = do
           when isSelf $ unordList [
             a ! href "http://gravatar.com" $ "Change Avatar",
             a ! id "change-email" ! href "" $ "Change Email Address",
-            a ! id "change-password" ! href "" $ "Change Password" ]
+            a ! id "change-password" ! href "" $ "Change Password",
+            a ! id "delete-account" ! href "" $ "Delete Account" ]
         div ! id "study-stats" $ do
           h2 "Study Stats"
           studyStats'

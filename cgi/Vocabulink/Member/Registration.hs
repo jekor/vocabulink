@@ -22,7 +22,7 @@ module Vocabulink.Member.Registration ( usernameAvailable, emailAvailable
                                       , signup, confirmEmail, resendConfirmEmail
                                       , login, logout
                                       , sendPasswordReset, passwordResetPage, passwordReset
-                                      , changeEmail, changePassword
+                                      , changeEmail, changePassword, deleteAccount
                                       ) where
 
 import Vocabulink.App
@@ -63,6 +63,7 @@ signup = do
       unless userAvail $ error "The username you chose is unavailable or invalid."
       unless emailAvail $ error "The email address you gave is unavailable or invalid."
       when (isNothing terms') $ error "You must accept the Terms of Use."
+      from <- supportAddressFull
       memberNo <- withConnection $ \c -> do
         withTransaction c $ do
           memberNo' <- fromJust <$> $(queryTuple
@@ -74,7 +75,7 @@ signup = do
                                  \VALUES ({memberNo'}, md5(random()::text), {email'}) \
                                  \RETURNING hash") c
           return $ Just memberNo'
-          res <- liftIO $ sendConfirmationEmail email' username' hash
+          res <- sendConfirmationEmail from email' username' hash
           maybe (rollback c >> return Nothing)
                 (\_ -> do $(execute "UPDATE member_confirmation \
                                     \SET email_sent = current_timestamp \
@@ -98,18 +99,22 @@ signup = do
  where parseLearned :: String -> [Integer]
        parseLearned s = fromMaybe [] $ decode $ fromString s
 
-sendConfirmationEmail :: String -> String -> String -> IO (Maybe ())
-sendConfirmationEmail email username hash =
+-- This should be in the App monad and look up the support address itself.
+-- However, TemplatePG's withTransaction only works in the IO monad. So we have
+-- to duplicate some effort here with the from argument.
+sendConfirmationEmail :: String -> String -> String -> String -> IO (Maybe ())
+sendConfirmationEmail from email username hash =
   let body = unlines ["Welcome to Vocabulink, " ++ username ++ "."
                      ,""
                      ,"Please click http://www.vocabulink.com/member/confirmation/" ++
                       hash ++ " to confirm your email address."
                      ] in
-  sendMail email "Please confirm your email address." body
+  sendMail from email "Please confirm your email address." body
 
 resendConfirmEmail :: App CGIResult
 resendConfirmEmail = do
   member <- asks appMember
+  from <- supportAddressFull
   case member of
     Nothing -> do
       simplePage "Please Login to Resend Your Confirmation Email"
@@ -118,7 +123,7 @@ resendConfirmEmail = do
       (hash, email) <- fromJust <$> $(queryTuple'
                          "SELECT hash, email FROM member_confirmation \
                          \WHERE member_no = {memberNumber m}")
-      res <- liftIO $ sendConfirmationEmail email (memberName m) hash
+      res <- liftIO $ sendConfirmationEmail from email (memberName m) hash
       case res of
         Nothing -> error "Error sending confirmation email."
         Just _  -> simplePage "Your confirmation email has been sent." mempty mempty
@@ -249,7 +254,8 @@ sendPasswordReset = do
                          , ""
                          , "The password reset page will only be available for 4 hours."
                          ]
-      res <- liftIO $ sendMail email "Vocabulink Password Reset" body
+      from <- supportAddressFull
+      res <- liftIO $ sendMail from email "Vocabulink Password Reset" body
       case res of
         Nothing -> error "Failed to send password reset email."
         _       -> outputNothing
@@ -295,6 +301,7 @@ changeEmail :: App CGIResult
 changeEmail = withRequiredMember' $ \ m -> do
   email <- getRequiredInput "email"
   password <- getRequiredInput "password"
+  from <- supportAddressFull
   match <- $(queryTuple' "SELECT password_hash = crypt({password}, password_hash) \
                          \FROM member WHERE member_no = {memberNumber m}")
   case match of
@@ -307,7 +314,7 @@ changeEmail = withRequiredMember' $ \ m -> do
                                  "INSERT INTO member_confirmation (member_no, hash, email) \
                                  \VALUES ({memberNumber m}, md5(random()::text), {email}) \
                                  \RETURNING hash") c
-          res <- liftIO $ sendConfirmationEmail email (memberName m) hash'
+          res <- sendConfirmationEmail from email (memberName m) hash'
           maybe (rollback c >> return False)
                 (\_ -> do $(execute "UPDATE member_confirmation \
                                     \SET email_sent = current_timestamp \
@@ -326,4 +333,18 @@ changePassword = withRequiredMember' $ \ m -> do
     Just (Just True) -> do
       $(execute' "UPDATE member SET password_hash = crypt({newPassword}, gen_salt('bf'))")
       redirect' . addToQueryString "passwordchanged" =<< referrerOrVocabulink'
+    _ -> redirect' . addToQueryString "badpassword" =<< referrerOrVocabulink'
+
+deleteAccount :: App CGIResult
+deleteAccount = withRequiredMember' $ \ m -> do
+  password <- getRequiredInput "password"
+  match <- $(queryTuple' "SELECT password_hash = crypt({password}, password_hash) \
+                         \FROM member WHERE member_no = {memberNumber m}")
+  case match of
+    Just (Just True) -> do
+      $(execute' "DELETE FROM member WHERE member_no = {memberNumber m}")
+      addr <- supportAddress
+      liftIO $ sendMail addr addr "Member deleted account." ("Member " ++ memberName m ++ " deleted their account.")
+      deleteAuthCookie
+      redirect "http://www.vocabulink.com/?accountdeleted"
     _ -> redirect' . addToQueryString "badpassword" =<< referrerOrVocabulink'

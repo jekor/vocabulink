@@ -256,10 +256,10 @@ isFileReadable f = do
     then readable <$> getPermissions f
     else return False
 
-sendMail :: String -> String -> String -> IO (Maybe ())
-sendMail address subject body = do
+sendMail :: String -> String -> String -> String -> IO (Maybe ())
+sendMail from address subject body = do
   (Just inF, _, _, pr) <- createProcess (proc "mail"
-                                              ["-r", "\"Vocabulink\" <support@vocabulink.com>"
+                                              ["-r", from
                                               ,"-s", subject
                                               ,address])
                                         {std_in = CreatePipe}

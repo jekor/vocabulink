@@ -28,7 +28,7 @@
 module Vocabulink.App ( App, AppEnv(..), AppT, runApp
                       , Dependency(..), dependencyVersion
                       , queryTuple', queryTuples', execute', withConnection
-                      , getOption
+                      , getOption, supportAddress, supportAddressFull
                       {- Control.Monad.Reader -}
                       , asks
                       ) where
@@ -168,3 +168,11 @@ getOption option = do
   case opt of
     Left e  -> liftIO $ logError "config" (show e) >> return Nothing
     Right o -> return $ Just o
+
+supportAddress :: App String
+supportAddress = fromJust <$> getOption "supportaddress"
+
+supportAddressFull :: App String
+supportAddressFull = do
+  addr <- supportAddress
+  return $ "\"Vocabulink\" <" ++ addr ++ ">"
