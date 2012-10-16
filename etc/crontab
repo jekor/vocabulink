@@ -2,3 +2,4 @@
 5 0 * * * /home/jekor/vocabulink/scripts/rotate-backups.sh
 10 0 * * * /usr/bin/s3cmd sync /var/log/lighttpd s3://vocabulink.com-archive/logs/
 15 0 * * * /usr/bin/s3cmd sync /service/vocabulink.cgi/log/main/* s3://vocabulink.com-archive/logs/vocabulink.cgi/
+0 0 * * * /home/jekor/vocabulink/scripts/stats
