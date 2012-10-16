@@ -125,7 +125,7 @@ replyToComment parent = withRequiredMember $ \m -> do
       \AND c.comment_no = {n}")
   case row of
     Nothing -> error "Error posting comment."
-    Just _  -> redirect =<< referrerOrVocabulink
+    Just _  -> redirect' =<< referrerOrVocabulink
  where commentFromValues' (n, l, u, e, t, b) =
          Comment {  commentNo        = n,
                     commentLevel     = fromJust l,

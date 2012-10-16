@@ -35,7 +35,6 @@ import Vocabulink.Review
 import Vocabulink.Utils
 
 import Prelude hiding (div, id, span)
-import Network.URI (parseURI)
 import Data.Aeson (decode)
 import Data.ByteString.Lazy.UTF8 (fromString)
 
@@ -91,10 +90,7 @@ signup = do
           key <- fromJust <$> getOption "authtokenkey"
           authTok <- liftIO $ authToken mn username' key
           setAuthCookie authTok
-          dest <- referrerOrVocabulink'
-          redirect $ show $ if uriQuery dest == ""
-                              then dest {uriQuery = "?signedup"}
-                              else dest {uriQuery = uriQuery dest ++ "&signedup"}
+          bounce ToastSuccess "Welcome! Please check your email to confirm your account."
         Nothing -> error "Registration failure (this is not your fault). Please try again later."
  where parseLearned :: String -> [Integer]
        parseLearned s = fromMaybe [] $ decode $ fromString s
@@ -150,15 +146,8 @@ login = do
           key <- fromJust <$> getOption "authtokenkey"
           authTok <- liftIO $ authToken (memberNumber member) username key
           setAuthCookie authTok
-          redirect =<< referrerOrVocabulink
-    _         -> do -- error "Username and password do not match (or don't exist)."
-      uri' <- parseURI <$> referrerOrVocabulink
-      case uri' of
-        Just uri -> let query' = case uriQuery uri of
-                                   "" -> "?badlogin"
-                                   q' -> q' ++ "&badlogin" in
-                    redirect $ show $ uri {uriQuery = query'}
-        Nothing  -> redirect "http://www.vocabulink.com/?badlogin"
+          redirect' =<< referrerOrVocabulink
+    _ -> bounce ToastError "Username and password do not match (or don't exist)."
 
 -- To logout a member, we simply clear their auth cookie and redirect them
 -- to the front page.
@@ -224,7 +213,7 @@ confirmEmail hash = do
                 key <- fromJust <$> getOption "authtokenkey"
                 authTok <- liftIO $ authToken (memberNumber m) (memberName m) key
                 setAuthCookie authTok
-                redirect "http://www.vocabulink.com/?emailconfirmed"
+                bounce ToastSuccess "Congratulations! You've confirmed your account."
         else error "Confirmation code does not match logged in user."
 
 sendPasswordReset :: App CGIResult
@@ -320,8 +309,10 @@ changeEmail = withRequiredMember' $ \ m -> do
                                     \SET email_sent = current_timestamp \
                                     \WHERE member_no = {memberNumber m}") c
                           return True) res
-      redirect' . addToQueryString (success ? "emailchanged" $ "emailchangefailed") =<< referrerOrVocabulink'
-    _ -> redirect' . addToQueryString "badpassword" =<< referrerOrVocabulink'
+      if success
+        then bounce ToastSuccess "Email address changed successfully. Please check your email to confirm the change."
+        else bounce ToastError "We're sorry. We encountered an unknown error trying to change your email address."
+    _ -> bounce ToastError "Wrong password."
 
 changePassword :: App CGIResult
 changePassword = withRequiredMember' $ \ m -> do
@@ -332,8 +323,8 @@ changePassword = withRequiredMember' $ \ m -> do
   case match of
     Just (Just True) -> do
       $(execute' "UPDATE member SET password_hash = crypt({newPassword}, gen_salt('bf'))")
-      redirect' . addToQueryString "passwordchanged" =<< referrerOrVocabulink'
-    _ -> redirect' . addToQueryString "badpassword" =<< referrerOrVocabulink'
+      bounce ToastSuccess "Password changed successfully."
+    _ -> bounce ToastError "Wrong password."
 
 deleteAccount :: App CGIResult
 deleteAccount = withRequiredMember' $ \ m -> do
@@ -346,5 +337,5 @@ deleteAccount = withRequiredMember' $ \ m -> do
       addr <- supportAddress
       liftIO $ sendMail addr addr "Member deleted account." ("Member " ++ memberName m ++ " deleted their account.")
       deleteAuthCookie
-      redirect "http://www.vocabulink.com/?accountdeleted"
-    _ -> redirect' . addToQueryString "badpassword" =<< referrerOrVocabulink'
+      bounce ToastSuccess "Your account was successfully deleted."
+    _ -> bounce ToastError "Wrong password."

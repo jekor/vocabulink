@@ -9,20 +9,4 @@
     }
   };
 
-  $(function () {
-    // Check for signals in the query string.
-    if (V.query.emailchanged) {
-      V.toastMessage('success', "Email address changed successfully. Please check your email to confirm the change.", true);
-    }
-    if (V.query.badpassword) {
-      V.toastMessage('error', "Wrong password.", true);
-    }
-    if (V.query.emailchangefailed) {
-      V.toastMessage('error', "We're sorry. We encountered an unknown error trying to change your email address.", true);
-    }
-    if (V.query.passwordchanged) {
-      V.toastMessage('success', "Password changed successfully.", true);
-    }
-  });
-
 })(jQuery);

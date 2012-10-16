@@ -103,17 +103,6 @@
 
     // Hook up any buttons that require login to popup the login box.
     $('.login-required').live('click', function () {loginPopup(); return false;});
-
-    // Check for signals in the query string.
-    if (V.query.badlogin) {
-      V.toastMessage('error', "Username and password do not match (or don't exist).");
-      loginPopup();
-    }
-    if (V.query.accountdeleted) {
-      V.toastMessage('success', "Your account was successfully deleted.", true);
-      loginPopup();
-    }
-
   });
 
 })(jQuery);

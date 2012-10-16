@@ -72,7 +72,7 @@ refreshArticles = do
   h <- asks appDB
   as <- publishedArticles
   liftIO $ withTransaction h $ mapM_ (insertArticle h) as
-  redirect =<< referrerOrVocabulink
+  redirect' =<< referrerOrVocabulink
  where insertArticle h a =
          case articleSection a of
            Nothing -> $(execute

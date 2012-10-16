@@ -193,7 +193,7 @@ dispatch meth ["link","story",x] =
                  -- temporarily allow POST until AJAX forms are better
                  "POST" -> do
                    getRequiredInput "story" >>= editStory n
-                   referrerOrVocabulink >>= redirect
+                   redirect' =<< referrerOrVocabulink
                  _     -> outputNotFound
 
 dispatch meth ("link":x:part) =

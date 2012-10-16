@@ -102,13 +102,12 @@ $(function () {
     var pageTracker = _gat._getTracker("UA-73938-2");
     pageTracker._trackPageview();
   } catch(err) {}
-  // Check for signals in the query string.
-  if (V.query.signedup) {
-    localStorage.removeItem('learnQueue');
-    V.toastMessage('success', "Welcome! Please check your email to confirm your account.", true);
-  }
-  if (V.query.emailconfirmed) {
-    V.toastMessage('success', "Congratulations! You've confirmed your account.", true);
+
+  // Check for messages from the server.
+  if ($.cookie('toast')) {
+    var toast = JSON.parse($.cookie('toast'));
+    V.toastMessage(toast.type, toast.message, true);
+    $.removeCookie('toast', {'path': '/', 'domain': 'www.vocabulink.com'});
   }
 
   // Hook up any buttons that require verification.

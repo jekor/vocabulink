@@ -25,8 +25,9 @@
 module Vocabulink.CGI ( outputText, outputHtml, outputJSON
                       , outputNotFound, outputUnauthorized, outputClientError, outputServerError
                       , getInput, getRequiredInput, getInputDefault, getRequiredInputFPS
-                      , readInput, readRequiredInput, readInputDefault, getBody
-                      , urlify, referrerOrVocabulink, referrerOrVocabulink', redirect', permRedirect
+                      , readInput, readRequiredInput, readInputDefault, getBody, urlify
+                      , referrerOrVocabulink, redirect', permRedirect
+                      , redirectWithMessage, ToastType(..), bounce
                       , handleErrors, escapeURIString', addToQueryString
                       {- Data.Aeson.QQ -}
                       , aesonQQ
@@ -53,10 +54,12 @@ import Control.Monad.Writer (WriterT(..))
 import Database.TemplatePG (pgDisconnect)
 import Data.Aeson.Encode as J (encode)
 import Data.Aeson.QQ (aesonQQ)
-import Data.Aeson.Types (ToJSON(..))
+import Data.Aeson.Types (ToJSON(..), object)
+import Data.Aeson.Generic (toJSON)
 import Data.ByteString.Lazy (ByteString)
 import Data.ByteString.Lazy.UTF8 (fromString, toString)
 import Data.Char (isAlphaNum)
+import Data.Text (pack)
 import Network.CGI hiding (getInput, readInput, getBody, Html, output, outputNotFound, handleErrors)
 import qualified Network.CGI as CGI
 import Network.CGI.Monad (CGIT(..))
@@ -228,12 +231,8 @@ urlify = map toLower . filter (\e -> isAlphaNum e || e `elem` "-.") . translate 
 -- we perform some action. We use this to make sure that we don't redirect them
 -- off of the site.
 
-referrerOrVocabulink :: MonadCGI m => m String
-referrerOrVocabulink =
-  maybe "http://www.vocabulink.com/" decodeString `liftM` getVar "HTTP_REFERER"
-
-referrerOrVocabulink' :: MonadCGI m => m URI
-referrerOrVocabulink' = do
+referrerOrVocabulink :: MonadCGI m => m URI
+referrerOrVocabulink = do
   ref <- maybe Nothing (parseURI . decodeString) `liftM` getVar "HTTP_REFERER"
   return $ case ref of
              Nothing -> URI { uriScheme = "http:"
@@ -248,6 +247,32 @@ referrerOrVocabulink' = do
 
 redirect' :: MonadCGI m => URI -> m CGIResult
 redirect' = redirect . show
+
+-- These message types correspond to JS toastmessage types.
+data ToastType = ToastSuccess | ToastError | ToastNotice
+
+instance Show ToastType where
+  show ToastSuccess = "success"
+  show ToastError   = "error"
+  show ToastNotice  = "notice"
+
+-- Redirect the user and display a message on whatever page they end up on.
+redirectWithMessage :: MonadCGI m => ToastType -> String -> URI -> m CGIResult
+redirectWithMessage typ msg url = do
+  let value' = toString $ J.encode [aesonQQ| {"type": <| show typ |>, "message": <| msg |>} |]
+      cookie = Cookie { cookieName    = "toast"
+                      , cookieValue   = escapeURIString' value'
+                      , cookieExpires = Nothing
+                      , cookieDomain  = Just "www.vocabulink.com"
+                      , cookiePath    = Just "/"
+                      , cookieSecure  = False
+                      }
+  setCookie cookie
+  redirect' url
+
+-- Redirect a user to where they came from along with a message.
+bounce :: MonadCGI m => ToastType -> String -> m CGIResult
+bounce typ msg = redirectWithMessage typ msg =<< referrerOrVocabulink
 
 permRedirect :: (MonadCGI m, MonadIO m) => String -> m CGIResult
 permRedirect url = do
