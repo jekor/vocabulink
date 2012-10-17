@@ -100,6 +100,29 @@ scheduleNextReview member linkNo recallGrade recallTime reviewedAt = do
       \SET target_time = {reviewedAt}::timestamp with time zone + {diff}::interval \
       \WHERE member_no = {memberNumber member} AND link_no = {linkNo}") h
 
+-- There are at least 2 ways to decide which links should be brought up for
+-- review first:
+--
+-- The method that Vocabulink used originally was taking the ones with the
+-- oldest target time. They're the ones that have been waiting longest for
+-- review, so we should review them first, right? Well, the problem is that you
+-- get into a case when too many links are due for review where you spend
+-- longer going through and reviewing all the due links before returning to the
+-- beginning of the list and starting over again. If the list of links due for
+-- review is long enough, it could take weeks to get through the list and a
+-- link that was only waiting a few days for review will have been forgotten by
+-- the time we get around to it. This breaks the whole principle of spaced
+-- repetition as soon as you fall behind enough.
+
+-- The method that Vocabulink now uses is to prioritize links based on when you
+-- started learning them. The links that you started learning longest ago come
+-- up for review with high priority as soon as they're due. Links you began
+-- learning later have to wait until there's time. This way, if the learner
+-- gets backed up, at least they're maintaining the links that they've been
+-- spending the longest on (and are presumably the most familiar with). This
+-- should also have the side effect of reducing the size of the queue faster
+-- because links that the learner has been studying longer are likely to have
+-- bigger payoff (time until the next review date) if they nail them.
 dueForReview :: Maybe Member -> String -> String -> Int -> App [Link]
 dueForReview member learn' known' n =
   case member of
@@ -116,7 +139,7 @@ dueForReview member learn' known' n =
       \LEFT JOIN link_linkword w USING (link_no) \
       \WHERE member_no = {memberNumber m} AND current_timestamp >= target_time \
         \AND learn_lang = {learn'} AND known_lang = {known'} \
-      \ORDER BY target_time ASC \
+      \ORDER BY added_time ASC \
       \LIMIT {n}")
 
 -- First, use words with existing stories. Second, use linkwords or
