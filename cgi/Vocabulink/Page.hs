@@ -141,13 +141,17 @@ footerBar = do
   addr <- fromJust <$> getOption "supportaddress"
   mailto <- ((("mailto:" ++ addr ++ "?subject=support%20request") ++) . maybe "" (\m -> "%20from%20" ++ escapeURIString' (memberName m)) <$> asks appMember)::(App String)
   return $ do
-    unordList [ a ! href "https://getsatisfaction.com/vocabulink" $ "help"
-              , a ! href "/links" $ "languages"
-              , a ! href "/articles" $ "articles"
-              , a ! href (toValue mailto) ! class_ "contact-us" $ "contact us"
-              , a ! href "/privacy" $ "privacy policy"
-              , a ! href "/terms-of-use" $ "terms of use"
-              , a ! href "/source" $ "source code"
+    unordList [ a ! href "https://getsatisfaction.com/vocabulink" $ "Help"
+              , a ! href "/links" $ "Languages"
+              , a ! href "/articles" $ "Articles"
+              , a ! href (toValue mailto) ! class_ "contact-us" $ "Contact Us"
+              , a ! href "/privacy" $ "Privacy Policy"
+              , a ! href "/terms-of-use" $ "Terms of Use"
+              , a ! href "/source" $ "Source Code"
+              , a ! href "http://twitter.com/vocabulink" $ do
+                  -- Replace this with an image in a spritesheet later.
+                  img ! src "http://s.vocabulink.com/img/twitter-link-color.png"
+                  " Twitter"
               ] ! class_ "hyperlinks"
     p $ do
       copy
