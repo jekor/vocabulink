@@ -19,7 +19,7 @@
   text-align: center
   margin-left: 0
   margin-right: 0
-  img, .lexeme, input, #destination
+  .sprite, .lexeme, input, #destination
     vertical-align: middle
   lexeme
     padding:
@@ -154,22 +154,6 @@ fieldset#linkword textarea
     a
       color: #ACACAC
 
-#link-ops
-  border-top: 1px solid #EBEBEB
-  padding: 5px 0
-  @include vertical_third_gradient(#F7F8F7, #FFFFFF)
-  .operation
-    margin-right: 2em
-    cursor: pointer
-    img
-      vertical-align: middle
-      margin-right: 0.33em
-  .operation-box
-    margin-top: 1em
-    border: 1px solid #EBEBEB
-    padding: 0.25em
-    @include rounded(3px)
-
 .link-details
   margin:
     top: 1.3em
@@ -202,14 +186,6 @@ fieldset#linkword textarea
 a.language-pair
   display: block
   text-align: center
-
-.column .link-pack
-  margin:
-    right: 1.3em
-    left: auto
-
-.pack-links
-  width: 33em
 
 #linkword-stories
   .header
@@ -350,8 +326,6 @@ table.links
   th
     color: #ABABAB
     background-color: #222222
-    &:last-child
-      text-align: right
   thead
     th
       line-height: 1.667
@@ -369,7 +343,6 @@ table.links
         border-left: 1px solid white
       &:last-child
         border-right: 1px solid white
-        text-align: right
       a
         color: #2D2D2D
         display: block
@@ -383,13 +356,6 @@ table.links
         @include rounded_bl(0.5em)
       &:last-child
         @include rounded_br(0.5em)
-  .reviewing
-    background: url(/img/icon/memorybox.png) no-repeat 50% 50%
-  th:nth-child(4), td:nth-child(4)
-    text-align: center
-  td:nth-child(4) a
-    text-shadow: none
-    color: transparent
 
 #pronounce, button.pronounce
   margin:

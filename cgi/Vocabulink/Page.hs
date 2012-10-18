@@ -124,7 +124,7 @@ headerBar = do
   return $ do
     a ! href "/" ! accesskey "1" $ do
       img ! class_ "logo" ! alt "Vocabulink: Learn Languages through Fiction"
-                          ! src "http://s.vocabulink.com/img/logo-compact-beta.png"
+                          ! src "http://s.vocabulink.com/img/logo.png"
     div ! id "head-decoration" $ mempty
     div ! id "head-bar" $ do
       searchBox
@@ -149,8 +149,7 @@ footerBar = do
               , a ! href "/terms-of-use" $ "Terms of Use"
               , a ! href "/source" $ "Source Code"
               , a ! href "http://twitter.com/vocabulink" $ do
-                  -- Replace this with an image in a spritesheet later.
-                  img ! src "http://s.vocabulink.com/img/twitter-link-color.png"
+                  sprite "icon" "twitter"
                   " Twitter"
               ] ! class_ "hyperlinks"
     p $ do

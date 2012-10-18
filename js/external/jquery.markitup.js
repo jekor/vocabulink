@@ -157,7 +157,7 @@
 						for (j = levels.length -1; j >= 0; j--) {
 							t += levels[j]+"-";
 						}
-						li = $('<li class="markItUpButton markItUpButton'+t+(i)+' '+(button.className||'')+'"><a href="" '+key+' title="'+title+'">'+(button.name||'')+'</a></li>')
+						li = $('<li class="markItUpButton sprite-markitup-'+button.icon+'"><a href="" '+key+' title="'+title+'">'+(button.name||'')+'</a></li>')
 						.bind("contextmenu", function() { // prevent contextmenu on mac and allow ctrl+click
 							return false;
 						}).click(function() {

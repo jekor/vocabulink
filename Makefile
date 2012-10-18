@@ -1,7 +1,7 @@
 # Vocabulink site
 
 cgi := vocabulink.cgi
-all : $(cgi) js css articles handbook
+all : $(cgi) js css spritesheets articles handbook
 
 # Haskell
 
@@ -25,11 +25,11 @@ $(cgi) : cgi/dist/build/$(cgi)/$(cgi)
 
 jslibs := common link member dashboard learn member-page
 # Common is getting large. I'd like to break it up and maybe do deferred loading at some point.
-js_common := external/jquery-1.6.1 external/jquery.cookie external/minform external/jquery.loadmask external/jquery.toastmessage external/jquery.simplemodal-1.4.1 common loggedout
+js_common := external/jquery external/jquery.cookie external/minform external/jquery.loadmask external/jquery.toastmessage external/jquery.simplemodal common loggedout
 js_link := external/longtable link
 js_member := external/jquery.markitup external/markdown.set external/showdown loggedin ajax comment
 js_dashboard := external/drcal dashboard
-js_learn := external/jquery.hotkeys external/jquery.easing.1.3 learn
+js_learn := external/jquery.hotkeys external/jquery.easing learn
 js_member-page := member-page
 
 define js_template =
@@ -57,7 +57,9 @@ js/external/drcal.js : /home/jekor/project/drcal/drcal.js
 
 csslibs := common member link article dashboard member-page front learn
 css_common := common comment external/jquery.toastmessage external/jquery-loadmask external/jquery.simplemodal
-css_member := external/markitup-set external/markitup-skin
+css_common_css := spritesheet/icon spritesheet/toast
+css_member := external/markitup
+css_member_css := spritesheet/markitup
 css_link := link
 css_article := article
 css_dashboard := dashboard
@@ -66,14 +68,31 @@ css_front := front
 css_learn := learn
 
 define css_template =
-css/compiled/$(1).css : $$(css_$(1):%=css/%.sass)
-	cat css/lib.sass $$^ | sass > $$@
+css/compiled/$(1).css : $$(css_$(1):%=css/%.sass) $$(css_$(1)_css:%=css/%.css)
+	cat css/lib.sass $$(css_$(1):%=css/%.sass) | sass | cat - $$(css_$(1)_css:%=css/%.css) > $$@
 CSS += css/compiled/$(1).css
 endef
 
 $(foreach csslib,$(csslibs),$(eval $(call css_template,$(csslib))))
 
 css : $(CSS)
+
+# Spritesheets
+
+spritedirs := $(shell find img/* -type d)
+sprites := $(notdir $(spritedirs))
+spritesheets := $(addprefix css/spritesheet/,$(addsuffix .css,$(sprites)))
+
+spritesheets : $(spritesheets)
+
+define spritesheet_template
+css/spritesheet/$(1).css : img/$(1)
+	glue img/$(1) img --url=/img/
+	optipng img/$(1).png
+	mv img/$(1).css css/spritesheet/
+endef
+
+$(foreach sprite,$(sprites),$(eval $(call spritesheet_template,$(sprite))))
 
 # Documents
 

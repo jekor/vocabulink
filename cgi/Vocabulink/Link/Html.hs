@@ -75,7 +75,7 @@ renderLink link pronounceable' = do
                                 audio ! preload "auto" $ do
                                   source ! src (toValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (link_no link) ++ ".ogg") $ mempty
                                   source ! src (toValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (link_no link) ++ ".mp3") $ mempty
-                                img ! src "http://s.vocabulink.com/img/icon/audio.png"
+                                sprite "icon" "audio"
                          else mempty
 
 linksTable :: [Link] -> Html

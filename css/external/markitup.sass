@@ -1,0 +1,71 @@
+.markItUp
+  width: 100%
+  .preview
+    border: 1px solid $bar_and_box_border
+    padding: 5px
+    text-align: left
+
+.markItUp a:link, .markItUp a:visited
+  color: black
+  text-decoration: none
+
+.markItUpButton
+  margin: 3px
+
+.markItUpSeparator
+  background-color: #CCCCCC
+  height: 16px
+  margin: 0 10px
+  overflow: hidden
+  width: 1px
+
+.markItUpEditor
+  overflow: auto
+
+.markItUpFooter
+  width: 100%
+  margin-bottom: 2px
+
+.markItUpResizeHandle
+  overflow: hidden
+  width: 22px
+  height: 5px
+  margin:
+    top: 2px
+    left: auto
+    right: auto
+  background-image: url(/img/markitup/handle.png)
+  cursor: n-resize
+
+.markItUpHeader ul
+  overflow: hidden
+  margin: 0
+  margin-bottom: 4px
+
+// first row of buttons
+.markItUpHeader ul li
+  list-style: none
+  float: left
+  position: relative
+
+.markItUpHeader ul li:hover > ul
+  display: block
+
+.markItUpHeader ul .markItUpDropMenu li
+  margin-right: 0
+
+.markItUpHeader ul .markItUpSeparator
+  margin: 0 10px
+  width: 1px
+  height: 16px
+  overflow: hidden
+  background-color: #CCC
+
+.markItUpHeader ul a
+  display: block
+  width: 16px
+  height: 16px
+  text-indent: -10000px
+  background-repeat: no-repeat
+  padding: 3px
+  margin: 0px

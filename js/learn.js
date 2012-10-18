@@ -36,7 +36,7 @@
             + '<source src=""></source>'
             + '<source src=""></source>'
           + '</audio>'
-          + '<img src="//s.vocabulink.com/img/icon/audio.png">'
+          + '<i class="sprite sprite-icon-audio"></i>'
         + '</button>'
       + '</span>'
       + '<span class="link">'
@@ -334,7 +334,7 @@
 
   function tourLearn() {
     var tip = $('<div class="tip">'
-                + '<p><img src="//s.vocabulink.com/img/wizard.png" style="float: left; margin-right: 0.75em; margin-bottom: 0.5em;">First time here? Not sure what to do? I can walk you through the basics.</p>'
+                + '<p><i class="sprite sprite-icon-wizard" style="float: left; margin-right: 0.75em; margin-bottom: 0.5em;"></i>First time here? Not sure what to do? I can walk you through the basics.</p>'
                 + '<p style="text-align: right"><button class="button dark">Start the Tour</button></p>'
               + '</div>').css({'max-width': '16em'
                               ,'position': 'absolute'
@@ -395,7 +395,7 @@
   function tourReview() {
     $('.tip').remove();
     var tip = $('<div class="tip">'
-                + '<p><img src="//s.vocabulink.com/img/wizard.png" style="float: left; margin-right: 0.75em; margin-bottom: 0.5em;">Every time we show you a word, we keep track of that word for you and occasionally remind you to review it.</p>'
+                + '<p><i class="sprite sprite-icon-wizard" style="float: left; margin-right: 0.75em; margin-bottom: 0.5em;"></i>Every time we show you a word, we keep track of that word for you and occasionally remind you to review it.</p>'
                 + '<p style="text-align: right"><button class="button dark">Show Me How</button></p>'
               + '</div>').css({'max-width': '16em'
                               ,'position': 'absolute'

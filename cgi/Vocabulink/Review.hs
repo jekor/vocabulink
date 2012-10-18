@@ -374,7 +374,7 @@ learnPage = do
           h2 $ "Loading..."
           when (isNothing m) $ div ! id "signup-invitation" $ do
             h1 $ "Join the Free Beta"
-            img ! src "//s.vocabulink.com/img/wizard.png"
+            sprite "icon" "wizard"
             unordList [ "Learn More Words"
                       , "Get Regular Review"
                       , "Track Your Progress"

@@ -58,10 +58,10 @@
        .done(function (available) {
          var statusTd = $('#signup-username', form).parent().parent().find('td:last-child');
          if (available) {
-           statusTd.empty().append('<img alt="✓" title="This username is available." src="//s.vocabulink.com/img/icon/accept.png">');
+           statusTd.empty().append('<i class="sprite sprite-icon-accept" alt="✓" title="This username is available."></i>');
            usernameOK = true;
          } else {
-           statusTd.empty().append('<img alt="!" title="This username is unavailable." src="//s.vocabulink.com/img/icon/exclamation.png">');
+           statusTd.empty().append('<i class="sprite sprite-icon-exclamation" alt="!" title="This username is unavailable."></i>');
            usernameOK = false;
          }
        });
@@ -72,10 +72,10 @@
        .done(function (available) {
          var statusTd = $('#signup-email', form).parent().parent().find('td:last-child');
          if (available) {
-           statusTd.empty().append('<img alt="✓" title="This email address is valid and available." src="//s.vocabulink.com/img/icon/accept.png">');
+           statusTd.empty().append('<i class="sprite sprite-icon-accept" alt="✓" title="This email address is valid and available."></i>');
            emailOK = true;
          } else {
-           statusTd.empty().append('<img alt="!" title="This email address is unavailable or invalid." src="http://s.vocabulink.com/img/icon/exclamation.png">');
+           statusTd.empty().append('<i class="sprite sprite-icon-exclamation" alt="!" title="This email address is unavailable or invalid."></i>');
            emailOK = false;
          }
        });

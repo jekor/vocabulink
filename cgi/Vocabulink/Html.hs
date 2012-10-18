@@ -25,7 +25,7 @@
 -- functions. An example of this is |linkList|.
 
 module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList, tableOfPairs
-                       , menu, markdownToHtml, inlineJS
+                       , menu, markdownToHtml, inlineJS, sprite
                        {- Text.Blaze -}
                        , toHtml, toValue
                        {- Text.Blaze.Html5 -}
@@ -46,7 +46,7 @@ import Vocabulink.Utils
 import Text.Blaze (toHtml, toValue)
 import Text.Blaze.Html5 ( Html, (!), preEscapedString, customAttribute
                         , div, p, h1, h2, h3, hr, blockquote, script
-                        , span, a, img, br, strong
+                        , span, a, img, br, strong, i
                         , table, thead, tbody, tfoot, tr, td, th
                         , form, input, select, option, button
                         , ul, li, dl, dt, dd
@@ -116,3 +116,6 @@ markdownToHtml = preEscapedString . writeHtmlString defaultWriterOptions {writer
 -- Helper for inline JavaScript.
 inlineJS :: String -> Html
 inlineJS = (script ! type_ "text/javascript") . preEscapedString
+
+sprite :: String -> String -> Html
+sprite group name' = i ! class_ (toValue $ "sprite sprite-" ++ group ++ "-" ++ name') $ ""
