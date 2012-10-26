@@ -16,7 +16,6 @@
 -- along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
 module Vocabulink.Page ( stdPage, simplePage
-                       , currentPage, pager
                        ) where
 
 import Vocabulink.App
@@ -27,8 +26,6 @@ import Vocabulink.Utils
 
 import Text.Blaze.Html5 (docTypeHtml, head, noscript, link, body, title, style)
 import Text.Blaze.Html5.Attributes (rel)
-import Text.Regex (mkRegex, subRegex)
-import Text.Regex.TDFA ((=~))
 
 import Prelude hiding (div, span, id, head)
 
@@ -208,72 +205,3 @@ numLinksToReview :: Member -> App Integer
 numLinksToReview member = fromJust . fromJust <$> $(queryTuple'
   "SELECT COUNT(*) FROM link_to_review \
   \WHERE member_no = {memberNumber member} AND current_timestamp > target_time")
-
--- Paging
-
--- We'd like to have a consistent way of ``paging'' lists that don't fit on a
--- single page. This can be used to page search results, a set of links,
--- articles, etc.
-
--- This reads the page query parameters and returns them along with the current
--- offset (as a convenience). In the absence of certain parameters, we fall
--- back to reasonable defaults like 10 items per page. We also don't want to
--- chew up resources retrieving too many items, so we cap the max that a client
--- can request at 100.
-
--- Limiting the paging elements to Int bounds is necessary for the functions
--- that use the pager (they often need to |take| some number of tuples from a
--- list, for instance) and does not limit the design of our HTTP interface
--- much, if at all. I cannot think of an instance where we'd need to go past
--- the 65,000th page of anything.
-
-currentPage :: App (Int, Int, Int)
-currentPage = do
-  pg  <- readInputDefault 1 "pg"
-  n'  <- readInputDefault 10 "n"
-  let  n''     = n' > 100 ? 100 $ n'
-       n       = n'' < 1 ? 1 $ n''
-       offset  = (pg - 1) * n
-  return (pg, n, offset)
-
--- This will handle the query string in the hyperlinks it generates while it
--- replaces the @n@ (number of items per page) and @page@ (the page we're on)
--- parameters. We give it the page we're currently on, the number of items per
--- page, and the total number of items available, and it does the rest.
-
--- This doesn't actually display clickable numeric hyperlinks such as you'd see on
--- a Google search results page. It only provides the client with ``previous'' and
--- ``next''. We do this because determining the number of pages in a result can be
--- expensive.
-
-pager :: Int -> Int -> Int -> App Html
-pager pg n total = do
-  q'  <- getVar "QUERY_STRING"
-  uri <- requestURI
-  let path = uriPath uri
-      q    = maybe "" decodeString q'
-      prev = pageQueryString n (pg - 1) q
-      next = pageQueryString n (pg + 1) q
-  return $ p ! class_ "pager" $
-    span ! class_ "controls" $ do
-      if pg > 1
-        then a ! href (toValue $ path ++ prev) ! class_ "prev" $ "Previous"
-        else span ! class_ "prev" $ "Previous"
-      " "
-      if pg * n < total
-        then a ! href (toValue $ path ++ next) ! class_ "next" $ "Next"
-        else span ! class_ "next" $ "Next"
-
--- Creating the query string involves keeping the existing query string intact as
--- much as possible. We even want the position of the parameters to stay the same
--- if they're already there.
-
-pageQueryString :: Int -> Int -> String -> String
-pageQueryString n pg q =
-  let q1 = q  =~ nRegex  ? subRegex (mkRegex nRegex)  q  ("n=" ++ show n)
-                         $ q  ++ ("&n=" ++ show n)
-      q2 = q1 =~ pgRegex ? subRegex (mkRegex pgRegex) q1 ("pg=" ++ show pg)
-                         $ q1 ++ ("&pg=" ++ show pg) in
-  '?':q2
- where nRegex  = "n=[^&]+"
-       pgRegex = "pg=[^&]+"
