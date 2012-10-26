@@ -71,11 +71,9 @@ languagePairLinks memberNumber learnLang knownLang db = do
     \INNER JOIN language kl ON (kl.abbr = known_lang) \
     \LEFT JOIN link_soundalike s USING (link_no) \
     \LEFT JOIN link_linkword w USING (link_no) \
-    \LEFT JOIN link_frequency f USING (link_no) \
     \WHERE learn_lang = {learnLang} AND known_lang = {knownLang} \
       \AND NOT deleted \
-    \GROUP BY l.link_no, learn, known, learn_lang, known_lang, ll.name, kl.name, s.link_no, linkword \
-    \ORDER BY MIN(rank) ASC") db
+    \GROUP BY l.link_no, learn, known, learn_lang, known_lang, ll.name, kl.name, s.link_no, linkword") db
   return $ map linkFromTuple rows
 
 linksContaining :: String -> Handle -> IO [Link]

@@ -47,7 +47,6 @@ import Vocabulink.Comment
 import Vocabulink.Config
 import Vocabulink.Html
 import Vocabulink.Link
-import Vocabulink.Link.Frequency
 import Vocabulink.Link.Html
 import Vocabulink.Link.Story
 import Vocabulink.Member
@@ -245,11 +244,6 @@ dispatch "GET" ["search"] = do
 -- hyperlinks to language-specific browsing.
 
 dispatch "GET" ["languages"] = permRedirect "/links"
-
--- Frequency Lists
-
-dispatch "GET"  ["list","frequency",lang] = frequencyLists lang
-dispatch "POST" ["list","frequency",lang] = addFrequencyList lang
 
 -- Learning
 
