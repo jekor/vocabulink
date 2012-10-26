@@ -421,7 +421,7 @@ frontPage = do
           p $ do
             toHtml $ prettyPrint (nEsLinks::Integer) ++ " of the "
             a ! href "article/why-study-words-in-order-of-frequency" $ "most common"
-            " Spanish words await you. More mnemonics and stories are being added daily. The service is free."
+            " Spanish words await you. More mnemonics and stories are being added weekly. The service is free."
           p ! id "try-now" $ do
             a ! href "/learn?learn=es&known=en" ! class_ "faint-gradient-button green" $ do
               "Get Started"
