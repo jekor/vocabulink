@@ -139,7 +139,6 @@ footerBar = do
   mailto <- ((("mailto:" ++ addr ++ "?subject=support%20request") ++) . maybe "" (\m -> "%20from%20" ++ escapeURIString' (memberName m)) <$> asks appMember)::(App String)
   return $ do
     unordList [ a ! href "https://getsatisfaction.com/vocabulink" $ "Help"
-              , a ! href "/links" $ "Languages"
               , a ! href "/articles" $ "Articles"
               , a ! href (toValue mailto) ! class_ "contact-us" $ "Contact Us"
               , a ! href "/privacy" $ "Privacy Policy"

@@ -222,15 +222,15 @@ dispatch "GET" ["links"] = do
   dl <- getInput "dl"
   case (ol, dl) of
     (Just ol', Just dl')  -> do
-      ol'' <- langNameFromAbbr ol'
-      dl'' <- langNameFromAbbr dl'
+      ol'' <- langName ol'
+      dl'' <- langName dl'
       case (ol'', dl'') of
         (Just ol''', Just dl''') -> do db <- asks appDB
                                        mn <- memberNumber <$$> asks appMember
                                        links <- liftIO $ languagePairLinks mn ol' dl' db
                                        linksPage ("Links from " ++ ol''' ++ " to " ++ dl''') links
         _                        -> outputNotFound
-    _                        -> languagePairsPage
+    _ -> outputNotFound
 
 -- Readers
 
@@ -407,7 +407,7 @@ frontPage = do
   cloud <- wordCloud words 261 248 12 32 6
   nEsLinks <- fromJust . fromJust <$> $(queryTuple' "SELECT COUNT(*) FROM link WHERE learn_lang = 'es' AND known_lang = 'en' AND NOT deleted")
   nReviews <- fromJust . fromJust <$> $(queryTuple' "SELECT COUNT(*) FROM link_review")
-  nLinkwords <- fromJust . fromJust <$> $(queryTuple' "SELECT COUNT(*) FROM link_linkword ll INNER JOIN link l ON (l.link_no = ll.link_no AND NOT deleted)")
+  nLinkwords <- fromJust . fromJust <$> $(queryTuple' "SELECT COUNT(*) FROM link WHERE linkword IS NOT NULL AND NOT deleted")
   nStories <- fromJust . fromJust <$> $(queryTuple' "SELECT COUNT(*) FROM linkword_story INNER JOIN link USING (link_no) WHERE NOT deleted")
   stdPage "Learn Vocabulary Fast with Linkword Mnemonics" [CSS "front"] mempty $
     mconcat [

@@ -16,13 +16,14 @@
 -- along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
 module Vocabulink.Link.Html ( renderLink, linksTable, linkJSON, compactLinkJSON
-                            , linkPage, linksPage, languagePairsPage
+                            , linkPage, linksPage
                             , wordCloud
                             ) where
 
 import Vocabulink.App
 import Vocabulink.CGI
 import Vocabulink.Comment
+import Vocabulink.Config
 import Vocabulink.Html
 import Vocabulink.Link
 import Vocabulink.Link.Pronunciation
@@ -34,7 +35,7 @@ import Vocabulink.Utils
 import Control.Monad.State (State, runState, get, put)
 import Data.Aeson.Types (object, Value(..))
 import qualified Data.Aeson.Generic
-import Data.List (find, genericLength, sortBy, groupBy)
+import Data.List (find, genericLength)
 import Data.Map (fromList)
 import Data.Text (pack)
 import qualified Data.Vector
@@ -60,13 +61,15 @@ import Prelude hiding (div, span, id, words)
 
 renderLink :: Link -> Bool -> App Html
 renderLink link pronounceable' = do
+  learnLanguage <- fromMaybe "Unknown Language" <$> langName (learn_lang link)
+  knownLanguage <- fromMaybe "Unknown Language" <$> langName (known_lang link)
   return $ h1 ! class_ (toValue $ "link " ++ linkTypeName link) $ do
-    span ! class_ "foreign" ! customAttribute "lang" (toValue $ learn_lang link) ! title (toValue $ learn_language link) $ do
+    span ! class_ "foreign" ! customAttribute "lang" (toValue $ learn_lang link) ! title (toValue learnLanguage) $ do
       toHtml $ learn link
       pronunciation
     span ! class_ "link" ! title (toValue $ linkTypeName link) $
       renderLinkExtra link
-    span ! class_ "familiar" ! customAttribute "lang" (toValue $ known_lang link) ! title (toValue $ known_language link) $ toHtml $ known link
+    span ! class_ "familiar" ! customAttribute "lang" (toValue $ known_lang link) ! title (toValue knownLanguage) $ toHtml $ known link
  where renderLinkExtra :: Link -> Html
        renderLinkExtra link' = case linkword link' of
                                  Nothing -> mempty
@@ -106,8 +109,6 @@ linkJSON linkNo = do
                             ,("known", toJSON $ known link)
                             ,("learnLang", toJSON $ learn_lang link)
                             ,("knownLang", toJSON $ known_lang link)
-                            ,("learnLanguage", toJSON $ learn_language link)
-                            ,("knownLanguage", toJSON $ known_language link)
                             ,("soundalike", toJSON $ soundalike link)
                             ,("linkword", toJSON $ linkword link)
                             ,("stories", toJSON $ stories)
@@ -157,7 +158,7 @@ linkPage linkNo = do
       stories <- do ss <- linkWordStories linkNo
                     return $ mconcat $ map (\ (n, x, y, z) -> renderStory n x y z) ss
       rendered <- renderLink link hasPronunciation
-      stdPage (learn link ++ " → " ++ known link ++ " — " ++ learn_language link ++ " to " ++ known_language link) [CSS "link", JS "link"] mempty $ do
+      stdPage (learn link ++ " → " ++ known link ++ " — " ++ ("FIXME"::String) {- learn_language link -} ++ " to " ++ ("FIXME"::String) {- known_language link -}) [CSS "link", JS "link"] mempty $ do
         rendered
         div ! id "linkword-stories" $ do
           div ! class_ "header" $ h2 "Linkword Stories:"
@@ -180,27 +181,6 @@ linksPage title' links = do
                   ,"  window.location.hash = 'page' + n;"
                   ,"});"
                   ]
-
-languagePairsPage :: App CGIResult
-languagePairsPage = do
-  db <- asks appDB
-  languages' <- liftIO ((groupBy groupByName . sortBy compareNames) <$> linkLanguages db)
-  simplePage "Links By Language" [CSS "link"] $ do
-    mconcat $ map renderLanguageGroup $ sortBy compareSize languages'
- where compareNames ((_, ol1), (_, dl1), _) ((_, ol2), (_, dl2), _) =
-         if dl1 == dl2
-            then compare ol1 ol2
-            else compare dl1 dl2
-       compareSize g1 g2 = compare (languageSize g2) (languageSize g1)
-       languageSize = sum . map (\(_, _, c) -> c)
-       groupByName ((_, _), (_, dl1), _) ((_, _), (_, dl2), _) = dl1 == dl2
-       renderLanguageGroup g = div ! class_ "group-box languages" $ do
-         h2 $ toHtml $ "in " ++ groupLanguage g ++ ":"
-         multiColumnList 3 $ map renderLanguage g
-       groupLanguage = (\((_, _), (_, n), _) -> n) . head
-       renderLanguage ((oa, on), (da, _), _) =
-         a ! class_ "faint-gradient-button blue language-button" ! href (toValue $ "/links?ol=" ++ oa ++ "&dl=" ++ da)
-           $ toHtml on
 
 -- Generate a cloud of words from links in the database.
 

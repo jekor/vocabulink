@@ -127,16 +127,10 @@ dueForReview :: Maybe Member -> String -> String -> Int -> App [Link]
 dueForReview member learn' known' n =
   case member of
     Nothing -> return []
-    Just m  -> map linkFromTuple <$> $(queryTuples'
-      "SELECT l.link_no, learn, known, \
-             \learn_lang, known_lang, ll.name, kl.name, \
-             \s.link_no IS NOT NULL, COALESCE(linkword) \
+    Just m  -> map (uncurryN Link) <$> $(queryTuples'
+      "SELECT l.link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
       \FROM link_to_review l \
       \INNER JOIN link USING (link_no) \
-      \INNER JOIN language ll ON (ll.abbr = learn_lang) \
-      \INNER JOIN language kl ON (kl.abbr = known_lang) \
-      \LEFT JOIN link_soundalike s USING (link_no) \
-      \LEFT JOIN link_linkword w USING (link_no) \
       \WHERE member_no = {memberNumber m} AND current_timestamp >= target_time \
         \AND learn_lang = {learn'} AND known_lang = {known'} \
       \ORDER BY added_time ASC \
@@ -148,15 +142,9 @@ newForReview :: Maybe Member -> String -> String -> Int -> App [Link]
 newForReview member learn' known' n =
   case member of
     Nothing -> do
-      storied <- map linkFromTuple <$> $(queryTuples'
-        "SELECT l.link_no, learn, known, \
-               \learn_lang, known_lang, ll.name, kl.name, \
-               \s.link_no IS NOT NULL, COALESCE(linkword) \
+      storied <- map (uncurryN Link) <$> $(queryTuples'
+        "SELECT l.link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
         \FROM link l \
-        \INNER JOIN language ll ON (ll.abbr = learn_lang) \
-        \INNER JOIN language kl ON (kl.abbr = known_lang) \
-        \LEFT JOIN link_soundalike s ON (s.link_no = l.link_no) \
-        \LEFT JOIN link_linkword w ON (w.link_no = l.link_no) \
         \INNER JOIN linkword_story ss ON (ss.link_no = l.link_no) \
         \WHERE learn_lang = {learn'} AND known_lang = {known'} \
           \AND NOT deleted \
@@ -164,49 +152,31 @@ newForReview member learn' known' n =
       if length storied >= n
         then return storied
         else do
-          special <- map linkFromTuple <$> $(queryTuples'
-            "SELECT l.link_no, learn, known, \
-                   \learn_lang, known_lang, ll.name, kl.name, \
-                   \s.link_no IS NOT NULL, COALESCE(linkword) \
+          special <- map (uncurryN Link) <$> $(queryTuples'
+            "SELECT l.link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
             \FROM link l \
-            \INNER JOIN language ll ON (ll.abbr = learn_lang) \
-            \INNER JOIN language kl ON (kl.abbr = known_lang) \
-            \LEFT JOIN link_soundalike s ON (s.link_no = l.link_no) \
-            \LEFT JOIN link_linkword w ON (w.link_no = l.link_no) \
             \LEFT JOIN linkword_story ss ON (ss.link_no = l.link_no) \
             \WHERE learn_lang = {learn'} AND known_lang = {known'} \
               \AND ss.link_no IS NULL \
-              \AND (s.link_no IS NOT NULL OR w.link_no IS NOT NULL) \
+              \AND (soundalike OR linkword IS NOT NULL) \
               \AND NOT deleted \
             \ORDER BY random() LIMIT {n - length storied}")
           if length storied + length special >= n
             then return $ storied ++ special
             else do
-              plain <- map linkFromTuple <$> $(queryTuples'
-                "SELECT l.link_no, learn, known, \
-                       \learn_lang, known_lang, ll.name, kl.name, \
-                       \s.link_no IS NOT NULL, COALESCE(linkword) \
+              plain <- map (uncurryN Link) <$> $(queryTuples'
+                "SELECT l.link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
                 \FROM link l \
-                \INNER JOIN language ll ON (ll.abbr = learn_lang) \
-                \INNER JOIN language kl ON (kl.abbr = known_lang) \
-                \LEFT JOIN link_soundalike s ON (s.link_no = l.link_no) \
-                \LEFT JOIN link_linkword w ON (w.link_no = l.link_no) \
                 \WHERE learn_lang = {learn'} AND known_lang = {known'} \
-                  \AND (s.link_no IS NULL AND w.link_no IS NULL) \
+                  \AND (NOT soundalike AND linkword IS NULL) \
                   \AND NOT deleted \
                 \ORDER BY random() LIMIT {n - length storied - length special}")
               return $ storied ++ special ++ plain
     Just m -> do
-      storied <- map linkFromTuple <$> $(queryTuples'
-        "SELECT l.link_no, learn, known, \
-               \learn_lang, known_lang, ll.name, kl.name, \
-               \s.link_no IS NOT NULL, COALESCE(linkword) \
+      storied <- map (uncurryN Link) <$> $(queryTuples'
+        "SELECT l.link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
         \FROM link l \
         \LEFT JOIN link_to_review r ON (r.link_no = l.link_no AND r.member_no = {memberNumber m}) \
-        \INNER JOIN language ll ON (ll.abbr = learn_lang) \
-        \INNER JOIN language kl ON (kl.abbr = known_lang) \
-        \LEFT JOIN link_soundalike s ON (s.link_no = l.link_no) \
-        \LEFT JOIN link_linkword w ON (w.link_no = l.link_no) \
         \INNER JOIN linkword_story ss ON (ss.link_no = l.link_no) \
         \WHERE learn_lang = {learn'} AND known_lang = {known'} \
           \AND r.link_no IS NULL \
@@ -215,38 +185,26 @@ newForReview member learn' known' n =
       if length storied >= n
         then return storied
         else do
-          special <- map linkFromTuple <$> $(queryTuples'
-            "SELECT l.link_no, learn, known, \
-                   \learn_lang, known_lang, ll.name, kl.name, \
-                   \s.link_no IS NOT NULL, COALESCE(linkword) \
+          special <- map (uncurryN Link) <$> $(queryTuples'
+            "SELECT l.link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
             \FROM link l \
             \LEFT JOIN link_to_review r ON (r.link_no = l.link_no AND r.member_no = {memberNumber m}) \
-            \INNER JOIN language ll ON (ll.abbr = learn_lang) \
-            \INNER JOIN language kl ON (kl.abbr = known_lang) \
-            \LEFT JOIN link_soundalike s ON (s.link_no = l.link_no) \
-            \LEFT JOIN link_linkword w ON (w.link_no = l.link_no) \
             \LEFT JOIN linkword_story ss ON (ss.link_no = l.link_no) \
             \WHERE learn_lang = {learn'} AND known_lang = {known'} \
               \AND r.link_no IS NULL AND ss.link_no IS NULL \
-              \AND (s.link_no IS NOT NULL OR w.link_no IS NOT NULL) \
+              \AND (soundalike OR linkword IS NOT NULL) \
               \AND NOT deleted \
             \ORDER BY random() LIMIT {n - length storied}")
           if length storied + length special >= n
             then return $ storied ++ special
             else do
-              plain <- map linkFromTuple <$> $(queryTuples'
-                "SELECT l.link_no, learn, known, \
-                       \learn_lang, known_lang, ll.name, kl.name, \
-                       \s.link_no IS NOT NULL, COALESCE(linkword) \
+              plain <- map (uncurryN Link) <$> $(queryTuples'
+                "SELECT l.link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
                 \FROM link l \
                 \LEFT JOIN link_to_review r ON (r.link_no = l.link_no AND r.member_no = {memberNumber m}) \
-                \INNER JOIN language ll ON (ll.abbr = learn_lang) \
-                \INNER JOIN language kl ON (kl.abbr = known_lang) \
-                \LEFT JOIN link_soundalike s ON (s.link_no = l.link_no) \
-                \LEFT JOIN link_linkword w ON (w.link_no = l.link_no) \
                 \WHERE learn_lang = {learn'} AND known_lang = {known'} \
                   \AND r.link_no IS NULL \
-                  \AND (s.link_no IS NULL AND w.link_no IS NULL) \
+                  \AND (NOT soundalike AND linkword IS NULL) \
                   \AND NOT deleted \
                 \ORDER BY random() LIMIT {n - length storied - length special}")
               return $ storied ++ special ++ plain
@@ -357,8 +315,8 @@ learnPage :: App CGIResult
 learnPage = do
   learn' <- getRequiredInput "learn"
   known' <- getRequiredInput "known"
-  learn'' <- langNameFromAbbr learn'
-  known'' <- langNameFromAbbr known'
+  learn'' <- langName learn'
+  known'' <- langName known'
   case (learn'', known'') of
     (Just l, Just k) -> do
       m <- asks appMember

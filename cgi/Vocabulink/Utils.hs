@@ -69,6 +69,8 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , formatTime, readTime
                         {- Debug.Trace -}
                         , trace
+                        {- Data.Tuple.Curry -}
+                        , uncurryN
                         {- System.FilePath -}
                         , (</>), (<.>), takeExtension, replaceExtension, takeBaseName, takeFileName
                         {- System.IO -}
@@ -108,6 +110,7 @@ import Data.Time.Clock (UTCTime, DiffTime, getCurrentTime, diffUTCTime, secondsT
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Time.Format (formatTime, readTime)
 import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, LocalTime(..))
+import Data.Tuple.Curry (uncurryN)
 import System.Directory (getPermissions, doesFileExist, readable)
 import System.Exit (ExitCode(..))
 import System.FilePath ( (</>), (<.>), takeExtension, replaceExtension

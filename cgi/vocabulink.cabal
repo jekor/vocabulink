@@ -1,5 +1,5 @@
 Name:          Vocabulink
-Version:       2012.11.10
+Version:       2012.11.21
 Cabal-Version: >= 1.2
 License:       OtherLicense
 License-File:  ../COPYING
@@ -51,6 +51,7 @@ Executable vocabulink.cgi
                  templatepg >= 0.2.2,
                  text,
                  time,
+                 tuple,
                  unix,
                  utf8-string,
                  utility-ht,

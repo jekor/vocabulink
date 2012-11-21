@@ -34,13 +34,13 @@ readerTitlePage lang name' = do
   case row of
     Nothing -> outputNotFound
     Just (title', desc) -> do
-      langName <- fromJust <$> langNameFromAbbr lang
-      stdPage (title' ++ " - A Vocabulink " ++ langName ++ " Reader") [CSS "reader", JS "reader", CSS "link", JS "link"] mempty $ do
+      language <- fromMaybe "Unknown Language" <$> langName lang
+      stdPage (title' ++ " - A Vocabulink " ++ language ++ " Reader") [CSS "reader", JS "reader", CSS "link", JS "link"] mempty $ do
         div ! id "book" $ do
           a ! class_ "pager next sprite sprite-icon-arrow-right" ! title "Next Page" ! href (toValue $ name' ++ "/1") $ mempty
           div ! class_ "page left" $ do
             h1 $ toHtml title'
-            h2 ! style "text-align: center" $ toHtml $ "A Vocabulink " ++ langName ++ " Reader"
+            h2 ! style "text-align: center" $ toHtml $ "A Vocabulink " ++ language ++ " Reader"
             markdownToHtml desc
           div ! class_ "page right" $ do
             p $ "As you read the story, don't worry about translating or understanding everything perfectly. The main purpose of the story is to introduce you to new words gently and in context."
@@ -62,8 +62,8 @@ readerPage lang name' page = do
                             \WHERE short_name = {name'} AND lang = {lang}")
   case (row, maxPage') of
     (Just (title', body), Just (Just maxPage)) -> do
-      langName <- fromJust <$> langNameFromAbbr lang
-      stdPage (title' ++ " - Page " ++ show page ++ " - A Vocabulink " ++ langName ++ " Reader") [CSS "reader", JS "reader", CSS "link", JS "link"] mempty $ do
+      language <- fromMaybe "Unknown Language" <$> langName lang
+      stdPage (title' ++ " - Page " ++ show page ++ " - A Vocabulink " ++ language ++ " Reader") [CSS "reader", JS "reader", CSS "link", JS "link"] mempty $ do
         div ! id "book" $ do
           a ! class_ "pager prev sprite sprite-icon-arrow-left" ! title "Previous Page" ! href (toValue (page > 1 ? show (page - 1) $ ".")) $ mempty
           when (page < maxPage) $ a ! class_ "pager next sprite sprite-icon-arrow-right" ! title "Next Page" ! href (toValue $ show (page + 1)) $ mempty

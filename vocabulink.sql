@@ -45,7 +45,8 @@ CREATE TABLE link (
        known TEXT NOT NULL CHECK (length(familiar_phrase) > 0),
        learn_lang CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE NOT NULL,
        known_lang CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE NOT NULL,
-       created TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       soundalike BOOLEAN NOT NULL DEFAULT FALSE,
+       linkword TEXT,
        deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 COMMENT ON TABLE link IS 'A link is an association between 2 words (or phrases) in a single direction.';
@@ -54,18 +55,9 @@ COMMENT ON COLUMN link.deleted IS 'We need a way to delete links, but we don''t 
 CREATE INDEX link_foreign_phrase_index ON link (foreign_phrase);
 CREATE INDEX link_familiar_phrase_index ON link (familiar_phrase);
 
-CREATE TABLE link_linkword (
-       link_no INTEGER REFERENCES link (link_no) ON DELETE CASCADE NOT NULL PRIMARY KEY,
-       linkword TEXT NOT NULL
-);
-
-CREATE TABLE link_soundalike (
-       link_no INTEGER REFERENCES link (link_no) ON DELETE CASCADE NOT NULL PRIMARY KEY
-);
-
 CREATE TABLE linkword_story (
        story_no SERIAL PRIMARY KEY,
-       link_no INTEGER REFERENCES link_type_linkword (link_no) ON DELETE CASCADE NOT NULL,
+       link_no INTEGER REFERENCES link (link_no) ON DELETE CASCADE NOT NULL,
        author INTEGER REFERENCES member (member_no) ON DELETE CASCADE NOT NULL,
        created TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
        edited  TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
