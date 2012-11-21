@@ -37,7 +37,7 @@ readerTitlePage lang name' = do
       langName <- fromJust <$> langNameFromAbbr lang
       stdPage (title' ++ " - A Vocabulink " ++ langName ++ " Reader") [CSS "reader", JS "reader", CSS "link", JS "link"] mempty $ do
         div ! id "book" $ do
-          a ! class_ "pager next" ! title "Next Page" ! href (toValue $ name' ++ "/1") $ "▲"
+          a ! class_ "pager next sprite sprite-icon-arrow-right" ! title "Next Page" ! href (toValue $ name' ++ "/1") $ mempty
           div ! class_ "page left" $ do
             h1 $ toHtml title'
             h2 ! style "text-align: center" $ toHtml $ "A Vocabulink " ++ langName ++ " Reader"
@@ -45,7 +45,7 @@ readerTitlePage lang name' = do
           div ! class_ "page right" $ do
             p $ "As you read the story, don't worry about translating or understanding everything perfectly. The main purpose of the story is to introduce you to new words gently and in context."
             p $ "Unlike some readers, there is no translation of the story included. However, you can click on any of the words in the story to see its definition along with any mnemonics that might be available to help you remember it."
-            p $ "Each page of the story will introduce you to a handful of new words. We recommend learning all new words on each page before proceeding to the next." -- Any words you click on will be automatically added to a list that we will review you on later.
+            p $ "Each page of the story will introduce you to a handful of new words. We recommend learning all the new words on each page before proceeding to the next." -- Any words you click on will be automatically added to a list that we will review you on later.
             p $ "To begin, click the \"Next Page\" button to the right."
           div ! style "clear: both" $ mempty -- We can't use overflow: hidden here.
 
@@ -65,8 +65,8 @@ readerPage lang name' page = do
       langName <- fromJust <$> langNameFromAbbr lang
       stdPage (title' ++ " - Page " ++ show page ++ " - A Vocabulink " ++ langName ++ " Reader") [CSS "reader", JS "reader", CSS "link", JS "link"] mempty $ do
         div ! id "book" $ do
-          a ! class_ "pager prev" ! title "Previous Page" ! href (toValue (page > 1 ? show (page - 1) $ ".")) $ "▲"
-          when (page < maxPage) $ a ! class_ "pager next" ! title "Next Page" ! href (toValue $ show (page + 1)) $ "▲"
+          a ! class_ "pager prev sprite sprite-icon-arrow-left" ! title "Previous Page" ! href (toValue (page > 1 ? show (page - 1) $ ".")) $ mempty
+          when (page < maxPage) $ a ! class_ "pager next sprite sprite-icon-arrow-right" ! title "Next Page" ! href (toValue $ show (page + 1)) $ mempty
           div ! class_ "page left" $ do
             div ! class_ "header" $ do
               span ! class_ "title" $ toHtml title'

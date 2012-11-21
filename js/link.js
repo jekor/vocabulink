@@ -99,11 +99,6 @@ function showNewStory() {
 $(function () {
   V.annotateLink($('h1.link:visible'));
 
-  $('#pronounce, button.pronounce').click(function () {
-    $(this).find('audio')[0].play();
-    return false;
-  });
-
   $('.linkword-story blockquote').each(function () {
     if ($(this).height() > 140) {
       collapseStory($(this), $(this).height(), 140);

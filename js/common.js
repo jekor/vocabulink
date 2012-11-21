@@ -117,6 +117,11 @@ $(function () {
       return false;
     });
   }
+
+  $('#pronounce, button.pronounce').live('click', function () {
+    $(this).find('audio')[0].play();
+    return false;
+  });
 });
 
 })(jQuery);

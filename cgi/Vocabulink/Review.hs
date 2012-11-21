@@ -380,11 +380,9 @@ learnPage = do
                       , "Track Your Progress"
                       ]
             p $ do
-              "Once the beta is over, the price will go"
+              "During the beta everything is free."
               br
-              "up to $10 per month. Join now and get"
-              br
-              "it all for free."
+              "This won't last forever. Join now."
     _ -> outputNotFound
 
 upcomingLinks :: App CGIResult
