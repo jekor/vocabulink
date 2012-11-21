@@ -105,11 +105,33 @@ COMMENT ON TABLE link_sm2 IS 'link_sm2 is used to track statistics for reviews b
 COMMENT ON COLUMN link_sm2.ef IS 'EF stands for "Easiness Factor".';
 COMMENT ON COLUMN link_sm2.n IS 'This member is in review interval n. They may have reviewed the item more than n times, but n resets with a response lower than 3 in SM-2.';
 
+-- Readers
+
+CREATE TABLE reader (
+       reader_no SERIAL NOT NULL PRIMARY KEY,
+       short_name TEXT NOT NULL,
+       title TEXT NOT NULL,
+       lang CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE NOT NULL,
+       description TEXT NOT NULL,
+       UNIQUE (short_name, lang)
+);
+COMMENT ON COLUMN reader.short_name IS 'This will be used in the URL.';
+COMMENT ON COLUMN reader.title IS 'Titles should be written in their native language.';
+COMMENT ON COLUMN reader.description IS 'A description in markdown format.';
+
+CREATE TABLE reader_page (
+       reader_no INTEGER REFERENCES reader (reader_no) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+       page_no INTEGER NOT NULL,
+       body TEXT NOT NULL,
+       PRIMARY KEY (reader_no, page_no)
+);
+COMMENT ON TABLE reader_page IS 'Readers are organized into pages. Page length is determined by how many new words are introduced or by how many new concepts are introduced. Basically, a page should be readable by the learner in a single session.';
+
 -- Articles: Essays, Blog Posts, Disclaimers, etc. --
 
 CREATE TABLE article (
        filename TEXT PRIMARY KEY,
-       author INTEGER REFERENCES member (member_no) NOT NULL ON UPDATE CASCADE ON DELETE CASCADE,
+       author INTEGER REFERENCES member (member_no) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
        publish_time TIMESTAMP (0) WITH TIME ZONE NOT NULL,
        update_time TIMESTAMP (0) WITH TIME ZONE NOT NULL,
        section TEXT,

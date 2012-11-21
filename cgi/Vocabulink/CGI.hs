@@ -35,11 +35,12 @@ module Vocabulink.CGI ( outputText, outputHtml, outputJSON
                       , ToJSON(..)
                       {- Network.CGI -}
                       , MonadCGI, CGIResult
-                      , requestURI, requestMethod
+                      , requestURI, requestMethod, requestAccept
                       , getInputFPS, getBodyFPS, getInputFilename
                       , getInputNames, getInputContentType
                       , getVar, setHeader, redirect, remoteAddr
                       , outputNothing, outputError, outputMethodNotAllowed
+                      , ContentType(..), negotiate
                       , Cookie(..), getCookie, setCookie, deleteCookie
                       {- Network.URI -}
                       , uriPath, uriQuery, escapeURIString, isUnescapedInURI
@@ -52,10 +53,11 @@ import Control.Exception (Exception, SomeException, try)
 import Control.Monad.Reader (ReaderT(..))
 import Control.Monad.Writer (WriterT(..))
 import Database.TemplatePG (pgDisconnect)
+import Data.Aeson (toJSON)
 import Data.Aeson.Encode as J (encode)
+import qualified Data.Aeson.Generic
 import Data.Aeson.QQ (aesonQQ)
 import Data.Aeson.Types (ToJSON(..), object)
-import Data.Aeson.Generic (toJSON)
 import Data.ByteString.Lazy (ByteString)
 import Data.ByteString.Lazy.UTF8 (fromString, toString)
 import Data.Char (isAlphaNum)

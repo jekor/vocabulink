@@ -61,6 +61,16 @@
   -webkit-box-sizing: border-box
   box-sizing: border-box
 
+@mixin transform($t)
+  -moz-transform: $t
+  -webkit-transform: $t
+  -o-transform: $t
+  -ms-transform: $t
+  transform: $t
+
+@mixin rotate($deg)
+  @include transform(rotate(#{$deg}deg))
+
 // This is the background color for major blocks in the interface.
 $bar_and_box_background: #F7F7F7
 $bar_and_box_border: #DFDFDF

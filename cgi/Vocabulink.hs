@@ -53,6 +53,7 @@ import Vocabulink.Member
 import Vocabulink.Member.Page
 import Vocabulink.Member.Registration
 import Vocabulink.Page
+import Vocabulink.Reader
 import Vocabulink.Review
 import Vocabulink.Utils
 
@@ -199,7 +200,11 @@ dispatch meth ("link":x:part) =
   case maybeRead x of
     Nothing -> outputNotFound
     Just n  -> case (meth, part) of
-                 ("GET"   , [])                -> linkPage n
+                 ("GET"   , [])                -> do
+                   accept <- requestAccept
+                   case negotiate [ContentType "application" "json" [], ContentType "text" "html" []] accept of
+                     (ContentType "application" "json" _:_)  -> linkJSON n
+                     _ -> linkPage n
                  ("GET"   , ["stories"])       -> do
                    -- TODO: Support HTML/JSON output based on content-type negotiation.
                    stories <- linkWordStories n
@@ -226,6 +231,13 @@ dispatch "GET" ["links"] = do
                                        linksPage ("Links from " ++ ol''' ++ " to " ++ dl''') links
         _                        -> outputNotFound
     _                        -> languagePairsPage
+
+-- Readers
+
+dispatch "GET" ["reader", lang, name'] = readerTitlePage lang name'
+dispatch "GET" ["reader", lang, name', pg] = case maybeRead pg of
+                                               Nothing -> outputNotFound
+                                               Just n  -> readerPage lang name' n
 
 -- Searching
 

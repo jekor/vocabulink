@@ -28,6 +28,7 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , currentDay, currentYear, diffTimeToSeconds, epochUTC, utcEpoch
                         , basename, isFileReadable, sendMail
                         , logError, prettyPrint
+                        , matchRegexAllText
                         {- Codec.Binary.UTF8.String -}
                         , encodeString, decodeString
                         {- Control.Applicative -}
@@ -78,6 +79,8 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , epochTime
                         {- System.Posix.Types -}
                         , EpochTime
+                        {- Text.Regex -}
+                        , subRegex, mkRegex
                         ) where
 
 import Codec.Binary.UTF8.String (encodeString, decodeString)
@@ -114,6 +117,7 @@ import System.Locale (defaultTimeLocale)
 import System.Posix.Time (epochTime)
 import System.Posix.Types (EpochTime)
 import System.Process (createProcess, waitForProcess, proc, std_in, StdStream(..))
+import Text.Regex (Regex, subRegex, mkRegex, matchRegexAll)
 
 import Prelude hiding (readFile, writeFile)
 
@@ -289,3 +293,9 @@ instance PrettyPrint Day where
 
 instance PrettyPrint UTCTime where
   prettyPrint = formatTime defaultTimeLocale "%F %R"
+
+matchRegexAllText :: Regex -> String -> [(String, [String])]
+matchRegexAllText rx s =
+  case matchRegexAll rx s of
+    Just (_, match, rest, subs) -> (match, subs) : matchRegexAllText rx rest
+    Nothing -> []

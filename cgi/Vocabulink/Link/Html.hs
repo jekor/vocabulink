@@ -15,7 +15,7 @@
 -- You should have received a copy of the GNU Affero General Public License
 -- along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
 
-module Vocabulink.Link.Html ( renderLink, linksTable, compactLinkJSON
+module Vocabulink.Link.Html ( renderLink, linksTable, linkJSON, compactLinkJSON
                             , linkPage, linksPage, languagePairsPage
                             , wordCloud
                             ) where
@@ -33,10 +33,11 @@ import Vocabulink.Utils
 
 import Control.Monad.State (State, runState, get, put)
 import Data.Aeson.Types (object, Value(..))
-import Data.Aeson.Generic (toJSON)
+import qualified Data.Aeson.Generic
 import Data.List (find, genericLength, sortBy, groupBy)
+import Data.Map (fromList)
 import Data.Text (pack)
-import Data.Vector (fromList)
+import qualified Data.Vector
 import System.Random
 import Text.Blaze.Html5 (audio, source)
 import Text.Blaze.Html5.Attributes (preload)
@@ -92,6 +93,28 @@ linksTable links = table ! class_ "links" $ do
            td $ a ! href (toValue url) $ toHtml $ known link
            td $ a ! href (toValue url) $ toHtml $ fromMaybe "" $ linkword link
 
+linkJSON :: Integer -> App CGIResult
+linkJSON linkNo = do
+  db <- asks appDB
+  link' <- liftIO $ linkDetails linkNo db
+  case link' of
+    Nothing -> outputNotFound
+    Just link -> do
+      stories <- map storyJSON <$$> linkWordStories $ link_no link
+      outputJSON $ fromList [("linkNumber"::String, toJSON $ link_no link)
+                            ,("learn", toJSON $ learn link)
+                            ,("known", toJSON $ known link)
+                            ,("learnLang", toJSON $ learn_lang link)
+                            ,("knownLang", toJSON $ known_lang link)
+                            ,("learnLanguage", toJSON $ learn_language link)
+                            ,("knownLanguage", toJSON $ known_language link)
+                            ,("soundalike", toJSON $ soundalike link)
+                            ,("linkword", toJSON $ linkword link)
+                            ,("stories", toJSON $ stories)
+                            ]
+ where storyJSON (storyNo, body, member, edited) =
+         toJSON (storyNo, markdownToHtmlString body, (memberName member, gravatarHash <$> memberEmail member), showGregorian edited)
+
 compactLinkJSON :: Link -> App Value
 compactLinkJSON link = do
   -- I opted for an array representation because it's more compact. We could be
@@ -106,7 +129,7 @@ compactLinkJSON link = do
                    ] |]
  where linkExtra l
          | isJust (linkword l) = [aesonQQ| {"linkword": <| fromJust (linkword l) |>} |]
-         | soundalike link     = [aesonQQ| {"soundalike": <| True |>} |]
+         | soundalike l        = [aesonQQ| {"soundalike": <| True |>} |]
          | otherwise           = Null
 
 -- Each link gets its own URI and page. Most of the extra code in the following is

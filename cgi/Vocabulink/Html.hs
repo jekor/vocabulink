@@ -25,7 +25,7 @@
 -- functions. An example of this is |linkList|.
 
 module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList, tableOfPairs
-                       , menu, markdownToHtml, inlineJS, sprite
+                       , menu, markdownToHtml, markdownToHtmlString, inlineJS, sprite
                        {- Text.Blaze -}
                        , toHtml, toValue
                        {- Text.Blaze.Html5 -}
@@ -111,7 +111,10 @@ menu choices = select $ mconcat
 -- XSS attacks.
 
 markdownToHtml :: String -> Html
-markdownToHtml = preEscapedString . writeHtmlString defaultWriterOptions {writerHtml5 = True} . readMarkdown defaultParserState
+markdownToHtml = preEscapedString . markdownToHtmlString
+
+markdownToHtmlString :: String -> String
+markdownToHtmlString = writeHtmlString defaultWriterOptions {writerHtml5 = True} . readMarkdown defaultParserState
 
 -- Helper for inline JavaScript.
 inlineJS :: String -> Html

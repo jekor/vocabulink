@@ -1,0 +1,120 @@
+#book
+  position: relative
+  width: 66em
+  margin:
+    left: auto
+    right: auto
+    top: 2em
+
+.page
+  @include border_box
+  float: left
+  width: 50%
+  height: 80ex
+  max-height: 80%
+  padding: 3em
+  margin: 0 0 30px 0
+  border: #C9C9C9 solid 1px
+  > *:last-child
+    margin-bottom: 3em
+  &.left
+    border-right: #A9A9A9 solid 1px
+    background: linear-gradient(left, #DEDEDE, #FFFFFF 15%, #FFFFFF 86%, #DEDEDE 96%, #C9C9C9)
+    background: -moz-linear-gradient(left, #DEDEDE, #FFFFFF 15%, #FFFFFF 86%, #DEDEDE 96%, #C9C9C9)
+    background: -webkit-linear-gradient(left, #DEDEDE, #FFFFFF 15%, #FFFFFF 86%, #DEDEDE 96%, #C9C9C9)
+    -moz-box-shadow: 0 1px 4px rgba(0, 0, 0, 0.27), 0 0 40px rgba(0, 0, 0, 0.06) inset
+    -webkit-box-shadow: 0 1px 4px rgba(0, 0, 0, 0.27), 0 0 40px rgba(0, 0, 0, 0.06) inset
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.27), 0 0 40px rgba(0, 0, 0, 0.06) inset
+    &:before
+      content: ''
+      z-index: -1
+      position: absolute
+      left: 20px
+      bottom: 45px
+      width: 70%
+      max-width: 300px
+      max-height: 100px
+      height: 55%
+      -webkit-box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3)
+      -moz-box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3)
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3)
+      -webkit-transform: skew(-15deg) rotate(-6deg)
+      -moz-transform: skew(-15deg) rotate(-6deg)
+      -ms-transform: skew(-15deg) rotate(-6deg)
+      -o-transform: skew(-15deg) rotate(-6deg)
+      transform: skew(-15deg) rotate(-6deg)
+  &.right
+    > *:first-child
+      margin-top: 0
+    overflow: auto
+    border-left: #A9A9A9 solid 1px
+    background: linear-gradient(right, #DEDEDE, #FFFFFF 15%, #FFFFFF 86%, #DEDEDE 96%, #C9C9C9)
+    background: -moz-linear-gradient(right, #DEDEDE, #FFFFFF 15%, #FFFFFF 86%, #DEDEDE 96%, #C9C9C9)
+    background: -webkit-linear-gradient(right, #DEDEDE, #FFFFFF 15%, #FFFFFF 86%, #DEDEDE 96%, #C9C9C9)
+    -moz-box-shadow: 0 1px 4px rgba(0, 0, 0, 0.27), 0 0 40px rgba(0, 0, 0, 0.06) inset
+    -webkit-box-shadow: 0 1px 4px rgba(0, 0, 0, 0.27), 0 0 40px rgba(0, 0, 0, 0.06) inset
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.27), 0 0 40px rgba(0, 0, 0, 0.06) inset
+    h2
+      font-size: 18pt
+      margin-bottom: 0.66em
+    &:after
+      content: ''
+      z-index: -1
+      position: absolute
+      right: 20px
+      bottom: 45px
+      width: 70%
+      max-width: 300px
+      max-height: 100px
+      height: 55%
+      -webkit-box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3)
+      -moz-box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3)
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3)
+      -webkit-transform: skew(15deg) rotate(6deg)
+      -moz-transform: skew(15deg) rotate(6deg)
+      -ms-transform: skew(15deg) rotate(6deg)
+      -o-transform: skew(15deg) rotate(6deg)
+      transform: skew(15deg) rotate(6deg)
+
+.signature
+  overflow: hidden
+  img.avatar, .details
+    float: right
+  img.avatar
+    margin-left: 6px
+  .details
+    line-height: 1.1em
+    text-align: right
+
+.header
+  margin: -2em -2em 2em -2em
+  font-family: serif
+  text-align: center
+  span
+    font-family: serif
+  .title
+    font-variant: small-caps
+  .page-number
+    display: block
+    float: left
+
+a.pager
+  display: block
+  position: absolute
+  top: 45%
+  font-size: 18pt
+  width: 1.4em
+  height: 1.4em
+  border-radius: 0.7em
+  background-color: #C9C9C9
+  color: #FFFFFF
+  text-align: center
+  text-decoration: none
+  &:hover
+    text-decoration: none
+  &.prev
+    @include rotate(-90)
+    left: -2em
+  &.next
+    @include rotate(90)
+    right: -2em

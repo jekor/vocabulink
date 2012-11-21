@@ -1,5 +1,5 @@
 Name:          Vocabulink
-Version:       2012.10.9
+Version:       2012.11.10
 Cabal-Version: >= 1.2
 License:       OtherLicense
 License-File:  ../COPYING
@@ -21,7 +21,7 @@ Build-Type:    Simple
 
 Executable vocabulink.cgi
   Main-Is:       Vocabulink.hs
-  Build-Depends: aeson,
+  Build-Depends: aeson >= 0.6,
                  aeson-qq,
                  applicative-extras,
                  base >= 4,
@@ -29,6 +29,7 @@ Executable vocabulink.cgi
                  bytestring,
                  cgi >= 3001.1.8.2,
                  ConfigFile,
+                 containers,
                  data-default,
                  directory,
                  filepath,
@@ -43,7 +44,6 @@ Executable vocabulink.cgi
                  process,
                  random,
                  regex-compat,
-                 regex-tdfa,
                  scgi >= 0.3.1,
                  SHA,
                  split,

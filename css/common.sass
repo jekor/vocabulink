@@ -305,31 +305,6 @@ html, body
   h1
     margin-top: 0
 
-// The Pager is used to page results that won't fit on a single page.
-
-.pager
-  text-align: center
-  margin:
-    top: 1.3em
-    bottom: 1.3em
-  // Group controls in a box so that they can be logically associated.
-  .controls
-    display: inline-block
-    border: 1px solid $bar_and_box_border
-    background-color: $bar_and_box_background
-    padding: 0.5em
-    .next
-      margin-left: 2em
-  // Grey out controls that can't be used.
-  span
-    &.prev, &.next
-      color: $bar_and_box_border
-
-.breadcrumbs
-  margin-bottom: 1.3em
-  li
-    display: inline
-
 noscript > p
   width: 33em
   margin:
@@ -550,3 +525,7 @@ a.faint-gradient-button
 
 .sprite
   display: inline-block
+
+button.pronounce
+  .sprite
+    vertical-align: middle

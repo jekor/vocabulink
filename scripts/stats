@@ -15,3 +15,9 @@ echo "SELECT username, COUNT(*) AS reviews FROM link_review INNER JOIN member US
 
 echo "Top 10 reviewers of all time"
 echo "SELECT username, COUNT(*) AS reviews FROM link_review INNER JOIN member USING (member_no) GROUP BY username ORDER BY reviews DESC LIMIT 10" | $PSQL
+
+echo "Active reviewers in the last week"
+echo "SELECT COUNT(DISTINCT(member_no)) FROM link_review WHERE actual_time BETWEEN NOW() - INTERVAL '1 WEEK' AND NOW();" | $PSQL
+
+echo "Active reviewers in the last month"
+echo "SELECT COUNT(DISTINCT(member_no)) FROM link_review WHERE actual_time BETWEEN NOW() - INTERVAL '1 MONTH' AND NOW();" | $PSQL
