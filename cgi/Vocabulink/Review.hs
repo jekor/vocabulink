@@ -21,7 +21,7 @@
 
 module Vocabulink.Review ( newReview, scheduleNextReview
                          , reviewStats, dailyReviewStats, detailedReviewStats
-                         , learnPage, upcomingLinks
+                         , learnPage, upcomingLinks, syncLinks
                          ) where
 
 -- For now, we have only 1 review algorithm (SuperMemo 2).
@@ -38,9 +38,12 @@ import Vocabulink.Member
 import Vocabulink.Page
 import Vocabulink.Utils
 
+import Data.Aeson (FromJSON(..))
+import Data.Aeson.Types (Value(..), (.:))
 import qualified Data.Aeson.Encode
 import qualified Data.Aeson.Generic
 import qualified Data.Aeson.Types
+import Data.Map (fromList)
 import qualified Data.Text
 import qualified Data.Text.Lazy
 import Data.Text.Lazy.Builder (toLazyText)
@@ -65,8 +68,8 @@ import Prelude hiding (div, span, id)
 
 newReview :: Member -> Integer -> App ()
 newReview member linkNo = do
-  $(execute' "INSERT INTO link_to_review (member_no, link_no) \
-                                 \VALUES ({memberNumber member}, {linkNo})")
+  $(insertIgnore' "INSERT INTO link_to_review (member_no, link_no) \
+                                      \VALUES ({memberNumber member}, {linkNo})")
 
 -- We need to schedule the next review based on the review algorithm in use.
 -- The algorithm needs to know how well the item was remembered. Also, we log
@@ -208,6 +211,15 @@ newForReview member learn' known' n =
                   \AND NOT deleted \
                 \ORDER BY random() LIMIT {n - length storied - length special}")
               return $ storied ++ special ++ plain
+
+reviewingLinks :: Member -> App [Link]
+reviewingLinks member =
+  map (uncurryN Link) <$> $(queryTuples'
+    "SELECT l.link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
+    \FROM link_to_review \
+    \INNER JOIN link l USING (link_no) \
+    \WHERE member_no = {memberNumber member}")
+
 
 -- In order to determine the next review interval, the review scheduling
 -- algorithm may need to know how long the last review period was (in fact, any
@@ -355,3 +367,24 @@ upcomingLinks = do
       new' = Data.Aeson.Types.Array $ V.fromList new
   outputJSON [aesonQQ| {"review": <<due'>>
                        ,"learn": <<new'>>} |]
+
+syncLinks :: Member -> App CGIResult
+syncLinks member = do
+  clientSync' <- getBodyJSON
+  case clientSync' of
+    Nothing -> error "Invalid sync object."
+    Just (ClientLinkSync retain) -> do
+      reviewing <- reviewingLinks member
+      forM_ (retain \\ (map link_no reviewing)) $ newReview member
+      let unretained = map compactLink $ filter (\ l -> not $ link_no l `elem` retain) reviewing
+      outputJSON $ fromList [("unretained"::String, fromList unretained)
+                            ]
+ where compactLink l = (show $ link_no l, ((learn l, learn_lang l), (known l, known_lang l), soundalike l, linkword l))
+
+data ClientLinkSync = ClientLinkSync { clientRetain :: [Integer]
+                                     }
+
+instance FromJSON ClientLinkSync where
+  parseJSON (Object v) = ClientLinkSync <$>
+                         v .: "retain"
+  parseJSON _          = mzero

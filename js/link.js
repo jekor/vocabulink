@@ -17,6 +17,29 @@
 
 (function ($) {
 
+// Local Storage
+//
+// Warning: For large keys (> 100KB) such as 'retain', fetching, deserializing,
+// reserializing, and then storing objects can take ~20ms (tested in Firefox).
+// Do operations on them in batches.
+//
+// type link = [[learn, learnLang], [known, knownLang], soundalike, linkword]
+//
+// retain => {linkNumber: link, ...}
+//
+// reviews => [[linkNumber, recallGrade, recallTime, ts], ...]
+//
+// pendingReviews => {linkNumber: targetTs, ...}
+
+V.retainLink = function (link) {
+  if (!V.hSetLocal('retain', link.linkNumber, [[link.learn, link.learnLang], [link.known, link.knownLang], link.soundalike, link.linkword])) {
+    // V.incrLinksToReview(1);
+    if (V.loggedIn()) {
+      $.ajax('/review/' + link.linkNumber, {'type': 'PUT'});
+    }
+  }
+}
+
 V.annotateLink = function (link) {
   link.children('.foreign, .familiar, .link').each(function () {
     var word = $(this);

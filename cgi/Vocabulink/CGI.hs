@@ -25,7 +25,7 @@
 module Vocabulink.CGI ( outputText, outputHtml, outputJSON
                       , outputNotFound, outputUnauthorized, outputClientError, outputServerError
                       , getInput, getRequiredInput, getInputDefault, getRequiredInputFPS
-                      , readInput, readRequiredInput, readInputDefault, getBody, urlify
+                      , readInput, readRequiredInput, readInputDefault, getBody, getBodyJSON, urlify
                       , referrerOrVocabulink, redirect', permRedirect
                       , redirectWithMessage, ToastType(..), bounce
                       , handleErrors, escapeURIString', addToQueryString
@@ -53,11 +53,11 @@ import Control.Exception (Exception, SomeException, try)
 import Control.Monad.Reader (ReaderT(..))
 import Control.Monad.Writer (WriterT(..))
 import Database.TemplatePG (pgDisconnect)
-import Data.Aeson (toJSON)
+import Data.Aeson (toJSON, decode)
 import Data.Aeson.Encode as J (encode)
 import qualified Data.Aeson.Generic
 import Data.Aeson.QQ (aesonQQ)
-import Data.Aeson.Types (ToJSON(..), object)
+import Data.Aeson.Types (ToJSON(..), FromJSON(..), object)
 import Data.ByteString.Lazy (ByteString)
 import Data.ByteString.Lazy.UTF8 (fromString, toString)
 import Data.Char (isAlphaNum)
@@ -208,6 +208,9 @@ readRequiredInput param =
 
 getBody :: MonadCGI m => m String
 getBody = (trim . toString) `liftM` CGI.getBodyFPS
+
+getBodyJSON :: (MonadCGI m, FromJSON a) => m (Maybe a)
+getBodyJSON = decode `liftM` CGI.getBodyFPS
 
 -- Working with URLs
 

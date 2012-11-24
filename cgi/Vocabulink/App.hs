@@ -27,7 +27,7 @@
 
 module Vocabulink.App ( App, AppEnv(..), AppT, runApp
                       , Dependency(..), dependencyVersion
-                      , queryTuple', queryTuples', execute', withConnection
+                      , queryTuple', queryTuples', execute', insertIgnore', withConnection
                       , getOption, supportAddress, supportAddressFull
                       {- Control.Monad.Reader -}
                       , asks
@@ -156,6 +156,9 @@ queryTuples' sql = [| withConnection $(queryTuples sql) |]
 
 execute' :: String -> Q Exp
 execute' sql = [| withConnection $(execute sql) |]
+
+insertIgnore' :: String -> Q Exp
+insertIgnore' sql = [| withConnection $ insertIgnore . $(execute sql) |]
 
 -- Return a configuration option or log an error.
 

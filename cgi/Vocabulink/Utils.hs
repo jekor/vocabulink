@@ -38,7 +38,7 @@ module Vocabulink.Utils ( (?), (<$$>)
                         {- Control.Arrow -}
                         , first, second, (***)
                         {- Control.Monad -}
-                        , liftM, Control.Monad.join, msum, when, unless, replicateM
+                        , liftM, Control.Monad.join, msum, when, unless, replicateM, mzero, forM, forM_
                         {- Control.Monad.Trans -}
                         , liftIO, MonadIO
                         {- Data.Bool.HT -}
@@ -50,7 +50,7 @@ module Vocabulink.Utils ( (?), (<$$>)
                         {- Data.Either.Utils -}
                         , forceEither
                         {- Data.List -}
-                        , intercalate
+                        , intercalate, (\\)
                         {- Data.List.Split -}
                         , splitOn, splitEvery
                         {- Data.Maybe -}
@@ -58,7 +58,7 @@ module Vocabulink.Utils ( (?), (<$$>)
                         {- Data.Monoid -}
                         , mempty, mappend, mconcat
                         {- Database.TemplatePG -}
-                        , withTransaction, rollback, execute, queryTuple, queryTuples
+                        , withTransaction, rollback, execute, queryTuple, queryTuples, insertIgnore
                         {- Data.Time.Calendar -}
                         , Day, addDays, diffDays, showGregorian
                         {- Data.Time.Clock -}
@@ -94,7 +94,7 @@ import Control.Monad.Trans (liftIO, MonadIO)
 import Data.ByteString.Lazy (readFile, writeFile)
 import Data.Char (toLower, isSpace)
 import Data.Either.Utils (forceEither) -- MissingH
-import Data.List (intercalate)
+import Data.List (intercalate, (\\))
 import Data.List.Split (splitOn, splitEvery)
 import Data.List.Utils as LU -- MissingH
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)

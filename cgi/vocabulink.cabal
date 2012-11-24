@@ -1,5 +1,5 @@
 Name:          Vocabulink
-Version:       2012.11.21
+Version:       2012.11.23
 Cabal-Version: >= 1.2
 License:       OtherLicense
 License-File:  ../COPYING
@@ -62,5 +62,6 @@ Executable vocabulink.cgi
                  OverloadedStrings,
                  TemplateHaskell,
                  TypeSynonymInstances,
-                 QuasiQuotes
+                 QuasiQuotes,
+                 DisambiguateRecordFields
   GHC-Options:   -Wall -fno-warn-type-defaults -fno-warn-unused-do-bind -threaded -O2

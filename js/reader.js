@@ -1,5 +1,16 @@
 (function ($) {
+  function markRetained() {
+    var links = V.getLocal('retain', {});
+    $('#book .page.left a').each(function (_, el) {
+      var linkNumber = $(el).attr('href').split('/').pop();
+      if (typeof links[linkNumber] !== 'undefined') {
+        $(el).addClass('retained');
+      }
+    });
+  }
+
   $(function () {
+    markRetained();
     $('#book a[href^="/link/"]').click(function (e) {
       e.preventDefault();
       $('#book .page.right').mask('Loading...');
@@ -46,6 +57,8 @@
                   $('a.username', storyHtml).text(link.stories[i][2][0]);
                   storyHtml.appendTo('#book .page.right');
                 }
+                V.retainLink(link);
+                markRetained();
               }
       });
     });

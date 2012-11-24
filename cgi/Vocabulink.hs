@@ -298,6 +298,7 @@ dispatch meth ("review":rpath) = do
           case maybeRead x of
             Nothing -> error "Link number must be an integer"
             Just n  -> newReview member n >> outputNothing
+        ("POST", ["sync"]) -> syncLinks member
         ("POST", [x]) ->
           case maybeRead x of
             Nothing -> error "Link number must be an integer"
@@ -311,7 +312,6 @@ dispatch meth ("review":rpath) = do
               -- TODO: Sanity-check this time. It should at least not be in the future.
               scheduleNextReview member n grade recallTime reviewedAt
               outputNothing
-
         (_       ,_)  -> outputNotFound
 
 -- Dashboard
