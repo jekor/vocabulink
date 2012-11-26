@@ -120,7 +120,7 @@ hlint : $(hses)
 # For jslint, go to http://www.jslint.com/
 # /*jslint browser: true, devel: true, nomen: true, plusplus: true, regexp: true, sloppy: true, vars: true, white: true, indent: 2 */
 
-sync_options := -avz --exclude 'cgi/dist' --exclude '*.sass' --exclude '.sass-cache' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --exclude '._*' --exclude '.DS_Store' --exclude 'crontab' --exclude 'lighttpd.conf' --delete articles audio css etc img js s scripts vocabulink.cgi vocabulink.com:vocabulink/
+sync_options := -avz --exclude 'cgi/dist' --exclude '*.sass' --exclude '.sass-cache' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --exclude '._*' --exclude '.DS_Store' --exclude 'lighttpd.conf' --delete articles audio css etc img js s scripts vocabulink.cgi vocabulink.com:vocabulink/
 
 sync :
 	rsync $(sync_options)
