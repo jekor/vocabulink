@@ -32,6 +32,7 @@ data Link = Link { link_no        :: Integer
                  , soundalike     :: Bool
                  , linkword       :: Maybe String
                  }
+  deriving Eq
 
 linkTypeName :: Link -> String
 linkTypeName link
@@ -71,9 +72,7 @@ linksContaining q db = do
     "SELECT link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
     \FROM link \
     \WHERE NOT deleted \
-      \AND (learn NOT ILIKE {q} AND known NOT ILIKE {q} AND linkword NOT ILIKE {q} \
-        \AND unaccent(learn) NOT ILIKE {q} AND unaccent(known) NOT ILIKE {q} AND unaccent(linkword) NOT ILIKE {q}) \
       \AND (learn ILIKE {fuzzy} OR known ILIKE {fuzzy} OR linkword ILIKE {fuzzy} \
         \OR unaccent(learn) ILIKE {fuzzy} OR unaccent(known) ILIKE {fuzzy} OR unaccent(linkword) ILIKE {fuzzy}) \
     \ORDER BY char_length(learn)") db
-  return $ exacts ++ closes
+  return $ nub $ exacts ++ closes

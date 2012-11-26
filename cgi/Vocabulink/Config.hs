@@ -22,7 +22,7 @@ import Vocabulink.Utils
 
 import Control.Monad.Error (runErrorT)
 import Data.ConfigFile (readfile, emptyCP, ConfigParser, get, CPError, options)
-import Data.List (intersect, (\\))
+import Data.List (intersect)
 import System.Directory (getDirectoryContents)
 import System.Posix.Files (getFileStatus, modificationTime)
 

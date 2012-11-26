@@ -50,7 +50,7 @@ module Vocabulink.Utils ( (?), (<$$>)
                         {- Data.Either.Utils -}
                         , forceEither
                         {- Data.List -}
-                        , intercalate, (\\)
+                        , intercalate, (\\), nub
                         {- Data.List.Split -}
                         , splitOn, splitEvery
                         {- Data.Maybe -}
@@ -94,7 +94,7 @@ import Control.Monad.Trans (liftIO, MonadIO)
 import Data.ByteString.Lazy (readFile, writeFile)
 import Data.Char (toLower, isSpace)
 import Data.Either.Utils (forceEither) -- MissingH
-import Data.List (intercalate, (\\))
+import Data.List (intercalate, (\\), nub)
 import Data.List.Split (splitOn, splitEvery)
 import Data.List.Utils as LU -- MissingH
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
