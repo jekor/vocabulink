@@ -74,6 +74,7 @@ stdPage title' deps head' body' = outputHtml =<< (do
                  , "};"
                  ]
        inlineCSS = (style ! type_ "text/css") . toHtml
+       readyJS [] = mempty
        readyJS js = inlineJS $ "(function ($) {$(function () {" ++ js ++ "})})(jQuery);"
 
 -- Often we just need a simple page where the title and header are the same.
