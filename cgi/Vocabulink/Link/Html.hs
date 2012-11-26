@@ -158,7 +158,9 @@ linkPage linkNo = do
       stories <- do ss <- linkWordStories linkNo
                     return $ mconcat $ map (\ (n, x, y, z) -> renderStory n x y z) ss
       rendered <- renderLink link hasPronunciation
-      stdPage (learn link ++ " → " ++ known link ++ " — " ++ ("FIXME"::String) {- learn_language link -} ++ " to " ++ ("FIXME"::String) {- known_language link -}) [CSS "link", JS "link"] mempty $ do
+      learnLanguage <- fromMaybe "Unknown Language" <$> langName (learn_lang link)
+      knownLanguage <- fromMaybe "Unknown Language" <$> langName (known_lang link)
+      stdPage (learn link ++ " → " ++ known link ++ " — " ++ learnLanguage ++ " to " ++ knownLanguage) [CSS "link", JS "link"] mempty $ do
         rendered
         div ! id "linkword-stories" $ do
           div ! class_ "header" $ h2 "Linkword Stories:"
