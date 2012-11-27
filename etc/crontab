@@ -1,3 +1,4 @@
+MAILTO="jekor@jekor.com"
 0 0 * * * /home/jekor/vocabulink/scripts/backup-database-to-s3.sh
 5 0 * * * /home/jekor/vocabulink/scripts/rotate-backups.sh
 10 0 * * * /usr/bin/s3cmd sync /var/log/lighttpd s3://vocabulink.com-archive/logs/
