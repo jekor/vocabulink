@@ -7,13 +7,14 @@
         var emailOK = false;
         var form = $(
           '<form id="change-email-form" action="https://www.vocabulink.com/member/email/change" method="post">'
+          + '<h1>Change Email Address</h1>'
           + '<table>'
             + '<tr><td><label for="email">New Email Address:</label></td><td><input id="email" name="email" type="email" required autofocus></td><td></td></tr>'
             + '<tr><td><label for="password">Password:</label></td><td><input id="password" type="password" name="password" required></td><td></td></tr>'
             + '<tr><td></td><td colspan="2"><input type="submit" value="Change Email Address" class="faint-gradient-button green"></td></tr>'
           + '</table>'
         + '</form>').minform();
-        form.modal();
+        V.modal(form);
         form.submit(function () {
           if (!emailOK) {
             V.toastMessage('error', 'Your chosen email address is unavailable or invalid.');
@@ -39,18 +40,20 @@
         e.preventDefault();
         var form = $(
           '<form id="change-password-form" action="https://www.vocabulink.com/member/password/change" method="post">'
+          + '<h1>Change Password</h1>'
           + '<table>'
             + '<tr><td><label for="old-password">Old Password:</label></td><td><input id="old-password" name="old-password" type="password" required autofocus></td></tr>'
             + '<tr><td><label for="new-password">New Password:</label></td><td><input id="new-password" name="new-password" type="password" required></td></tr>'
             + '<tr><td></td><td><input type="submit" value="Change Password" class="faint-gradient-button green"></td></tr>'
           + '</table>'
         + '</form>').minform();
-        form.modal();
+        V.modal(form);
       });
       $('#delete-account').click(function (e) {
         e.preventDefault();
         var form = $(
           '<form id="delete-account-form" action="https://www.vocabulink.com/member/delete" method="post">'
+          + '<h1>Delete Account</h1>'
           + '<p>Deleting your account will delete the following:</p>'
           + '<ul>'
             + '<li>your username and user page</li>'
@@ -59,13 +62,13 @@
             + '<li>any comments written by you</li>'
             + '<li>replies to any of your comments</li>'
           + '</ul>'
-          + '<p>Deletions are immediate and irreversible!</p>'
+          + '<p style="font-weight: bold">WARNING: This is immediate and irreversible!</p>'
           + '<table>'
             + '<tr><td><label for="password">Password:</label></td><td><input id="password" name="password" type="password" required autofocus></td></tr>'
             + '<tr><td></td><td><input type="submit" value="Delete Account" class="faint-gradient-button green"></td></tr>'
           + '</table>'
         + '</form>').minform();
-        form.modal();
+        V.modal(form);
       });
     }
   });

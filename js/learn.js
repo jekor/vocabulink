@@ -229,7 +229,7 @@
             $('.tip').remove();
           });
         } else if (!V.loggedIn() && queue.length == 5) {
-          $('#signup-invitation').append(V.signupForm()).modal({'close': false});
+          V.modal($('#signup-invitation').append(V.signupForm()));
         } else {
           doLearn(learn.pop());
         }

@@ -112,6 +112,12 @@ V.toastMessage = function (type, msg, sticky) {
                                        });
 };
 
+V.modal = function (el, size) {
+  var $el = $(el);
+  if (!size) size = 'medium';
+  $el.addClass('reveal-modal').addClass(size).append('<a class="close-reveal-modal">×</a>').css('visibility', 'hidden').appendTo('body').reveal().find('.close-reveal-modal').click(function () {$el.remove();});
+}
+
 V.verificationPopup = function () {
   var content = $(
     '<div><h1>Email Verification Required</h1>'
@@ -119,7 +125,7 @@ V.verificationPopup = function () {
     + '<form method="post" action="/member/confirmation" style="margin-bottom: 2.6em;">If you haven\'t received a confirmation email: <input class="button light" type="submit" value="Resend Confirmation Email"></form>'
   + '</div>'
   );
-  $.modal(content);
+  V.modal(content);
 };
 
 V.getLocal = function (key, def) {

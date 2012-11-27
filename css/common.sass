@@ -225,7 +225,6 @@ html, body
     float: right
   input[type=submit]
     margin-top: 0.5em
-    border: 1px solid white
 
 #login
   input[type=submit]
@@ -476,7 +475,6 @@ a.username
 
 .faint-gradient-button
   @include rounded(5px)
-  border: none
   padding: 0.5em 1em
   font-weight: bold
   color: #FFFFFF
@@ -488,6 +486,7 @@ a.username
     top: 1px
   &.green
     @include vertical_gradient(#A6DE66, #79BB27)
+    border: 1px solid #79BB27
     &:hover
       text-decoration: none
       @include vertical_gradient(darken(#A6DE66, 5%), #79BB27)
@@ -495,6 +494,7 @@ a.username
       @include vertical_gradient(#79BB27, #A6DE66)
   &.blue
     @include vertical_gradient(#60D2DB, #29A5AA)
+    border: 1px solid #29A5AA
     &:hover
       text-decoration: none
       @include vertical_gradient(darken(#60D2DB, 5%), #29A5AA)

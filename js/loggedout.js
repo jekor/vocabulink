@@ -20,13 +20,13 @@
         form.mask('Sending...');
         e.preventDefault();
         $.post($(this).attr('action'), $(this).serialize())
-          .done(function () {$.modal.close(); V.toastMessage('success', 'Password recovery instructions sent.');})
+          .done(function () {form.trigger('reveal:close'); V.toastMessage('success', 'Password recovery instructions sent.');})
           .fail(function (xhr) {form.unmask(); V.toastMessage('error', xhr.responseText, true);});
         return false;
       });
       return false;
     });
-    return form.modal();
+    return V.modal(form);
   }
 
   V.signupForm = function () {
@@ -86,7 +86,7 @@
   };
 
   function signupPopup() {
-    return V.signupForm().prepend('<h1>Join Vocabulink</h1>').modal();
+    return V.modal(V.signupForm().prepend('<h1>Join Vocabulink</h1>'));
   }
 
   $(function () {
