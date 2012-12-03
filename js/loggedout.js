@@ -35,11 +35,11 @@
     var form = $(
       '<form id="signup" action="https://www.vocabulink.com/member/signup" method="post">'
       + '<table>'
-        + '<tr><td><label for="signup-username">Username:</label></td><td><input id="signup-username" type="text" name="username" required autofocus minlength="3" maxlength="32"></td><td></td></tr>'
-        + '<tr><td><label for="signup-email">Email:</label></td><td><input id="signup-email" type="email" name="email" required></td><td></td></tr>'
-        + '<tr><td><label for="signup-password">Password:</label></td><td><input id="signup-password" type="password" name="password" required></td><td></td></tr>'
-        + '<tr><td colspan="2"><label for="signup-terms">I agree to the <a href="/terms-of-use" target="_blank">Terms of Use</a>.</label><input id="signup-terms" name="terms" type="checkbox" required></td></tr>'
-        + '<tr><td colspan="3" style="text-align: center"><input type="submit" value="Sign Up for Free" class="faint-gradient-button green"></td></tr>'
+        + '<tr><td><label for="signup-username">Username:</label></td><td><input id="signup-username" type="text" name="username" required autofocus minlength="3" maxlength="32" tabindex="1"></td><td></td></tr>'
+        + '<tr><td><label for="signup-email">Email:</label></td><td><input id="signup-email" type="email" name="email" required tabindex="2"></td><td></td></tr>'
+        + '<tr><td><label for="signup-password">Password:</label></td><td><input id="signup-password" type="password" name="password" required tabindex="3"></td><td></td></tr>'
+        + '<tr><td colspan="2"><label for="signup-terms">I agree to the <a href="/terms-of-use" target="_blank">Terms of Use</a>.</label><input id="signup-terms" name="terms" type="checkbox" required tabindex="4"></td></tr>'
+        + '<tr><td colspan="3" style="text-align: center"><input type="submit" value="Sign Up for Free" class="faint-gradient-button green" tabindex="5"></td></tr>'
       + '</table>'
     + '</form>').minform();
     form.submit(function () {
@@ -61,7 +61,7 @@
            statusTd.empty().append('<i class="sprite sprite-icon-accept" alt="✓" title="This username is available."></i>');
            usernameOK = true;
          } else {
-           statusTd.empty().append('<i class="sprite sprite-icon-exclamation" alt="!" title="This username is unavailable."></i>');
+           statusTd.empty().append('<i class="sprite sprite-icon-exclamation" alt="!" title="This username is unavailable or invalid."></i>');
            usernameOK = false;
          }
        });
@@ -72,7 +72,7 @@
        .done(function (available) {
          var statusTd = $('#signup-email', form).parent().parent().find('td:last-child');
          if (available) {
-           statusTd.empty().append('<i class="sprite sprite-icon-accept" alt="✓" title="This email address is valid and available."></i>');
+           statusTd.empty().append('<i class="sprite sprite-icon-accept" alt="✓" title="This email address is valid."></i>');
            emailOK = true;
          } else {
            statusTd.empty().append('<i class="sprite sprite-icon-exclamation" alt="!" title="This email address is unavailable or invalid."></i>');
