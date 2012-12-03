@@ -17,7 +17,7 @@
         V.modal(form);
         form.submit(function () {
           if (!emailOK) {
-            V.toastMessage('error', 'Your chosen email address is unavailable or invalid.');
+            toast('error', 'Your chosen email address is unavailable or invalid.');
             return false;
           }
         });

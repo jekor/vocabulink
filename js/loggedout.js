@@ -20,8 +20,8 @@
         form.mask('Sending...');
         e.preventDefault();
         $.post($(this).attr('action'), $(this).serialize())
-          .done(function () {form.trigger('reveal:close'); V.toastMessage('success', 'Password recovery instructions sent.');})
-          .fail(function (xhr) {form.unmask(); V.toastMessage('error', xhr.responseText, true);});
+          .done(function () {form.trigger('reveal:close'); toast('success', 'Password recovery instructions emailed.');})
+          .fail(function (xhr) {form.unmask(); toast('error', 'Failed to send password recovery email.', true);});
         return false;
       });
       return false;
@@ -44,11 +44,11 @@
     + '</form>').minform();
     form.submit(function () {
       if (!usernameOK) {
-        V.toastMessage('error', 'Your chosen username is unavailable or invalid.');
+        toast('error', 'Your chosen username is unavailable or invalid.');
         return false;
       }
       if (!emailOK) {
-        V.toastMessage('error', 'Your chosen email address is unavailable or invalid.');
+        toast('error', 'Your chosen email address is unavailable or invalid.');
         return false;
       }
     });

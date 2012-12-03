@@ -90,7 +90,7 @@ signup = do
           key <- fromJust <$> getOption "authtokenkey"
           authTok <- liftIO $ authToken mn username' key
           setAuthCookie authTok
-          bounce ToastSuccess "Welcome! Please check your email to confirm your account."
+          bounce MsgSuccess "Welcome! Please check your email to confirm your account."
         Nothing -> error "Registration failure (this is not your fault). Please try again later."
  where parseLearned :: String -> [Integer]
        parseLearned s = fromMaybe [] $ decode $ fromString s
@@ -147,7 +147,7 @@ login = do
           authTok <- liftIO $ authToken (memberNumber member) username key
           setAuthCookie authTok
           redirect' =<< referrerOrVocabulink
-    _ -> bounce ToastError "Username and password do not match (or don't exist)."
+    _ -> bounce MsgError "Username and password do not match (or don't exist)."
 
 -- To logout a member, we simply clear their auth cookie and redirect them
 -- to the front page.
@@ -213,7 +213,7 @@ confirmEmail hash = do
                 key <- fromJust <$> getOption "authtokenkey"
                 authTok <- liftIO $ authToken (memberNumber m) (memberName m) key
                 setAuthCookie authTok
-                bounce ToastSuccess "Congratulations! You've confirmed your account."
+                bounce MsgSuccess "Congratulations! You've confirmed your account."
         else error "Confirmation code does not match logged in user."
 
 sendPasswordReset :: App CGIResult
@@ -310,9 +310,9 @@ changeEmail = withRequiredMember' $ \ m -> do
                                     \WHERE member_no = {memberNumber m}") c
                           return True) res
       if success
-        then bounce ToastSuccess "Email address changed successfully. Please check your email to confirm the change."
-        else bounce ToastError "We're sorry. We encountered an unknown error trying to change your email address."
-    _ -> bounce ToastError "Wrong password."
+        then bounce MsgSuccess "Email address changed successfully. Please check your email to confirm the change."
+        else bounce MsgError "We're sorry. We encountered an unknown error trying to change your email address."
+    _ -> bounce MsgError "Wrong password."
 
 changePassword :: App CGIResult
 changePassword = withRequiredMember' $ \ m -> do
@@ -323,8 +323,8 @@ changePassword = withRequiredMember' $ \ m -> do
   case match of
     Just (Just True) -> do
       $(execute' "UPDATE member SET password_hash = crypt({newPassword}, gen_salt('bf'))")
-      bounce ToastSuccess "Password changed successfully."
-    _ -> bounce ToastError "Wrong password."
+      bounce MsgSuccess "Password changed successfully."
+    _ -> bounce MsgError "Wrong password."
 
 deleteAccount :: App CGIResult
 deleteAccount = withRequiredMember' $ \ m -> do
@@ -337,5 +337,5 @@ deleteAccount = withRequiredMember' $ \ m -> do
       addr <- supportAddress
       liftIO $ sendMail addr addr "Member deleted account." ("Member " ++ memberName m ++ " deleted their account.")
       deleteAuthCookie
-      bounce ToastSuccess "Your account was successfully deleted."
-    _ -> bounce ToastError "Wrong password."
+      bounce MsgSuccess "Your account was successfully deleted."
+    _ -> bounce MsgError "Wrong password."

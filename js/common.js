@@ -104,14 +104,6 @@ function queryString() {
 }
 V.query = queryString();
 
-V.toastMessage = function (type, msg, sticky) {
-  return $().toastmessage('showToast', {'text': msg
-                                       ,'type': type
-                                       ,'sticky': sticky
-                                       ,'position': 'top-center'
-                                       });
-};
-
 V.modal = function (el, size) {
   var $el = $(el);
   if (!size) size = 'medium';
@@ -158,10 +150,10 @@ $(function () {
   } catch(err) {}
 
   // Check for messages from the server.
-  if ($.cookie('toast')) {
-    var toast = JSON.parse($.cookie('toast'));
-    V.toastMessage(toast.type, toast.message, true);
-    $.removeCookie('toast', {'path': '/', 'domain': 'www.vocabulink.com'});
+  if ($.cookie('msg')) {
+    var msg = JSON.parse($.cookie('msg'));
+    toast(msg.type, msg.msg, true);
+    $.removeCookie('msg', {'path': '/', 'domain': 'www.vocabulink.com'});
   }
 
   // Hook up any buttons that require verification.

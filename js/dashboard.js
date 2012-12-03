@@ -42,7 +42,7 @@ $(function () {
        });
        cal.unmask();
      })
-     .fail(function (xhr) {cal.unmask(); V.toastMessage('error', xhr.responseText, false);});
+     .fail(function (xhr) {cal.unmask(); toast('error', 'Failed to load weekly data.');});
   }).changeMonth(new Date());
   cal.find('.prev, .next').addClass('light');
   cal.delegate('td', 'click', function () {
@@ -71,7 +71,7 @@ $(function () {
        });
        dailyDetail.empty().append(reviewedList).append(scheduledList).append('<div class="clear"></div>');
      })
-     .fail(function (xhr) {V.toastMessage('error', xhr.responseText, false);});
+     .fail(function (xhr) {toast('error', 'Failed to load daily data.');});
   });
   cal.changeMonth(new Date());
   $('.today', cal).click();

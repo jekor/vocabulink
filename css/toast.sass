@@ -1,0 +1,30 @@
+#toasts
+  z-index: 999
+  position: fixed
+  right: 1em
+  top: 1em
+  width: 25em
+
+.toast
+  display: none
+  cursor: pointer
+  padding: 1em
+  margin-bottom: 1em
+  min-height: 1.8em
+  @include rounded(0.5em)
+  @include drop_shadow(0,0,0.3em,#222222)
+  color: #FFFFFF
+  &:hover
+    @include drop_shadow(0,0,0.5em,#222222)
+  &.success
+    background-color: #79BB27
+  &.notice
+    background-color: #29A5AA
+  &.error
+    background-color: #DA4F49
+  .sprite
+    display: block
+    float: left
+    margin:
+      right: 0.5em
+      bottom: 0.2em

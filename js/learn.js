@@ -156,7 +156,8 @@
          V.incrLinksToReview(1);
        })
        .fail(function (xhr) {
-         V.toastMessage('error', xhr.responseText);
+         // TODO: Rather than log an error here, we should return an error code to the caller.
+         toast('error', 'Failed to add link to review.');
        });
     } else {
       var queue = V.getLocal('learnQueue', []);

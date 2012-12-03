@@ -27,7 +27,7 @@ module Vocabulink.CGI ( outputText, outputHtml, outputJSON
                       , getInput, getRequiredInput, getInputDefault, getRequiredInputFPS
                       , readInput, readRequiredInput, readInputDefault, getBody, getBodyJSON, urlify
                       , referrerOrVocabulink, redirect', permRedirect
-                      , redirectWithMessage, ToastType(..), bounce
+                      , redirectWithMsg, MsgType(..), bounce
                       , handleErrors, escapeURIString', addToQueryString
                       {- Data.Aeson.QQ -}
                       , aesonQQ
@@ -253,19 +253,19 @@ referrerOrVocabulink = do
 redirect' :: MonadCGI m => URI -> m CGIResult
 redirect' = redirect . show
 
--- These message types correspond to JS toastmessage types.
-data ToastType = ToastSuccess | ToastError | ToastNotice
+-- These message types correspond to JS alert types.
+data MsgType = MsgSuccess | MsgError | MsgNotice
 
-instance Show ToastType where
-  show ToastSuccess = "success"
-  show ToastError   = "error"
-  show ToastNotice  = "notice"
+instance Show MsgType where
+  show MsgSuccess = "success"
+  show MsgError   = "error"
+  show MsgNotice  = "notice"
 
 -- Redirect the user and display a message on whatever page they end up on.
-redirectWithMessage :: MonadCGI m => ToastType -> String -> URI -> m CGIResult
-redirectWithMessage typ msg url = do
-  let value' = toString $ J.encode [aesonQQ| {"type": <| show typ |>, "message": <| msg |>} |]
-      cookie = Cookie { cookieName    = "toast"
+redirectWithMsg :: MonadCGI m => MsgType -> String -> URI -> m CGIResult
+redirectWithMsg typ msg url = do
+  let value' = toString $ J.encode [aesonQQ| {"type": <| show typ |>, "msg": <| msg |>} |]
+      cookie = Cookie { cookieName    = "msg"
                       , cookieValue   = escapeURIString' value'
                       , cookieExpires = Nothing
                       , cookieDomain  = Just "www.vocabulink.com"
@@ -276,8 +276,8 @@ redirectWithMessage typ msg url = do
   redirect' url
 
 -- Redirect a user to where they came from along with a message.
-bounce :: MonadCGI m => ToastType -> String -> m CGIResult
-bounce typ msg = redirectWithMessage typ msg =<< referrerOrVocabulink
+bounce :: MonadCGI m => MsgType -> String -> m CGIResult
+bounce typ msg = redirectWithMsg typ msg =<< referrerOrVocabulink
 
 permRedirect :: (MonadCGI m, MonadIO m) => String -> m CGIResult
 permRedirect url = do
