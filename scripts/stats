@@ -4,8 +4,8 @@ PSQL="psql -U vocabulink vocabulink"
 echo "SELECT COUNT(*) AS \"# of members\" FROM member" | $PSQL
 echo "SELECT COUNT(*) AS \"# of links\" FROM link WHERE NOT deleted" | $PSQL
 echo "SELECT COUNT(*) AS \"# of linkword stories\" FROM linkword_story INNER JOIN link USING (link_no) WHERE NOT deleted" | $PSQL
-echo "SELECT COUNT(*) AS \"# of linkwords\" FROM link_linkword ll INNER JOIN link l ON (l.link_no = ll.link_no AND NOT deleted)" | $PSQL
-echo "SELECT COUNT(*) AS \"# of soundalikes\" FROM link_soundalike ls INNER JOIN link l ON (l.link_no = ls.link_no AND NOT deleted)" | $PSQL
+echo "SELECT COUNT(*) AS \"# of linkwords\" FROM link WHERE linkword IS NOT NULL AND NOT deleted" | $PSQL
+echo "SELECT COUNT(*) AS \"# of soundalikes\" FROM link WHERE soundalike AND NOT deleted" | $PSQL
 echo "SELECT COUNT(*) AS \"# of links in review\" FROM link_to_review" | $PSQL
 echo "SELECT COUNT(*) AS \"# of reviews\" FROM link_review" | $PSQL
 echo "SELECT COUNT(*) AS \"# of my reviews\" FROM link_review WHERE member_no = 1" | $PSQL
