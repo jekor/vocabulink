@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012, 2013 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -136,6 +136,7 @@ dueForReview member learn' known' n =
       \INNER JOIN link USING (link_no) \
       \WHERE member_no = {memberNumber m} AND current_timestamp >= target_time \
         \AND learn_lang = {learn'} AND known_lang = {known'} \
+        \AND NOT deleted
       \ORDER BY added_time ASC \
       \LIMIT {n}")
 
