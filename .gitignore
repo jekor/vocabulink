@@ -18,6 +18,7 @@
 *.toc
 
 /cgi/dist
+/cgi/cabal-dev
 /.sass-cache
 /mnemonics
 /audio
@@ -32,3 +33,5 @@
 /css/external
 /css/compiled
 /readers
+/cgi/auth-token-key
+/cgi/db-password

@@ -1,7 +1,7 @@
 # Vocabulink site
 
 cgi := vocabulink.cgi
-all : $(cgi) js css spritesheets articles handbook
+all : $(cgi) js css spritesheets articles
 
 # Haskell
 
@@ -10,10 +10,10 @@ hses := cgi/Vocabulink.hs $(shell find cgi/Vocabulink -name "*.hs")
 cgi : $(cgi)
 
 cgi/dist/setup-config : cgi/vocabulink.cabal
-	cd cgi && cabal configure
+	cd cgi && cabal-dev configure
 
 cgi/dist/build/$(cgi)/$(cgi) : cgi/dist/setup-config $(hses)
-	cd cgi && TPG_DB="vocabulink" TPG_USER="vocabulink" cabal build
+	cd cgi && TPG_DB="vocabulink" TPG_USER="vocabulink" cabal-dev build
 	@touch $@ # cabal doesn't always update the build (if it doesn't need to)
 
 $(cgi) : cgi/dist/build/$(cgi)/$(cgi)
@@ -33,7 +33,7 @@ js_learn := external/jquery.hotkeys external/jquery.easing learn
 js_member-page := member-page
 js_reader := reader
 
-define js_template =
+define js_template
 js/compiled/$(1).js : $$(js_$(1):%=js/%.js)
 	cat $$^ | jsmin > $$@
 JS += js/compiled/$(1).js
@@ -43,14 +43,14 @@ $(foreach jslib,$(jslibs),$(eval $(call js_template,$(jslib))))
 
 js : $(JS)
 
-js/external/minform.js : /home/jekor/project/minform/minform.js
-	cp $^ $@
+js/external/minform.js :
+	curl -s -O https://raw.github.com/jekor/minform/master/minform.js > $@
 
-js/external/longtable.js : /home/jekor/project/longtable/longtable.js
-	cp $^ $@
+js/external/longtable.js :
+	curl -s -O https://raw.github.com/jekor/longtable/master/longtable.js > $@
 
-js/external/drcal.js : /home/jekor/project/drcal/drcal.js
-	cp $^ $@
+js/external/drcal.js :
+	curl -s -O https://raw.github.com/jekor/drcal/master/drcal.js > $@
 
 # TODO: Add command to fetch jquery, jquery plugins, showdown, etc. into js/external/
 
@@ -69,7 +69,7 @@ css_front := front
 css_learn := learn
 css_reader := reader
 
-define css_template =
+define css_template
 css/compiled/$(1).css : $$(css_$(1):%=css/%.sass) $$(css_$(1)_css:%=css/%.css) css/lib.sass
 	cat css/lib.sass $$(css_$(1):%=css/%.sass) | sass | cat - $$(css_$(1)_css:%=css/%.css) > $$@
 CSS += css/compiled/$(1).css
@@ -105,13 +105,6 @@ articles : $(articles)
 %.html : %.markdown articles/template.html
 	pandoc --smart --section-divs --mathjax -t html5 --toc --standalone --template=articles/template.html < $< > $@
 
-chapters := $(shell ls handbook/chapters/*.tex)
-
-handbook : handbook/handbook.pdf
-
-handbook/handbook.pdf : handbook/handbook.tex $(chapters)
-	cd handbook && xelatex handbook
-
 # Directives
 
 hlint : $(hses)
@@ -120,7 +113,7 @@ hlint : $(hses)
 # For jslint, go to http://www.jslint.com/
 # /*jslint browser: true, devel: true, nomen: true, plusplus: true, regexp: true, sloppy: true, vars: true, white: true, indent: 2 */
 
-sync_options := -avz --exclude 'cgi/dist' --exclude '*.sass' --exclude '.sass-cache' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --exclude '._*' --exclude '.DS_Store' --exclude 'lighttpd.conf' --delete articles audio css etc img js s scripts vocabulink.cgi vocabulink.com:vocabulink/
+sync_options := -avz --exclude 'cgi/dist' --exclude '*.sass' --exclude '.sass-cache' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --exclude '._*' --exclude '.DS_Store' --exclude '*.markdown' --exclude 'articles/in-progress' --exclude 'js/external' --exclude 'css/external' --exclude 'js/*.js' --exclude 'lighttpd.conf' --delete articles audio css etc img js s scripts vocabulink.cgi vocabulink.com:vocabulink/
 
 sync :
 	rsync $(sync_options)

@@ -1,4 +1,4 @@
-// Copyright 2011, 2012 Chris Forno
+// Copyright 2011, 2012, 2013 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -58,7 +58,7 @@ $(function () {
            + '<td><a></a></td>'
            + '<td><b class="grade"></b></td>'
          + '</tr>');
-         tr.find('a').attr('href', '/link/' + stat.linkNumber).text(stat.foreignPhrase);
+         tr.find('a').attr('href', '/link/' + stat.linkNumber).text(stat.learn);
          tr.find('b').addClass('grade' + stat.grade);
          tbody.append(tr);
        });
@@ -66,7 +66,7 @@ $(function () {
        tbody = scheduledList.find('tbody');
        $.each(stats.scheduled, function (_, stat) {
          var tr = $('<tr class="inline-link"><td><a></a></td></tr>');
-         tr.find('a').attr('href', '/link/' + stat.linkNumber).text(stat.foreignPhrase);
+         tr.find('a').attr('href', '/link/' + stat.linkNumber).text(stat.learn);
          tbody.append(tr);
        });
        dailyDetail.empty().append(reviewedList).append(scheduledList).append('<div class="clear"></div>');

@@ -1,4 +1,4 @@
-// Copyright 2009, 2010, 2011, 2012 Chris Forno
+// Copyright 2009, 2010, 2011, 2012, 2013 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -20,41 +20,6 @@ if (!window.console) {
     log: function () {}
   };
 }
-
-// https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Object/keys#Compatiblity
-if (!Object.keys) {
-  Object.keys = (function () {
-    var hasOwnProperty = Object.prototype.hasOwnProperty,
-        hasDontEnumBug = !({toString: null}).propertyIsEnumerable('toString'),
-        dontEnums = [
-          'toString',
-          'toLocaleString',
-          'valueOf',
-          'hasOwnProperty',
-          'isPrototypeOf',
-          'propertyIsEnumerable',
-          'constructor'
-        ],
-        dontEnumsLength = dontEnums.length;
-
-    return function (obj) {
-      if (typeof obj !== 'object' && typeof obj !== 'function' || obj === null) throw new TypeError('Object.keys called on non-object');
-
-      var result = [];
-
-      for (var prop in obj) {
-        if (hasOwnProperty.call(obj, prop)) result.push(prop);
-      }
-
-      if (hasDontEnumBug) {
-        for (var i=0; i < dontEnumsLength; i++) {
-          if (hasOwnProperty.call(obj, dontEnums[i])) result.push(dontEnums[i]);
-        }
-      }
-      return result;
-    }
-  })()
-};
 
 (function ($) {
 
@@ -78,12 +43,12 @@ V.object = function (o) {
 };
 
 V.loggedIn = function () {
-  return V.memberName !== null;
+  return V.member !== null;
 };
 
 V.memberGravatar = function (size) {
-  if (V.gravatarHash) {
-    return 'http://www.gravatar.com/avatar/' + V.gravatarHash + '?s=' + size + '&d=wavatar&r=x';
+  if (V.member && V.member.hash) {
+    return 'http://www.gravatar.com/avatar/' + V.member.hash + '?s=' + size + '&d=wavatar&r=x';
   } else {
     return null;
   }
@@ -142,6 +107,15 @@ V.hSetLocal = function (key, k, v) {
   return exists;
 }
 
+V.displayMessage = function () {
+  // Check for messages from the server.
+  if ($.cookie('msg')) {
+    var msg = JSON.parse($.cookie('msg'));
+    toast(msg.type, msg.msg, true);
+    $.removeCookie('msg', {'path': '/', 'domain': 'www.vocabulink.com'});
+  }
+};
+
 // initialization for every page
 $(function () {
   try {
@@ -149,12 +123,9 @@ $(function () {
     pageTracker._trackPageview();
   } catch(err) {}
 
-  // Check for messages from the server.
-  if ($.cookie('msg')) {
-    var msg = JSON.parse($.cookie('msg'));
-    toast(msg.type, msg.msg, true);
-    $.removeCookie('msg', {'path': '/', 'domain': 'www.vocabulink.com'});
-  }
+  V.displayMessage();
+  // We might receive a message cookie from any AJAX request.
+  $(document).ajaxComplete(V.displayMessage);
 
   // Hook up any buttons that require verification.
   if (!V.verified()) {

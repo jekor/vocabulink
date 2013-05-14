@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012, 2013 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -27,9 +27,9 @@
 module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList, tableOfPairs
                        , menu, markdownToHtml, markdownToHtmlString, inlineJS, sprite
                        {- Text.Blaze -}
-                       , toHtml, toValue
+                       , ToMarkup(..), ToValue(..)
                        {- Text.Blaze.Html5 -}
-                       , Html, (!), preEscapedString, customAttribute
+                       , Html, (!), customAttribute
                        , div, p, h1, h2, h3, hr, blockquote, script
                        , span, a, img, br, strong
                        , table, thead, tbody, tfoot, tr, td, th
@@ -43,8 +43,8 @@ module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList
 
 import Vocabulink.Utils
 
-import Text.Blaze (toHtml, toValue)
-import Text.Blaze.Html5 ( Html, (!), preEscapedString, customAttribute
+import Text.Blaze (ToMarkup(..), ToValue(..))
+import Text.Blaze.Html5 ( Html, (!), customAttribute
                         , div, p, h1, h2, h3, hr, blockquote, script
                         , span, a, img, br, strong, i
                         , table, thead, tbody, tfoot, tr, td, th
@@ -94,8 +94,8 @@ multiColumnList _ _   = error "Unsupported number of columns."
 tableOfPairs :: [(String, String)] -> Html
 tableOfPairs pairs = table ! class_ "pairs" $ mconcat (map tr' pairs)
  where tr' (h, d) = tr $ do
-                      th $ toHtml h
-                      td $ toHtml d
+                      th $ toMarkup h
+                      td $ toMarkup d
 
 -- Form Helpers
 
@@ -104,21 +104,21 @@ tableOfPairs pairs = table ! class_ "pairs" $ mconcat (map tr' pairs)
 
 menu :: [(String, String)] -> Html
 menu choices = select $ mconcat
-  [ option ! value (toValue $ fst choice) $ toHtml (snd choice) | choice <- choices ]
+  [ option ! value (toValue $ fst choice) $ (toMarkup $ snd choice) | choice <- choices ]
 
 -- A modified version of Markdown (Pandoc Markdown) is used in comments and
 -- link bodies. We need to sanitize incoming HTML so that we don't end up with
 -- XSS attacks.
 
 markdownToHtml :: String -> Html
-markdownToHtml = preEscapedString . markdownToHtmlString
+markdownToHtml = preEscapedToMarkup . markdownToHtmlString
 
 markdownToHtmlString :: String -> String
 markdownToHtmlString = writeHtmlString defaultWriterOptions {writerHtml5 = True} . readMarkdown defaultParserState
 
 -- Helper for inline JavaScript.
 inlineJS :: String -> Html
-inlineJS = (script ! type_ "text/javascript") . preEscapedString
+inlineJS = (script ! type_ "text/javascript") . preEscapedToMarkup
 
 sprite :: String -> String -> Html
 sprite group name' = i ! class_ (toValue $ "sprite sprite-" ++ group ++ "-" ++ name') $ ""

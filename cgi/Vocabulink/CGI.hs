@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012, 2013 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -22,236 +22,127 @@
 -- their own threads, it's not the end of the world if we generate an error or
 -- don't catch an exception.
 
-module Vocabulink.CGI ( outputText, outputHtml, outputJSON
-                      , outputNotFound, outputUnauthorized, outputClientError, outputServerError
-                      , getInput, getRequiredInput, getInputDefault, getRequiredInputFPS
-                      , readInput, readRequiredInput, readInputDefault, getBody, getBodyJSON, urlify
-                      , referrerOrVocabulink, redirect', permRedirect
-                      , redirectWithMsg, MsgType(..), bounce
-                      , handleErrors, escapeURIString', addToQueryString
-                      {- Data.Aeson.QQ -}
-                      , aesonQQ
-                      {- Data.Aeson.Types -}
-                      , ToJSON(..)
-                      {- Network.CGI -}
-                      , MonadCGI, CGIResult
-                      , requestURI, requestMethod, requestAccept
-                      , getInputFPS, getBodyFPS, getInputFilename
-                      , getInputNames, getInputContentType
-                      , getVar, setHeader, redirect, remoteAddr
-                      , outputNothing, outputError, outputMethodNotAllowed
-                      , ContentType(..), negotiate
-                      , Cookie(..), getCookie, setCookie, deleteCookie
-                      {- Network.URI -}
-                      , uriPath, uriQuery, escapeURIString, isUnescapedInURI
+module Vocabulink.CGI ( SCGI, SCGIT, Response, Resp(..)
+                      , notFound, notAuthorized, notAllowed, emptyResponse
+                      , queryVars, queryVar, queryVarDefault, queryVarRequired
+                      , bodyVars, bodyVar, bodyVarDefault, bodyVarRequired, bodyJSON
+                      , redirect, permRedirect, referrerOrVocabulink
+                      , setCookie, redirectWithMsg, MsgType(..), bounce
+                      {- Web.Cookie -}
+                      , SetCookie(..)
                       ) where
 
-import Vocabulink.Html hiding (title, style)
+import Vocabulink.Html hiding (name, a, id)
 import Vocabulink.Utils
 
-import Control.Exception (Exception, SomeException, try)
-import Control.Monad.Reader (ReaderT(..))
-import Control.Monad.Writer (WriterT(..))
-import Database.TemplatePG (pgDisconnect)
-import Data.Aeson (toJSON, decode)
-import Data.Aeson.Encode as J (encode)
-import qualified Data.Aeson.Generic
-import Data.Aeson.QQ (aesonQQ)
-import Data.Aeson.Types (ToJSON(..), FromJSON(..), object)
-import Data.ByteString.Lazy (ByteString)
-import Data.ByteString.Lazy.UTF8 (fromString, toString)
-import Data.Char (isAlphaNum)
-import Data.Text (pack)
-import Network.CGI hiding (getInput, readInput, getBody, Html, output, outputNotFound, handleErrors)
-import qualified Network.CGI as CGI
-import Network.CGI.Monad (CGIT(..))
-import Network.CGI.Protocol (CGIResult(..))
-import Network.URI (uriPath, uriQuery, escapeURIString, isUnescapedInURI, URI(..), URIAuth(..), parseURI)
-import Text.Blaze.Html5 (docTypeHtml, head, body, title, style, link)
-import Text.Blaze.Html5.Attributes (rel)
-import Text.Blaze.Renderer.Utf8 (renderHtml)
-import Text.Regex
+import Blaze.ByteString.Builder (toByteString)
+import Data.ByteString (append)
+import qualified Data.ByteString.UTF8 as BU
+import qualified Data.ByteString.Lazy.UTF8 as BLU
+import Data.Char (ord)
+import Data.Default (def)
+import Network.CGI (formDecode)
+import Network.SCGI (SCGIT, Response(..))
+import qualified Network.SCGI as SCGI
+import Network.URI (parseURI, escapeURIString)
+import Text.Blaze.Html.Renderer.Utf8 (renderHtml)
+import Web.Cookie (SetCookie(..), renderSetCookie)
 
-import Prelude hiding (head, id, div)
+type SCGI = SCGIT IO
 
--- Also, we do not always output HTML. Sometimes we output JSON or HTML fragments.
+notFound :: Response
+notFound = Response "404 Resource Not Found" ""
 
-outputText :: (MonadCGI m, MonadIO m) => String -> m CGIResult
-outputText s = do
-  setHeader "Content-Type" "text/plain; charset=utf-8"
-  return $ CGIOutput $ fromString s
+notAuthorized :: Response
+notAuthorized = Response "401 Unauthorized" ""
 
-outputHtml :: MonadCGI m => Html -> m CGIResult
-outputHtml html = do
-  setHeader "Content-Type" "text/html; charset=utf-8"
-  return $ CGIOutput $ renderHtml html
+notAllowed :: Response
+notAllowed = Response "504 Method not allowed" ""
 
--- To output JSON, we just need an associative list.
+emptyResponse :: Response
+emptyResponse = Response "200 OK" ""
 
-outputJSON :: (MonadCGI m, MonadIO m, ToJSON a) => a -> m CGIResult
-outputJSON obj = do
-  setHeader "Content-Type" "application/json"
-  return $ CGIOutput $ J.encode obj
+class Resp a where
+  toResponse :: a -> SCGI Response
 
--- Errors
+instance Resp Html where
+  toResponse html = do
+    SCGI.setHeader "Content-Type" "text/html; charset=utf-8"
+    return $ Response "200 OK" $ renderHtml html
 
--- TODO: Add nice HTML error pages
-outputError' :: (MonadCGI m, MonadIO m) =>
-                Int      -- ^ HTTP Status code
-             -> String   -- ^ Message
-             -> m CGIResult
-outputError' c m = do
-  logCGI $ show (c,m)
-  setStatus c m
-  outputText m
+instance Resp String where
+  toResponse string = do
+    SCGI.setHeader "Content-Type" "text/plain; charset=utf-8"
+    return $ Response "200 OK" $ BLU.fromString string
 
--- TODO: Some of this HTML is duplicated from Page.hs. It would be nice to make
--- Page.hs not depend on CGI.hs so that I could use its functionality here.
--- More importantly, common.css needs to be included properly using the
--- dependency mechanisms.
-outputNotFound :: (MonadCGI m, MonadIO m) => m CGIResult
-outputNotFound = do
-  setStatus 404 "Not Found"
-  referrer <- decodeString <$$> getVar "HTTP_REFERER"
-  let internal = isJust (matchRegex (mkRegex "://www\\.vocabulink\\.com/") <$> referrer)
-  when internal $ do -- Log internal broken links.
-    uri <- requestURI
-    logCGI ("Broken internal link: " ++ fromJust referrer ++ " -> " ++ show uri)
-  outputHtml $ docTypeHtml $ do
-    head $ do
-      title "Vocabulink: Page Not Found"
-      link ! rel "icon" ! type_ "image/png" ! href "http://s.vocabulink.com/img/favicon.png"
-      link ! rel "stylesheet" ! type_ "text/css" ! href "http://s.vocabulink.com/css/common.css"
-      style ! type_ "text/css" $ toHtml $ unlines
-        ["body {background-color: #2D2D2D; height: auto;}"
-        ,"#body {background-color: #FFFFFF; margin-top: 15%; padding-bottom: 0;}"
-        ,"#message {width: 55em; margin-left: auto; margin-right: auto; padding-top: 5ex; padding-bottom: 5ex;}"
-        ,"img {float: left; margin-right: 5em;}"
-        ,"h1 {text-align: left; margin-top: 0;}"
-        ,"ul {list-style-type: disc; list-style-position: inside;}"
-        ]
-    body $ do
-      div ! id "body" $ do
-        div ! id "message" $ do
-          img ! src "http://s.vocabulink.com/img/404.png"
-          h1 "Page Not Found"
-          p "The page you're looking for does not exist. You probably ended up here because of:"
-          unordList $ case referrer of
-                        Nothing -> [ "a mis-typed address"
-                                   , "an out-of-date bookmark"
-                                   ]
-                        Just _  -> if internal
-                                     then ["an error on our part (a broken link)"]
-                                     else ["an incorrect referral to this site (a broken link)"]
-          p "You might find one of the following useful:"
-          unordList
-            [mconcat ["Return to the ", a ! href "http://www.vocabulink.com/" $ "homepage", "."]
-            ,case referrer of
-                Nothing -> mconcat ["View the list of ", a ! href "http://www.vocabulink.com/links" $ "available languages", "."]
-                Just r  -> mconcat ["Go ", a ! href (toValue r) $ "back", "."]
-            ]
-      script ! src "http://www.google-analytics.com/ga.js" $ mempty
+instance Resp Value where
+  toResponse obj = do
+    SCGI.setHeader "Content-Type" "application/json"
+    return $ Response "200 OK" $ encode obj
 
-outputClientError :: (MonadCGI m, MonadIO m) => String -> m CGIResult
-outputClientError = outputError' 400
+instance (Resp a) => Resp (Maybe a) where
+  toResponse Nothing = return notFound
+  toResponse (Just r) = toResponse r
 
-outputServerError :: (MonadCGI m, MonadIO m) => String -> m CGIResult
-outputServerError = outputError' 500
+instance (Resp a) => Resp (IO a) where
+  toResponse a = toResponse =<< liftIO a
 
--- Usually we use the |withRequired| functions when an action requires that the
--- client be authenticated. However, sometimes (as with AJAX) we want to output
--- an actual 403 error.
+instance Resp (SCGI Response) where
+  toResponse = id
 
-outputUnauthorized :: (MonadCGI m, MonadIO m) => m CGIResult
-outputUnauthorized = outputError' 403 "Unauthorized"
+queryVars :: Monad m => SCGIT m [(String, String)]
+queryVars = do
+  queryString <- SCGI.header "QUERY_STRING"
+  return $ maybe [] (formDecode . BU.toString) queryString
 
--- We need to handle UTF-8-encoded GET and POST parameters. The following are
--- enhanced versions of Network.CGI's |getInput| and |readInput| along with a
--- few helpers.
+queryVar :: Monad m => String -> SCGIT m (Maybe String)
+queryVar name = lookup name `liftM` queryVars
 
-getInput :: MonadCGI m => String -> m (Maybe String)
-getInput = liftM (>>= Just . convertLineEndings . trim . toString) . CGI.getInputFPS
+queryVarDefault :: Monad m => String -> String -> SCGIT m String
+queryVarDefault name def' = fromMaybe def' `liftM` queryVar name
 
--- Often we'll want an input from the client but are happy to fall back to a
--- default value.
+queryVarRequired :: Monad m => String -> SCGIT m String
+queryVarRequired name = queryVarDefault name (error $ "Parameter '" ++ name ++ "' is required.")
 
-getInputDefault :: MonadCGI m => String -> String -> m String
-getInputDefault d n = do
-  i <- getInput n
-  return $ case i of
-             Nothing -> d
-             Just i' -> i'
+bodyVars :: Monad m => SCGIT m [(String, String)]
+bodyVars = (formDecode . BLU.toString) `liftM` SCGI.body
 
--- As a convenience, |getRequiredInput| will throw an error on a missing input.
--- It allows us to write simpler code, but eventually most calls to this should
--- be removed and we should more gracefully handle the error.
+bodyVar :: Monad m => String -> SCGIT m (Maybe String)
+bodyVar name = lookup name `liftM` bodyVars
 
-getRequiredInput :: MonadCGI m => String -> m String
-getRequiredInput param =
-  getInputDefault (error $ "Parameter '" ++ param ++ "' is required.") param
+bodyVarDefault :: Monad m => String -> String -> SCGIT m String
+bodyVarDefault name def' = fromMaybe def' `liftM` bodyVar name
 
-getRequiredInputFPS :: MonadCGI m => String -> m ByteString
-getRequiredInputFPS param = liftM (fromMaybe (error $ "Parameter '" ++ param ++ "' is required")) $ getInputFPS param
+bodyVarRequired :: Monad m => String -> SCGIT m String
+bodyVarRequired name = bodyVarDefault name (error $ "Parameter '" ++ name ++ "' is required.")
 
--- The Read versions of the above handle automatically converting the requested
--- input to a required type (as long as that type is Readable).
+bodyJSON :: (Monad m, FromJSON a) => SCGIT m (Maybe a)
+bodyJSON = decode `liftM` SCGI.body
 
-readInput :: (Read a, MonadCGI m) => String -> m (Maybe a)
-readInput = liftM (>>= maybeRead) . getInput
+redirect :: String -> SCGI Response
+redirect url = do
+  SCGI.setHeader "Location" (BU.fromString url)
+  return $ Response "302 Found" $ BLU.fromString $ "Redirecting you to: " ++ url
 
-readInputDefault :: (Read a, MonadCGI m) => a -> String -> m a
-readInputDefault d = liftM (fromMaybe d) . readInput
+permRedirect :: String -> SCGI Response
+permRedirect url = do
+  SCGI.setHeader "Location" (BU.fromString url)
+  return $ Response "301 Moved Permanently" ""
 
-readRequiredInput :: (Read a, MonadCGI m) => String -> m a
-readRequiredInput param =
-  readInputDefault (error $ "Parameter '" ++ param ++ "' is required.") param
+referrerOrVocabulink :: SCGI String
+referrerOrVocabulink =
+  maybe "http://www.vocabulink.com/" show `liftM` maybe Nothing (parseURI . BU.toString) `liftM` SCGI.header "HTTP_REFERER"
 
-getBody :: MonadCGI m => m String
-getBody = (trim . toString) `liftM` CGI.getBodyFPS
-
-getBodyJSON :: (MonadCGI m, FromJSON a) => m (Maybe a)
-getBodyJSON = decode `liftM` CGI.getBodyFPS
-
--- Working with URLs
-
--- Certain dynamic parts of the site are displayed to the user in a friendly
--- natural form but are also used in URLs. For those cases, it's generally
--- better to use URL-safe representations for both the URL and the natural key
--- in the database. This allows us, for example, to re-title an article without
--- changing the URL it's located at. Also, since we have the natural key from
--- the URL, we don't need to do an extra database lookup to find the key from a
--- mapping table.
-
--- Note that this is not meant to handle arbitrary input from users. For that
--- we can use URL encoding. This is to make common URLs friendly.
-
--- Note that this is currently very restrictive until the need arises to permit
--- new characters. It converts spaces to hyphens and only allows alphanumeric
--- characters and hyphens in the resulting string.
-
-urlify :: String -> String
-urlify = map toLower . filter (\e -> isAlphaNum e || e `elem` "-.") . translate [(' ', '-')]
-
--- In some cases we'll need to redirect the client to where it came from after
--- we perform some action. We use this to make sure that we don't redirect them
--- off of the site.
-
-referrerOrVocabulink :: MonadCGI m => m URI
-referrerOrVocabulink = do
-  ref <- maybe Nothing (parseURI . decodeString) `liftM` getVar "HTTP_REFERER"
-  return $ case ref of
-             Nothing -> URI { uriScheme = "http:"
-                            , uriAuthority = Just (URIAuth { uriUserInfo = ""
-                                                           , uriRegName = "//www.vocabulink.com"
-                                                           , uriPort = ""
-                                                           })
-                            , uriPath = "/"
-                            , uriQuery = ""
-                            , uriFragment = "" }
-             Just uri -> uri
-
-redirect' :: MonadCGI m => URI -> m CGIResult
-redirect' = redirect . show
+setCookie :: SetCookie -> SCGI ()
+setCookie cookie = do
+  cookieHeader <- SCGI.responseHeader "Set-Cookie"
+  SCGI.setHeader "Set-Cookie" $ maybe newCookie (\h -> h `append` ", " `append` newCookie) cookieHeader
+ where newCookie = toByteString $ renderSetCookie $ cookie {setCookieValue = BU.fromString $ escapeURIString isUnescapedInCookie $ BU.toString $ setCookieValue cookie}
+       isUnescapedInCookie = (\c -> c == 0x21 -- RFC 6265
+                                 || (c >= 0x23 && c <= 0x2B)
+                                 || (c >= 0x2D && c <= 0x3A)
+                                 || (c >= 0x3C && c <= 0x5B)
+                                 || (c >= 0x5D && c <= 0x7E)) . ord
 
 -- These message types correspond to JS alert types.
 data MsgType = MsgSuccess | MsgError | MsgNotice
@@ -262,70 +153,19 @@ instance Show MsgType where
   show MsgNotice  = "notice"
 
 -- Redirect the user and display a message on whatever page they end up on.
-redirectWithMsg :: MonadCGI m => MsgType -> String -> URI -> m CGIResult
+redirectWithMsg :: MsgType -> String -> String -> SCGI Response
 redirectWithMsg typ msg url = do
-  let value' = toString $ J.encode [aesonQQ| {"type": <| show typ |>, "msg": <| msg |>} |]
-      cookie = Cookie { cookieName    = "msg"
-                      , cookieValue   = escapeURIString' value'
-                      , cookieExpires = Nothing
-                      , cookieDomain  = Just "www.vocabulink.com"
-                      , cookiePath    = Just "/"
-                      , cookieSecure  = False
-                      }
+  let value' = BLU.toString $ encode $ object ["type" .= (show typ), "msg" .= msg]
+      cookie = def { setCookieName    = "msg"
+                   , setCookieValue   = BU.fromString $ escapeURIString' value'
+                   , setCookieExpires = Nothing
+                   , setCookieDomain  = Just "www.vocabulink.com"
+                   , setCookiePath    = Just "/"
+                   }
   setCookie cookie
-  redirect' url
+  SCGI.setHeader "Location" (BU.fromString url)
+  return $ Response "302 Found" $ BLU.fromString msg
 
 -- Redirect a user to where they came from along with a message.
-bounce :: MonadCGI m => MsgType -> String -> m CGIResult
+bounce :: MsgType -> String -> SCGI Response
 bounce typ msg = redirectWithMsg typ msg =<< referrerOrVocabulink
-
-permRedirect :: (MonadCGI m, MonadIO m) => String -> m CGIResult
-permRedirect url = do
-  setStatus 301 "Moved Permanently"
-  redirect url
-
--- It's quite probable that we're going to trigger an unexpected exception
--- somewhere in the program. Rather than blow up, we'd like to catch and log
--- the exception before giving the client some sort of indication that
--- something went wrong.
-
-catchCGI' :: Exception e => CGI a -> (e -> CGI a) -> CGI a
-catchCGI' c h = tryCGI' c >>= either h return
-
-tryCGI' :: Exception e => CGI a -> CGI (Either e a)
-tryCGI' (CGIT c) = CGIT (ReaderT (WriterT . f . runWriterT . runReaderT c ))
- where f = fmap (either (\ex -> (Left ex,mempty)) (first Right)) . try
-
--- |catchCGI'| will handle exceptions in the CGI monad. If no exception is
---  thrown, we'll close the database handle and return the CGI result.
-
-handleErrors :: Handle -> CGI CGIResult -> CGI CGIResult
-handleErrors h act = catchCGI' (do r <- act
-                                   liftIO $ pgDisconnect h
-                                   return r)
-                               (outputException' h)
-
--- Network.CGI provides |outputException| as a basic default error handler. This
--- is a slightly modified version that logs errors.
-
--- One case that needs to be tested is when an error message has non-ASCII
--- characters. I'm not sure how |outputInternalServerError| will handle it.
-
--- By the time we output the error to the client we no longer need the database
--- handle. This is the perfect place to close it, as it'll be the last thing we do
--- in the CGI monad (and the thread).
-
-outputException' :: (MonadCGI m, MonadIO m) => Handle -> SomeException -> m CGIResult
-outputException' h ex = do
-  liftIO $ pgDisconnect h
-  outputServerError $ show ex
-
-escapeURIString' :: String -> String
-escapeURIString' = escapeURIString isUnescapedInURI
-
-addToQueryString :: String -> URI -> URI
-addToQueryString s uri =
-  let query' = case uriQuery uri of
-                 "" -> "?" ++ s
-                 q' -> q' ++ "&" ++ s in
-  uri {uriQuery = query'}
