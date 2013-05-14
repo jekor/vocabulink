@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2013 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -20,7 +20,7 @@
 
 module Vocabulink.Review.SM2 (reviewInterval) where
 
-import Vocabulink.App
+import Vocabulink.Env
 import Vocabulink.Utils
 
 -- Each algorithm needs to export a |reviewInterval| function that accepts some
@@ -36,23 +36,23 @@ import Vocabulink.Utils
 -- This should return Nothing if there was an error or 0 if the item needs to
 -- be repeated immediatey.
 
-reviewInterval :: Integer -> Integer -> DiffTime -> Float -> App DiffTime
+reviewInterval :: E (Integer -> Integer -> DiffTime -> Float -> IO DiffTime)
 reviewInterval memberNo linkNo previous recallGrade = do
   let p = daysFromSeconds $ diffTimeToSeconds previous
       q = round $ recallGrade * 5 -- The algorithm expects 0-5, not 0-1.
-  stats <- $(queryTuple' "SELECT n, EF FROM link_sm2 \
-                         \WHERE member_no = {memberNo} AND link_no = {linkNo}")
+  stats <- $(queryTuple "SELECT n, EF FROM link_sm2 \
+                        \WHERE member_no = {memberNo} AND link_no = {linkNo}") ?db
   secondsToDiffTime <$> case stats of
     Nothing      -> if q < 3 -- This item is not yet learned.
                       then return 0
                       else do let n  = 1
-                                  ef = easinessFactor' 2.5 q
+                                  ef = easinessFactor 2.5 q
                               createSM2 memberNo linkNo n ef
                               return $ secondsFromDays (interval p n ef)
     Just (n, ef) -> if q < 3 -- We need to restart the learning process.
                       then do updateSM2 memberNo linkNo 1 ef
                               return 0
-                      else do let newEF = easinessFactor' ef q
+                      else do let newEF = easinessFactor ef q
                                   n'    = n + 1
                               updateSM2 memberNo linkNo n' newEF
                               return $ secondsFromDays (interval p n' newEF)
@@ -83,22 +83,22 @@ interval p _ ef = p * ef
 -- that's necessary or will pay off as much as moving to a newer algorithm. But
 -- for now we'll stick to a separate EF for each member.
 
-easinessFactor' :: Float -> Integer -> Float
-easinessFactor' ef q = max 1.3 $ ef + (0.1 - x * (0.08 + x * 0.02))
+easinessFactor :: Float -> Integer -> Float
+easinessFactor ef q = max 1.3 $ ef + (0.1 - x * (0.08 + x * 0.02))
     where x = fromIntegral (5 - q)
 
 -- For the SM-2 algorithm to work, we need to keep track of a couple variables
 -- for each link. This establishes the variable record in the database the
 -- first time a link is reviewed.
 
-createSM2 :: Integer -> Integer -> Integer -> Float -> App ()
-createSM2 memberNo linkNo n ef = $(execute'
+createSM2 :: E (Integer -> Integer -> Integer -> Float -> IO ())
+createSM2 memberNo linkNo n ef = $(execute
   "INSERT INTO link_sm2 (member_no, link_no, n, EF) \
-                \VALUES ({memberNo}, {linkNo}, {n}, {ef})")
+                \VALUES ({memberNo}, {linkNo}, {n}, {ef})") ?db
 
 -- When a link is already being reviewed, this updates the SM2 variables.
 
-updateSM2 :: Integer -> Integer -> Integer -> Float -> App ()
-updateSM2 memberNo linkNo n ef = $(execute'
+updateSM2 :: E (Integer -> Integer -> Integer -> Float -> IO ())
+updateSM2 memberNo linkNo n ef = $(execute
   "UPDATE link_sm2 SET n = {n}, EF = {ef} \
-  \WHERE member_no = {memberNo} AND link_no = {linkNo}")
+  \WHERE member_no = {memberNo} AND link_no = {linkNo}") ?db

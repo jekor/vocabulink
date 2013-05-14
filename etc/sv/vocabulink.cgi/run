@@ -1,2 +1,2 @@
 #!/bin/sh
-exec chpst -uhttp:http /home/jekor/vocabulink/vocabulink.cgi 2>&1
+exec chpst -uwww-data:www-data /home/jekor/vocabulink/vocabulink.cgi 2>&1

@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012, 2013 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -22,31 +22,34 @@
 -- oft-used functions for other modules.
 
 module Vocabulink.Utils ( (?), (<$$>)
-                        , safeHead, safeTail, every2nd, every3rd
+                        , safeHead, safeTail, every2nd, every3rd, maybeM
                         , partitionHalves, partitionThirds
                         , translate, trim, convertLineEndings
-                        , currentDay, currentYear, diffTimeToSeconds, epochUTC, utcEpoch
+                        , currentDay, currentYear, diffTimeToSeconds
                         , basename, isFileReadable, sendMail
                         , logError, prettyPrint
-                        , matchRegexAllText
-                        {- Codec.Binary.UTF8.String -}
-                        , encodeString, decodeString
+                        , escapeURIString', addToQueryString
+                        , gravatarHash
                         {- Control.Applicative -}
                         , pure, (<$>), (<*>)
-                        {- Control.Applicative.Error -}
-                        , maybeRead
                         {- Control.Arrow -}
                         , first, second, (***)
                         {- Control.Monad -}
-                        , liftM, Control.Monad.join, msum, when, unless, replicateM, mzero, forM, forM_
+                        , liftM, Control.Monad.join, msum, when, unless, replicateM, mzero, forM, forM_, (>=>), (<=<)
                         {- Control.Monad.Trans -}
                         , liftIO, MonadIO
+                        {- Data.Aeson -}
+                        , Value(..), object, (.=), ToJSON(..), FromJSON(..), encode, decode
+                        {- Data.Aeson.TH -}
+                        , deriveJSON, deriveToJSON, deriveFromJSON
                         {- Data.Bool.HT -}
                         , if'
-                        {- Data.Char -}
-                        , toLower
                         {- Data.ByteString.Lazy -}
                         , readFile, writeFile
+                        {- Data.Char -}
+                        , toLower
+                        {- Data.Convertible -}
+                        , convert
                         {- Data.Either.Utils -}
                         , forceEither
                         {- Data.List -}
@@ -57,20 +60,18 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , maybe, fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes
                         {- Data.Monoid -}
                         , mempty, mappend, mconcat
-                        {- Database.TemplatePG -}
-                        , withTransaction, rollback, execute, queryTuple, queryTuples, insertIgnore
                         {- Data.Time.Calendar -}
-                        , Day, addDays, diffDays, showGregorian
+                        , Day
                         {- Data.Time.Clock -}
                         , UTCTime, DiffTime, getCurrentTime, diffUTCTime, secondsToDiffTime
-                        {- Data.Time.Clock.POSIX -}
-                        , posixSecondsToUTCTime, utcTimeToPOSIXSeconds
                         {- Data.Time.Format -}
                         , formatTime, readTime
-                        {- Debug.Trace -}
-                        , trace
                         {- Data.Tuple.Curry -}
                         , uncurryN
+                        {- Database.TemplatePG -}
+                        , withTransaction, rollback, execute, queryTuple, queryTuples, insertIgnore
+                        {- Debug.Trace -}
+                        , trace
                         {- System.FilePath -}
                         , (</>), (<.>), takeExtension, replaceExtension, takeBaseName, takeFileName
                         {- System.IO -}
@@ -81,18 +82,21 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , epochTime
                         {- System.Posix.Types -}
                         , EpochTime
-                        {- Text.Regex -}
-                        , subRegex, mkRegex
+                        {- Text.Read -}
+                        , readMaybe
                         ) where
 
-import Codec.Binary.UTF8.String (encodeString, decodeString)
 import Control.Applicative (pure, (<$>), (<*>))
-import Control.Applicative.Error (maybeRead)
 import Control.Arrow (first, second, (***))
 import Control.Monad
 import Control.Monad.Trans (liftIO, MonadIO)
+import Data.Aeson (Value(..), object, (.=), ToJSON(..), FromJSON(..), encode, decode)
+import Data.Aeson.TH (deriveJSON, deriveToJSON, deriveFromJSON)
 import Data.ByteString.Lazy (readFile, writeFile)
+import qualified Data.ByteString.Lazy.UTF8 as BLU
 import Data.Char (toLower, isSpace)
+import Data.Convertible (convert)
+import Data.Digest.Pure.MD5 (md5)
 import Data.Either.Utils (forceEither) -- MissingH
 import Data.List (intercalate, (\\), nub)
 import Data.List.Split (splitOn, splitEvery)
@@ -105,22 +109,21 @@ import Data.Bool.HT (if')
 -- Time is notoriously difficult to deal with in Haskell. It gets especially
 -- tricky when working with the database and libraries that expect different
 -- formats.
-import Data.Time.Calendar (Day, toGregorian, showGregorian, addDays, diffDays)
+import Data.Time.Calendar (Day, toGregorian)
 import Data.Time.Clock (UTCTime, DiffTime, getCurrentTime, diffUTCTime, secondsToDiffTime)
-import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
-import Data.Time.Format (formatTime, readTime)
-import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, LocalTime(..))
+import Data.Time.Format (formatTime, readTime, FormatTime(..))
+import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, utcToZonedTime, utc, LocalTime(..))
 import Data.Tuple.Curry (uncurryN)
+import Network.URI (escapeURIString, isUnescapedInURI, URI(..), uriQuery)
 import System.Directory (getPermissions, doesFileExist, readable)
 import System.Exit (ExitCode(..))
-import System.FilePath ( (</>), (<.>), takeExtension, replaceExtension
-                       , takeBaseName, takeFileName )
+import System.FilePath ((</>), (<.>), takeExtension, replaceExtension, takeBaseName, takeFileName)
 import System.IO (Handle, hPutStr, hPutStrLn, hClose, stderr)
 import System.Locale (defaultTimeLocale)
 import System.Posix.Time (epochTime)
 import System.Posix.Types (EpochTime)
 import System.Process (createProcess, waitForProcess, proc, std_in, StdStream(..))
-import Text.Regex (Regex, subRegex, mkRegex, matchRegexAll)
+import Text.Read (readMaybe)
 
 import Prelude hiding (readFile, writeFile)
 
@@ -244,11 +247,8 @@ serverDate utc = toGregorian <$> serverDay utc
 diffTimeToSeconds :: DiffTime -> Integer
 diffTimeToSeconds = floor . toRational
 
-epochUTC :: UTCTime -> Integer
-epochUTC = floor . realToFrac . utcTimeToPOSIXSeconds
-
-utcEpoch :: Integer -> UTCTime
-utcEpoch = posixSecondsToUTCTime . fromIntegral
+instance FormatTime EpochTime where
+  formatCharacter c = fmap (\f locale mpado t -> f locale mpado (utcToZonedTime utc (convert t))) (formatCharacter c)
 
 -- For files we receive via HTTP, we can't make assumptions about the path
 -- separator.
@@ -263,18 +263,16 @@ isFileReadable f = do
     then readable <$> getPermissions f
     else return False
 
-sendMail :: String -> String -> String -> String -> IO (Maybe ())
-sendMail from address subject body = do
+sendMail :: String -> String -> String -> IO ()
+sendMail address subject body = do
   (Just inF, _, _, pr) <- createProcess (proc "mail"
-                                              ["-r", from
+                                              ["-r", "\"Vocabulink\" <support@vocabulink.com>"
                                               ,"-s", subject
                                               ,address])
                                         {std_in = CreatePipe}
   hPutStr inF body >> hClose inF
   status <- waitForProcess pr
-  case status of
-    ExitFailure _ -> return Nothing
-    ExitSuccess   -> return $ Just ()
+  when (status /= ExitSuccess) $ error "There was an error sending email from our servers. Please try again later or contact support@vocabulink.com."
 
 -- Log a message to standard error. It'll get picked up by svlogd.
 
@@ -297,8 +295,21 @@ instance PrettyPrint Day where
 instance PrettyPrint UTCTime where
   prettyPrint = formatTime defaultTimeLocale "%F %R"
 
-matchRegexAllText :: Regex -> String -> [(String, [String])]
-matchRegexAllText rx s =
-  case matchRegexAll rx s of
-    Just (_, match, rest, subs) -> (match, subs) : matchRegexAllText rx rest
-    Nothing -> []
+escapeURIString' :: String -> String
+escapeURIString' = escapeURIString isUnescapedInURI
+
+addToQueryString :: String -> URI -> URI
+addToQueryString s uri =
+  let query' = case uriQuery uri of
+                 "" -> "?" ++ s
+                 q' -> q' ++ "&" ++ s in
+  uri {uriQuery = query'}
+
+maybeM :: Monad m => (a -> m b) -> (Maybe a -> m (Maybe b))
+maybeM a = \ x' ->
+  case x' of
+    Nothing -> return Nothing
+    Just x -> Just `liftM` a x
+
+gravatarHash :: String -> String
+gravatarHash = show . md5 . BLU.fromString . map toLower . trim

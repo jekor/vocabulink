@@ -1,4 +1,4 @@
-// Copyright 2012 Chris Forno
+// Copyright 2012, 2013 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -29,7 +29,7 @@
   function link() {
     return $(
       '<h1 class="link association" linkno="">'
-      + '<span class="foreign" title="' + learnLanguage + '">'
+      + '<span class="foreign" title="">'
         + '<span class="foreign-word"></span>'
         + '<button class="pronounce button light">'
           + '<audio>'
@@ -41,7 +41,7 @@
       + '</span>'
       + '<span class="link">'
       + '</span>'
-      + '<span class="familiar" title="' + knownLanguage + '">'
+      + '<span class="familiar" title="">'
         + '<span class="familiar-word"></span>'
       + '</span>'
     + '</h1>');
@@ -128,9 +128,9 @@
         $('.link', el).empty();
       }
     } else {
+      el.addClass('association');
       $('.link', el).attr('title', '');
       $('.link', el).empty();
-      el.addClass('association');
     }
   }
 
@@ -230,7 +230,7 @@
             $('.tip').remove();
           });
         } else if (!V.loggedIn() && queue.length == 5) {
-          V.modal($('#signup-invitation').append(V.signupForm()));
+          V.modal($('#signup-invitation').append(V.signupForm()).show());
         } else {
           doLearn(learn.pop());
         }

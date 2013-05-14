@@ -1,4 +1,4 @@
--- Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
+-- Copyright 2008, 2009, 2010, 2011, 2012, 2013 Chris Forno
 
 -- This file is part of Vocabulink.
 
@@ -20,98 +20,120 @@
 -- Most functionality on Vocabulink---such as review scheduling---is for
 -- registered members only.
 
-module Vocabulink.Member ( UserContent(..)
-                         , memberByName, memberByNumber, memberAvatar
-                         , withRequiredMember, withRequiredMember'
-                         , gravatar, gravatarHash
-                         {- Vocabulink.Member.Auth -}
-                         , Member(..)
+module Vocabulink.Member ( Member(..), AuthToken(..), validAuth, authToken
+                         , authCookie, emptyAuthCookie
                          ) where
 
-import Vocabulink.App
-import Vocabulink.Html
-import Vocabulink.Member.Auth
 import Vocabulink.Utils
 
+import qualified Data.ByteString.Lazy.Char8 as BC8
+import qualified Data.ByteString.UTF8 as BU
 import Data.Default (def)
-import Data.Text (pack)
-import qualified Network.Gravatar as G
-import Text.Regex
+import Data.Digest.Pure.SHA (hmacSha1, showDigest)
+import Language.Haskell.TH.Syntax (runIO, Exp(..), Lit(..))
+import Web.Cookie (SetCookie(..))
 
--- | Simple user-generated content permissions
-class UserContent u where
-  canView   :: u -> App Bool
-  canEdit   :: u -> App Bool
-  canDelete :: u -> App Bool
+data Member = Member { memberNumber :: Integer
+                     , memberName   :: String
+                     , memberEmail  :: Maybe String
+                     } deriving (Eq, Show)
 
--- At the time of authentication, we have to fetch the member's number from the
--- database before it can be packed into their auth token. There may be a way
--- to put this step into password verification so that we don't need 2 queries.
+instance ToJSON Member where
+  toJSON m = object [ "name" .= (memberName m)
+                    , "hash" .= (gravatarHash `liftM` memberEmail m)
+                    ]
 
-memberByNumber :: Integer -- ^ member number
-               -> App (Maybe Member)
-memberByNumber n = memberFromTuple <$$> $(queryTuple'
-  "SELECT member_no, username, email FROM member \
-  \WHERE member_no = {n}")
+-- Creating the Auth Token
 
-memberByName :: String -- ^ member name
-             -> App (Maybe Member)
-memberByName n = memberFromTuple <$$> $(queryTuple'
-  "SELECT member_no, username, email FROM member \
-  \WHERE username = {n}")
+-- Each time a member logs in, we send an authentication cookie to their
+-- browser. The cookie is a digest of some state information. We then use the
+-- cookie for authenticating their identity on subsequent requests.
+ 
+-- for generating auth token cookies
+-- This is compiled in via Template Haskell to keep the key out of git.
+authTokenKey :: String
+authTokenKey = $((LitE . StringL) `liftM` runIO (Prelude.readFile "auth-token-key"))
 
-memberFromTuple :: (Integer, String, Maybe String) -> Member
-memberFromTuple (n, u, e) = Member { memberNumber = n
-                                   , memberName   = u
-                                   , memberEmail  = e
-                                   }
+data AuthToken = AuthToken { authMemberNumber  :: Integer
+                           , authExpiry        :: EpochTime
+                           , authDigest        :: String -- HMAC hash
+                           }
 
-memberAvatar :: Int -- ^ size (square) in pixels
-             -> Member
-             -> Maybe Html
-memberAvatar size' member =
-  (a ! href (toValue $ "/user/" ++ memberName member)) . gravatar size' <$> memberEmail member
+-- We give the token 30 days to expire. We don't want it expiring too soon
+-- because it becomes bothersome to keep logging in. However, we don't want
+-- members to stay logged in forever, and using a non-expiring cookie would
+-- require us to check the database for each authentication to see if we need
+-- to de-authenticate the client.
 
--- | Only perform the given action if the user is authenticated and has
--- verified their email address. This provides a ``logged out default'' of
--- redirecting the client to the login page.
-withRequiredMember :: (Member -> App a) -> App a
-withRequiredMember f = do
-  member <- asks appMember
-  case member of
-    Nothing -> error "Please log in."
-    Just m  -> case memberEmail m of
-                 Nothing -> error "Please verify your email address."
-                 Just _  -> f m
+authShelfLife :: EpochTime
+authShelfLife = 30 * 24 * 60 * 60
 
-withRequiredMember' :: (Member -> App a) -> App a
-withRequiredMember' f = do
-  member <- asks appMember
-  case member of
-    Nothing -> error "Please log in."
-    Just m  -> f m
+-- Here is the format of the actual cookie we send to the client.
 
-gravatar :: Int -- ^ size (square) in pixels
-         -> String -- ^ email address
-         -> Html
-gravatar size' email =
-  img ! width (toValue size')
-      ! height (toValue size')
-      ! class_ "avatar"
-      ! src (toValue $ G.gravatar G.GravatarOptions {G.gSize = Just (G.Size size')
-                                                    ,G.gDefault = Just G.Wavatar
-                                                    ,G.gForceDefault = G.ForceDefault False
-                                                    ,G.gRating = Just G.X}
-                                  (pack $ map toLower email))
+instance Show AuthToken where
+  show a = show (authMemberNumber a) ++ "." ++ show (authExpiry a) ++ "." ++ (authDigest a)
 
--- The gravatar library will generate the entire URL, but sometimes we just
--- need the hash. Rather than implement the hashing ourselves, we'll dissect
--- the one we receive from the gravatar library.
+instance Read AuthToken where
+  readsPrec _ =
+    \s -> case splitOn "." s of
+            [m,e,d] -> [(AuthToken (read m) (read e) d, "")]
+            _ -> []
+                    
 
-gravatarHash :: String -> Maybe String
-gravatarHash email =
-  let url = G.gravatar def (pack email)
-      matches = matchRegex (mkRegex "/avatar/([0-9a-f]+)") url in
-  case matches of
-    Just [hash] -> Just hash
-    _           -> Nothing
+-- | Create an AuthToken with the default expiration time, automatically
+-- calculating the digest.
+authToken :: Integer -> IO AuthToken
+authToken memberNo = do
+  now <- epochTime
+  let expires = now + authShelfLife
+      digest = tokenDigest AuthToken { authMemberNumber = memberNo
+                                     , authExpiry = expires
+                                     , authDigest = ""
+                                     }
+  return AuthToken { authMemberNumber  = memberNo
+                   , authExpiry = expires
+                   , authDigest = digest
+                   }
+
+-- | This generates the HMAC digest of the auth token using SHA1.
+-- Eventually, we need to rotate the key used to generate the HMAC, while still
+-- storing old keys long enough to use them for any valid login session. Without
+-- this, authentication is less secure.
+tokenDigest :: AuthToken -> String
+tokenDigest a = showDigest $ hmacSha1 (BC8.pack authTokenKey) (BC8.pack token)
+  where token = show (authMemberNumber a) ++ show (authExpiry a)
+
+-- -- Setting the cookie is rather simple by this point. We just create the auth
+-- -- token and send it to the client.
+
+authCookie :: Integer -> IO SetCookie
+authCookie memberNo = do
+  token <- authToken memberNo
+  return $ emptyAuthCookie { setCookieValue  = BU.fromString $ show token
+                           , setCookieMaxAge = Just $ secondsToDiffTime $ convert authShelfLife
+                           }
+
+emptyAuthCookie :: SetCookie
+emptyAuthCookie =
+  def { setCookieName     = "auth"
+      , setCookieValue    = ""
+      , setCookieDomain   = Just "www.vocabulink.com"
+      , setCookiePath     = Just "/"
+      , setCookieHttpOnly = True
+      }
+
+-- Reading the Auth Token
+
+-- This retrieves the auth token from the HTTP request, verifies it, and if
+-- valid, returns it. To verify an auth token, we verify the token digest and
+-- check that the cookie hasn't expired.
+
+validAuth :: String -> IO (Maybe AuthToken)
+validAuth token = do
+  case readMaybe token of
+    Nothing -> return Nothing
+    Just t -> do
+      now <- epochTime
+      if tokenDigest t == authDigest t && authExpiry t > now
+        then return $ Just t
+        else return Nothing
