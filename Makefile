@@ -5,18 +5,18 @@ all : $(cgi) js css spritesheets articles
 
 # Haskell
 
-hses := cgi/Vocabulink.hs $(shell find cgi/Vocabulink -name "*.hs")
+hses := hs/Vocabulink.hs $(shell find hs/Vocabulink -name "*.hs")
 
 cgi : $(cgi)
 
-cgi/dist/setup-config : cgi/vocabulink.cabal
-	cd cgi && cabal-dev configure
+hs/dist/setup-config : hs/vocabulink.cabal
+	cd hs && cabal-dev configure
 
-cgi/dist/build/$(cgi)/$(cgi) : cgi/dist/setup-config $(hses)
-	cd cgi && TPG_DB="vocabulink" TPG_USER="vocabulink" cabal-dev build
+hs/dist/build/$(cgi)/$(cgi) : hs/dist/setup-config $(hses)
+	cd hs && TPG_DB="vocabulink" TPG_USER="vocabulink" cabal-dev build
 	@touch $@ # cabal doesn't always update the build (if it doesn't need to)
 
-$(cgi) : cgi/dist/build/$(cgi)/$(cgi)
+$(cgi) : hs/dist/build/$(cgi)/$(cgi)
 	if [ -f $(cgi) ]; then mv $(cgi) $(cgi).old; fi
 	cp $^ $@
 	strip $@
@@ -113,7 +113,7 @@ hlint : $(hses)
 # For jslint, go to http://www.jslint.com/
 # /*jslint browser: true, devel: true, nomen: true, plusplus: true, regexp: true, sloppy: true, vars: true, white: true, indent: 2 */
 
-sync_options := -avz --exclude 'cgi/dist' --exclude '*.sass' --exclude '.sass-cache' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --exclude '._*' --exclude '.DS_Store' --exclude '*.markdown' --exclude 'articles/in-progress' --exclude 'js/external' --exclude 'css/external' --exclude 'js/*.js' --exclude 'lighttpd.conf' --delete articles audio css etc img js s scripts vocabulink.cgi vocabulink.com:vocabulink/
+sync_options := -avz --exclude 'hs/dist' --exclude '*.sass' --exclude '.sass-cache' --exclude '*.aux' --exclude '*.tex' --exclude '*.ptb' --exclude '*.log' --exclude '*.out' --exclude '._*' --exclude '.DS_Store' --exclude '*.markdown' --exclude 'articles/in-progress' --exclude 'js/external' --exclude 'css/external' --exclude 'js/*.js' --exclude 'lighttpd.conf' --delete articles audio css etc img js s scripts vocabulink.cgi vocabulink.com:vocabulink/
 
 sync :
 	rsync $(sync_options)
