@@ -93,30 +93,42 @@ main = do
 
 handleRequest :: SCGI Response
 handleRequest = do
-  db' <- liftIO $ pgConnect "localhost" (PortNumber 5432) "vocabulink" "vocabulink" dbPassword
-  auth' <- (lookup "auth" . parseCookies =<<) `liftM` SCGI.header "HTTP_COOKIE"
-  token' <- liftIO $ maybe (return Nothing) (validAuth . BU.toString) auth'
-  member' <- liftIO $ maybe (return Nothing) (flip memberFromToken db') token'
-  due' <- case member' of
-            Nothing -> return 0
-            Just m -> liftIO $ (fromJust . fromJust) `liftM` $(queryTuple
-                        "SELECT COUNT(*) FROM link_to_review \
-                        \WHERE member_no = {memberNumber m} AND current_timestamp > target_time") db'
+  db <- liftIO $ pgConnect "localhost" (PortNumber 5432) "vocabulink" "vocabulink" dbPassword
+  member <- loggedIn db
+  -- This is here to avoid IO in the Page module.
+  due <- case member of
+           Nothing -> return 0
+           Just m -> liftIO $ (fromJust . fromJust) `liftM` $(queryTuple
+                       "SELECT COUNT(*) FROM link_to_review \
+                       \WHERE member_no = {memberNumber m} AND current_timestamp > target_time") db
   method' <- SCGI.method
   path' <- SCGI.path
   case (method', path') of
-    (Just method, Just path) -> let ?db = db'
-                                    ?member = member'
-                                    ?numDue = due' in dispatch' (BU.toString method) (pathList $ BU.toString path)
+    (Just method, Just path) -> let ?db = db
+                                    ?member = member
+                                    ?numDue = due in dispatch' (BU.toString method) (pathList $ BU.toString path)
     _ -> error "Missing request method or path."
- where memberFromToken token dbHandle = do
-         row <- $(queryTuple
-                     "SELECT username, email FROM member \
-                     \WHERE member_no = {authMemberNumber token}") dbHandle
-         return $ liftM (\(username, email) -> Member { memberNumber = authMemberNumber token
-                                                      , memberName   = username
-                                                      , memberEmail  = email
-                                                      }) row
+ where loggedIn db = do
+         auth <- (lookup "auth" . parseCookies =<<) `liftM` SCGI.header "HTTP_COOKIE"
+         token' <- liftIO $ maybe (return Nothing) (validAuth . BU.toString) auth
+         case token' of
+           Nothing -> return Nothing
+           Just token -> do
+             -- We want to renew the expiry of the auth token if the user
+             -- remains active. But we don't want to be sending out a new
+             -- cookie with every request. Instead, we check to see that one
+             -- day has passed since the auth cookie was set. If so, we refresh
+             -- it.
+             now <- liftIO epochTime
+             when (authExpiry token - now < authShelfLife - (24 * 60 * 60)) $ do
+               setCookie =<< liftIO (authCookie $ authMemberNumber token)
+             row <- liftIO $ $(queryTuple
+                      "SELECT username, email FROM member \
+                      \WHERE member_no = {authMemberNumber token}") db
+             return $ liftM (\(username, email) -> Member { memberNumber = authMemberNumber token
+                                                          , memberName   = username
+                                                          , memberEmail  = email
+                                                          }) row
 
 -- We extract the path part of the URI, ``unescape it'' (convert % codes back
 -- to characters), decode it (convert UTF-8 characters to Unicode Chars), and
