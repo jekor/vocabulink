@@ -50,6 +50,8 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , toLower
                         {- Data.Convertible -}
                         , convert
+                        {- Data.Default -}
+                        , def
                         {- Data.Either.Utils -}
                         , forceEither
                         {- Data.List -}
@@ -96,6 +98,7 @@ import Data.ByteString.Lazy (readFile, writeFile)
 import qualified Data.ByteString.Lazy.UTF8 as BLU
 import Data.Char (toLower, isSpace)
 import Data.Convertible (convert)
+import Data.Default (def)
 import Data.Digest.Pure.MD5 (md5)
 import Data.Either.Utils (forceEither) -- MissingH
 import Data.List (intercalate, (\\), nub)

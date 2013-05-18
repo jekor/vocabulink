@@ -57,9 +57,7 @@ import Text.Blaze.Html5.Attributes ( id, class_, href, type_, src, style, title
                                    , method, action, name, value, required, placeholder, autofocus
                                    , tabindex, enctype, readonly, disabled
                                    )
-import Text.Pandoc ( readMarkdown, writeHtmlString, defaultParserState
-                   , defaultWriterOptions, writerHtml5
-                   )
+import Text.Pandoc (readMarkdown, writeHtmlString, writerHtml5)
 
 import Prelude hiding (div, id, span)
 
@@ -114,7 +112,7 @@ markdownToHtml :: String -> Html
 markdownToHtml = preEscapedToMarkup . markdownToHtmlString
 
 markdownToHtmlString :: String -> String
-markdownToHtmlString = writeHtmlString defaultWriterOptions {writerHtml5 = True} . readMarkdown defaultParserState
+markdownToHtmlString = writeHtmlString def {writerHtml5 = True} . readMarkdown def
 
 -- Helper for inline JavaScript.
 inlineJS :: String -> Html

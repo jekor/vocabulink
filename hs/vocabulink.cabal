@@ -45,7 +45,7 @@ Executable vocabulink.cgi
                  network,
                  old-locale,
                  old-time,
-                 pandoc > 1.8 && < 1.10,
+                 pandoc > 1.8,
                  parsec,
                  process,
                  pureMD5,

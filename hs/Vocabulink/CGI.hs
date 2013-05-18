@@ -40,7 +40,6 @@ import Data.ByteString (append)
 import qualified Data.ByteString.UTF8 as BU
 import qualified Data.ByteString.Lazy.UTF8 as BLU
 import Data.Char (ord)
-import Data.Default (def)
 import Network.CGI (formDecode)
 import Network.SCGI (SCGIT, Response(..))
 import qualified Network.SCGI as SCGI
