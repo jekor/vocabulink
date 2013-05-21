@@ -342,10 +342,3 @@ syncLinks m retained = do
          \FROM link_to_review \
          \INNER JOIN link l USING (link_no) \
          \WHERE member_no = {memberNumber m}") ?db
-
--- This retrievs the number of links that a user has for review right now.
-
-numLinksToReview :: E (Member -> IO Integer)
-numLinksToReview m = fromJust . fromJust <$> $(queryTuple
-  "SELECT COUNT(*) FROM link_to_review \
-  \WHERE member_no = {memberNumber m} AND current_timestamp > target_time") ?db

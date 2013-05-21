@@ -100,7 +100,10 @@ handleRequest = do
            Nothing -> return 0
            Just m -> liftIO $ (fromJust . fromJust) `liftM` $(queryTuple
                        "SELECT COUNT(*) FROM link_to_review \
-                       \WHERE member_no = {memberNumber m} AND current_timestamp > target_time") db
+                       \INNER JOIN link USING (link_no) \
+                       \WHERE member_no = {memberNumber m} \
+                         \AND current_timestamp > target_time \
+                         \AND NOT deleted") db
   method' <- SCGI.method
   path' <- SCGI.path
   case (method', path') of
