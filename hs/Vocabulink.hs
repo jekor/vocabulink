@@ -102,6 +102,7 @@ handleRequest = do
                        "SELECT COUNT(*) FROM link_to_review \
                        \INNER JOIN link USING (link_no) \
                        \WHERE member_no = {memberNumber m} \
+                         \AND learn_lang = 'es' AND known_lang = 'en' \
                          \AND current_timestamp > target_time \
                          \AND NOT deleted") db
   method' <- SCGI.method
