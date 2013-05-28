@@ -1,4 +1,4 @@
-// Copyright 2009, 2010, 2011, 2012 Chris Forno
+// Copyright 2009, 2010, 2011, 2012, 2013 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -32,10 +32,10 @@
 // pendingReviews => {linkNumber: targetTs, ...}
 
 V.retainLink = function (link) {
-  if (!V.hSetLocal('retain', link.linkNumber, [[link.learn, link.learnLang], [link.known, link.knownLang], link.soundalike, link.linkword])) {
+  if (!V.hSetLocal('retain', link.number, [[link.learn, link.learnLang], [link.known, link.knownLang], link.soundalike, link.word])) {
     // V.incrLinksToReview(1);
     if (V.loggedIn()) {
-      $.ajax('/review/' + link.linkNumber, {'type': 'PUT'});
+      $.ajax('/review/' + link.number, {'type': 'PUT'});
     }
   }
 }

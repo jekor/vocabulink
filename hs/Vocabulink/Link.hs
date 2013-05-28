@@ -103,7 +103,7 @@ instance ToMarkup Link where
                                   sprite "icon" "audio"
                            else mempty
 
-$(deriveToJSON (drop 4) ''Link)
+$(deriveToJSON (lowercase . drop 4) ''Link)
 
 compactLinkJSON :: Link -> Value
 compactLinkJSON link =

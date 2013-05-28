@@ -30,6 +30,7 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , logError, prettyPrint
                         , escapeURIString', addToQueryString
                         , gravatarHash
+                        , lowercase
                         {- Control.Applicative -}
                         , pure, (<$>), (<*>)
                         {- Control.Arrow -}
@@ -316,3 +317,7 @@ maybeM a = \ x' ->
 
 gravatarHash :: String -> String
 gravatarHash = show . md5 . BLU.fromString . map toLower . trim
+
+lowercase :: String -> String
+lowercase [] = []
+lowercase (x:xs) = (toLower x):xs
