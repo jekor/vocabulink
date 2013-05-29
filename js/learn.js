@@ -78,7 +78,7 @@
        .fail(function () {V.toastError('Failed to record grade.');});
       if (g >= 0.5) {
         // Update the "X links to review" in the header.
-        V.incrLinksToReview(-1);
+        V.incrReviewCount(-1);
       }
     }
     nextAction();
@@ -153,7 +153,7 @@
     if (V.loggedIn()) {
       $.ajax('/review/' + linkNum, {'type': 'PUT'})
        .done(function () {
-         V.incrLinksToReview(1);
+         V.incrReviewCount(1);
        })
        .fail(function (xhr) {
          // TODO: Rather than log an error here, we should return an error code to the caller.

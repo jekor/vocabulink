@@ -193,5 +193,5 @@ searchBox = form ! class_ "search-box" ! action "/search" $ do
 reviewBox :: E (Member -> Html)
 reviewBox _ = a ! href "/learn?learn=es&known=en" ! class_ "review-box" $ message ?numDue
   where message :: Integer -> Html
-        message 1 = strong "1" >> " link to review"
-        message n = strong (toMarkup n) >> " links to review"
+        message 1 = strong "1" >> " word to review"
+        message n = strong (toMarkup n) >> " words to review"

@@ -23,22 +23,52 @@
 // reserializing, and then storing objects can take ~20ms (tested in Firefox).
 // Do operations on them in batches.
 //
+// An individual link is stored in an "object" (an array to keep it more compact):
 // type link = [[learn, learnLang], [known, knownLang], soundalike, linkword]
 //
+// Every word (link) that we've encountered as a learner is retained in this
+// list. It's retained here so that, for example, we can de-highlight words
+// we've already encountered in a story:
 // retain => {linkNumber: link, ...}
 //
-// reviews => [[linkNumber, recallGrade, recallTime, ts], ...]
-//
+// The server gives us a list of upcoming reviews. This list should be a subset
+// of retain:
 // pendingReviews => {linkNumber: targetTs, ...}
+//
+// Every time we review a link we store the information on the review in a list
+// in case we're unable to immediately send the information to the server:
+// reviews => [[linkNumber, recallGrade, recallTime, ts], ...]
 
+// Given a link object, "retain" it if we haven't done so already. This entails
+// putting the link into local storage and notifying the server that we want to
+// review this link in the future.
+//
+// If the link given has already been retained previously, we do nothing and
+// return false. If it was just retained in this call for the first time, we
+// notify the server and return true.
 V.retainLink = function (link) {
   if (!V.hSetLocal('retain', link.number, [[link.learn, link.learnLang], [link.known, link.knownLang], link.soundalike, link.word])) {
-    // V.incrLinksToReview(1);
+    // The link hasn't been retained previously. Notify the server if logged in.
     if (V.loggedIn()) {
+      // TODO: What if this fails? Explain how sync works or have a backup plan.
       $.ajax('/review/' + link.number, {'type': 'PUT'});
     }
+    return true;
+  } else {
+    return false;
   }
-}
+};
+
+// Increment (or decrement, with a negative number) the "words to review" count in the header.
+V.incrReviewCount = function (by) {
+  var el = $('.review-box strong');
+  el.css('opacity', 1);
+  el.animate({'opacity': 0}, 'fast', 'swing', function () {
+    var newCount = parseInt(el.text(), 10) + by;
+    $('.review-box').empty().append('<strong style="opacity: 0">' + newCount + '</strong> ' + (newCount == 1 ? 'word' : 'words') + ' to review');
+    $('.review-box strong').animate({'opacity': 1}, 'fast', 'swing');
+  });
+};
 
 V.annotateLink = function (link) {
   link.children('.foreign, .familiar, .link').each(function () {

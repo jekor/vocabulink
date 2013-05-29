@@ -9,6 +9,24 @@
     });
   }
 
+  function flyToReview(wordEl, nextAction) {
+    var start = wordEl.offset();
+    var end = $('.review-box').offset();
+    // Fly the word from its element into the cloud.
+    var flier = wordEl.clone().css({'position': 'absolute'
+                                   ,'left': wordEl.position().left
+                                   ,'top': wordEl.position().top}).insertAfter(wordEl);
+    // Fly into position.
+    flier.animate({'left': '+=' + Math.round(end.left - start.left)
+                  ,'top': '+=' + Math.round(end.top - start.top)
+                  ,'font-size': '6pt'
+                  }, 'slow', 'swing', function () {
+                    // Now, pop the review count.
+                    flier.remove();
+                    nextAction();
+                  });
+  }
+
   $(function () {
     markRetained();
     $('#book a[href^="/link/"]').click(function (e) {
@@ -20,7 +38,7 @@
              ,'success': function (link) {
                 $('#book .page.right').unmask();
                 $('#book .page.right').empty().append(
-                  '<h2>' + link.learn + ' '
+                  '<h2><span class="foreign">' + link.learn + '</span>'
                   + '<button class="pronounce button light">'
                     + '<audio>'
                       + '<source src="//s.vocabulink.com/audio/pronunciation/' + link.number + '.ogg"></source>'
@@ -38,13 +56,13 @@
                   $('<p>linkword: <em>' + link.word + '</em></p>').appendTo('#book .page.right');
                   $.ajax({'url': '/link/' + link.number + '/stories'
                          ,'success': function (html) {
-                           console.log('hi');
-                           console.log(html);
                            $(html).appendTo('#book .page.right');
                           }
                          });
                 }
-                V.retainLink(link);
+                if (V.retainLink(link)) {
+                  flyToReview($('#book .page.right .foreign'), function () {V.incrReviewCount(1);});
+                }
                 markRetained();
               }
       });
