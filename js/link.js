@@ -162,7 +162,7 @@ $(function () {
     showNewStory();
     $('.linkword-story').each(function () {
       // Quick hack to allow "admin" edits.
-      if ($(this).find('.username').text() === V.memberName || V.memberName === 'jekor') {
+      if ($(this).find('.username').text() === V.member.name || V.member.name === 'jekor') {
         var sig = $(this).find('.signature');
         var editButton = $('<button class="light">Edit</button>');
         editButton.click(function () {

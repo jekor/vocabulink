@@ -1,4 +1,4 @@
-// Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
+// Copyright 2008, 2009, 2010, 2011, 2012, 2013 Chris Forno
 //
 // This file is part of Vocabulink.
 //
@@ -30,7 +30,7 @@ function createCommentBox(parentID) {
     + '</div>'
   + '</form>');
   box.attr('action', '/comment/' + parentID + '/reply');
-  box.find('.username').text(V.memberName);
+  box.find('.username').text(V.member.name);
   box.find('.avatar').attr('src', V.memberGravatar(48));
   return box.minform();
 }
