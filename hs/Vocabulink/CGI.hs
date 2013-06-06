@@ -92,7 +92,7 @@ instance Resp (SCGI Response) where
 queryVars :: Monad m => SCGIT m [(String, String)]
 queryVars = do
   queryString <- SCGI.header "QUERY_STRING"
-  return $ maybe [] (formDecode . BU.toString) queryString
+  return $ maybe [] (map (second convertLineEndings) . formDecode . BU.toString) queryString
 
 queryVar :: Monad m => String -> SCGIT m (Maybe String)
 queryVar name = lookup name `liftM` queryVars
@@ -104,7 +104,7 @@ queryVarRequired :: Monad m => String -> SCGIT m String
 queryVarRequired name = queryVarDefault name (error $ "Parameter '" ++ name ++ "' is required.")
 
 bodyVars :: Monad m => SCGIT m [(String, String)]
-bodyVars = (formDecode . BLU.toString) `liftM` SCGI.body
+bodyVars = (map (second convertLineEndings) . formDecode . BLU.toString) `liftM` SCGI.body
 
 bodyVar :: Monad m => String -> SCGIT m (Maybe String)
 bodyVar name = lookup name `liftM` bodyVars
