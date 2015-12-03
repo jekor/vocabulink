@@ -31,6 +31,7 @@ import Vocabulink.Html
 import Vocabulink.Member
 import Vocabulink.Member.Html
 import Vocabulink.Page
+import Vocabulink.Reader
 import Vocabulink.Review
 import Vocabulink.Utils
 
@@ -52,13 +53,12 @@ signup = do
   username <- bodyVarRequired "username"
   email    <- bodyVarRequired "email"
   password <- bodyVarRequired "password"
-  terms    <- bodyVar "terms"
   learned  <- fromMaybe [] `liftM` (parseLearned =<<) `liftM` bodyVar "learned"
   userAvail <- liftIO $ usernameAvailable username
   emailAvail <- liftIO $ emailAvailable email
   unless userAvail $ error "The username you chose is unavailable or invalid."
   unless emailAvail $ error "The email address you gave is unavailable or invalid."
-  when (isNothing terms) $ error "You must accept the Terms of Use."
+  readerNo <- liftM read `liftM` bodyVar "reader"
   memberNo <- liftIO $ withTransaction ?db $ do
     memberNo' <- fromJust <$> $(queryTuple
                                 "INSERT INTO member (username, password_hash) \
@@ -73,6 +73,9 @@ signup = do
               \SET email_sent = current_timestamp \
               \WHERE member_no = {memberNo'}") ?db
     return memberNo'
+  when (isJust readerNo) $ do
+    stripeToken <- bodyVarRequired "stripeToken"
+    liftIO $ purchaseReader memberNo (fromJust readerNo) stripeToken
   let m = Member { memberNumber = memberNo
                  , memberName   = username
                  , memberEmail  = Nothing
@@ -218,7 +221,7 @@ passwordResetPage hash = do
   memberNo <- $(queryTuple "SELECT member_no FROM password_reset_token \
                            \WHERE hash = {hash} AND expires > current_timestamp") ?db
   case memberNo of
-    Just _ -> return $ simplePage "Change Your Password" [] $ do
+    Just _ -> simplePage "Change Your Password" [] $ do
                 form ! action (toValue $ "/member/password/reset/" ++ hash)
                      ! method "post"
                      ! style "width: 33em; margin-left: auto; margin-right: auto; text-align: center" $ do

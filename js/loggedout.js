@@ -29,7 +29,7 @@
     return V.modal(form);
   }
 
-  V.signupForm = function () {
+  V.signupForm = function (buttonText) {
     var usernameOK = false;
     var emailOK = false;
     var form = $(
@@ -38,8 +38,7 @@
         + '<tr><td><label for="signup-username">Username:</label></td><td><input id="signup-username" type="text" name="username" required autofocus minlength="3" maxlength="32" tabindex="1"></td><td></td></tr>'
         + '<tr><td><label for="signup-email">Email:</label></td><td><input id="signup-email" type="email" name="email" required tabindex="2"></td><td></td></tr>'
         + '<tr><td><label for="signup-password">Password:</label></td><td><input id="signup-password" type="password" name="password" required tabindex="3"></td><td></td></tr>'
-        + '<tr><td colspan="2"><label for="signup-terms">I agree to the <a href="/terms-of-use" target="_blank">Terms of Use</a>.</label><input id="signup-terms" name="terms" type="checkbox" required tabindex="4"></td></tr>'
-        + '<tr><td colspan="3" style="text-align: center"><input type="submit" value="Sign Up for Free" class="faint-gradient-button green" tabindex="5"></td></tr>'
+        + '<tr><td colspan="3" style="text-align: center"><input type="submit" value="' + buttonText + '" class="faint-gradient-button green" tabindex="5"></td></tr>'
       + '</table>'
     + '</form>').minform();
     form.submit(function () {
@@ -81,12 +80,12 @@
        });
     });
     // Populate the form with any already studied links.
-    $('<input type="hidden" name="learned">').val(localStorage['learnQueue']).appendTo(form);
+    $('<input type="hidden" name="learned">').val(localStorage['retain']).appendTo(form);
     return form;
   };
 
   function signupPopup() {
-    return V.modal(V.signupForm().prepend('<h1>Join Vocabulink</h1>'));
+    return V.modal(V.signupForm('Sign Up For Free').prepend('<h1>Join Vocabulink</h1>'));
   }
 
   $(function () {
@@ -103,6 +102,11 @@
 
     // Hook up any buttons that require login to popup the login box.
     $('.login-required').live('click', function () {loginPopup(); return false;});
+
+    // Set the review count to the number of words in local storage.
+    if (!V.loggedIn()) {
+      V.setReviewCount(V.getLocal('retain', []).length);
+    }
   });
 
 })(jQuery);

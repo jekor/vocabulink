@@ -21,8 +21,8 @@
 
 module Vocabulink.Review ( newReview, scheduleNextReview
                          , reviewStats, dailyReviewStats, detailedReviewStats
-                         , learnPage, upcomingLinks
-                         , ClientLinkSync(..), syncLinks
+                         , reviewPage
+                         , syncLinks
                          ) where
 
 -- For now, we have only 1 review algorithm (SuperMemo 2).
@@ -125,79 +125,6 @@ dueForReview m learn' known' n = map (uncurryN Link) <$> $(queryTuples
   \ORDER BY added_time ASC \
   \LIMIT {n}") ?db
 
--- First, use words with existing stories. Second, use linkwords or
--- soundalikes. Finally, use whatever.
-newForReview :: E (String -> String -> Int -> IO [Link])
-newForReview learn' known' n =
-  case ?member of
-    Nothing -> do
-      storied <- map (uncurryN Link) <$> $(queryTuples
-        "SELECT l.link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
-        \FROM link l \
-        \INNER JOIN linkword_story ss ON (ss.link_no = l.link_no) \
-        \WHERE learn_lang = {learn'} AND known_lang = {known'} \
-          \AND NOT deleted \
-        \ORDER BY random() LIMIT {n}") ?db
-      if length storied >= n
-        then return storied
-        else do
-          special <- map (uncurryN Link) <$> $(queryTuples
-            "SELECT l.link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
-            \FROM link l \
-            \LEFT JOIN linkword_story ss ON (ss.link_no = l.link_no) \
-            \WHERE learn_lang = {learn'} AND known_lang = {known'} \
-              \AND ss.link_no IS NULL \
-              \AND (soundalike OR linkword IS NOT NULL) \
-              \AND NOT deleted \
-            \ORDER BY random() LIMIT {n - length storied}") ?db
-          if length storied + length special >= n
-            then return $ storied ++ special
-            else do
-              plain <- map (uncurryN Link) <$> $(queryTuples
-                "SELECT l.link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
-                \FROM link l \
-                \WHERE learn_lang = {learn'} AND known_lang = {known'} \
-                  \AND (NOT soundalike AND linkword IS NULL) \
-                  \AND NOT deleted \
-                \ORDER BY random() LIMIT {n - length storied - length special}") ?db
-              return $ storied ++ special ++ plain
-    Just m -> do
-      storied <- map (uncurryN Link) <$> $(queryTuples
-        "SELECT l.link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
-        \FROM link l \
-        \LEFT JOIN link_to_review r ON (r.link_no = l.link_no AND r.member_no = {memberNumber m}) \
-        \INNER JOIN linkword_story ss ON (ss.link_no = l.link_no) \
-        \WHERE learn_lang = {learn'} AND known_lang = {known'} \
-          \AND r.link_no IS NULL \
-          \AND NOT deleted \
-        \ORDER BY random() LIMIT {n}") ?db
-      if length storied >= n
-        then return storied
-        else do
-          special <- map (uncurryN Link) <$> $(queryTuples
-            "SELECT l.link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
-            \FROM link l \
-            \LEFT JOIN link_to_review r ON (r.link_no = l.link_no AND r.member_no = {memberNumber m}) \
-            \LEFT JOIN linkword_story ss ON (ss.link_no = l.link_no) \
-            \WHERE learn_lang = {learn'} AND known_lang = {known'} \
-              \AND r.link_no IS NULL AND ss.link_no IS NULL \
-              \AND (soundalike OR linkword IS NOT NULL) \
-              \AND NOT deleted \
-            \ORDER BY random() LIMIT {n - length storied}") ?db
-          if length storied + length special >= n
-            then return $ storied ++ special
-            else do
-              plain <- map (uncurryN Link) <$> $(queryTuples
-                "SELECT l.link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
-                \FROM link l \
-                \LEFT JOIN link_to_review r ON (r.link_no = l.link_no AND r.member_no = {memberNumber m}) \
-                \WHERE learn_lang = {learn'} AND known_lang = {known'} \
-                  \AND r.link_no IS NULL \
-                  \AND (NOT soundalike AND linkword IS NULL) \
-                  \AND NOT deleted \
-                \ORDER BY random() LIMIT {n - length storied - length special}") ?db
-              return $ storied ++ special ++ plain
-
 -- In order to determine the next review interval, the review scheduling
 -- algorithm may need to know how long the last review period was (in fact, any
 -- algorithm based on spaced reptition will). This returns the actual, not
@@ -294,51 +221,42 @@ detailedReviewStats m start end tzOffset = do
                 , "known" .= known
                 ]
 
-learnPage :: E (String -> String -> IO Html)
-learnPage learn known = do
+reviewPage :: E (String -> String -> IO Html)
+reviewPage learn known = withLoggedInMember $ \m -> do
   -- Send the initial batch of data with this page.
-  due <- liftIO $ maybe (return []) (\m -> dueForReview m learn known 10) ?member
-  new <- liftIO $ newForReview learn known (10 - length due)
+  due <- liftIO $ dueForReview m learn known 100
   let learnLang = fromMaybe "Unknown Language" $ lookup learn languages
       knownLang = fromMaybe "Unknown Language" $ lookup known languages
       vars = "var review = " ++ (BLU.toString $ encode $ map compactLinkJSON due) ++ ";\n"
-          ++ "var learn = " ++ (BLU.toString $ encode $ map compactLinkJSON new) ++ ";"
           ++ "var learnLanguage = '" ++ learnLang ++ "';"
           ++ "var knownLanguage = '" ++ knownLang ++ "';"
-  return $ stdPage ("Learning " ++ learnLang ++ " Words") [JS "learn", CSS "learn", JS "link", CSS "link", InlineJS vars] mempty $ do
-    div ! id "learn-header" $ do
+  stdPage ("Reviewing " ++ learnLang ++ " Words") [JS "review", CSS "review", JS "link", CSS "link", InlineJS vars] mempty $ do
+    div ! id "review-header" $ do
       h2 $ "Loading..."
-      when (isNothing ?member) $ div ! id "signup-invitation" $ do
-        h1 $ "Join the Free Beta"
-        sprite "icon" "wizard"
-        unordList [ "Learn More Words"
-                  , "Get Regular Review"
-                  , "Track Your Progress"
-                  ]
-        p $ do
-          "During the beta everything is free."
-          br
-          "This won't last forever. Join now."
 
-upcomingLinks :: E (String -> String -> Int -> IO Value)
-upcomingLinks learn known n = do
-  due <- maybe (return []) (\ m -> dueForReview m learn known n) ?member
-  new <- newForReview learn known (n - length due)
-  return $ object ["review" .= map compactLinkJSON due, "learn" .= map compactLinkJSON new]
-
-data ClientLinkSync = ClientLinkSync { clientRetain :: [Integer] }
-
-$(deriveFromJSON ((\(x:xs) -> (toLower x):xs) . drop 6) ''ClientLinkSync)
-
-syncLinks :: E (Member -> [Integer] -> IO Value)
+-- The client sends us a list of links that it thinks it's reviewing. We tell
+-- it if we have any it doesn't. If it has some we don't, then we record them
+-- server-side.
+syncLinks :: E (Member -> [Integer] -> IO ([Integer], [Integer]))
 syncLinks m retained = do
   reviewing <- reviewingLinks
-  forM_ (retained \\ (map linkNumber reviewing)) $ newReview m
-  let unretained = map compactLink $ filter (\ l -> not $ linkNumber l `elem` retained) reviewing
-  return $ object ["unretained" .= unretained]
- where compactLink l = (show $ linkNumber l, ((linkLearn l, linkLearnLang l), (linkKnown l, linkKnownLang l), linkSoundalike l, linkWord l))
-       reviewingLinks = map (uncurryN Link) <$> $(queryTuples
-         "SELECT l.link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
+  deleted <- reviewingDeleted
+  missingLinks <- catMaybes `liftM` (forM (traceShow' $ (retained \\ reviewing) \\ deleted) $ \linkNo -> do
+    catch (newReview m linkNo >> return Nothing)
+          (\(PGException code _) -> return $ case code of
+                                               "23503" -> Just linkNo
+                                               _ -> Nothing))
+  let toDelete = missingLinks ++ (retained `intersect` deleted)
+  return (reviewing \\ retained, toDelete)
+ where reviewingLinks = $(queryTuples
+         "SELECT l.link_no \
          \FROM link_to_review \
          \INNER JOIN link l USING (link_no) \
-         \WHERE member_no = {memberNumber m}") ?db
+         \WHERE member_no = {memberNumber m} \
+           \AND NOT deleted") ?db
+       reviewingDeleted = $(queryTuples
+         "SELECT l.link_no \
+         \FROM link_to_review \
+         \INNER JOIN link l USING (link_no) \
+         \WHERE member_no = {memberNumber m} \
+           \AND deleted") ?db

@@ -1,9 +1,9 @@
 (function ($) {
   function markRetained() {
-    var links = V.getLocal('retain', {});
+    var retain = V.getLocal('retain', []);
     $('#book .page.left a').each(function (_, el) {
-      var linkNumber = $(el).attr('href').split('/').pop();
-      if (typeof links[linkNumber] !== 'undefined') {
+      var linkNumber = parseInt($(el).attr('href').split('/').pop(), 10);
+      if ($.inArray(linkNumber, retain) !== -1) {
         $(el).addClass('retained');
       }
     });
@@ -27,44 +27,95 @@
                   });
   }
 
+  function tourReader() {
+      $(this).closest('.tip').remove();
+      var tip = $('<div class="tip">'
+                  + '<p>This is the ' + learnLanguage + ' word you\'re going to learn. You can click the speaker icon next to it to hear its pronunciation.</p>'
+                  + '<p style="text-align: right"><button class="button dark">Next: Translation</button></p>'
+                + '</div>').css({'max-width': '16em'});
+      $('button', tip).click(function () {
+        $(this).closest('.tip').remove();
+        var tip = $('<div class="tip">'
+                    + '<p>This is the ' + knownLanguage + ' translation. It\'s what you\'re going to try to remember (you will be quizzed on it later).</p>'
+                    + '<p style="text-align: right"><button class="button dark">Next: Linkword</button></p>'
+                  + '</div>').css({'max-width': '16em'});
+        $('button', tip).click(function () {
+          $(this).closest('.tip').remove();
+          var tip = $('<div class="tip">'
+                      + '<p>And this is the "linkword". It\'s a word or phrase in ' + knownLanguage + ' that sounds a little like the ' + learnLanguage + ' word. With a story, it\'s going to link the sound of the ' + learnLanguage + ' word to its meaning.</p>'
+                      + '<p style="text-align: right"><button class="button dark">Next: Stories</button></p>'
+                    + '</div>').css({'max-width': '20em'});
+          $('button', tip).click(function () {
+            $(this).closest('.tip').remove();
+            var tip = $('<div class="tip">'
+                        + '<p>These are the linkword stories. Read the story and notice that it uses both the linkword and the translation. Why read the story? Because your brain remembers stories better than isolated words.</p>'
+                        + '<p style="text-align: right"><button class="button dark">Next: Finish</button></p>'
+                      + '</div>').css({'max-width': '20em'});
+            $('button', tip).click(function () {
+              $(this).closest('.tip').remove();
+              var tip = $('<div class="tip">'
+                          + '<p>Click this button once you think you\'ve committed this word to memory, and we\'ll move on to the next word.</p>'
+                        + '</div>').css({'max-width': '20em'});
+              $('#confirm').one('click', function () {
+                $('.tip').remove();
+              });
+              tooltipBelow(tip, $('#confirm'));
+            });
+            tooltipAbove(tip, $('.linkword-story-container:first'));
+            return false;
+          });
+          tooltipBelow(tip, $('h1 .link'));
+          return false;
+        });
+        tooltipBelow(tip, $('h1.link .familiar'));
+        return false;
+      });
+      tooltipBelow(tip, $('h1.link .foreign'));
+  }
+
+  function tooltipBelow(source, target) {
+    var pos = target.position();
+    var width = target.outerWidth();
+    target.after(source);
+    var x = pos.left + (width - source.outerWidth()) / 2;
+    var y = pos.top + target.outerHeight() + 10;
+    source.css({'position': 'absolute', 'top': y, 'left': x});
+    $('<div class="nib top"></div>').prependTo(source).css({'position': 'absolute', 'top': -14, 'left': (source.outerWidth() - 14) / 2});
+    $('<a href="" class="close">x</a>').prependTo(source).click(function () {
+      source.remove();
+      return false;
+    });
+  }
+
+  function tooltipAbove(source, target) {
+    var pos = target.position();
+    var width = target.outerWidth();
+    target.after(source);
+    var x = pos.left + (width - source.outerWidth()) / 2;
+    var y = pos.top - 10 - source.outerHeight();
+    source.css({'position': 'absolute', 'top': y, 'left': x});
+    $('<div class="nib bottom"></div>').prependTo(source).css({'position': 'absolute', 'bottom': -14, 'left': (source.outerWidth() - 14) / 2});
+    $('<a href="" class="close">x</a>').prependTo(source).click(function () {
+      source.remove();
+      return false;
+    });
+  }
+
   $(function () {
     markRetained();
     $('#book a[href^="/link/"]').click(function (e) {
       e.preventDefault();
       $('#book .page.right').mask('Loading...');
       var linkEl = $(this);
-      $.ajax({'url': linkEl.attr('href')
-             ,'dataType': 'json'
-             ,'success': function (link) {
-                $('#book .page.right').unmask();
-                $('#book .page.right').empty().append(
-                  '<h2><span class="foreign">' + link.learn + '</span>'
-                  + '<button class="pronounce button light">'
-                    + '<audio>'
-                      + '<source src="//s.vocabulink.com/audio/pronunciation/' + link.number + '.ogg"></source>'
-                      + '<source src="//s.vocabulink.com/audio/pronunciation/' + link.number + '.mp3"></source>'
-                    + '</audio>'
-                    + '<i class="sprite sprite-icon-audio"></i>'
-                  + '</button>'
-                + '</h2>'
-                + '<h3>' + link.known + '</h3>'
-                );
-                if (link.soundalike) {
-                  $('<p>soundalike</p>').appendTo('#book .page.right');
-                }
-                if (link.word) {
-                  $('<p>linkword: <em>' + link.word + '</em></p>').appendTo('#book .page.right');
-                  $.ajax({'url': '/link/' + link.number + '/stories'
-                         ,'success': function (html) {
-                           $(html).appendTo('#book .page.right');
-                          }
-                         });
-                }
-                if (V.retainLink(link)) {
-                  flyToReview($('#book .page.right .foreign'), function () {V.incrReviewCount(1);});
-                }
-                markRetained();
-              }
+      var linkNumber = parseInt(linkEl.attr('href').split('/').pop(), 10);
+      $.ajax(linkEl.attr('href') + '/compact')
+       .done(function (html) {
+         $('#book .page.right').unmask();
+         $('#book .page.right').empty().append($(html));
+         if (V.retainLink(linkNumber)) {
+           flyToReview($('#book .page.right .learn'), function () {V.incrReviewCount(1);});
+         }
+         markRetained();
       });
     });
   });

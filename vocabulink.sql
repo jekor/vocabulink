@@ -105,11 +105,13 @@ CREATE TABLE reader (
        title TEXT NOT NULL,
        lang CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE NOT NULL,
        description TEXT NOT NULL,
+       price INTEGER NOT NULL,
        UNIQUE (short_name, lang)
 );
 COMMENT ON COLUMN reader.short_name IS 'This will be used in the URL.';
 COMMENT ON COLUMN reader.title IS 'Titles should be written in their native language.';
 COMMENT ON COLUMN reader.description IS 'A description in markdown format.';
+COMMENT ON COLUMN reader.price IS 'The price of the reader in cents.';
 
 CREATE TABLE reader_page (
        reader_no INTEGER REFERENCES reader (reader_no) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
@@ -118,6 +120,20 @@ CREATE TABLE reader_page (
        PRIMARY KEY (reader_no, page_no)
 );
 COMMENT ON TABLE reader_page IS 'Readers are organized into pages. Page length is determined by how many new words are introduced or by how many new concepts are introduced. Basically, a page should be readable by the learner in a single session.';
+
+CREATE TABLE member_reader (
+       member_no INTEGER REFERENCES member (member_no) ON DELETE CASCADE NOT NULL,
+       reader_no INTEGER REFERENCES reader (reader_no) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+       page_no INTEGER NOT NULL,
+       PRIMARY KEY (member_no, reader_no)
+);
+COMMENT ON TABLE member_reader IS 'Access is restricted to readers (i.e. they are available for purchase). This indicates access to a reader and also indicates their current position (bookmark).';
+
+CREATE TABLE member_stripe_charge (
+       member_no INTEGER REFERENCES member (member_no) ON DELETE CASCADE NOT NULL,
+       charge_id TEXT NOT NULL,
+       charge_time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp
+);
 
 -- Articles: Essays, Blog Posts, Disclaimers, etc. --
 
@@ -218,28 +234,6 @@ END; $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER add_root_comment AFTER INSERT ON link FOR EACH ROW
 EXECUTE PROCEDURE create_link_root_comment();
-
--- What are the most popular languages on vocabulink? Count the number of times
--- the language appears on either side of a link to find out.
-CREATE VIEW language_frequency AS
-SELECT lang.abbr, lang.name, SUM(t.freq) AS freq FROM
-((SELECT origin_language AS abbr, COUNT(*) AS freq
- FROM link
- WHERE NOT deleted
- GROUP BY origin_language) UNION
-(SELECT destination_language AS abbr, COUNT(*) AS freq
- FROM link
- WHERE NOT deleted
- GROUP BY destination_language)) AS t
-INNER JOIN language lang USING (abbr)
-GROUP BY lang.abbr, lang.name;
-
-CREATE VIEW language_frequency_to_english AS
-SELECT lang.abbr, lang.name, COUNT(*) AS freq
-FROM link
-INNER JOIN language lang ON (lang.abbr = link.origin_language)
-WHERE NOT deleted AND destination_language = 'en'
-GROUP BY lang.abbr, lang.name;
 
 CREATE TABLE language (
        abbr CHARACTER VARYING (3) PRIMARY KEY,

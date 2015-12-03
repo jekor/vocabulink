@@ -22,6 +22,7 @@
 
 module Vocabulink.Env ( E
                       , mainDir, dbPassword, compileYear, languages
+                      , stripeAPIKey
                       , withVerifiedMember, withLoggedInMember
                       ) where
 
@@ -32,15 +33,17 @@ import qualified Data.ByteString.Lazy.UTF8 as BLU
 import Database.TemplatePG.Protocol (executeSimpleQuery)
 import Database.TemplatePG.SQL (thConnection)
 import Language.Haskell.TH.Syntax (runIO, Exp(..), Lit(..))
+import System.Environment (getEnv)
+import System.IO (IOMode(..), withFile, hGetLine)
 
-type E a = (?db::Handle, ?member::Maybe Member, ?numDue::Integer) => a
+type E a = (?db::Handle, ?member::Maybe Member) => a
 
 mainDir :: String
 mainDir = "/home/jekor/vocabulink"
 
 -- for connecting to PostgreSQL
 dbPassword :: String
-dbPassword = $((LitE . StringL) `liftM` runIO (Prelude.readFile "db-password"))
+dbPassword = $((LitE . StringL) `liftM` runIO (getEnv "BUILD_ENV" >>= \env -> withFile ("db-password-" ++ env) ReadMode hGetLine))
 
 compileYear :: Int
 compileYear = $((LitE . IntegerL) `liftM` runIO currentYear)
@@ -51,6 +54,9 @@ languages = $(runIO (do h <- thConnection
                         return $ ListE $ map (\[Just abbr, Just name] ->
                                                  TupE [ LitE $ StringL $ BLU.toString abbr
                                                       , LitE $ StringL $ BLU.toString name]) res))
+
+stripeAPIKey :: String
+stripeAPIKey = $((LitE . StringL) `liftM` runIO (getEnv "BUILD_ENV" >>= \env -> withFile ("stripe-api-key-" ++ env) ReadMode hGetLine))
 
 -- | Only perform the given action if the user is authenticated and has
 -- verified their email address. This provides a ``logged out default'' of

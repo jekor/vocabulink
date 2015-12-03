@@ -43,7 +43,7 @@ import Vocabulink.Article
 import Vocabulink.CGI
 import Vocabulink.Comment
 import Vocabulink.Env
-import Vocabulink.Html hiding (method)
+import Vocabulink.Html hiding (method, dl)
 import Vocabulink.Link
 import Vocabulink.Member
 import Vocabulink.Member.Html
@@ -58,18 +58,15 @@ import Prelude hiding (div, span, id, words)
 import Control.Concurrent (forkIO)
 import Control.Exception (finally, SomeException)
 import Control.Monad (forever)
-import Control.Monad.CatchIO (MonadCatchIO(..))
-import Control.Monad.State (State, runState, get, put)
 import qualified Data.ByteString.UTF8 as BU
 import qualified Data.ByteString.Lazy.UTF8 as BLU
-import Data.List (find, genericLength)
+import Data.List (find)
 import Database.TemplatePG (pgConnect)
 import Network (PortID(..), accept)
-import Network.Socket (listen, Socket(..), getAddrInfo, socket, Family(..), SocketType(..), defaultProtocol, bind, addrAddress, SocketOption(..), setSocketOption)
+import Network.Socket (listen, Socket(..), getAddrInfo, socket, Family(..), SocketType(..), defaultProtocol, bindSocket, addrAddress, SocketOption(..), setSocketOption)
 import qualified Network.SCGI as SCGI
 import Network.URI (unEscapeString)
 import System.IO (hClose)
-import System.Random (StdGen, Random, getStdGen, setStdGen, randomR)
 import Web.Cookie (parseCookies)
 
 main :: IO ()
@@ -85,7 +82,7 @@ main = do
          addrs <- getAddrInfo Nothing (Just "127.0.0.1") (Just port)
          s <- socket AF_INET Stream defaultProtocol
          setSocketOption s ReuseAddr 1
-         bind s $ addrAddress $ head addrs
+         bindSocket s $ addrAddress $ head addrs
          listen s 5
          return s
        handleError :: SomeException -> SCGI Response
@@ -95,22 +92,11 @@ handleRequest :: SCGI Response
 handleRequest = do
   db <- liftIO $ pgConnect "localhost" (PortNumber 5432) "vocabulink" "vocabulink" dbPassword
   member <- loggedIn db
-  -- This is here to avoid IO in the Page module.
-  due <- case member of
-           Nothing -> return 0
-           Just m -> liftIO $ (fromJust . fromJust) `liftM` $(queryTuple
-                       "SELECT COUNT(*) FROM link_to_review \
-                       \INNER JOIN link USING (link_no) \
-                       \WHERE member_no = {memberNumber m} \
-                         \AND learn_lang = 'es' AND known_lang = 'en' \
-                         \AND current_timestamp > target_time \
-                         \AND NOT deleted") db
   method' <- SCGI.method
   path' <- SCGI.path
   case (method', path') of
     (Just method, Just path) -> let ?db = db
-                                    ?member = member
-                                    ?numDue = due in dispatch' (BU.toString method) (pathList $ BU.toString path)
+                                    ?member = member in dispatch' (BU.toString method) (pathList $ BU.toString path)
     _ -> error "Missing request method or path."
  where loggedIn db = do
          auth <- (lookup "auth" . parseCookies =<<) `liftM` SCGI.header "HTTP_COOKIE"
@@ -239,6 +225,11 @@ dispatch meth ("link":x:part) =
                      (("application/json":_), Just link) -> toResponse $ toJSON link
                      (("text/html":_), Just link) -> toResponse $ linkPage link
                      _ -> return notFound
+                 ("GET", ["compact"]) -> do
+                   link' <- liftIO $ linkDetails n
+                   case link' of
+                     Just link -> toResponse $ compactLinkPage link
+                     Nothing -> return notFound
                  ("GET", ["stories"]) -> do
                    -- TODO: Support HTML/JSON output based on content-type negotiation.
                    stories <- liftIO $ linkStories n
@@ -264,7 +255,12 @@ dispatch "GET" ["links"] = do
 
 -- Readers
 
-dispatch "GET" ["reader", lang, name'] = toResponse $ readerTitlePage lang name'
+dispatch "GET" ["reader", lang, name', "purchase"] = toResponse $ readerPurchasePage lang name'
+dispatch "POST" ["reader", _, _, "purchase"] = withLoggedInMember $ \m -> do
+  readerNo <- read `liftM` bodyVarRequired "reader"
+  stripeToken <- bodyVarRequired "stripeToken"
+  liftIO $ purchaseReader (memberNumber m) readerNo stripeToken
+  bounce MsgSuccess "Thank you for your purchase."
 dispatch "GET" ["reader", lang, name', pg] = case readMaybe pg of
                                                Nothing -> return notFound
                                                Just n  -> toResponse $ readerPage lang name' n
@@ -286,36 +282,29 @@ dispatch "GET" ["search"] = do
 
 dispatch "GET" ["languages"] = permRedirect "/links"
 
--- Learning
-
-dispatch "GET" ["learn"] = do
-  learn <- queryVarRequired "learn"
-  known <- queryVarRequired "known"
-  case (lookup learn languages, lookup known languages) of
-    (Just _, Just _) -> toResponse $ learnPage learn known
-    _ -> return notFound
-dispatch "GET" ["learn", "upcoming"] = do
-  learn <- queryVarRequired "learn"
-  known <- queryVarRequired "known"
-  n <- read `liftM` queryVarRequired "n"
-  toResponse $ upcomingLinks learn known n
-
--- Link Review
+-- Review
 
 -- Members review their links by interacting with the site in a vaguely
 -- REST-ish way. The intent behind this is that in the future they will be able
 -- to review their links through different means such as a desktop program or a
 -- phone application.
 
+-- GET  /review       → review page (app)
 -- PUT  /review/n     → add a link for review
 -- GET  /review/next  → retrieve the next links for review
--- GET  /review/upcoming?until=timestamp → retrieve upcoming links for review
 -- POST /review/n     → mark link as reviewed
 
 -- (where n is the link number)
 
 -- Reviewing links is one of the only things that logged-in-but-unverified
 -- members are allowed to do.
+
+dispatch "GET" ["review"] = do
+  learn <- queryVarRequired "learn"
+  known <- queryVarRequired "known"
+  case (lookup learn languages, lookup known languages) of
+    (Just _, Just _) -> toResponse $ reviewPage learn known
+    _ -> return notFound
 
 dispatch meth ("review":rpath) = do
   case ?member of
@@ -338,8 +327,8 @@ dispatch meth ("review":rpath) = do
         ("POST", ["sync"]) -> do
           clientSync <- bodyJSON
           case clientSync of
-            Nothing -> error "Invalid sync object."
-            Just (ClientLinkSync retain) -> toResponse $ syncLinks m retain
+            Just retained -> toResponse . toJSON =<< liftIO (syncLinks m retained)
+            _ -> error "Invalid sync object."
         ("POST", [x]) ->
           case readMaybe x of
             Nothing -> error "Link number must be an integer"
@@ -442,110 +431,72 @@ dispatch _ _ = return notFound
 
 frontPage :: E (IO Html)
 frontPage = do
-  let limit = 40
-  words <- case ?member of
-    -- Logged in? Use the words the person has learned.
-    Just m -> $(queryTuples
-      "SELECT learn, link_no FROM link \
-      \WHERE NOT deleted AND link_no IN \
-       \(SELECT DISTINCT link_no FROM link_to_review \
-        \WHERE member_no = {memberNumber m}) \
-        \ORDER BY random() LIMIT {limit}") ?db
-    -- Not logged in? Use words with stories.
-    Nothing -> $(queryTuples
-      "SELECT learn, link_no FROM link \
-      \WHERE NOT deleted AND link_no IN \
-       \(SELECT DISTINCT link_no FROM linkword_story) \
-        \ORDER BY random() LIMIT {limit}") ?db
-  cloud <- wordCloud words 261 248 12 32 6
-  nEsLinks <- fromJust . fromJust <$> $(queryTuple "SELECT COUNT(*) FROM link WHERE learn_lang = 'es' AND known_lang = 'en' AND NOT deleted") ?db
-  nReviews <- fromJust . fromJust <$> $(queryTuple "SELECT COUNT(*) FROM link_review") ?db
-  nLinkwords <- fromJust . fromJust <$> $(queryTuple "SELECT COUNT(*) FROM link WHERE linkword IS NOT NULL AND NOT deleted") ?db
-  nStories <- fromJust . fromJust <$> $(queryTuple "SELECT COUNT(*) FROM linkword_story INNER JOIN link USING (link_no) WHERE NOT deleted") ?db
-  return $ stdPage "Learn Vocabulary Fast with Linkword Mnemonics" [CSS "front"] mempty $
-    mconcat [
-      div ! class_ "top" $ do
-        div ! id "word-cloud" $ do
-          cloud
-        div ! id "intro" $ do
-          h1 "Learn Vocabulary—Fast"
-          p $ do
-            toMarkup $ "Learn foreign words with " ++ prettyPrint (nLinkwords::Integer) ++ " "
-            a ! href "article/how-do-linkword-mnemonics-work" $ "linkword mnemonics"
-            toMarkup $ " and " ++ prettyPrint (nStories::Integer) ++ " accompanying stories."
-          p $ do
-            "Retain the words through "
-            a ! href "article/how-does-spaced-repetition-work" $ "spaced repetition"
-            toMarkup $ " (" ++ prettyPrint (nReviews::Integer) ++ " reviews to-date)."
-          p $ do
-            toMarkup $ prettyPrint (nEsLinks::Integer) ++ " of the "
-            a ! href "article/why-study-words-in-order-of-frequency" $ "most common"
-            " Spanish words await you. More mnemonics and stories are being added weekly. The service is free."
-          p ! id "try-now" $ do
-            a ! href "/learn?learn=es&known=en" ! class_ "faint-gradient-button green" $ do
-              "Get Started"
-              br
-              "with Spanish" ]
-
--- Generate a cloud of words from links in the database.
-
-data WordStyle = WordStyle (Float, Float) (Float, Float) Int Int
-  deriving (Show, Eq)
-
-wordCloud :: [(String, Integer)] -> Int -> Int -> Int -> Int -> Int -> IO Html
-wordCloud words width' height' fontMin fontMax numClasses = do
-  gen <- getStdGen
-  let (styles, (newGen, _)) = runState (mapM (wordStyle . fst) words) (gen, [])
-  setStdGen newGen
-  return $ mconcat $ catMaybes $ zipWith (\ w s -> liftM (wordTag w) s) words styles
- where wordTag :: (String, Integer) -> WordStyle -> Html
-       wordTag (word, linkNo) (WordStyle (x, y) _ classNum fontSize) =
-         let style' = "font-size: " ++ show fontSize ++ "px; "
-                   ++ "left: " ++ show x ++ "%; " ++ "top: " ++ show y ++ "%;" in
-         a ! href (toValue $ "/link/" ++ show linkNo)
-           ! class_ (toValue $ "class-" ++ show classNum)
-           ! style (toValue style')
-           $ toMarkup word
-       wordStyle :: String -> State (StdGen, [WordStyle]) (Maybe WordStyle)
-       wordStyle word = do
-         let fontRange = fontMax - fontMin
-         fontSize <- (\ s -> fontMax - round (logBase 1.15 ((s * (1.15 ^ fontRange)::Float) + 1))) <$> getRandomR 0.0 1.0
-         let widthP  = (100.0 / fromIntegral width')  * genericLength word * fromIntegral fontSize
-             heightP = (100.0 / fromIntegral height') * fromIntegral fontSize
-         x        <- getRandomR 0 (max (100 - widthP) 1)
-         y        <- getRandomR 0 (max (100 - heightP) 1)
-         class'   <- getRandomR 1 numClasses
-         (gen, prev) <- get
-         let spiral' = spiral 30.0 (x, y)
-             styles  = filter inBounds $ map (\ pos -> WordStyle pos (widthP, heightP) class' fontSize) spiral'
-             style'  = find (\ s -> not $ any (`overlap` s) prev) styles
-         case style' of
-           Nothing -> return Nothing
-           Just style'' -> do
-             put (gen, style'':prev)
-             return $ Just style''
-       getRandomR :: Random a => a -> a -> State (StdGen, [WordStyle]) a
-       getRandomR min' max' = do
-         (gen, styles) <- get
-         let (n', newGen) = randomR (min', max') gen
-         put (newGen, styles)
-         return n'
-       inBounds :: WordStyle -> Bool
-       inBounds (WordStyle (x, y) (w, h) _ _) = x >= 0 && y >= 0 && x + w <= 100 && y + h <= 100
-       overlap :: WordStyle -> WordStyle -> Bool
-       -- We can't really be certain of when a word is overlapping,
-       -- since the words will be rendered by the user's browser.
-       -- However, we can make a guess.
-       overlap (WordStyle (x1, y1) (w1', h1') _ _) (WordStyle (x2, y2) (w2', h2') _ _) =
-         let hInter = (x2 > x1 && x2 < x1 + w1') || (x2 + w2' > x1 && x2 + w2' < x1 + w1') || (x2 < x1 && x2 + w2' > x1 + w1')
-             vInter = (y2 > y1 && y2 < y1 + h1') || (y2 + h2' > y1 && y2 + h2' < y1 + h1') || (y2 < y1 && y2 + h2' > y1 + h1') in
-         hInter && vInter
-       spiral :: Float -> (Float, Float) -> [(Float, Float)]
-       spiral maxTheta = spiral' 0.0
-        where spiral' theta (x, y) =
-                if theta > maxTheta
-                  then []
-                  else let r  = theta * 3
-                           x' = (r * cos theta) + x
-                           y' = (r * sin theta) + y in
-                       (x', y') : spiral' (theta + 0.1) (x, y)
+  mainButton <- case ?member of
+                  Nothing -> return buyButton
+                  Just m -> do
+                    row <- $(queryTuple "SELECT page_no \
+                                        \FROM member_reader \
+                                        \INNER JOIN reader USING (reader_no) \
+                                        \WHERE short_name = 'para-bailar' AND lang = 'es' AND member_no = {memberNumber m}") ?db
+                    return $ case row of
+                      Nothing -> buyButton
+                      Just pageNo -> div ! class_ "button_buy" $ do
+                                       a ! href (toValue $ "/reader/es/para-bailar/" ++ show pageNo) ! class_ "gradient" ! title "Continue Reading" $ do
+                                         span ! class_ "button_price" $ "Continue"
+                                         span ! class_ "button_text" $ "Reading"
+  stdPage ("Learn Spanish Through Fiction - Vocabulink") [] (do
+    meta ! name "viewport" ! content "width=device-width, initial-scale=1.0, user-scalable=no"
+    preEscapedToMarkup ("<!--Fixes for Internet Explorer CSS3 and HTML5--> \
+                        \<!--[if gte IE 9]> \
+                        \<style type=\"text/css\"> \
+                        \  .gradient { filter: none!important;} \
+                        \</style> \
+                        \<![endif]--> \
+                        \<!--[if lt IE 9]> \
+                        \<script> \
+                        \  'article aside footer header nav section time'.replace(/\\w+/g,function(n){document.createElement(n)}) \
+                        \</script> \
+                        \<![endif]--> \
+                        \<link rel=\"stylesheet\" href=\"//s.vocabulink.com/css/off-the-shelf/style.css\" media=\"screen, projection\"> \
+                        \<!--[if lt IE 9]> \
+                        \<link rel=\"stylesheet\" href=\"//s.vocabulink.com/css/off-the-shelf/style_ie8.css\" media=\"screen, projection\"> \
+                        \<![endif]--> \
+                        \<link href=\"//netdna.bootstrapcdn.com/font-awesome/3.2.0/css/font-awesome.css\" rel=\"stylesheet\">"::String)) $ do
+      section ! id "banner" $ do
+        div ! class_ "row" $ do
+          div ! id "shelf" ! class_ "one_half" $ do
+            img ! alt "book cover" ! width "331" ! height "497" ! src "//s.vocabulink.com/img/reader/es/para-bailar.jpg"
+          div ! class_ "one_half last" $ do
+            hgroup $ do
+              h1 $ "Learn Spanish Through Fiction"
+              h2 ! class_ "subheader" $ "Read real everyday Spanish. Learn new words in context. Designed for beginners, written for adults."
+            p $ "Learning doesn't have to be boring. Stories have entertained and educated for centuries. This book is a collection of stories that will teach you some of the basics of Spanish."
+            p $ "This isn't like any language reader you've seen before. We've designed it by mixing 4 modern accelerated language learning techniques."
+            mainButton
+      article $ do
+        div ! id "main_content" $ do
+          section ! id "features" $ do
+            div ! class_ "row" $ do
+              h2 ! class_ "section_title" $ do
+                span $ "Accelerated Learning Features"
+              ul $ do
+                li ! class_ "one_half" $ do
+                  i ! class_ "icon-road icon-4x" $ mempty
+                  h4 "Gradual Progression"
+                  p "Have you ever tried reading Spanish but just go frustrated and gave up? Our stories start with very simple sentences. Then, gradually over time we introduce new words and new grammar."
+                li ! class_ "one_half last" $ do
+                  i ! class_ "icon-magic icon-4x" $ mempty
+                  h4 "Linkword Mnemonics"
+                  p "Instead of staring at a list of vocabulary or writing words out 100 times, wouldn't it be nice to have a trick to remember each word by? We thought so too. That's why we've included mnemonics for each word we introduce you to."
+                li ! class_ "one_half" $ do
+                  i ! class_ "icon-sort-by-attributes-alt icon-4x" $ mempty
+                  h4 "Words Selected by Frequency"
+                  p "Why waste time learning words you're rarely, if ever, going to use? We analyzed how frequently words occur in written and spoken Spanish and use only words among the most common 3,000."
+                li ! class_ "one_half last" $ do
+                  i ! class_ "icon-bar-chart icon-4x" $ mempty
+                  h4 "Spaced Repetition"
+                  p "Flashcards are great, but we have better technology today. We use a special algorithm to schedule optimal times for you to review each word that you learn. This algorithm adapts to your memory and the difficulty of each word."
+ where buyButton = div ! class_ "button_buy" $ do
+                     a ! href "/reader/es/para-bailar/1" ! class_ "gradient" ! title "Preview for Free" $ do
+                       span ! class_ "button_price" $ "Preview"
+                       span ! class_ "button_text" $ "for Free"

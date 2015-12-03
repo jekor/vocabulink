@@ -86,34 +86,50 @@ V.verificationPopup = function () {
 };
 
 V.getLocal = function (key, def) {
-  var val = localStorage.getItem(key);
-  return val ? JSON.parse(val) : def;
+  var str = localStorage.getItem(key);
+  var val = str ? JSON.parse(str) : def;
+  // If retain is in the old format (an object), update it (a simple array of link numbers).
+  if (key === 'retain' && $.type(val) === 'object') {
+    val = $.map(Object.keys(val), function (k) {return parseInt(k, 10);});
+    val = val.filter(function (v) {return !isNaN(v);});
+  }
+  return val;
 }
 
 V.setLocal = function (key, val) {
   localStorage[key] = JSON.stringify(val);
 }
 
-V.pushLocal = function (key, v) {
-  V.setLocal(key, V.getLocal(key, []).push(v));
-}
-
-// Returns true if a key was overwritten and false otherwise.
-V.hSetLocal = function (key, k, v) {
-  var h = V.getLocal(key, {});
-  var exists = typeof h[k] !== 'undefined';
-  h[k] = v;
-  V.setLocal(key, h);
-  return exists;
+// Returns true if the value was inserted or false otherwise (if it already existed in the list).
+V.insertLocal = function (key, v) {
+  var val = V.getLocal(key, []);
+  if ($.inArray(v, val) === -1) {
+    val.push(v);
+    V.setLocal(key, val);
+    return true;
+  } else {
+    return false;
+  }
 }
 
 V.displayMessage = function () {
   // Check for messages from the server.
   if ($.cookie('msg')) {
     var msg = JSON.parse($.cookie('msg'));
-    toast(msg.type, msg.msg, true);
+    if (typeof msg === 'object' && typeof msg.type === 'string' && typeof msg.msg === 'string') {
+      toast(msg.type, msg.msg, true);
+    }
     $.removeCookie('msg', {'path': '/', 'domain': 'www.vocabulink.com'});
   }
+};
+
+V.setMessage = function (type, msg) {
+  $.cookie('msg', JSON.stringify({'type': type, 'msg': msg}), {'path': '/', 'domain': 'www.vocabulink.com'});
+};
+
+V.bounce = function (type, msg) {
+  V.setMessage(type, msg);
+  window.location = document.referrer ? document.referrer : 'http://www.vocabulink.com';
 };
 
 // initialization for every page
@@ -138,6 +154,18 @@ $(function () {
   $('#pronounce, button.pronounce').live('click', function () {
     $(this).find('audio')[0].play();
     return false;
+  });
+
+  $('.review-box').click(function () {
+    if (V.loggedIn()) {
+      if (V.getReviewCount == 0) {
+        toast('notice', "You don't have any words waiting for review.", false);
+        return false;
+      }
+    } else {
+      toast('notice', "Please log in or sign up to review the words you've learned.", false);
+      return false;
+    }
   });
 });
 

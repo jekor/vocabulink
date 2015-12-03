@@ -15,8 +15,11 @@
   padding: 3em
   margin: 0 0 30px 0
   border: #C9C9C9 solid 1px
+  overflow: auto
   > *:last-child
     margin-bottom: 3em
+  h1
+    margin-top: 0
   &.left
     border-right: #A9A9A9 solid 1px
     background: linear-gradient(left, #DEDEDE, #FFFFFF 15%, #FFFFFF 86%, #DEDEDE 96%, #C9C9C9)
@@ -43,7 +46,17 @@
       -ms-transform: skew(-15deg) rotate(-6deg)
       -o-transform: skew(-15deg) rotate(-6deg)
       transform: skew(-15deg) rotate(-6deg)
+    .footnotes
+      ol
+        list-style-type: decimal
+        margin-left: 1.75em
+        font-size: 0.875em        
   &.right
+    .sprite-icon-wizard
+      float: left
+      margin:
+        right: 1em
+        bottom: 1em
     > *:first-child
       margin-top: 0
     overflow: auto
@@ -57,6 +70,7 @@
     h2
       font-size: 18pt
       margin-bottom: 0.66em
+      text-align: center
     &:after
       content: ''
       z-index: -1
@@ -109,3 +123,13 @@ a.pager
 
 a.retained
   color: #434343
+
+#pronounce, button.pronounce
+  margin:
+    left: 10px
+  padding:
+    left: 3px
+    right: 3px
+
+.sprite-icon-audio
+  vertical-align: middle

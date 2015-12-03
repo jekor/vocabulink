@@ -31,12 +31,15 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , escapeURIString', addToQueryString
                         , gravatarHash
                         , lowercase
+                        , traceShow'
                         {- Control.Applicative -}
                         , pure, (<$>), (<*>)
                         {- Control.Arrow -}
                         , first, second, (***)
                         {- Control.Monad -}
                         , liftM, Control.Monad.join, msum, when, unless, replicateM, mzero, forM, forM_, (>=>), (<=<)
+                        {- Control.Monad.CatchIO -}
+                        , MonadCatchIO(..)
                         {- Control.Monad.Trans -}
                         , liftIO, MonadIO
                         {- Data.Aeson -}
@@ -56,7 +59,7 @@ module Vocabulink.Utils ( (?), (<$$>)
                         {- Data.Either.Utils -}
                         , forceEither
                         {- Data.List -}
-                        , intercalate, (\\), nub
+                        , intercalate, intersperse, (\\), intersect, nub
                         {- Data.List.Split -}
                         , splitOn, splitEvery
                         {- Data.Maybe -}
@@ -72,9 +75,9 @@ module Vocabulink.Utils ( (?), (<$$>)
                         {- Data.Tuple.Curry -}
                         , uncurryN
                         {- Database.TemplatePG -}
-                        , withTransaction, rollback, execute, queryTuple, queryTuples, insertIgnore
+                        , withTransaction, rollback, execute, queryTuple, queryTuples, insertIgnore, PGException(..)
                         {- Debug.Trace -}
-                        , trace
+                        , trace, traceShow
                         {- System.FilePath -}
                         , (</>), (<.>), takeExtension, replaceExtension, takeBaseName, takeFileName
                         {- System.IO -}
@@ -92,6 +95,7 @@ module Vocabulink.Utils ( (?), (<$$>)
 import Control.Applicative (pure, (<$>), (<*>))
 import Control.Arrow (first, second, (***))
 import Control.Monad
+import Control.Monad.CatchIO (MonadCatchIO(..))
 import Control.Monad.Trans (liftIO, MonadIO)
 import Data.Aeson (Value(..), object, (.=), ToJSON(..), FromJSON(..), encode, decode)
 import Data.Aeson.TH (deriveJSON, deriveToJSON, deriveFromJSON)
@@ -102,13 +106,13 @@ import Data.Convertible (convert)
 import Data.Default (def)
 import Data.Digest.Pure.MD5 (md5)
 import Data.Either.Utils (forceEither) -- MissingH
-import Data.List (intercalate, (\\), nub)
+import Data.List (intercalate, intersperse, (\\), intersect, nub)
 import Data.List.Split (splitOn, splitEvery)
 import Data.List.Utils as LU -- MissingH
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
 import Data.Monoid
 import Database.TemplatePG
-import Debug.Trace (trace)
+import Debug.Trace (trace, traceShow)
 import Data.Bool.HT (if')
 -- Time is notoriously difficult to deal with in Haskell. It gets especially
 -- tricky when working with the database and libraries that expect different
@@ -321,3 +325,5 @@ gravatarHash = show . md5 . BLU.fromString . map toLower . trim
 lowercase :: String -> String
 lowercase [] = []
 lowercase (x:xs) = (toLower x):xs
+
+traceShow' arg = traceShow arg arg

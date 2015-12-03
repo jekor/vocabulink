@@ -22,7 +22,7 @@ module Vocabulink.Link ( Link(..), linkDetails, linkTypeName, compactLinkJSON
                        , languagePairLinks, linksContaining
                        , pronounceable
                        , Story(..), addStory, getStory, editStory, linkStories
-                       , linksTable, linkPage, linksPage
+                       , linksTable, linkPage, compactLinkPage, linksPage
                        ) where
 
 import Vocabulink.Comment
@@ -33,6 +33,7 @@ import Vocabulink.Member.Html
 import Vocabulink.Page
 import Vocabulink.Utils
 
+import Text.Blaze (unsafeByteString)
 import Text.Blaze.Html5 (audio, source)
 import Text.Blaze.Html5.Attributes (preload)
 
@@ -104,6 +105,27 @@ instance ToMarkup Link where
                            else mempty
 
 $(deriveToJSON (lowercase . drop 4) ''Link)
+
+compactLinkMarkup :: Link -> Html
+compactLinkMarkup link = div $ do
+  h1 $ do
+    span ! class_ "learn" $ toMarkup $ linkLearn link
+    pronunciation
+  h2 $ do
+    span ! class_ "mnemonic" $ mnemonic
+    span ! class_ "link" $ " → "
+    span ! class_ "known" $ (toMarkup $ linkKnown link)
+ where pronunciation = if pronounceable link
+                       then button ! id "pronounce" ! class_ "button light" $ do
+                              audio ! preload "auto" $ do
+                                source ! src (toValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".ogg")
+                                source ! src (toValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".mp3")
+                              sprite "icon" "audio"
+                       else mempty
+       mnemonic = case (linkWord link, linkSoundalike link) of
+                    (Just word, _) -> mconcat [unsafeByteString "&ldquo;", toMarkup word, unsafeByteString "&rdquo;"]
+                    (Nothing, True) -> i $ "soundalike"
+                    _ -> mempty
 
 compactLinkJSON :: Link -> Value
 compactLinkJSON link =
@@ -177,6 +199,9 @@ instance ToMarkup Story where
 
 $(deriveToJSON (drop 5) ''Story)
 
+compactStoryMarkup :: Story -> Html
+compactStoryMarkup story = blockquote $ markdownToHtml (storyBody story)
+
 addStory :: E (Integer -> String -> IO ())
 addStory linkNo story = withVerifiedMember $ \ m -> do
   $(execute "INSERT INTO linkword_story (link_no, author, story) \
@@ -245,7 +270,7 @@ linkPage link = do
                 return $ mconcat $ map toMarkup ss
   let learnLanguage = fromMaybe "Unknown Language" $ lookup (linkLearnLang link) languages
       knownLanguage = fromMaybe "Unknown Language" $ lookup (linkKnownLang link) languages
-  return $ stdPage (linkLearn link ++ " → " ++ linkKnown link ++ " — " ++ learnLanguage ++ " to " ++ knownLanguage) [CSS "link", JS "link"] mempty $ do
+  stdPage (linkLearn link ++ " → " ++ linkKnown link ++ " — " ++ learnLanguage ++ " to " ++ knownLanguage) [CSS "link", JS "link"] mempty $ do
     toMarkup link
     div ! id "linkword-stories" $ do
       div ! class_ "header" $ h2 "Linkword Stories:"
@@ -254,7 +279,15 @@ linkPage link = do
       h3 "Comments"
       comments
 
-linksPage :: E (String -> [Link] -> Html)
+compactLinkPage :: E (Link -> IO Html)
+compactLinkPage link = do
+  stories <- do ss <- linkStories $ linkNumber link
+                return $ mconcat $ map compactStoryMarkup ss
+  return $ do
+    compactLinkMarkup link
+    stories
+
+linksPage :: E (String -> [Link] -> IO Html)
 linksPage title' links =
   simplePage title' [JS "link", CSS "link", ReadyJS initJS] $ do
     linksTable links

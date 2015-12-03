@@ -56,7 +56,7 @@ memberPage m = do
       avatar = fromMaybe mempty (memberAvatar 128 m)
   stories <- latestStories m
   studyStats' <- studyStats m
-  return $ stdPage (memberName m ++ "'s Page") [JS "member-page", CSS "member-page", CSS "link"] mempty $ do
+  stdPage (memberName m ++ "'s Page") [JS "member-page", CSS "member-page", CSS "link"] mempty $ do
     div ! id "member-details" $ do
       avatar
       span ! class_ "username" $ toMarkup $ memberName m
@@ -92,6 +92,6 @@ studyStats m = do
                         , ("# of reviews", prettyPrint (numReviews::Integer))
                         ]
 
-dashboardPage :: E (Html)
+dashboardPage :: E (IO Html)
 dashboardPage = stdPage "Dashboard" [JS "dashboard", CSS "dashboard"] mempty $ do
                   mempty

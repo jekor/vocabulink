@@ -19,7 +19,7 @@ module Vocabulink.Article (Article(..), articlePage, articlesPage) where
 
 import Vocabulink.Comment
 import Vocabulink.Env
-import Vocabulink.Html
+import Vocabulink.Html hiding (article)
 import Vocabulink.Page
 import Vocabulink.Utils hiding ((<$$>), readFile)
 
@@ -103,7 +103,7 @@ articlePage = maybeM articleHtml <=< getArticle
                              \WHERE filename = {articleFilename article'}") ?db
          comments <- maybe (return mempty) renderComments row
          body <- articleBody article'
-         return $ stdPage (articleTitle article') [CSS "article"] mempty $ do
+         stdPage (articleTitle article') [CSS "article"] mempty $ do
            Html5.article body
            div ! id "comments" $ do
              h3 "Comments"
@@ -114,7 +114,7 @@ articlePage = maybeM articleHtml <=< getArticle
 articlesPage :: E (IO Html)
 articlesPage = do
   articles <- getArticles
-  return $ simplePage "Articles" [CSS "article"] $ do
+  simplePage "Articles" [CSS "article"] $ do
     div ! id "central-column" $ do
       unordList $ map articleLinkHtml articles
 

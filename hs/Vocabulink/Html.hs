@@ -29,13 +29,14 @@ module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList
                        {- Text.Blaze -}
                        , ToMarkup(..), ToValue(..)
                        {- Text.Blaze.Html5 -}
-                       , Html, (!), customAttribute
-                       , div, p, h1, h2, h3, hr, blockquote, script
-                       , span, a, img, br, strong
+                       , Html, (!), customAttribute, meta
+                       , div, article, section, p, h1, h2, h3, h4, hr, blockquote, script, hgroup
+                       , span, a, img, br, strong, i, del
                        , table, thead, tbody, tfoot, tr, td, th
                        , form, input, button, textarea, label, fieldset, legend
+                       , ul, li, dl, dt, dd
                        {- Text.Blaze.Html5.Attributes -}
-                       , id, class_, href, type_, src, style, title
+                       , id, class_, href, type_, src, style, title, content
                        , width, height, alt, accesskey, colspan
                        , method, action, name, value, required, placeholder, autofocus
                        , tabindex, enctype, readonly, disabled
@@ -44,20 +45,20 @@ module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList
 import Vocabulink.Utils
 
 import Text.Blaze (ToMarkup(..), ToValue(..))
-import Text.Blaze.Html5 ( Html, (!), customAttribute
-                        , div, p, h1, h2, h3, hr, blockquote, script
-                        , span, a, img, br, strong, i
+import Text.Blaze.Html5 ( Html, (!), customAttribute, meta
+                        , div, article, section, p, h1, h2, h3, h4, hr, blockquote, script, hgroup
+                        , span, a, img, br, strong, i, del
                         , table, thead, tbody, tfoot, tr, td, th
                         , form, input, select, option, button
                         , ul, li, dl, dt, dd
                         , textarea, label, fieldset, legend
                         )
-import Text.Blaze.Html5.Attributes ( id, class_, href, type_, src, style, title
+import Text.Blaze.Html5.Attributes ( id, class_, href, type_, src, style, title, content
                                    , width, height , alt, accesskey, colspan
                                    , method, action, name, value, required, placeholder, autofocus
                                    , tabindex, enctype, readonly, disabled
                                    )
-import Text.Pandoc (readMarkdown, writeHtmlString, writerHtml5)
+import Text.Pandoc (readMarkdown, writeHtmlString, writerHtml5, readerSmart)
 
 import Prelude hiding (div, id, span)
 
@@ -112,7 +113,7 @@ markdownToHtml :: String -> Html
 markdownToHtml = preEscapedToMarkup . markdownToHtmlString
 
 markdownToHtmlString :: String -> String
-markdownToHtmlString = writeHtmlString def {writerHtml5 = True} . readMarkdown def
+markdownToHtmlString = writeHtmlString def {writerHtml5 = True} . readMarkdown def {readerSmart = True}
 
 -- Helper for inline JavaScript.
 inlineJS :: String -> Html

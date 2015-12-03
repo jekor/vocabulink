@@ -46,12 +46,12 @@
 // If the link given has already been retained previously, we do nothing and
 // return false. If it was just retained in this call for the first time, we
 // notify the server and return true.
-V.retainLink = function (link) {
-  if (!V.hSetLocal('retain', link.number, [[link.learn, link.learnLang], [link.known, link.knownLang], link.soundalike, link.word])) {
+V.retainLink = function (linkNumber) {
+  if (V.insertLocal('retain', linkNumber)) {
     // The link hasn't been retained previously. Notify the server if logged in.
     if (V.loggedIn()) {
       // TODO: What if this fails? Explain how sync works or have a backup plan.
-      $.ajax('/review/' + link.number, {'type': 'PUT'});
+      $.ajax('/review/' + linkNumber, {'type': 'PUT'});
     }
     return true;
   } else {
@@ -62,10 +62,19 @@ V.retainLink = function (link) {
 // Increment (or decrement, with a negative number) the "words to review" count in the header.
 V.incrReviewCount = function (by) {
   var el = $('.review-box strong');
+  V.setReviewCount(V.getReviewCount() + by);
+};
+
+V.getReviewCount = function () {
+  var el = $('.review-box strong');
+  return parseInt(el.text(), 10);
+};
+
+V.setReviewCount = function (to) {
+  var el = $('.review-box strong');
   el.css('opacity', 1);
   el.animate({'opacity': 0}, 'fast', 'swing', function () {
-    var newCount = parseInt(el.text(), 10) + by;
-    $('.review-box').empty().append('<strong style="opacity: 0">' + newCount + '</strong> ' + (newCount == 1 ? 'word' : 'words') + ' to review');
+    $('.review-box').empty().append('<strong style="opacity: 0">' + to + '</strong> ' + (to == 1 ? 'word' : 'words') + ' to review');
     $('.review-box strong').animate({'opacity': 1}, 'fast', 'swing');
   });
 };

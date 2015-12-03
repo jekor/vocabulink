@@ -41,25 +41,31 @@ import Prelude hiding (div, span, id, head)
 -- If any JavaScript files are required, |stdPage| will automatically add a
 -- @<noscript>@ warning to the top of the page.
 
-stdPage :: E (String -> [Dependency] -> Html -> Html -> Html)
-stdPage title' deps head' body' = docTypeHtml $ do
-  head $ do
-    title $ toMarkup title'
-    link ! rel "icon" ! type_ "image/png" ! href "http://s.vocabulink.com/img/favicon.png"
-    mconcat cssDeps
-    inlineCSS $ intercalate "\n" [ css | InlineCSS css <- deps' ]
-    head'
-  body $ do
-    div ! id "page" $ do
-      div ! id "head" $ headerBar
-      when (length jsDeps > 0) (noscript $ p "This page requires JavaScript for some functionality.")
-      div ! id "body" $ body'
-      div ! id "foot" $ footerBar
-    inlineJS $ memberJS
-    script ! src "http://www.google-analytics.com/ga.js" $ mempty
-    mconcat jsDeps
-    inlineJS $ intercalate "\n" [ js | InlineJS js <- deps' ]
-    readyJS $ intercalate "\n" [ js | ReadyJS js <- deps' ]
+stdPage :: E (String -> [Dependency] -> Html -> Html -> IO Html)
+stdPage title' deps head' body' = do
+  review <- reviewBox
+  let extraLinks = review : case ?member of
+                              Nothing -> []
+                              Just m -> [ a ! href "/dashboard" $ "dashboard"
+                                        , a ! href (toValue $ "/user/" ++ memberName m) $ toMarkup (memberName m) ]
+  return $ docTypeHtml $ do
+    head $ do
+      title $ toMarkup title'
+      link ! rel "icon" ! type_ "image/png" ! href "http://s.vocabulink.com/img/favicon.png"
+      mconcat cssDeps
+      inlineCSS $ intercalate "\n" [ css | InlineCSS css <- deps' ]
+      head'
+    body $ do
+      div ! id "page" $ do
+        div ! id "head" $ headerBar extraLinks
+        when (length jsDeps > 0) (noscript $ p "This page requires JavaScript for some functionality.")
+        div ! id "body" $ body'
+        div ! id "foot" $ footerBar
+      inlineJS $ memberJS
+      script ! src "http://www.google-analytics.com/ga.js" $ mempty
+      mconcat jsDeps
+      inlineJS $ intercalate "\n" [ js | InlineJS js <- deps' ]
+      readyJS $ intercalate "\n" [ js | ReadyJS js <- deps' ]
  where deps' = [CSS "common", JS "common"] ++ maybe [] (const [CSS "member", JS "member"]) ?member ++ deps
        cssDeps = map includeDep [ css | css@(CSS _) <- deps' ]
        jsDeps  = map includeDep [ js  |  js@(JS _)  <- deps' ]
@@ -116,22 +122,16 @@ includeDep d =
 -- also includes a notice about the number of links that the member has waiting
 -- for review.
 
-headerBar :: E (Html)
-headerBar = do
+headerBar :: E ([Html] -> Html)
+headerBar extras = do
   a ! href "/" ! accesskey "1" $ do
     img ! class_ "logo" ! alt "Vocabulink: Learn Languages through Fiction"
         ! src "http://s.vocabulink.com/img/logo.png"
   div ! id "head-decoration" $ mempty
   div ! id "head-bar" $ do
     searchBox
-    review
-    dashboard
-    maybe loginBox logoutBox ?member
- where review = maybe mempty (\ m -> mconcat [reviewBox m, " | "]) ?member
-       dashboard = maybe mempty (const $ mconcat [a ! href "/dashboard" $ "dashboard", " | "]) ?member
-
--- The footer displays a number of common (or what we believe to be common)
--- hyperlinks for English speakers.
+    mconcat $ intersperse " | " extras
+    maybe loginBox (\_ -> logoutBox) ?member
 
 footerBar :: E (Html)
 footerBar = do
@@ -172,9 +172,8 @@ loginBox = span ! class_ "auth-box login" $ do
 -- For logged-in members, we provide a logout button (with an indicator of your
 -- username to show that you're logged in).
 
-logoutBox :: Member -> Html
-logoutBox m = form ! class_ "auth-box logout" ! action "/member/logout" ! method "post" $ do
-  a ! href (toValue $ "/user/" ++ memberName m) $ toMarkup (memberName m)
+logoutBox :: Html
+logoutBox = form ! class_ "auth-box logout" ! action "/member/logout" ! method "post" $ do
   input ! type_ "submit" ! id "logout-button" ! class_ "faint-gradient-button green" ! value "Log Out"
 
 -- Students with a goal in mind will want to search for words they're studying
@@ -188,10 +187,17 @@ searchBox = form ! class_ "search-box" ! action "/search" $ do
     " "
     input ! type_ "submit" ! class_ "button dark" ! value "Search"
 
--- TODO: Retrieve the number of links to review.
--- TODO: Keep track of the number of links to review via JavaScript.
-reviewBox :: E (Member -> Html)
-reviewBox _ = a ! href "/learn?learn=es&known=en" ! class_ "review-box" $ message ?numDue
-  where message :: Integer -> Html
-        message 1 = strong "1" >> " word to review"
-        message n = strong (toMarkup n) >> " words to review"
+reviewBox :: E (IO Html)
+reviewBox = do
+  due <- maybe (return 0) numDue ?member
+  return $ a ! href "/review?learn=es&known=en" ! class_ "review-box" $ message due
+ where numDue m = (fromJust . fromJust) `liftM` $(queryTuple
+                    "SELECT COUNT(*) FROM link_to_review \
+                    \INNER JOIN link USING (link_no) \
+                    \WHERE member_no = {memberNumber m} \
+                      \AND learn_lang = 'es' AND known_lang = 'en' \
+                      \AND current_timestamp > target_time \
+                      \AND NOT deleted") ?db
+       message :: Integer -> Html
+       message 1 = strong "1" >> " word to review"
+       message n = strong (toMarkup n) >> " words to review"
