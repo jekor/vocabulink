@@ -47,7 +47,7 @@ commentBox c = do
       span ! class_ "timestamp" $ toMarkup $ prettyPrint (commentTime c)
     gravatar 48 $ commentEmail c
     button ! class_ "reply light" $ "Reply"
-    div ! class_ "speech-bubble left body" $ markdownToHtml (commentBody c)
+    div ! class_ "speech-bubble left body" $ fromRight "Failed to parse comment." markdownToHtml (commentBody c)
  where indent = show (fromIntegral (commentLevel c) * (1.3 :: Double)) ++ "em"
 
 -- Storing a comment establishes and returns its unique comment number.

@@ -25,7 +25,7 @@
 -- functions. An example of this is |linkList|.
 
 module Vocabulink.Html ( unordList, definitionList, multiColumn, multiColumnList, tableOfPairs
-                       , menu, markdownToHtml, markdownToHtmlString, inlineJS, sprite
+                       , menu, markdownToHtml, inlineJS, sprite
                        {- Text.Blaze -}
                        , ToMarkup(..), ToValue(..)
                        {- Text.Blaze.Html5 -}
@@ -58,7 +58,8 @@ import Text.Blaze.Html5.Attributes ( id, class_, href, type_, src, style, title,
                                    , method, action, name, value, required, placeholder, autofocus
                                    , tabindex, enctype, readonly, disabled
                                    )
-import Text.Pandoc (readMarkdown, writeHtmlString, writerHtml5, readerSmart)
+import Text.Pandoc (readMarkdown, writeHtml, writerHtml5, readerSmart)
+import Text.Pandoc.Error (PandocError(..))
 
 import Prelude hiding (div, id, span)
 
@@ -109,11 +110,8 @@ menu choices = select $ mconcat
 -- link bodies. We need to sanitize incoming HTML so that we don't end up with
 -- XSS attacks.
 
-markdownToHtml :: String -> Html
-markdownToHtml = preEscapedToMarkup . markdownToHtmlString
-
-markdownToHtmlString :: String -> String
-markdownToHtmlString = writeHtmlString def {writerHtml5 = True} . readMarkdown def {readerSmart = True}
+markdownToHtml :: String -> Either PandocError Html
+markdownToHtml s = writeHtml def {writerHtml5 = True} `fmap` readMarkdown def {readerSmart = True} s
 
 -- Helper for inline JavaScript.
 inlineJS :: String -> Html

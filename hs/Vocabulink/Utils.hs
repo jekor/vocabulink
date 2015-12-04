@@ -56,6 +56,8 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , convert
                         {- Data.Default -}
                         , def
+                        {- Data.Either.Combinators -}
+                        , fromRight
                         {- Data.Either.Utils -}
                         , forceEither
                         {- Data.List -}
@@ -105,6 +107,7 @@ import Data.Char (toLower, isSpace)
 import Data.Convertible (convert)
 import Data.Default (def)
 import Data.Digest.Pure.MD5 (md5)
+import Data.Either.Combinators (fromRight)
 import Data.Either.Utils (forceEither) -- MissingH
 import Data.List (intercalate, intersperse, (\\), intersect, nub)
 import Data.List.Split (splitOn, splitEvery)
