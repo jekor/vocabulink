@@ -80,7 +80,7 @@ latestStories m = map renderStory <$> $(queryTuples
   \WHERE author = {memberNumber m} \
   \ORDER BY edited DESC LIMIT 10") ?db
  where renderStory (sn, ln, s) = a ! href (toValue $ "/link/" ++ show ln ++ "#" ++ show sn)
-                                   $ markdownToHtml s
+                                   $ fromRight "Failed to parse story." (markdownToHtml s)
 
 studyStats :: E (Member -> IO Html)
 studyStats m = do

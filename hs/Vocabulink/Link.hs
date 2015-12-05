@@ -188,7 +188,7 @@ instance ToMarkup Story where
     div ! class_ "linkword-story-container" $ do
       a ! id (toValue $ storyNumber story) $ mempty
       div ! class_ "linkword-story" $ do
-        blockquote $ markdownToHtml (storyBody story)
+        blockquote $ fromRight "Failed to parse story." (markdownToHtml (storyBody story))
         div ! class_ "signature" $ do
           fromJust $ memberAvatar 32 (storyAuthor story)
           div ! class_ "details" $ do
@@ -200,7 +200,7 @@ instance ToMarkup Story where
 $(deriveToJSON (drop 5) ''Story)
 
 compactStoryMarkup :: Story -> Html
-compactStoryMarkup story = blockquote $ markdownToHtml (storyBody story)
+compactStoryMarkup story = blockquote $ fromRight "Failed to parse story." (markdownToHtml (storyBody story))
 
 addStory :: E (Integer -> String -> IO ())
 addStory linkNo story = withVerifiedMember $ \ m -> do

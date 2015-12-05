@@ -70,7 +70,7 @@ readerPage lang name' page = do
                 div ! class_ "header" $ do
                   span ! class_ "title" $ toMarkup title'
                   span ! class_ "page-number" $ toMarkup (show page)
-                markdownToHtml body
+                fromRight "Failed to parse page." (markdownToHtml body)
               div ! class_ "page right" $ do
                 p $ do
                   i ! class_ "sprite sprite-icon-wizard" $ mempty
