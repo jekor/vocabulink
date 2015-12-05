@@ -255,12 +255,6 @@ dispatch "GET" ["links"] = do
 
 -- Readers
 
-dispatch "GET" ["reader", lang, name', "purchase"] = toResponse $ readerPurchasePage lang name'
-dispatch "POST" ["reader", _, _, "purchase"] = withLoggedInMember $ \m -> do
-  readerNo <- read `liftM` bodyVarRequired "reader"
-  stripeToken <- bodyVarRequired "stripeToken"
-  liftIO $ purchaseReader (memberNumber m) readerNo stripeToken
-  bounce MsgSuccess "Thank you for your purchase."
 dispatch "GET" ["reader", lang, name', pg] = case readMaybe pg of
                                                Nothing -> return notFound
                                                Just n  -> toResponse $ readerPage lang name' n
@@ -498,5 +492,5 @@ frontPage = do
                   p "Flashcards are great, but we have better technology today. We use a special algorithm to schedule optimal times for you to review each word that you learn. This algorithm adapts to your memory and the difficulty of each word."
  where buyButton = div ! class_ "button_buy" $ do
                      a ! href "/reader/es/para-bailar/1" ! class_ "gradient" ! title "Preview for Free" $ do
-                       span ! class_ "button_price" $ "Preview"
-                       span ! class_ "button_text" $ "for Free"
+                       span ! class_ "button_price" $ "Start"
+                       span ! class_ "button_text" $ "Reading"

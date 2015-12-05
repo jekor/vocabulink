@@ -324,13 +324,7 @@ CREATE TABLE member_reader (
        page_no INTEGER NOT NULL,
        PRIMARY KEY (member_no, reader_no)
 );
-COMMENT ON TABLE member_reader IS 'Access is restricted to readers (i.e. they are available for purchase). This indicates access to a reader and also indicates their current position (bookmark).';
-
-CREATE TABLE member_stripe_charge (
-       member_no INTEGER REFERENCES member (member_no) ON DELETE CASCADE NOT NULL,
-       charge_id TEXT NOT NULL,
-       charge_time TIMESTAMP (0) WITH TIME ZONE NOT NULL DEFAULT current_timestamp
-);
+COMMENT ON TABLE member_reader IS 'This indicates access the current position (bookmark) of a member in a reader.';
 
 -- Articles: Essays, Blog Posts, Disclaimers, etc. --
 

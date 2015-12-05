@@ -22,7 +22,6 @@
 
 module Vocabulink.Env ( E
                       , mainDir, dbPassword, compileYear, languages
-                      , stripeAPIKey
                       , withVerifiedMember, withLoggedInMember
                       ) where
 
@@ -43,7 +42,8 @@ mainDir = "/home/jekor/vocabulink"
 
 -- for connecting to PostgreSQL
 dbPassword :: String
-dbPassword = $((LitE . StringL) `liftM` runIO (getEnv "BUILD_ENV" >>= \env -> withFile ("db-password-" ++ env) ReadMode hGetLine))
+dbPassword = $((LitE . StringL) `liftM` runIO (getEnv "db_password"))
+-- dbPassword = $((LitE . StringL) `liftM` runIO (getEnv "BUILD_ENV" >>= \env -> withFile ("db-password-" ++ env) ReadMode hGetLine))
 
 compileYear :: Int
 compileYear = $((LitE . IntegerL) `liftM` runIO currentYear)
@@ -54,9 +54,6 @@ languages = $(runIO (do h <- thConnection
                         return $ ListE $ map (\[Just abbr, Just name] ->
                                                  TupE [ LitE $ StringL $ BLU.toString abbr
                                                       , LitE $ StringL $ BLU.toString name]) res))
-
-stripeAPIKey :: String
-stripeAPIKey = $((LitE . StringL) `liftM` runIO (getEnv "BUILD_ENV" >>= \env -> withFile ("stripe-api-key-" ++ env) ReadMode hGetLine))
 
 -- | Only perform the given action if the user is authenticated and has
 -- verified their email address. This provides a ``logged out default'' of

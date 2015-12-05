@@ -55,7 +55,6 @@ Executable vocabulink.cgi
                  SHA,
                  split,
                  sscgi >= 0.3.0,
-                 stripe,
                  syb,
                  template-haskell,
                  templatepg >= 0.2.6,
