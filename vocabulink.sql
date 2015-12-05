@@ -276,7 +276,7 @@ CREATE TABLE link_review (
        recall_time INTEGER NOT NULL,
        PRIMARY KEY (member_no, link_no, actual_time)
 );
-COMMENT ON COLUMN link_review.recall IS 'Recall is a measure of how easy or complete the memory of a link was. 1.0 is perfect recall. 0.0 means "no clue".';
+COMMENT ON COLUMN link_review.recall_grade IS 'Recall is a measure of how easy or complete the memory of a link was. 1.0 is perfect recall. 0.0 means "no clue".';
 COMMENT ON COLUMN link_review.recall_time IS 'Recall time is the amount of time (in milliseconds) taken to recall (or not) the destination of a link. It could be measured as the time between when the page is displayed and when the destination lexeme is shown (using JavaScript).';
 
 CREATE TABLE link_sm2 (
@@ -348,22 +348,6 @@ CREATE RULE "replace article" AS
                                    section = NEW.section
                 WHERE filename = NEW.filename);
 
-CREATE TABLE article_comment (
-  filename TEXT REFERENCES article (filename) NOT NULL,
-  root_comment INTEGER REFERENCES comment (comment_no) ON DELETE CASCADE NOT NULL,
-  PRIMARY KEY (filename, root_comment)
-);
-
-CREATE FUNCTION create_article_root_comment() RETURNS trigger AS $$
-BEGIN
-  INSERT INTO article_comment (filename, root_comment)
-                       VALUES (NEW.filename, create_virtual_root_comment());
-  RETURN NEW;
-END; $$ LANGUAGE plpgsql;
-
-CREATE TRIGGER add_root_comment AFTER INSERT ON article FOR EACH ROW
-EXECUTE PROCEDURE create_article_root_comment();
-
 -- Comments
 
 CREATE TABLE comment (
@@ -427,3 +411,19 @@ END; $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER add_root_comment AFTER INSERT ON link FOR EACH ROW
 EXECUTE PROCEDURE create_link_root_comment();
+
+CREATE TABLE article_comment (
+  filename TEXT REFERENCES article (filename) NOT NULL,
+  root_comment INTEGER REFERENCES comment (comment_no) ON DELETE CASCADE NOT NULL,
+  PRIMARY KEY (filename, root_comment)
+);
+
+CREATE FUNCTION create_article_root_comment() RETURNS trigger AS $$
+BEGIN
+  INSERT INTO article_comment (filename, root_comment)
+                       VALUES (NEW.filename, create_virtual_root_comment());
+  RETURN NEW;
+END; $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER add_root_comment AFTER INSERT ON article FOR EACH ROW
+EXECUTE PROCEDURE create_article_root_comment();
