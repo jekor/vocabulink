@@ -1,5 +1,9 @@
 -- vocabulink.sql
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS tablefunc WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA public;
+
 -- I would use regexp checks and domains at the database level if they worked
 -- for unicode characters. Instead, I'll leave it up to the Haskell layer to do
 -- verification.
