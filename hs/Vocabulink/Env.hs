@@ -43,7 +43,6 @@ mainDir = "/home/jekor/vocabulink"
 -- for connecting to PostgreSQL
 dbPassword :: String
 dbPassword = $((LitE . StringL) `liftM` runIO (getEnv "db_password"))
--- dbPassword = $((LitE . StringL) `liftM` runIO (getEnv "BUILD_ENV" >>= \env -> withFile ("db-password-" ++ env) ReadMode hGetLine))
 
 compileYear :: Int
 compileYear = $((LitE . IntegerL) `liftM` runIO currentYear)

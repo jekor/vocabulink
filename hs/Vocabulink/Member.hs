@@ -30,6 +30,7 @@ import qualified Data.ByteString.Lazy.Char8 as BC8
 import qualified Data.ByteString.UTF8 as BU
 import Data.Digest.Pure.SHA (hmacSha1, showDigest)
 import Language.Haskell.TH.Syntax (runIO, Exp(..), Lit(..))
+import System.Environment (getEnv)
 import Web.Cookie (SetCookie(..))
 
 data Member = Member { memberNumber :: Integer
@@ -51,7 +52,7 @@ instance ToJSON Member where
 -- for generating auth token cookies
 -- This is compiled in via Template Haskell to keep the key out of git.
 authTokenKey :: String
-authTokenKey = $((LitE . StringL) `liftM` runIO ((head . lines) `liftM` Prelude.readFile "auth-token-key"))
+authTokenKey = $((LitE . StringL) `liftM` runIO (getEnv "auth_token_key"))
 
 data AuthToken = AuthToken { authMemberNumber  :: Integer
                            , authExpiry        :: EpochTime
