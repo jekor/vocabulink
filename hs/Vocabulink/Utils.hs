@@ -63,7 +63,7 @@ module Vocabulink.Utils ( (?), (<$$>)
                         {- Data.List -}
                         , intercalate, intersperse, (\\), intersect, nub
                         {- Data.List.Split -}
-                        , splitOn, splitEvery
+                        , splitOn, chunksOf
                         {- Data.Maybe -}
                         , maybe, fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes
                         {- Data.Monoid -}
@@ -110,7 +110,7 @@ import Data.Digest.Pure.MD5 (md5)
 import Data.Either.Combinators (fromRight)
 import Data.Either.Utils (forceEither) -- MissingH
 import Data.List (intercalate, intersperse, (\\), intersect, nub)
-import Data.List.Split (splitOn, splitEvery)
+import Data.List.Split (splitOn, chunksOf)
 import Data.List.Utils as LU -- MissingH
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
 import Data.Monoid
@@ -247,13 +247,13 @@ currentYear = do
   return year
 
 serverDay :: UTCTime -> IO Day
-serverDay utc = do
+serverDay time = do
   tz <- getCurrentTimeZone
-  let (LocalTime day _) = utcToLocalTime tz utc
+  let (LocalTime day _) = utcToLocalTime tz time
   return day
 
 serverDate :: UTCTime -> IO (Integer, Int, Int)
-serverDate utc = toGregorian <$> serverDay utc
+serverDate time = toGregorian <$> serverDay time
 
 diffTimeToSeconds :: DiffTime -> Integer
 diffTimeToSeconds = floor . toRational
@@ -296,7 +296,7 @@ class PrettyPrint a where
 -- > instance (Integral a) => PrettyPrint a where
 
 instance PrettyPrint Integer where
-  prettyPrint = reverse . intercalate "," . splitEvery 3 . reverse . show
+  prettyPrint = reverse . intercalate "," . chunksOf 3 . reverse . show
 
 -- TODO: instance PrettyPrint Float
 

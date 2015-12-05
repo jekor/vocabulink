@@ -33,7 +33,6 @@ import Database.TemplatePG.Protocol (executeSimpleQuery)
 import Database.TemplatePG.SQL (thConnection)
 import Language.Haskell.TH.Syntax (runIO, Exp(..), Lit(..))
 import System.Environment (getEnv)
-import System.IO (IOMode(..), withFile, hGetLine)
 
 type E a = (?db::Handle, ?member::Maybe Member) => a
 

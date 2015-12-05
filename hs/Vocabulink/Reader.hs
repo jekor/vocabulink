@@ -19,7 +19,6 @@
 
 module Vocabulink.Reader ( readerPage ) where
 
-import Vocabulink.CGI
 import Vocabulink.Env
 import Vocabulink.Html
 import Vocabulink.Member

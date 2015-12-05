@@ -41,10 +41,7 @@ import System.IO.Unsafe (unsafePerformIO)
 
 -- TODO: Get rid of these by just using Aeson directly.
 import Data.Aeson.QQ (aesonQQ)
-import qualified Data.Aeson.Generic
 import qualified Data.Aeson.Types as AT
-import qualified Data.Text
-import qualified Data.Vector
 
 import Prelude hiding (span, id, div)
 
@@ -211,18 +208,6 @@ addStory linkNo story = withVerifiedMember $ \ m -> do
 -- TODO: Why isn't this returning a Story value?
 getStory :: E (Integer -> IO (Maybe String))
 getStory storyNo = $(queryTuple "SELECT story FROM linkword_story WHERE story_no = {storyNo}") ?db
-
--- This needs to be in a permissions system.
-storyEditable :: E (Integer -> IO Bool)
-storyEditable n =
-  case ?member of
-    Nothing -> return False
-    Just m  -> do
-      author <- $(queryTuple "SELECT author FROM linkword_story \
-                             \WHERE story_no = {n}") ?db
-      case author of
-        Nothing -> return False
-        Just a' -> return $ a' == memberNumber m || memberNumber m == 1
 
 -- TODO: Throw an error when not authorized.
 editStory :: E (Integer -> String -> IO ())

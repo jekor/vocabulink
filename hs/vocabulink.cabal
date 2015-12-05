@@ -75,4 +75,4 @@ Executable vocabulink.cgi
                  DeriveDataTypeable,
                  ImplicitParams,
                  RankNTypes
-  GHC-Options:   -Wall -fno-warn-missing-signatures -fno-warn-type-defaults -fno-warn-unused-do-bind -threaded -O2
+  GHC-Options:   -Wall -fno-warn-missing-signatures -fno-warn-type-defaults -fno-warn-unused-do-bind -fno-warn-orphans -threaded -O2
