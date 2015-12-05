@@ -42,7 +42,7 @@ import System.IO.Unsafe (unsafePerformIO)
 -- TODO: Get rid of these by just using Aeson directly.
 import Data.Aeson.QQ (aesonQQ)
 import qualified Data.Aeson.Generic
-import qualified Data.Aeson.Types
+import qualified Data.Aeson.Types as AT
 import qualified Data.Text
 import qualified Data.Vector
 
@@ -104,7 +104,7 @@ instance ToMarkup Link where
                                   sprite "icon" "audio"
                            else mempty
 
-$(deriveToJSON (lowercase . drop 4) ''Link)
+$(deriveToJSON AT.defaultOptions { AT.fieldLabelModifier = (lowercase . drop 4) } ''Link)
 
 compactLinkMarkup :: Link -> Html
 compactLinkMarkup link = div $ do
@@ -134,14 +134,14 @@ compactLinkJSON link =
   -- We don't need to send the language information as the new review process only
   -- operates on 1 set of languages at a time.
   let e = linkExtra link
-  in [aesonQQ| [ <| linkNumber link |>
-               , <| linkLearn link |>
-               , <| linkKnown link |>
-               , <<e>>
+  in [aesonQQ| [ #{linkNumber link}
+               , #{linkLearn link}
+               , #{linkKnown link}
+               , #{e}
                ] |]
  where linkExtra l
-         | isJust (linkWord l) = [aesonQQ| {"linkword": <| fromJust (linkWord l) |>} |]
-         | linkSoundalike l    = [aesonQQ| {"soundalike": <| True |>} |]
+         | isJust (linkWord l) = [aesonQQ| {"linkword": #{fromJust (linkWord l)}} |]
+         | linkSoundalike l    = [aesonQQ| {"soundalike": #{True}} |]
          | otherwise           = Null
 
 linkDetails :: E (Integer -> IO (Maybe Link))
@@ -197,7 +197,7 @@ instance ToMarkup Story where
             br
             span ! class_ "date" $ toMarkup $ prettyPrint $ storyEdited story
 
-$(deriveToJSON (drop 5) ''Story)
+$(deriveToJSON AT.defaultOptions { AT.fieldLabelModifier = (drop 5) } ''Story)
 
 compactStoryMarkup :: Story -> Html
 compactStoryMarkup story = blockquote $ fromRight "Failed to parse story." (markdownToHtml (storyBody story))
