@@ -41,8 +41,8 @@ COMMENT ON COLUMN password_reset_token.hash IS 'This is a random hash that we ca
 
 CREATE TABLE link (
        link_no SERIAL PRIMARY KEY,
-       learn TEXT NOT NULL CHECK (length(foreign_phrase) > 0),
-       known TEXT NOT NULL CHECK (length(familiar_phrase) > 0),
+       learn TEXT NOT NULL CHECK (length(learn) > 0),
+       known TEXT NOT NULL CHECK (length(known) > 0),
        learn_lang CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE NOT NULL,
        known_lang CHARACTER VARYING (3) REFERENCES language (abbr) ON UPDATE CASCADE NOT NULL,
        soundalike BOOLEAN NOT NULL DEFAULT FALSE,
@@ -52,8 +52,8 @@ CREATE TABLE link (
 COMMENT ON TABLE link IS 'A link is an association between 2 words (or phrases) in a single direction.';
 COMMENT ON COLUMN link.deleted IS 'We need a way to delete links, but we don''t want to destroy people''s review decks. This allows us to mark deleted links so that we don''t display them to people who aren''t already reviewing them and we can later sweep ones with no references.';
 -- We're going to search by these often.
-CREATE INDEX link_foreign_phrase_index ON link (foreign_phrase);
-CREATE INDEX link_familiar_phrase_index ON link (familiar_phrase);
+CREATE INDEX link_learn_index ON link (learn);
+CREATE INDEX link_known_index ON link (known);
 
 CREATE TABLE linkword_story (
        story_no SERIAL PRIMARY KEY,
