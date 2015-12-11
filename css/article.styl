@@ -1,25 +1,8 @@
-// Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
-//
-// This file is part of Vocabulink.
-//
-// Vocabulink is free software: you can redistribute it and/or modify it under
-// the terms of the GNU Affero General Public License as published by the Free
-// Software Foundation, either version 3 of the License, or (at your option) any
-// later version.
-//
-// Vocabulink is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
-// A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
-// details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
+@require 'lib'
 
 article
   max-width: 60em
-  margin:
-    left: auto
-    right: auto
+  margin-left-right: auto
   .footnotes
     font-size: 0.875em
   blockquote
@@ -34,8 +17,7 @@ article
       left: 0
       top: 0
     > *
-      margin-left: 48pt
-      margin-right: 48pt
+      margin-left-right: 48pt
   a[href="#TOC"]
     color: #434343
   dl
@@ -53,9 +35,8 @@ article
         content: ":"
     dd
       line-height: 1.3em
-      margin:
-        left: 4.3em
-        bottom: 0.667em
+      margin-left: 4.3em
+      margin-bottom: 0.667em
   ul
     list-style-type: disc
     margin-left: 1em
@@ -70,9 +51,8 @@ article
   float: right
   width: auto
   max-width: 20em
-  margin:
-    left: 1em
-    bottom: 1em
+  margin-left: 1em
+  margin-bottom: 1em
   background-color: #E5F5F5
   padding: 0.667em
   h3
@@ -80,13 +60,9 @@ article
     margin-bottom: 0.667em
     font-size: 1em
   ul
-    margin:
-      top: 0
-      bottom: 0
+    margin-top-bottom 0
     li
-      margin:
-        top: 0.333em
-        bottom: 0.333em
+      margin-top-bottom 0.333em
 
 article + #comments
   max-width: 60em

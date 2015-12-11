@@ -1,7 +1,7 @@
+@require 'lib'
+
 #body
-  margin:
-    left: 1em
-    right: 1em
+  margin-left-right: 1em
 
 h2
   text-align: center
@@ -9,10 +9,8 @@ h2
 
 #body
   width: 66em
-  margin:
-    top: 3em
-    left: auto
-    right: auto
+  margin-left-right: auto
+  margin-top: 3em
 
 #member-details
   width: 66%
@@ -29,9 +27,7 @@ h2
   ul
     margin: 0
     li
-      margin:
-        top: 0.25em
-        bottom: 0.25em
+      margin-top-bottom: 0.25em
 
 #study-stats
   float: right
@@ -50,14 +46,13 @@ ul.stories
     &:nth-child(2n)
       background-color: #ECF9DF
     p
-      color: $text_color
+      color: text-color
       &:first-child
         margin-top: 0
 
 table.pairs
-  margin:
-    left: auto
-    right: auto !important
+  margin-left: auto
+  margin-right: auto !important
   th
     font-weight: bold
   td

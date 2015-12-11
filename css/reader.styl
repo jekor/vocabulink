@@ -1,13 +1,13 @@
+@require 'lib'
+
 #book
   position: relative
   width: 66em
-  margin:
-    left: auto
-    right: auto
-    top: 2em
+  margin-left-right: auto
+  margin-top: 2em
 
 .page
-  @include border_box
+  box-sizing: border-box
   float: left
   width: 50%
   height: 80ex
@@ -23,10 +23,6 @@
   &.left
     border-right: #A9A9A9 solid 1px
     background: linear-gradient(left, #DEDEDE, #FFFFFF 15%, #FFFFFF 86%, #DEDEDE 96%, #C9C9C9)
-    background: -moz-linear-gradient(left, #DEDEDE, #FFFFFF 15%, #FFFFFF 86%, #DEDEDE 96%, #C9C9C9)
-    background: -webkit-linear-gradient(left, #DEDEDE, #FFFFFF 15%, #FFFFFF 86%, #DEDEDE 96%, #C9C9C9)
-    -moz-box-shadow: 0 1px 4px rgba(0, 0, 0, 0.27), 0 0 40px rgba(0, 0, 0, 0.06) inset
-    -webkit-box-shadow: 0 1px 4px rgba(0, 0, 0, 0.27), 0 0 40px rgba(0, 0, 0, 0.06) inset
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.27), 0 0 40px rgba(0, 0, 0, 0.06) inset
     &:before
       content: ''
@@ -38,13 +34,7 @@
       max-width: 300px
       max-height: 100px
       height: 55%
-      -webkit-box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3)
-      -moz-box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3)
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3)
-      -webkit-transform: skew(-15deg) rotate(-6deg)
-      -moz-transform: skew(-15deg) rotate(-6deg)
-      -ms-transform: skew(-15deg) rotate(-6deg)
-      -o-transform: skew(-15deg) rotate(-6deg)
       transform: skew(-15deg) rotate(-6deg)
     .footnotes
       ol
@@ -54,18 +44,13 @@
   &.right
     .sprite-icon-wizard
       float: left
-      margin:
-        right: 1em
-        bottom: 1em
+      margin-right: 1em
+      margin-bottom: 1em
     > *:first-child
       margin-top: 0
     overflow: auto
     border-left: #A9A9A9 solid 1px
     background: linear-gradient(right, #DEDEDE, #FFFFFF 15%, #FFFFFF 86%, #DEDEDE 96%, #C9C9C9)
-    background: -moz-linear-gradient(right, #DEDEDE, #FFFFFF 15%, #FFFFFF 86%, #DEDEDE 96%, #C9C9C9)
-    background: -webkit-linear-gradient(right, #DEDEDE, #FFFFFF 15%, #FFFFFF 86%, #DEDEDE 96%, #C9C9C9)
-    -moz-box-shadow: 0 1px 4px rgba(0, 0, 0, 0.27), 0 0 40px rgba(0, 0, 0, 0.06) inset
-    -webkit-box-shadow: 0 1px 4px rgba(0, 0, 0, 0.27), 0 0 40px rgba(0, 0, 0, 0.06) inset
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.27), 0 0 40px rgba(0, 0, 0, 0.06) inset
     h2
       font-size: 18pt
@@ -81,13 +66,7 @@
       max-width: 300px
       max-height: 100px
       height: 55%
-      -webkit-box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3)
-      -moz-box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3)
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3)
-      -webkit-transform: skew(15deg) rotate(6deg)
-      -moz-transform: skew(15deg) rotate(6deg)
-      -ms-transform: skew(15deg) rotate(6deg)
-      -o-transform: skew(15deg) rotate(6deg)
       transform: skew(15deg) rotate(6deg)
 
 .signature
@@ -125,11 +104,8 @@ a.retained
   color: #434343
 
 #pronounce, button.pronounce
-  margin:
-    left: 10px
-  padding:
-    left: 3px
-    right: 3px
+  margin-left: 10px
+  padding-left-right: 3px
 
 .sprite-icon-audio
   vertical-align: middle

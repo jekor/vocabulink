@@ -1,29 +1,10 @@
-// Copyright 2008, 2009, 2010, 2011, 2012 Chris Forno
-//
-// This file is part of Vocabulink.
-//
-// Vocabulink is free software: you can redistribute it and/or modify it under
-// the terms of the GNU Affero General Public License as published by the Free
-// Software Foundation, either version 3 of the License, or (at your option) any
-// later version.
-//
-// Vocabulink is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
-// A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
-// details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
+@require 'lib'
 
 #comments
   max-width: 50em
-  margin:
-    left: auto
-    right: auto
+  margin-left-right: auto
   h3
-    margin:
-      top: 1em
-      bottom: 1em
+    margin-top-bottom: 1em
     border-bottom: 1px solid black
 
 // Derived from http://nicolasgallagher.com/pure-css-speech-bubbles/
@@ -32,8 +13,8 @@
   padding: 0.75em 1em
   border: 1px solid #C5C5C5
   background-color: #FFFFFF
-  @include rounded(6px)
-  @include drop_shadow(3px, 3px, 3px, rgba(0, 0, 0, 0.3))
+  border-radius: 6px
+  box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.3)
   // triangles
   &:before, &:after
     content: ""
@@ -50,7 +31,7 @@
       border-width: 14px 25px 0 0
       border-color: transparent #C5C5C5
       z-index: -1
-      @include drop_shadow(3px, 3px, 3px, rgba(0, 0, 0, 0.3))
+      box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.3)
     &:after
       left: -21px
       top: 21px
@@ -60,9 +41,7 @@
 .comment
   max-width: 50em
   overflow: hidden
-  margin:
-    top: 1.3em
-    bottom: 1.3em
+  margin-top-bottom: 1.3em
   .avatar
     float: left
     margin-left: 7px
@@ -92,7 +71,7 @@
       border: 1px solid #C0C0C0
   .title
     padding-bottom: 5px
-    border-bottom: 1px solid $bar_and_box_border
+    border-bottom: 1px solid bar-and-box-border
     margin-bottom: 5px
     label
       display: inline-block

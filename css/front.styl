@@ -1,9 +1,9 @@
+@require 'lib'
+
 #intro
   width: 60%
-  margin:
-    left: auto
-    right: auto
-    bottom: 2em
+  margin-left-right: auto
+  margin-bottom: 2em
   overflow: hidden
 
 body #body
@@ -12,21 +12,17 @@ body #body
     margin-top: 2em
   .top, .bottom .three-column
     width: 66em
-    margin:
-      left: auto
-      right: auto
+    margin-left-right: auto
   .top > *
     font-size: 1.125em
   .bottom
     margin-bottom: 0
     padding-bottom: 3.9em
-    background-color: $bar_and_box_background
+    background-color: bar-and-box-background
     .three-column
       > .column
         width: 27%
-        margin:
-          left: 3%
-          right: 3%
+        margin-left-right: 3%
         h2
           margin-top: 0.667em
 
@@ -50,9 +46,7 @@ body #body
 #foot
   #handy-links
     > .column
-      margin:
-        left: 3%
-        right: 3%
+      margin-left-right: 3%
     > .column:first-child
       width: 54%
     > .column:nth-child(2)

@@ -1,7 +1,9 @@
+@require 'lib'
+
 .markItUp
   width: 100%
   .preview
-    border: 1px solid $bar_and_box_border
+    border: 1px solid bar-and-box-border
     padding: 5px
     text-align: left
 
@@ -30,10 +32,8 @@
   overflow: hidden
   width: 22px
   height: 5px
-  margin:
-    top: 2px
-    left: auto
-    right: auto
+  margin-top: 2px
+  margin-left-right: auto
   background-image: url(/img/markitup/handle.png)
   cursor: n-resize
 

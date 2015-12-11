@@ -1,0 +1,46 @@
+margin-left-right(n)
+  margin-left n
+  margin-right n
+
+margin-top-bottom(n)
+  margin-top n
+  margin-bottom n
+
+padding-left-right(n)
+  padding-left n
+  padding-right n
+
+padding-top-bottom(n)
+  padding-top n
+  padding-bottom n
+
+vertical-gradient(fromC, toC)
+  background mix(fromC, toC)
+  background linear-gradient(to bottom, fromC 0%, toC 100%)
+
+vertical-half-gradient(fromC, toC)
+  background toC
+  background linear-gradient(to bottom, fromC 0%, fromC 40%, toC 60%, toC 100%)
+
+vertical-third-gradient(fromC, toC)
+  background toC
+  background linear-gradient(to bottom, fromC 0%, toC 33%, toC 100%)
+
+vertical-fade-to(color)
+  background: linear-gradient(to bottom, rgba(color, 0) 0%, rgba(color, 1) 33%, rgba(color, 1) 100%)
+
+// @mixin transform($t)
+//   -moz-transform: $t
+//   -webkit-transform: $t
+//   -o-transform: $t
+//   -ms-transform: $t
+//   transform: $t
+
+// @mixin rotate($deg)
+//   @include transform(rotate(#{$deg}deg))
+
+// This is the background color for major blocks in the interface.
+bar-and-box-background = #F7F7F7
+bar-and-box-border = #DFDFDF
+
+text-color = #434343

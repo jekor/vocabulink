@@ -1,3 +1,5 @@
+@require 'lib'
+
 #toasts
   z-index: 999
   position: fixed
@@ -11,11 +13,11 @@
   padding: 1em
   margin-bottom: 1em
   min-height: 1.8em
-  @include rounded(0.5em)
-  @include drop_shadow(0,0,0.3em,#222222)
+  border-radius: 0.5em
+  box-shadow: 0 0 0.3em #222222
   color: #FFFFFF
   &:hover
-    @include drop_shadow(0,0,0.5em,#222222)
+    box-shadow: 0 0 0.5em #222222
   &.success
     background-color: #79BB27
   &.notice
@@ -25,6 +27,5 @@
   .sprite
     display: block
     float: left
-    margin:
-      right: 0.5em
-      bottom: 0.2em
+    margin-right: 0.5em
+    margin-bottom: 0.2em

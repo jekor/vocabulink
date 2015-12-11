@@ -1,33 +1,14 @@
-// Copyright 2008, 2009, 2010, 2011, 2012, 2013 Chris Forno
-//
-// This file is part of Vocabulink.
-//
-// Vocabulink is free software: you can redistribute it and/or modify it under
-// the terms of the GNU Affero General Public License as published by the Free
-// Software Foundation, either version 3 of the License, or (at your option) any
-// later version.
-//
-// Vocabulink is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
-// A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
-// details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
+@require 'lib'
 
 .link
   text-align: center
-  margin-left: 0
-  margin-right: 0
+  margin-left-right: 0
   .sprite, .lexeme, input, #destination
     vertical-align: middle
   lexeme
-    padding:
-      left: 0.5em
-      right: 0.5em
-    font:
-      family: sans-serif
-      size: xx-large
+    padding-left-right: 0.5em
+    font-family: sans-serif
+    font-size: xx-large
   #destination
     width: 10em
     margin-left: 1em
@@ -36,9 +17,7 @@
   .hidden
     color: black
     border: 1px solid black
-    padding:
-      top: 2em
-      bottom: 2em
+    padding-top-bottom: 2pem
     img
       border: 0
 
@@ -57,21 +36,18 @@ h1.link
       width: 12em
     display: inline-block
     border: 3px solid black
-    @include rounded(10px)
-    @include drop_shadow(3px, 3px, 6px, rgba(0, 0, 0, 0.2))
+    border-radius: 10px
+    box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.2)
     font-size: 0.875em
     padding: 1em 1.5em
   .link
     font-size: 0.75em
     vertical-align: 50%
     border-bottom: 3px solid black
-    padding:
-      left: 2em
-      right: 2em
-      bottom: 0.1em
-    margin:
-      left: 8px
-      right: 5px
+    padding-left-right: 2em
+    padding-bottom: 0.1em
+    margin-left: 8px
+    margin-right: 5px
     input
       font-size: 13pt
       width: 8em
@@ -106,9 +82,7 @@ h1.link.soundalike
   .link
     border-color: #81CC58
     // Need a slightly larger size to accomodate the caption "soundalike"
-    padding:
-      left: 2.5em
-      right: 2.5em
+    padding-left-right: 2.5em
   .foreign, .familiar
     background-color: #ECF9DF
     border-color: #D4F1C8
@@ -119,20 +93,16 @@ h1.link.association
   .link
     border-color: #434343
     // Need a slightly larger size to accomodate the caption "association"
-    padding:
-      left: 2.8em
-      right: 2.8em
+    padding-left-right: 2.8em
   .foreign, .familiar
     background-color: #FFFFFF
     border-color: #F4F3F3
 
 #baseline
-  margin:
-    top: 5em
-    bottom: 5em
+  margin-top-bottom: 5em
 
 .preview
-  border: 1px solid $bar_and_box_background
+  border: 1px solid bar-and-box-background
   margin-bottom: 1.3em
   h2
     text-align: center
@@ -155,18 +125,14 @@ fieldset#linkword textarea
       color: #ACACAC
 
 .link-details
-  margin:
-    top: 1.3em
-    bottom: 1.3em
+  margin-top-bottom: 1.3em
   textarea
     width: 100%
     height: 24em
 
 #recall-check
   p, dl
-    margin:
-      left: auto
-      right: auto
+    margin-left-right: auto
   p
     width: 33em
   dl
@@ -190,29 +156,20 @@ a.language-pair
 #linkword-stories
   .header
     width: 50em
-    margin:
-      left: auto
-      right: auto
+    margin-left-right: auto
   h2
     color: #ACACAC
-    margin:
-      top: 0.25em
-      bottom: 0.25em
+    margin-top-bottom: 0.25em
   .linkword-story-container
     background-color: #E8E8E8
-    border:
-      top: 1px solid #C5C5C5
-    padding:
-      top: 2em
-      bottom: 2em
+    border-top: 1px solid #C5C5C5
+    padding-top-bottom: 2em
     &:last-child
       border-bottom: 1px solid #C5C5C5
   .verified
     display: block
   .linkword-story, .verified
-    margin:
-      left: auto
-      right: auto
+    margin-left-right: auto
     width: 50em
   .linkword-story
     position: relative
@@ -230,9 +187,7 @@ a.language-pair
       right: 0
       bottom: -34pt
     blockquote
-      margin:
-        left: 48pt
-        right: 48pt
+      margin-left-right: 48pt
       > *:first-child
         margin-top: 0
       > *:last-child
@@ -247,9 +202,7 @@ a.language-pair
     > div.control
       height: 1.666em
       position: relative
-      margin:
-        left: 48pt
-        right: 48pt
+      margin-left-right: 48pt
     .read-more, .read-less
       display: block
       text-align: center
@@ -259,14 +212,12 @@ a.language-pair
       height: 3em
       line-height: 4em
       bottom: 0
-      @include vertical_fade_to(#E8E8E8)
+      vertical-fade-to: #E8E8E8
     .read-less
       line-height: 1.667em
     .signature
-      margin:
-        left: 48pt
-        right: 48pt
-        top: 1em
+      margin-left-right: 48pt
+      margin-top: 1em
       // background-color: #D9D9D9
       overflow: hidden
     .avatar, .details, .username, .date
@@ -286,19 +237,15 @@ a.language-pair
 .language-button
   display: block
   width: 8em
-  margin:
-    left: auto
-    right: auto
+  margin-left-right: auto
   font-size: 1.125em
   text-align: center
 
 .group-box.languages
   width: 66em
   border: 2px solid #D3D3D3
-  margin:
-    left: auto
-    right: auto
-    bottom: 1.3em
+  margin-left-right: auto
+  margin-bottom: 1.3em
   h2
     margin: 0
     padding: 0.5em
@@ -309,13 +256,10 @@ a.language-pair
 // mnemonic links, not hyperlinks
 table.links
   width: 66em
-  margin:
-    left: auto
-    right: auto
+  margin-left-right: auto
   border-collapse: collapse
   th, td
-    padding-left: 1.3em
-    padding-right: 1.3em
+    padding-left-right: 1.3em
   th
     color: #ABABAB
     background-color: #222222
@@ -323,9 +267,9 @@ table.links
     th
       line-height: 1.667
       &:first-child
-        @include rounded_tl(0.5em)
+        border-top-left-radius: 0.5em
       &:last-child
-        @include rounded_tr(0.5em)
+        border-top-right-radius: 0.5em
   tbody
     td
       border:
@@ -346,17 +290,14 @@ table.links
     th
       line-height: 1.667
       &:first-child
-        @include rounded_bl(0.5em)
+        border-bottom-left-radius: 0.5em
       &:last-child
-        @include rounded_br(0.5em)
+        border-bottom-right-radius: 0.5em
 
 #pronounce, button.pronounce
-  margin:
-    left: 10px
-    right: -16px
-  padding:
-    left: 3px
-    right: 3px
+  margin-left: 10px
+  margin-right: -16px
+  padding-left-right: 3px
   vertical-align: middle
 
 .caption

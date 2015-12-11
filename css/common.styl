@@ -1,35 +1,17 @@
-// Copyright 2008, 2009, 2010, 2011, 2012, 2013 Chris Forno
-//
-// This file is part of Vocabulink.
-//
-// Vocabulink is free software: you can redistribute it and/or modify it under
-// the terms of the GNU Affero General Public License as published by the Free
-// Software Foundation, either version 3 of the License, or (at your option) any
-// later version.
-//
-// Vocabulink is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
-// A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
-// details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with Vocabulink. If not, see <http://www.gnu.org/licenses/>.
-
-// This file is for site-wide styling. This will be used for all standard pages.
-
 // Reset Code
 // Based on Eric Meyer's CSS Reset - http://meyerweb.com/eric/thoughts/2007/05/01/reset-reloaded/
+
+@require 'lib'
 
 html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, font, img, ins, kbd, q, s, samp, small, strike, strong, tt, var, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, span
   margin: 0
   padding: 0
   border: 0
   outline: 0
-  font:
-    weight: inherit
-    style: inherit
-    size: 100%
-    family: inherit
+  font-weight: inherit
+  font-style: inherit
+  font-size: 100%
+  font-family: inherit
   vertical-align: baseline
 
 body
@@ -41,7 +23,7 @@ h1, h2, h3, h4, h5, h6, p, ol, ul, dl, table, a, div, span
   font-family: Verdana, sans-serif
 
 body, select, input, textarea
-  color: $text_color
+  color: text-color
 
 a:link, a:visited
   color: #28A3A4
@@ -49,19 +31,14 @@ a:link, a:visited
 
 ol, ul
   list-style: none
-  margin:
-    top: 1.3em
-    bottom: 1.3em
+  margin-top-bottom: 1.3em
   li
-    margin:
-      top: 0.667em
-      bottom: 0.667em
+    margin-top-bottom: 0.667em
 
 // tables still need 'cellspacing="0"' in the markup
 table
-  border:
-    collapse: separate
-    spacing: 0
+  border-collapse: separate
+  border-spacing: 0
 
 th, td
   text-align: left
@@ -81,9 +58,7 @@ form > table
       text-align: center
 
 fieldset
-  margin:
-    top: 1.3em
-    bottom: 1.3em
+  margin-top-bottom: 1.3em
   & > p
     margin-top: 0
 
@@ -107,16 +82,12 @@ h1
   font-size: 2em
   text-align: center
   line-height: 1.156
-  margin:
-    top: 0.578em
-    bottom: 0.578em
+  margin-top-bottom: 0.578em
 
 h2
   font-size: 1.3em
   line-height: 1.154
-  margin:
-    top: 1em
-    bottom: 1em
+  margin-top-bottom: 1em
 
 h3
   font-size: 1.125em
@@ -126,20 +97,13 @@ h4
   text-align: center
   font-size: 0.875em
   line-height: 1.486
-  margin:
-    top: 1.486em
-    bottom: 1.486em
+  margin-top-bottom: 1.486em
 
 p
   line-height: 1.3
-  margin:
-    top: 1.3em
-    bottom: 1.3em
+  margin-top-bottom: 1.3em
 
-th, td
-  line-height: 1.3
-
-li
+th, td, li
   line-height: 1.3
 
 a
@@ -154,9 +118,9 @@ em
   font-style: oblique
 
 .even
-  background-color: $bar_and_box_background
+  background-color: bar-and-box-background
 tr.odd:hover, tr.even:hover
-  background-color: $bar_and_box_border
+  background-color: bar-and-box-border
 
 // Top-Level Page Elements
 
@@ -171,8 +135,7 @@ html, body
   position: relative
 
 #body
-  margin:
-    top: 1.3em
+  margin-top: 1.3em
   padding-bottom: 5em
   > *:last-child
     margin-bottom: 1.3em
@@ -183,9 +146,8 @@ html, body
   .logo
     display: block
     float: left
-    margin:
-      left: 1.3em
-      top: 13px
+    margin-left: 1.3em
+    margin-top: 13px
   #login-button, #signup-button, #logout-button
     font-size: 9pt
   #login-button
@@ -197,12 +159,11 @@ html, body
   #head-bar, #learn-cloud
     display: inline-block
     background-color: #2D2D2D
-    border:
-      left: 3px solid #61C6CF
-      right: 3px solid #61C6CF
-      bottom: 3px solid #61C6CF
-    @include rounded_bl(5px)
-    @include rounded_br(5px)
+    border-left: 3px solid #61C6CF
+    border-right: 3px solid #61C6CF
+    border-bottom: 3px solid #61C6CF
+    border-bottom-left-radius: 5px
+    border-bottom-right-radius: 5px
   #head-bar
     float: right
     padding: 0.5em 1em
@@ -256,22 +217,16 @@ html, body
   h2
     margin-bottom: 0.667em
   ul
-    margin:
-      top: 0
-      bottom: 0
+    margin-top-bottom: 0
     li
-      margin:
-        top: 0.125em
-        bottom: 0.125em
+      margin-top-bottom: 0.125em
   #handy-links-background
     background-color: #2D2D2D
   #handy-links
     padding-bottom: 1em
     width: 66em
     overflow: hidden
-    margin:
-      left: auto
-      right: auto
+    margin-left-right: auto
     h2
       text-align: left
       font-size: 1em
@@ -285,15 +240,11 @@ html, body
       width: 33%
   > .hyperlinks, > p
     text-align: center
-    margin:
-      top: 0.667em
-      bottom: 0.667em
+    margin-top-bottom: 0.667em
   .hyperlinks
     li
       display: inline
-      margin:
-        left: 0.5em
-        right: 0.5em
+      margin-left-right: 0.5em
       clear: left
       a
         color: #29BBBD
@@ -308,17 +259,13 @@ html, body
 
 noscript > p
   width: 33em
-  margin:
-    left: auto
-    right: auto
+  margin-left-right: auto
   background-color: pink
   text-align: center
 
 form
   table
-    margin:
-      left: auto
-      right: auto
+    margin-left-right: auto
     input[type=text], input[type=password], textarea, input[type=email]
       width: 15em
     textarea
@@ -329,16 +276,12 @@ form
 
 #central-column
   width: 50%
-  margin:
-    left: auto
-    right: auto
+  margin-left-right: auto
 
 .footnote
   font-size: 0.875em
   line-height: 1.486
-  margin:
-    top: 1.486em
-    bottom: 1.486em
+  margin-top-bottom: 1.486em
 
 button, input
   line-height: 1.3em
@@ -366,11 +309,10 @@ button, input[type=submit]
   cursor: pointer
   display: inline-block
   text-decoration: none
-  @include rounded(0.5em)
+  border-radius: 0.5em
   font-size: 9pt
   padding: 0.333em 1em 0.333em
-  // text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3)
-  @include drop_shadow(0, 1px, 2px, rgba(0, 0, 0, 0.2))
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2)
   &::-moz-focus-inner
     border: 0
   &:hover
@@ -383,38 +325,38 @@ button, input[type=submit]
   &.dark
     color: #6ACFD8
     border: 1px solid #C4C4C4
-    @include vertical_half_gradient(#686868, #000000)
+    vertical-half-gradient: #686868 #000000
     &:hover
-      @include vertical_half_gradient(#444444, #000000)
+      vertical-half-gradient: #444444 #000000
     &:active, &.pressed
-      @include vertical_half_gradient(#000000, #444444)
-      color: darken(#6ACFD8, 20%)
+      vertical-half-gradient: #000000 #444444
+      color: darken(#6ACFD8, 30%)
   &.light
     color: #666666
     border: 1px solid #BFBFBF
-    @include vertical_half_gradient(#FFFFFF, #DFDFDF)
+    vertical-half-gradient: #FFFFFF #DFDFDF
     &:hover
-      @include vertical_half_gradient(#F6F6F6, #DFDFDF)
+      vertical-half-gradient: #F6F6F6 #DFDFDF
     &:active, &.pressed
-      @include vertical_half_gradient(#DFDFDF, #F6F6F6)
-      color: darken(#666666, 20%)
+      vertical-half-gradient: #DFDFDF #F6F6F6
+      color: darken(#666666, 30%)
   // Cancel buttons are like button except that they're downplayed (drawn without
   // button decorations)
   &.cancel
     border: none
     background-color: transparent
-    @include rounded(0)
-    @include drop_shadow(0, 0, 0, rgba(0, 0, 0, 0))
+    border-radius: 0
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0)
 
 #q
   font-size: 9pt
-  @include rounded(0.5em)
+  border-radius: 0.5em
   padding: 0.33em
   border: none
 
 .close-button
   display: inline-block
-  @include rounded(3px)
+  border-radius: 3px
   margin: 0.33em 0.5em 0 0
   border: 1px solid #767676
   color: #767676
@@ -439,11 +381,11 @@ blockquote
 .inline-link
   border: 1px solid white
   &.linkword
-    @include vertical_half_gradient(#E5F5F5, #CBEEED)
+    vertical-half-gradient: #E5F5F5 #CBEEED
   &.soundalike
-    @include vertical_half_gradient(#EFF8E5, #E4F2D0)
+    vertical-half-gradient: #EFF8E5 #E4F2D0
   &.association
-    @include vertical_half_gradient(#FFFFFF, #F1F0F0)
+    vertical-half-gradient: #FFFFFF #F1F0F0
 
 #body > h3
   margin-bottom: 1em
@@ -465,18 +407,18 @@ a.disabled:hover
   text-decoration: none
 
 a.username
-  color: $text_color
+  color: text-color
 
 .group-box
   margin: 1.3em
   background-color: #F9F9F9
-  @include drop_shadow(3px, 3px, 6px, rgba(0, 0, 0, 0.3))
-  @include rounded(5px)
+  box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3)
+  border-radius: 5px
 
 // Buttons
 
 .faint-gradient-button
-  @include rounded(5px)
+  border-radius: 5px
   padding: 0.5em 1em
   font-weight: bold
   color: #FFFFFF
@@ -487,21 +429,21 @@ a.username
     position: relative
     top: 1px
   &.green
-    @include vertical_gradient(#A6DE66, #79BB27)
+    vertical-gradient: #A6DE66 #79BB27
     border: 1px solid #79BB27
     &:hover
       text-decoration: none
-      @include vertical_gradient(darken(#A6DE66, 5%), #79BB27)
+      vertical-gradient: darken(#A6DE66, 5%) #79BB27
     &:active, &.pressed
-      @include vertical_gradient(#79BB27, #A6DE66)
+      vertical-gradient: #79BB27 #A6DE66
   &.blue
-    @include vertical_gradient(#60D2DB, #29A5AA)
+    vertical-gradient: #60D2DB #29A5AA
     border: 1px solid #29A5AA
     &:hover
       text-decoration: none
-      @include vertical_gradient(darken(#60D2DB, 5%), #29A5AA)
+      vertical-gradient: darken(#60D2DB, 5%) #29A5AA
     &:active, &.pressed
-      @include vertical_gradient(#29A5AA, #60D2DB)
+      vertical-gradient: #29A5AA #60D2DB
 // Temporary fix
 a.faint-gradient-button
   color: #FFFFFF

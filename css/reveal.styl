@@ -1,9 +1,11 @@
+@require 'lib'
+
 .reveal-modal-bg
   position: fixed
   height: 100%
   width: 100%
   background: #000
-  background: rgba(0,0,0,.8)
+  background: rgba(0,0,0,0.8)
   z-index: 100
   display: none
   top: 0
@@ -19,12 +21,8 @@
   position: absolute
   z-index: 101
   padding: 30px 40px 34px
-  -moz-border-radius: 5px
-  -webkit-border-radius: 5px
   border-radius: 5px
-  -moz-box-shadow: 0 0 10px rgba(0,0,0,.4)
-  -webkit-box-shadow: 0 0 10px rgba(0,0,0,.4)
-  -box-shadow: 0 0 10px rgba(0,0,0,.4)
+  box-shadow: 0 0 10px rgba(0,0,0,0.4)
   &.small
     width: 200px
     margin-left: -140px
@@ -39,7 +37,7 @@
     margin-left: -440px
   .close-reveal-modal
     font-size: 22px
-    line-height: .5
+    line-height: 0.5
     position: absolute
     top: 8px
     right: 11px

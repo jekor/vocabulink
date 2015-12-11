@@ -1,3 +1,5 @@
+@require 'lib'
+
 #page
   background-color: #F7F7F7
 
@@ -15,28 +17,21 @@
   min-height: 12em
   padding-top: 8em
   h1.link
-    margin:
-      top: 0.578em
-      bottom: 0.578em
+    margin-top-bottom: 0.578em
 
 #review-header
-  margin:
-    top: -1.5ex
-    bottom: 0
+  margin-top: -1.5ex
+  margin-bottom: 0
   text-align: center
   h2
     display: inline-block
     margin: 0
-    padding:
-      top: 2px
-      bottom: 2px
-      left: 3em
-      right: 3em
+    padding: 2px 3em 2px 3em
     font-size: 12pt
     text-align: center
     background-color: white
     color: #ACACAC
-    @include rounded(0.5em)
+    border-radius: 0.5em
     border: 1px solid #DFDFDF
 
 #action-area
@@ -48,17 +43,12 @@
   font-size: 14pt
   height: 60px
 
-#linkword-stories
-  margin-top: 1em
-
 .loading
   text-align: center
 
 #grades
   display: inline-block
-  margin:
-    left: auto
-    right: auto
+  margin-left-right: auto
   button b
     display: inline-block
     width: 30px
@@ -70,9 +60,7 @@
     width: 60px
     height: 60px
     padding: 0
-    margin:
-      left: 10px
-      right: 10px
+    margin-left-right: 10px
     &.grade0
       margin-left: 0
     &.grade5
@@ -102,62 +90,27 @@
     &.grade5:hover b, &.grade5:active b, &.grade5.pressed b
       background-position: -150px -30px
 
-#signup-invitation
-  h2
-    text-align: center
-  display: none
-  .sprite-icon-wizard
-    float: left
-    margin:
-      top: 0.5em
-      left: 5em
-  ul
-    margin-left: 10em
-    list-style-type: disc
-  p
-    margin-left: 3em
-
 .tip
   display: inline-block
-  @include rounded(4px)
+  border-radius: 4px
   background-color: #2D2D2D
   color: #9D9C9C
   font-size: 11pt
   font-weight: normal
   z-index: 2
-  padding:
-    top: 8px
-    bottom: 6px
-    left: 10px
-    right: 20px
+  padding: 8px 20px 6px 10px
   p
     text-align: left
-    margin:
-      top: 0
-      left: 0
-      right: 0
-      bottom: 6px
+    margin: 0 0 6px 0
   .nib
     border: 7px solid transparent
   .nib.top
-    border:
-      bottom: 7px solid #2D2D2D
+    border-bottom: 7px solid #2D2D2D
   .nib.bottom
-    border:
-      top: 7px solid #2D2D2D
+    border-top: 7px solid #2D2D2D
   .close
     display: block
     position: absolute
     top: 3px
     right: 5px
     font-size: 12px
-
-#learn-cloud
-  padding: 0.5em
-  h3
-    text-align: center
-  ul
-    margin: 0
-    li
-      margin: 0
-      color: #13B1B3
