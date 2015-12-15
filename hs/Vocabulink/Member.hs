@@ -29,8 +29,6 @@ import Vocabulink.Utils
 import qualified Data.ByteString.Lazy.Char8 as BC8
 import qualified Data.ByteString.UTF8 as BU
 import Data.Digest.Pure.SHA (hmacSha1, showDigest)
-import Language.Haskell.TH.Syntax (runIO, Exp(..), Lit(..))
-import System.Environment (getEnv)
 import Web.Cookie (SetCookie(..))
 
 data Member = Member { memberNumber :: Integer
@@ -49,11 +47,6 @@ instance ToJSON Member where
 -- browser. The cookie is a digest of some state information. We then use the
 -- cookie for authenticating their identity on subsequent requests.
  
--- for generating auth token cookies
--- This is compiled in via Template Haskell to keep the key out of git.
-authTokenKey :: String
-authTokenKey = $((LitE . StringL) `liftM` runIO (getEnv "auth_token_key"))
-
 data AuthToken = AuthToken { authMemberNumber  :: Integer
                            , authExpiry        :: EpochTime
                            , authDigest        :: String -- HMAC hash
@@ -81,14 +74,14 @@ instance Read AuthToken where
 
 -- | Create an AuthToken with the default expiration time, automatically
 -- calculating the digest.
-authToken :: Integer -> IO AuthToken
-authToken memberNo = do
+authToken :: Integer -> String -> IO AuthToken
+authToken memberNo tokenKey = do
   now <- epochTime
   let expires = now + authShelfLife
       digest = tokenDigest AuthToken { authMemberNumber = memberNo
                                      , authExpiry = expires
                                      , authDigest = ""
-                                     }
+                                     } tokenKey
   return AuthToken { authMemberNumber  = memberNo
                    , authExpiry = expires
                    , authDigest = digest
@@ -98,16 +91,16 @@ authToken memberNo = do
 -- Eventually, we need to rotate the key used to generate the HMAC, while still
 -- storing old keys long enough to use them for any valid login session. Without
 -- this, authentication is less secure.
-tokenDigest :: AuthToken -> String
-tokenDigest a = showDigest $ hmacSha1 (BC8.pack authTokenKey) (BC8.pack token)
+tokenDigest :: AuthToken -> String -> String
+tokenDigest a tokenKey = showDigest $ hmacSha1 (BC8.pack tokenKey) (BC8.pack token)
   where token = show (authMemberNumber a) ++ show (authExpiry a)
 
 -- -- Setting the cookie is rather simple by this point. We just create the auth
 -- -- token and send it to the client.
 
-authCookie :: Integer -> IO SetCookie
-authCookie memberNo = do
-  token <- authToken memberNo
+authCookie :: Integer -> String -> IO SetCookie
+authCookie memberNo tokenKey = do
+  token <- authToken memberNo tokenKey
   return $ emptyAuthCookie { setCookieValue  = BU.fromString $ show token
                            , setCookieMaxAge = Just $ secondsToDiffTime $ convert authShelfLife
                            }
@@ -127,12 +120,12 @@ emptyAuthCookie =
 -- valid, returns it. To verify an auth token, we verify the token digest and
 -- check that the cookie hasn't expired.
 
-validAuth :: String -> IO (Maybe AuthToken)
-validAuth token = do
+validAuth :: String -> String -> IO (Maybe AuthToken)
+validAuth tokenKey token = do
   case readMaybe token of
     Nothing -> return Nothing
     Just t -> do
       now <- epochTime
-      if tokenDigest t == authDigest t && authExpiry t > now
+      if tokenDigest t tokenKey == authDigest t && authExpiry t > now
         then return $ Just t
         else return Nothing

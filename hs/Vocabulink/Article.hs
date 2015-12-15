@@ -84,9 +84,9 @@ getArticles = map articleFromTuple <$> $(queryTuples
 -- We don't need the article body until we go to actually display the article,
 -- so there's no point in storing it in the article record.
 
-articleBody :: Article -> IO Html
+articleBody :: E (Article -> IO Html)
 articleBody article = do
-  let path = mainDir </> "articles" </> articleFilename article <.> "html"
+  let path = ?static </> "articles" </> articleFilename article <.> "html"
   unsafeByteString <$> readFile path
 
 -- Article Pages

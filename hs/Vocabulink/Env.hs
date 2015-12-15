@@ -21,7 +21,7 @@
 -- simpler (if potentially unsafe) approach.
 
 module Vocabulink.Env ( E
-                      , mainDir, dbPassword, compileYear, languages
+                      , compileYear, languages
                       , withVerifiedMember, withLoggedInMember
                       ) where
 
@@ -32,16 +32,8 @@ import qualified Data.ByteString.Lazy.UTF8 as BLU
 import Database.TemplatePG.Protocol (executeSimpleQuery)
 import Database.TemplatePG.SQL (thConnection)
 import Language.Haskell.TH.Syntax (runIO, Exp(..), Lit(..))
-import System.Environment (getEnv)
 
-type E a = (?db::Handle, ?member::Maybe Member) => a
-
-mainDir :: String
-mainDir = "/home/jekor/vocabulink"
-
--- for connecting to PostgreSQL
-dbPassword :: String
-dbPassword = $((LitE . StringL) `liftM` runIO (getEnv "db_password"))
+type E a = (?db::Handle, ?static::FilePath, ?tokenKey::String, ?member::Maybe Member) => a
 
 compileYear :: Int
 compileYear = $((LitE . IntegerL) `liftM` runIO currentYear)

@@ -80,14 +80,14 @@ simplePage t deps body' = stdPage t deps mempty $ mappend (h1 $ toMarkup t) body
 data Dependency = CSS FilePath | JS FilePath | InlineCSS String | InlineJS String | ReadyJS String
                   deriving (Eq, Show)
 
-dependencies :: [(Dependency, EpochTime)]
+dependencies :: E [(Dependency, EpochTime)]
 {-# NOINLINE dependencies #-}
-dependencies = unsafePerformIO $ staticDeps mainDir
+dependencies = unsafePerformIO $ staticDeps ?static
 
 staticDeps :: FilePath -> IO [(Dependency, EpochTime)]
 staticDeps dir = do
-  jsDeps  <- map (first (JS  . takeBaseName)) `liftM` modificationTimes (dir </> "s" </> "js")  ".js"
-  cssDeps <- map (first (CSS . takeBaseName)) `liftM` modificationTimes (dir </> "s" </> "css") ".css"
+  jsDeps  <- map (first (JS  . takeBaseName)) `liftM` modificationTimes (dir </> "js")  ".js"
+  cssDeps <- map (first (CSS . takeBaseName)) `liftM` modificationTimes (dir </> "css") ".css"
   return $ jsDeps ++ cssDeps
 
 modificationTimes :: FilePath -> String -> IO [(FilePath, EpochTime)]
@@ -103,7 +103,7 @@ modificationTimes dir ext = do
 
 -- |includeDep| also needs to check dependency versions for cache busting.
 
-includeDep :: Dependency -> Html
+includeDep :: E (Dependency -> Html)
 includeDep d =
   case lookup d dependencies of
     Nothing -> inlineJS $ "alert('Dependency \"" ++ show d ++"\" not found.');"

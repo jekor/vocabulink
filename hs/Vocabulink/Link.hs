@@ -37,6 +37,7 @@ import Text.Blaze (unsafeByteString)
 import Text.Blaze.Html5 (audio, source)
 import Text.Blaze.Html5.Attributes (preload)
 
+import System.Environment (getArgs)
 import System.IO.Unsafe (unsafePerformIO)
 
 -- TODO: Get rid of these by just using Aeson directly.
@@ -61,12 +62,16 @@ linkTypeName link
   | linkSoundalike link    = "soundalike"
   | otherwise              = "association"
 
+-- Using unsafePerformIO here to remain compatiable with the ToMarkup type.
 pronounceable :: Link -> Bool
 {-# NOINLINE pronounceable #-}
-pronounceable link = unsafePerformIO $ isFileReadable $ pronunciationFile link "ogg"
+pronounceable link = unsafePerformIO $ do
+  -- Hack: We already know we nave the necessary arg.
+  (staticPath:_) <- getArgs
+  isFileReadable $ pronunciationFile staticPath link "ogg"
 
-pronunciationFile :: Link -> String -> FilePath
-pronunciationFile link filetype = mainDir </> "audio" </> "pronunciation" </> (show $ linkNumber link) <.> filetype
+pronunciationFile :: FilePath -> Link -> String -> FilePath
+pronunciationFile staticPath link filetype = staticPath </> "audio" </> "pronunciation" </> (show $ linkNumber link) <.> filetype
 
 -- Displaying Links
 

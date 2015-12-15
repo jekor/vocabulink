@@ -76,7 +76,7 @@ signup = do
                  , memberEmail  = Nothing
                  }
   liftIO $ mapM_ (newReview m) learned
-  setCookie =<< liftIO (authCookie memberNo)
+  setCookie =<< liftIO (authCookie memberNo ?tokenKey)
   bounce MsgSuccess "Welcome! Please check your email to confirm your account."
  where parseLearned :: String -> Maybe [Integer]
        parseLearned = decode . BLU.fromString
@@ -116,7 +116,7 @@ login = do
       case member' of
         Nothing -> error "Failed to lookup username."
         Just m -> do
-          setCookie =<< liftIO (authCookie $ memberNumber m)
+          setCookie =<< liftIO (authCookie (memberNumber m) ?tokenKey)
           redirect =<< referrerOrVocabulink
     _ -> bounce MsgError "Username and password do not match (or don't exist)."
 
@@ -177,7 +177,7 @@ confirmEmail hash =
                     -- We can't just look at the App's member object, since we just
                     -- updated it.
                     -- TODO: The logic isn't quite right on this.
-                    setCookie =<< liftIO (authCookie $ memberNumber m)
+                    setCookie =<< liftIO (authCookie (memberNumber m) ?tokenKey)
                     bounce MsgSuccess "Congratulations! You've confirmed your account."
             else bounce MsgError "The confirmation code does not match who you're logged in as."
         Just _ -> bounce MsgNotice "You've already confirmed your email."
@@ -241,7 +241,7 @@ passwordReset hash = do
       case member' of
         Nothing -> error "Failed to lookup member."
         Just m -> do
-          setCookie =<< liftIO (authCookie $ memberNumber m)
+          setCookie =<< liftIO (authCookie (memberNumber m) ?tokenKey)
           bounce MsgSuccess "Password reset successfully."
     _ -> error "Invalid or expired password reset."
 

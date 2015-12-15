@@ -66,17 +66,24 @@ import Network (PortID(..), accept)
 import Network.Socket (listen, Socket(..), getAddrInfo, socket, Family(..), SocketType(..), defaultProtocol, bindSocket, addrAddress, SocketOption(..), setSocketOption)
 import qualified Network.SCGI as SCGI
 import Network.URI (unEscapeString)
-import System.IO (hClose)
+import System.Environment (getArgs, getProgName)
+import System.IO (hClose, hPutStrLn, stderr)
 import Web.Cookie (parseCookies)
 
 main :: IO ()
 main = do
-  s <- listenLocal "10033"
-  forever $ do
-    (handle, _, _) <- accept s
-    _ <- forkIO $ finally (SCGI.runRequest handle (catch handleRequest handleError))
+  args <- getArgs
+  case args of
+    [staticPath, tokenKey] -> do
+      s <- listenLocal "10033"
+      forever $ do
+        (handle, _, _) <- accept s
+        _ <- forkIO $ finally (SCGI.runRequest handle (catch (handleRequest staticPath tokenKey) handleError))
                           (hClose handle)
-    return ()
+        return ()
+    _ -> do
+      progName <- getProgName
+      hPutStrLn stderr ("Usage: " ++ progName ++ " static-dir token-key")
  where listenLocal :: String -> IO Socket
        listenLocal port = do
          addrs <- getAddrInfo Nothing (Just "127.0.0.1") (Just port)
@@ -88,19 +95,21 @@ main = do
        handleError :: SomeException -> SCGI Response
        handleError = bounce MsgError . show
 
-handleRequest :: SCGI Response
-handleRequest = do
-  db <- liftIO $ pgConnect "localhost" (PortNumber 5432) "vocabulink" "vocabulink" dbPassword
+handleRequest :: FilePath -> String -> SCGI Response
+handleRequest staticPath tokenKey = do
+  db <- liftIO $ pgConnect "localhost" (PortNumber 5432) "vocabulink" "vocabulink" ""
   member <- loggedIn db
   method' <- SCGI.method
   path' <- SCGI.path
   case (method', path') of
     (Just method, Just path) -> let ?db = db
+                                    ?static = staticPath
+                                    ?tokenKey = tokenKey
                                     ?member = member in dispatch' (BU.toString method) (pathList $ BU.toString path)
     _ -> error "Missing request method or path."
  where loggedIn db = do
          auth <- (lookup "auth" . parseCookies =<<) `liftM` SCGI.header "HTTP_COOKIE"
-         token' <- liftIO $ maybe (return Nothing) (validAuth . BU.toString) auth
+         token' <- liftIO $ maybe (return Nothing) (validAuth tokenKey . BU.toString) auth
          case token' of
            Nothing -> return Nothing
            Just token -> do
@@ -111,7 +120,7 @@ handleRequest = do
              -- it.
              now <- liftIO epochTime
              when (authExpiry token - now < authShelfLife - (24 * 60 * 60)) $ do
-               setCookie =<< liftIO (authCookie $ authMemberNumber token)
+               setCookie =<< liftIO (authCookie (authMemberNumber token) tokenKey)
              row <- liftIO $ $(queryTuple
                       "SELECT username, email FROM member \
                       \WHERE member_no = {authMemberNumber token}") db
