@@ -17,27 +17,25 @@ padding-top-bottom(n)
 vertical-gradient(fromC, toC)
   background mix(fromC, toC)
   background linear-gradient(to bottom, fromC 0%, toC 100%)
+  background -moz-linear-gradient(top, fromC, toC)
+  background -webkit-gradient(linear, center top, center bottom, from(fromC), to(toC))
 
 vertical-half-gradient(fromC, toC)
   background toC
   background linear-gradient(to bottom, fromC 0%, fromC 40%, toC 60%, toC 100%)
+  background -moz-linear-gradient(top, fromC, fromC, fromC, toC, toC, toC)
+  background -webkit-gradient(linear, center top, center bottom, from(fromC), color-stop(40%, fromC), color-stop(60%, toC), to(toC))
 
 vertical-third-gradient(fromC, toC)
   background toC
   background linear-gradient(to bottom, fromC 0%, toC 33%, toC 100%)
+  background -moz-linear-gradient(top, fromC, toC, toC, toC)
+  background -webkit-gradient(linear, center top, center bottom, from(fromC), color-stop(33%, toC), to(toC))
 
 vertical-fade-to(color)
   background: linear-gradient(to bottom, rgba(color, 0) 0%, rgba(color, 1) 33%, rgba(color, 1) 100%)
-
-// @mixin transform($t)
-//   -moz-transform: $t
-//   -webkit-transform: $t
-//   -o-transform: $t
-//   -ms-transform: $t
-//   transform: $t
-
-// @mixin rotate($deg)
-//   @include transform(rotate(#{$deg}deg))
+  background: -moz-linear-gradient(top, fromC, toC, toC, toC)
+  background: -webkit-gradient(linear, center top, center bottom, from(fromC), color-stop(33%, toC), to(toC))
 
 // This is the background color for major blocks in the interface.
 bar-and-box-background = #F7F7F7
