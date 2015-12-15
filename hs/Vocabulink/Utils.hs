@@ -26,14 +26,12 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , partitionHalves, partitionThirds
                         , translate, trim, convertLineEndings
                         , currentDay, currentYear, diffTimeToSeconds
-                        , basename, isFileReadable, sendMail
+                        , isFileReadable, sendMail
                         , logError, prettyPrint
                         , escapeURIString', addToQueryString
                         , gravatarHash
                         , lowercase
                         , traceShow'
-                        {- Control.Applicative -}
-                        , pure, (<$>), (<*>)
                         {- Control.Arrow -}
                         , first, second, (***)
                         {- Control.Monad -}
@@ -48,8 +46,6 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , deriveJSON, deriveToJSON, deriveFromJSON
                         {- Data.Bool.HT -}
                         , if'
-                        {- Data.ByteString.Lazy -}
-                        , readFile, writeFile
                         {- Data.Char -}
                         , toLower
                         {- Data.Convertible -}
@@ -84,8 +80,6 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , (</>), (<.>), takeExtension, replaceExtension, takeBaseName, takeFileName
                         {- System.IO -}
                         , Handle
-                        {- System.Locale -}
-                        , defaultTimeLocale
                         {- System.Posix.Time -}
                         , epochTime
                         {- System.Posix.Types -}
@@ -94,14 +88,12 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , readMaybe
                         ) where
 
-import Control.Applicative (pure, (<$>), (<*>))
 import Control.Arrow (first, second, (***))
 import Control.Monad
 import Control.Monad.CatchIO (MonadCatchIO(..))
 import Control.Monad.Trans (liftIO, MonadIO)
 import Data.Aeson (Value(..), object, (.=), ToJSON(..), FromJSON(..), encode, decode)
 import Data.Aeson.TH (deriveJSON, deriveToJSON, deriveFromJSON)
-import Data.ByteString.Lazy (readFile, writeFile)
 import qualified Data.ByteString.Lazy.UTF8 as BLU
 import Data.Char (toLower, isSpace)
 import Data.Convertible (convert)
@@ -122,7 +114,7 @@ import Data.Bool.HT (if')
 -- formats.
 import Data.Time.Calendar (Day, toGregorian)
 import Data.Time.Clock (UTCTime, DiffTime, getCurrentTime, diffUTCTime, secondsToDiffTime)
-import Data.Time.Format (formatTime, readTime, FormatTime(..))
+import Data.Time.Format (formatTime, readTime, FormatTime(..), defaultTimeLocale)
 import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, utcToZonedTime, utc, LocalTime(..))
 import Data.Tuple.Curry (uncurryN)
 import Network.URI (escapeURIString, isUnescapedInURI, URI(..), uriQuery)
@@ -130,7 +122,6 @@ import System.Directory (getPermissions, doesFileExist, readable)
 import System.Exit (ExitCode(..))
 import System.FilePath ((</>), (<.>), takeExtension, replaceExtension, takeBaseName, takeFileName)
 import System.IO (Handle, hPutStr, hPutStrLn, hClose, stderr)
-import System.Locale (defaultTimeLocale)
 import System.Posix.Time (epochTime)
 import System.Posix.Types (EpochTime)
 import System.Process (createProcess, waitForProcess, proc, std_in, StdStream(..))
@@ -221,7 +212,7 @@ convertLineEndings :: String -> String
 convertLineEndings = LU.join "\n" . splitLines
 
 -- This comes from Real World Haskell.
-
+-- We can't use `lines` from Data.OldList because it only works for newlines.
 splitLines :: String -> [String]
 splitLines [] = []
 splitLines cs =
@@ -233,7 +224,7 @@ splitLines cs =
           _                -> []
 
 isLineTerminator :: Char -> Bool
-isLineTerminator = (`elem` "\r\n")
+isLineTerminator = (`elem` ("\r\n" :: String))
 
 -- Time
 
@@ -260,12 +251,6 @@ diffTimeToSeconds = floor . toRational
 
 instance FormatTime EpochTime where
   formatCharacter c = fmap (\f locale mpado t -> f locale mpado (utcToZonedTime utc (convert t))) (formatCharacter c)
-
--- For files we receive via HTTP, we can't make assumptions about the path
--- separator.
-
-basename :: FilePath -> FilePath
-basename = reverse . takeWhile (`notElem` "/\\") . reverse
 
 isFileReadable :: FilePath -> IO Bool
 isFileReadable f = do

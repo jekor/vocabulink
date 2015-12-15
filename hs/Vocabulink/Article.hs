@@ -21,7 +21,7 @@ import Vocabulink.Comment
 import Vocabulink.Env
 import Vocabulink.Html hiding (article)
 import Vocabulink.Page
-import Vocabulink.Utils hiding ((<$$>), readFile)
+import Vocabulink.Utils hiding ((<$$>))
 
 import Data.ByteString (readFile)
 import Text.Blaze (unsafeByteString)
