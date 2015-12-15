@@ -1,5 +1,11 @@
 source $stdenv/setup
 
+cp -r $src src
+chmod -R u+w src
+cd src
+
+patchPhase
+
 spritesheets="icon markitup toast"
 
 declare -A jses=(
@@ -24,7 +30,6 @@ declare -A csses=(
 )
 
 mkdir -p $out/js $out/img $out/css $out/articles
-cd $src
 
 # JavaScript
 pushd js

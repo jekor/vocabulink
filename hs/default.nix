@@ -6,7 +6,7 @@
 , process, pureMD5, random, SHA, split, sscgi, stdenv, syb
 , template-haskell, templatepg, text, time, tuple, unix
 , utf8-string, utility-ht, vector
-, postgresql, vocabulink-sql
+, postgresql, vocabulink-sql, domain
 }:
 mkDerivation {
   pname = "Vocabulink";
@@ -23,8 +23,11 @@ mkDerivation {
     template-haskell templatepg text time tuple unix utf8-string
     utility-ht vector
   ];
+  # Allow overriding domain (for testing, i.e. vocabulink.com -> vocabulink.lan).
+  postPatch = ''
+    for f in $(find . -type f); do sed -i -e 's/vocabulink\.com/${domain}/g' "$f"; done
+  '';
   preBuild = ''
-    ls -l ${vocabulink-sql}
     # Setup a PostgreSQL database for templatepg compile-time type inference.
     ${postgresql}/bin/initdb db
     ${postgresql}/bin/postgres -D db &

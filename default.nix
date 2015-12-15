@@ -1,5 +1,5 @@
 { stdenv, fetchurl, fetchgit, bash, coreutils, findutils, pandoc
-, uglify, stylus, glue, optipng }:
+, uglify, stylus, glue, optipng, domain }:
 
 stdenv.mkDerivation {
   name = "vocabulink";
@@ -50,6 +50,10 @@ stdenv.mkDerivation {
     sha256 = "0d6xi10mxpcb5s0ak188i1flgxqcbqnd9qm548cmhsjzdvzzfmq7";
   };
   buildInputs = [ bash uglify stylus glue optipng pandoc ];
+  # Allow overriding domain (for testing, i.e. vocabulink.com -> vocabulink.lan).
+  postPatch = ''
+    for f in $(find js css -type f); do sed -i -e 's/vocabulink\.com/${domain}/g' "$f"; done
+  '';
   inherit bash coreutils findutils;
   builder = ./builder.sh;
 }
