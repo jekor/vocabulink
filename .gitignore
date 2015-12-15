@@ -1,8 +1,6 @@
 *.png
 *.jpg
 *.gif
-*.css
-*.html
 *.swf
 *.pdf
 *.zip
@@ -35,3 +33,4 @@
 /readers
 /hs/auth-token-key
 /hs/db-password
+/css/off-the-shelf.css

@@ -2,15 +2,15 @@
 , blaze-builder, blaze-html, blaze-markup, bytestring, cgi
 , ConfigFile, containers, convertible, cookie, data-default
 , directory, either, filepath, hashmap, MissingH, MonadCatchIO-mtl
-, mtl, network, network-uri, old-locale, old-time, pandoc, parsec
+, mtl, network, network-uri, old-time, pandoc, parsec
 , process, pureMD5, random, SHA, split, sscgi, stdenv, syb
 , template-haskell, templatepg, text, time, tuple, unix
 , utf8-string, utility-ht, vector
-, auth-token-key, db-password, postgresql, vocabulink-sql
+, postgresql, vocabulink-sql
 }:
 mkDerivation {
   pname = "Vocabulink";
-  version = "2013.5.16";
+  version = "2015.12.15";
   src = ./.;
   isLibrary = false;
   isExecutable = true;
@@ -18,24 +18,21 @@ mkDerivation {
     aeson aeson-qq applicative-extras base blaze-builder blaze-html
     blaze-markup bytestring cgi ConfigFile containers convertible
     cookie data-default directory either filepath hashmap MissingH
-    MonadCatchIO-mtl mtl network network-uri old-locale old-time pandoc
+    MonadCatchIO-mtl mtl network network-uri old-time pandoc
     parsec process pureMD5 random SHA split sscgi syb
     template-haskell templatepg text time tuple unix utf8-string
     utility-ht vector
   ];
   preBuild = ''
+    ls -l ${vocabulink-sql}
     # Setup a PostgreSQL database for templatepg compile-time type inference.
     ${postgresql}/bin/initdb db
     ${postgresql}/bin/postgres -D db &
     ppid=$!
     sleep 5
-    ${postgresql}/bin/createdb vocabulink
-    ${postgresql}/bin/psql -f ${vocabulink-sql} vocabulink
+    ${postgresql}/bin/psql -f ${vocabulink-sql} template1
     export TPG_DB="vocabulink"
     export TPG_USER="$(whoami)"
-
-    export db_password="${db-password}"
-    export auth_token_key="${auth-token-key}"
   '';
   postBuild = ''
     kill $ppid

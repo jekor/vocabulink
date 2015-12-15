@@ -1,8 +1,15 @@
 -- vocabulink.sql
 
+CREATE DATABASE vocabulink;
+CREATE ROLE vocabulink LOGIN;
+ALTER DATABASE vocabulink OWNER TO vocabulink;
+\connect vocabulink
+
 CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS tablefunc WITH SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA public;
+
+SET ROLE vocabulink;
 
 -- I would use regexp checks and domains at the database level if they worked
 -- for unicode characters. Instead, I'll leave it up to the Haskell layer to do

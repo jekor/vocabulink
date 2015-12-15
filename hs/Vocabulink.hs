@@ -449,21 +449,7 @@ frontPage = do
                                          span ! class_ "button_text" $ "Reading"
   stdPage ("Learn Spanish Through Fiction - Vocabulink") [] (do
     meta ! name "viewport" ! content "width=device-width, initial-scale=1.0, user-scalable=no"
-    preEscapedToMarkup ("<!--Fixes for Internet Explorer CSS3 and HTML5--> \
-                        \<!--[if gte IE 9]> \
-                        \<style type=\"text/css\"> \
-                        \  .gradient { filter: none!important;} \
-                        \</style> \
-                        \<![endif]--> \
-                        \<!--[if lt IE 9]> \
-                        \<script> \
-                        \  'article aside footer header nav section time'.replace(/\\w+/g,function(n){document.createElement(n)}) \
-                        \</script> \
-                        \<![endif]--> \
-                        \<link rel=\"stylesheet\" href=\"//s.vocabulink.com/css/off-the-shelf/style.css\" media=\"screen, projection\"> \
-                        \<!--[if lt IE 9]> \
-                        \<link rel=\"stylesheet\" href=\"//s.vocabulink.com/css/off-the-shelf/style_ie8.css\" media=\"screen, projection\"> \
-                        \<![endif]--> \
+    preEscapedToMarkup ("<link rel=\"stylesheet\" href=\"//s.vocabulink.com/css/off-the-shelf.css\" media=\"screen, projection\"> \
                         \<link href=\"//netdna.bootstrapcdn.com/font-awesome/3.2.0/css/font-awesome.css\" rel=\"stylesheet\">"::String)) $ do
       section ! id "banner" $ do
         div ! class_ "row" $ do
