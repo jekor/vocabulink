@@ -6,7 +6,7 @@
 , process, pureMD5, random, SHA, split, sscgi, stdenv, syb
 , template-haskell, templatepg, text, time, tuple, unix
 , utf8-string, utility-ht, vector
-, postgresql, vocabulink-sql, domain
+, postgresql, vocabulink-sql, domain, static-manifest
 }:
 mkDerivation {
   pname = "Vocabulink";
@@ -36,6 +36,7 @@ mkDerivation {
     ${postgresql}/bin/psql -f ${vocabulink-sql} template1
     export TPG_DB="vocabulink"
     export TPG_USER="$(whoami)"
+    export MANIFEST="${static-manifest}"
   '';
   postBuild = ''
     kill $ppid

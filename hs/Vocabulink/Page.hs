@@ -23,9 +23,6 @@ import Vocabulink.Member
 import Vocabulink.Utils
 
 import qualified Data.ByteString.Lazy.UTF8 as BLU
-import System.Directory (getDirectoryContents)
-import System.IO.Unsafe (unsafePerformIO)
-import System.Posix.Files (getFileStatus, modificationTime)
 import Text.Blaze.Html5 (docTypeHtml, head, noscript, link, body, title, style)
 import Text.Blaze.Html5.Attributes (rel)
 
@@ -80,22 +77,6 @@ simplePage t deps body' = stdPage t deps mempty $ mappend (h1 $ toMarkup t) body
 data Dependency = CSS FilePath | JS FilePath | InlineCSS String | InlineJS String | ReadyJS String
                   deriving (Eq, Show)
 
-dependencies :: E [(Dependency, EpochTime)]
-{-# NOINLINE dependencies #-}
-dependencies = unsafePerformIO $ staticDeps ?static
-
-staticDeps :: FilePath -> IO [(Dependency, EpochTime)]
-staticDeps dir = do
-  jsDeps  <- map (first (JS  . takeBaseName)) `liftM` modificationTimes (dir </> "js")  ".js"
-  cssDeps <- map (first (CSS . takeBaseName)) `liftM` modificationTimes (dir </> "css") ".css"
-  return $ jsDeps ++ cssDeps
-
-modificationTimes :: FilePath -> String -> IO [(FilePath, EpochTime)]
-modificationTimes dir ext = do
-  files <- filter ((== ext) . takeExtension) `liftM` getDirectoryContents dir
-  modTimes <- mapM (liftM modificationTime . getFileStatus . (dir </>)) files
-  return $ zip files modTimes
-
 -- Each dependency is expressed as the path from the root of the static files
 -- subdomain (for now, @s.vocabulink.com@) to the file. Do not include the file
 -- suffix (@.css@ or @.js@); it will be appended automatically. These are meant
@@ -105,16 +86,20 @@ modificationTimes dir ext = do
 
 includeDep :: E (Dependency -> Html)
 includeDep d =
-  case lookup d dependencies of
+  case lookup (depPath d) staticManifest of
     Nothing -> inlineJS $ "alert('Dependency \"" ++ show d ++"\" not found.');"
-    Just v  ->
+    Just checksum ->
       case d of
-        CSS css -> link ! href (toValue $ "http://s.vocabulink.com/css/" ++ css ++ ".css?" ++ show v)
-                        ! rel "stylesheet"
-                        ! type_ "text/css"
-        JS  js  -> script ! src (toValue $ "http://s.vocabulink.com/js/" ++ js ++ ".js?" ++ show v)
-                          $ mempty
+        CSS _ -> link ! href (toValue (depURL checksum))
+                      ! rel "stylesheet"
+                      ! type_ "text/css"
+        JS  _ -> script ! src (toValue (depURL checksum))
+                        $ mempty
         _ -> error "Can only include CSS and JS."
+ where depPath (CSS n) = "css/" ++ n ++ ".css"
+       depPath (JS n) = "js/" ++ n ++ ".js"
+       depPath _ = error "Only CSS and JS dependencies live on the filesystem."
+       depURL checksum = "http://s.vocabulink.com/" ++ depPath d ++ "?" ++ take 7 checksum
 
 -- The standard header bar shows the Vocabulink logo (currently just some
 -- text), a list of hyperlinks, a search box, and either a login/sign up button

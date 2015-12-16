@@ -28,7 +28,7 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , currentDay, currentYear, diffTimeToSeconds
                         , isFileReadable, logError, prettyPrint
                         , escapeURIString', addToQueryString
-                        , gravatarHash, lowercase, traceShow'
+                        , gravatarHash, lowercase, traceShow', manifest
                         {- Control.Arrow -}
                         , first, second, (***)
                         {- Control.Monad -}
@@ -59,8 +59,6 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , splitOn, chunksOf
                         {- Data.Maybe -}
                         , maybe, fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes
-                        {- Data.Monoid -}
-                        , mempty, mappend, mconcat
                         {- Data.Time.Calendar -}
                         , Day
                         {- Data.Time.Clock -}
@@ -102,7 +100,6 @@ import Data.List (intercalate, intersperse, (\\), intersect, nub)
 import Data.List.Split (splitOn, chunksOf)
 import Data.List.Utils as LU -- MissingH
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
-import Data.Monoid
 import Database.TemplatePG
 import Debug.Trace (trace, traceShow)
 import Data.Bool.HT (if')
@@ -121,8 +118,6 @@ import System.IO (Handle, hPutStrLn, stderr)
 import System.Posix.Time (epochTime)
 import System.Posix.Types (EpochTime)
 import Text.Read (readMaybe)
-
-import Prelude hiding (readFile, writeFile)
 
 -- It's often useful to have the compactness of the traditional tertiary
 -- operator rather than an if then else. The |(?)| operator can be used like:
@@ -299,3 +294,8 @@ lowercase [] = []
 lowercase (x:xs) = (toLower x):xs
 
 traceShow' arg = traceShow arg arg
+
+-- Given a file like:
+-- ef07d9a34e14c00d8cf4292e652d3b8e  css/member.css
+-- 6fbbae39b99945bdf35d044f67bbc6ab  img/icon.png
+manifest = fmap (map words . lines) . readFile

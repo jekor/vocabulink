@@ -21,7 +21,7 @@
 -- simpler (if potentially unsafe) approach.
 
 module Vocabulink.Env ( E
-                      , compileYear, languages
+                      , compileYear, languages, staticManifest
                       , withVerifiedMember, withLoggedInMember
                       ) where
 
@@ -32,6 +32,7 @@ import qualified Data.ByteString.Lazy.UTF8 as BLU
 import Database.TemplatePG.Protocol (executeSimpleQuery)
 import Database.TemplatePG.SQL (thConnection)
 import Language.Haskell.TH.Syntax (runIO, Exp(..), Lit(..))
+import System.Environment (getEnv)
 
 type E a = (?db::Handle, ?static::FilePath, ?tokenKey::String, ?member::Maybe Member, ?sendmail::FilePath) => a
 
@@ -44,6 +45,12 @@ languages = $(runIO (do h <- thConnection
                         return $ ListE $ map (\[Just abbr, Just name] ->
                                                  TupE [ LitE $ StringL $ BLU.toString abbr
                                                       , LitE $ StringL $ BLU.toString name]) res))
+
+staticManifest :: [(FilePath, String)]
+staticManifest = $(runIO (do man <- manifest =<< getEnv "MANIFEST"
+                             return $ ListE $ map (\ [checksum, path] ->
+                                                    TupE [ LitE $ StringL path
+                                                         , LitE $ StringL checksum ]) man))
 
 -- | Only perform the given action if the user is authenticated and has
 -- verified their email address. This provides a ``logged out default'' of

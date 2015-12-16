@@ -46,6 +46,8 @@ pushd img
 
 cp -r *.png *.gif off-the-shelf reader $out/img/
 
+# TODO: Create an img manifest so that CSS files can cache-bust images.
+
 ## Spritesheets
 
 ### MarkItUp! sprites are famfamfam Silk icons.
@@ -105,3 +107,11 @@ popd
 if [ -d audio ]; then
     cp -r audio $out/
 fi
+
+# Store a manifest of the static assets (js/css/img).
+# We can use this manifest for cache busting.
+pushd $out
+
+sha1sum $(find js css img -type f) > manifest
+
+popd
