@@ -13,7 +13,7 @@ declare -A jses=(
     [link]="$longtable link.js"
     [member]="$markitup/markitup/jquery.markitup.js $markitup/markitup/sets/default/set.js $showdown loggedin.js comment.js"
     [dashboard]="$drcal dashboard.js"
-    [learn]="$hotkeys $easing learn.js"
+    [review]="$hotkeys $easing review.js"
     [member-page]="member-page.js"
     [reader]="reader.js"
 )
@@ -21,6 +21,7 @@ declare -A jses=(
 declare -A csses=(
     [common]="common.styl comment.styl toast.styl loadmask.styl reveal.styl $out/img/icon.css $out/img/toast.css"
     [member]="markitup.styl $out/img/markitup.css"
+    [link]="link.styl"
     [article]="article.styl"
     [dashboard]="dashboard.styl"
     [member-page]="member-page.styl"

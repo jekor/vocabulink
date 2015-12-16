@@ -23,7 +23,7 @@
   var firstLink = null; // Used for first timers.
 
   function header(text) {
-    $('#learn-header h2').text(text);
+    $('#review-header h2').text(text);
   }
 
   function link() {
@@ -134,32 +134,25 @@
     }
   }
 
-  function doReview(link) {
-    var answer = link[2];
-    var extra = link[3];
-    link[2] = '?';
-    delete link[3];
-    linkEl.hide();
-    updateLink(linkEl, link);
-    header('Remember This Word?');
-    actionEl.show();
-    linkEl.show();
-    var recallStart = Date.now();
-    $('#confirm').text('Reveal Answer').show();
-    confirm = function () {
-      recallTime = Date.now() - recallStart;
-      $('#confirm').hide();
-      link[2] = answer;
-      link[3] = extra;
-      updateLink(linkEl, link);
-      $('#grades').show();
-      header('How Well Did You Remember?');
-    };
+  function updateStories(el, link) {
+    $('.linkword-story-container', el).remove();
+    $('<p class="loading">Loading Stories...</p>').appendTo('#linkword-stories');
+    $.get('/link/' + link[0] + '/stories')
+     .done(function (html) {
+       $('#linkword-stories > p').remove();
+       $('.linkword-story-container', el).remove();
+       el.append($(html));
+     })
+     .fail(function (xhr) {
+       $('#linkword-stories > p').remove();
+       V.toastMessage('error', xhr);
+     });
   }
 
   $(function () {
     var linkEl = link().hide().appendTo('#body');
     var actionEl = actionArea().hide().appendTo('#body');
+    var storiesEl = stories().hide().appendTo('#body');
     $('#confirm').click(function () {confirm();});
     var keyConfirm = function () {
       var button = $('#confirm');
@@ -171,13 +164,40 @@
     }
     $(document).bind('keyup', 'return', keyConfirm);
     $(document).bind('keyup', 'space', keyConfirm);
-    while (review.length > 0) {
-      doReview(review.pop());
+    nextAction = function () {
+      if (review.length > 0) {
+        doReview(review.pop());
+      } else {
+        // Clear the learning area.
+        $('h1.link, #action-area, #linkword-stories').hide();
+        header('Review Session Complete');
+      }
+    };
+    var doReview = function (link) {
+      $('#linkword-stories').hide();
+      var answer = link[2];
+      var extra = link[3];
+      link[2] = '?';
+      delete link[3];
+      linkEl.hide();
+      updateLink(linkEl, link);
+      header('Remember This Word?');
+      actionEl.show();
+      linkEl.show();
+      var recallStart = Date.now();
+      $('#confirm').text('Reveal Answer').show();
+      confirm = function () {
+        recallTime = Date.now() - recallStart;
+        $('#confirm').hide();
+        link[2] = answer;
+        link[3] = extra;
+        updateLink(linkEl, link);
+        $('#grades').show();
+        header('How Well Did You Remember?');
+      };
     }
-    V.setMessage('success', "You've completed all your word reviews for now.");
-    window.location = 'http://www.vocabulink.com';
 
-    // TODO: Start the tour for new users.
+    nextAction();
   });
 
   function tooltipBelow(source, target) {
