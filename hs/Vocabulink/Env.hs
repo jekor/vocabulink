@@ -33,7 +33,7 @@ import Database.TemplatePG.Protocol (executeSimpleQuery)
 import Database.TemplatePG.SQL (thConnection)
 import Language.Haskell.TH.Syntax (runIO, Exp(..), Lit(..))
 
-type E a = (?db::Handle, ?static::FilePath, ?tokenKey::String, ?member::Maybe Member) => a
+type E a = (?db::Handle, ?static::FilePath, ?tokenKey::String, ?member::Maybe Member, ?sendmail::FilePath) => a
 
 compileYear :: Int
 compileYear = $((LitE . IntegerL) `liftM` runIO currentYear)

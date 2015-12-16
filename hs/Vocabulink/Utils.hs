@@ -26,12 +26,9 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , partitionHalves, partitionThirds
                         , translate, trim, convertLineEndings
                         , currentDay, currentYear, diffTimeToSeconds
-                        , isFileReadable, sendMail
-                        , logError, prettyPrint
+                        , isFileReadable, logError, prettyPrint
                         , escapeURIString', addToQueryString
-                        , gravatarHash
-                        , lowercase
-                        , traceShow'
+                        , gravatarHash, lowercase, traceShow'
                         {- Control.Arrow -}
                         , first, second, (***)
                         {- Control.Monad -}
@@ -119,12 +116,10 @@ import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, utcToZonedTime, 
 import Data.Tuple.Curry (uncurryN)
 import Network.URI (escapeURIString, isUnescapedInURI, URI(..), uriQuery)
 import System.Directory (getPermissions, doesFileExist, readable)
-import System.Exit (ExitCode(..))
 import System.FilePath ((</>), (<.>), takeExtension, replaceExtension, takeBaseName, takeFileName)
-import System.IO (Handle, hPutStr, hPutStrLn, hClose, stderr)
+import System.IO (Handle, hPutStrLn, stderr)
 import System.Posix.Time (epochTime)
 import System.Posix.Types (EpochTime)
-import System.Process (createProcess, waitForProcess, proc, std_in, StdStream(..))
 import Text.Read (readMaybe)
 
 import Prelude hiding (readFile, writeFile)
@@ -259,18 +254,7 @@ isFileReadable f = do
     then readable <$> getPermissions f
     else return False
 
-sendMail :: String -> String -> String -> IO ()
-sendMail address subject body = do
-  (Just inF, _, _, pr) <- createProcess (proc "mail"
-                                              ["-r", "\"Vocabulink\" <support@vocabulink.com>"
-                                              ,"-s", subject
-                                              ,address])
-                                        {std_in = CreatePipe}
-  hPutStr inF body >> hClose inF
-  status <- waitForProcess pr
-  when (status /= ExitSuccess) $ error "There was an error sending email from our servers. Please try again later or contact support@vocabulink.com."
-
--- Log a message to standard error. It'll get picked up by svlogd.
+-- Log a message to standard error. It'll get picked up by the logging daemon.
 
 logError :: String -> String -> IO ()
 logError typ msg = hPutStrLn stderr $ "[" ++ typ ++ "] " ++ msg

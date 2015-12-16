@@ -35,6 +35,9 @@ import Vocabulink.Review
 import Vocabulink.Utils
 
 import qualified Data.ByteString.Lazy.UTF8 as BLU
+import System.Exit (ExitCode(..))
+import System.IO (hPutStr, hClose)
+import System.Process (createProcess, waitForProcess, proc, std_in, StdStream(..))
 
 import Prelude hiding (div, id, span)
 
@@ -84,7 +87,7 @@ signup = do
 -- This should be in the App monad and look up the support address itself.
 -- However, TemplatePG's withTransaction only works in the IO monad. So we have
 -- to duplicate some effort here with the from argument.
-sendConfirmationEmail :: String -> String -> String -> IO ()
+sendConfirmationEmail :: E (String -> String -> String -> IO ())
 sendConfirmationEmail email username hash =
   let body = unlines ["Welcome to Vocabulink, " ++ username ++ "."
                      ,""
@@ -291,3 +294,16 @@ deleteAccount = withLoggedInMember $ \ m -> do
       setCookie $ emptyAuthCookie {setCookieMaxAge = Just $ secondsToDiffTime 0}
       bounce MsgSuccess "Your account was successfully deleted."
     _ -> error "Wrong password."
+
+sendMail :: E (String -> String -> String -> IO ())
+sendMail address subject body = do
+  (Just inF, _, _, pr) <- createProcess (proc ?sendmail [address]) {std_in = CreatePipe}
+  hPutStr inF message >> hClose inF
+  status <- waitForProcess pr
+  when (status /= ExitSuccess) $ error "There was an error sending email from our servers. Please try again later or contact support@vocabulink.com."
+ where message = unlines [ "From: \"Vocabulink\" <support@vocabulink.com>"
+                         , "To: " ++ address
+                         , "Subject: " ++ subject
+                         , ""
+                         , body
+                         ]

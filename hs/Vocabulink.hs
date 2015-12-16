@@ -74,16 +74,16 @@ main :: IO ()
 main = do
   args <- getArgs
   case args of
-    [staticPath, tokenKey] -> do
+    [staticPath, sendmail, tokenKey] -> do
       s <- listenLocal "10033"
       forever $ do
         (handle, _, _) <- accept s
-        _ <- forkIO $ finally (SCGI.runRequest handle (catch (handleRequest staticPath tokenKey) handleError))
+        _ <- forkIO $ finally (SCGI.runRequest handle (catch (handleRequest staticPath sendmail tokenKey) handleError))
                           (hClose handle)
         return ()
     _ -> do
       progName <- getProgName
-      hPutStrLn stderr ("Usage: " ++ progName ++ " static-dir token-key")
+      hPutStrLn stderr ("Usage: " ++ progName ++ " static-dir sendmail token-key")
  where listenLocal :: String -> IO Socket
        listenLocal port = do
          addrs <- getAddrInfo Nothing (Just "127.0.0.1") (Just port)
@@ -95,8 +95,8 @@ main = do
        handleError :: SomeException -> SCGI Response
        handleError = bounce MsgError . show
 
-handleRequest :: FilePath -> String -> SCGI Response
-handleRequest staticPath tokenKey = do
+handleRequest :: FilePath -> FilePath -> String -> SCGI Response
+handleRequest staticPath sendmail tokenKey = do
   db <- liftIO $ pgConnect "localhost" (PortNumber 5432) "vocabulink" "vocabulink" ""
   member <- loggedIn db
   method' <- SCGI.method
@@ -104,6 +104,7 @@ handleRequest staticPath tokenKey = do
   case (method', path') of
     (Just method, Just path) -> let ?db = db
                                     ?static = staticPath
+                                    ?sendmail = sendmail
                                     ?tokenKey = tokenKey
                                     ?member = member in dispatch' (BU.toString method) (pathList $ BU.toString path)
     _ -> error "Missing request method or path."
