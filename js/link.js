@@ -140,7 +140,7 @@ function showNewStory() {
   newStory.appendTo('#linkword-stories');
   newStory.find('textarea').one('focus', function () {
     $(this).animate({'height': '10em'}, 250, function () {
-      $(this).markItUp(mySettings);
+      $(this).markItUp(V.markItUpSettings);
       $(this).select().focus();
       $(this).parents('form').append(
         '<div class="signature">'
@@ -196,7 +196,7 @@ $(function () {
                               form.attr('action', '/link/story/' + storyNumber);
                               form.find('textarea').text(data);
                               form.minform();
-                              form.find('textarea').css('height', '10em').markItUp(mySettings);
+                              form.find('textarea').css('height', '10em').markItUp(V.markItUpSettings);
                               form.find('.cancel').click(function () {
                                 form.remove();
                                 story.show();

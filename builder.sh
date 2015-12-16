@@ -11,7 +11,7 @@ spritesheets="icon markitup toast"
 declare -A jses=(
     [common]="$jquery $cookie $loadmask $reveal $minform common.js toast.js loggedout.js"
     [link]="$longtable link.js"
-    [member]="$markitup/markitup/jquery.markitup.js $markitup/markitup/sets/default/set.js $showdown loggedin.js comment.js"
+    [member]=" $showdown jquery.markitup.js markitup.set.js loggedin.js comment.js"
     [dashboard]="$drcal dashboard.js"
     [review]="$hotkeys $easing review.js"
     [member-page]="member-page.js"
@@ -47,6 +47,16 @@ pushd img
 cp -r *.png *.gif off-the-shelf reader $out/img/
 
 ## Spritesheets
+
+### MarkItUp! sprites are famfamfam Silk icons.
+mkdir markitup && pushd markitup
+unzip $silkicons
+for icon in text_heading_1 text_heading_2 text_heading_3 text_bold text_italic text_list_bullets text_list_numbers picture link user_comment script_code tick; do
+    mv icons/$icon.png .;
+done
+rm -rf icons readme.html readme.txt
+popd
+
 for spritesheet in $spritesheets; do
     glue $spritesheet $out/img --url=/img/ --cachebuster --crop
 done

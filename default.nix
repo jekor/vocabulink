@@ -1,4 +1,4 @@
-{ stdenv, fetchurl, fetchgit, bash, coreutils, findutils, pandoc
+{ stdenv, fetchurl, fetchgit, bash, coreutils, findutils, pandoc, unzip
 , uglify, stylus, glue, optipng, domain }:
 
 stdenv.mkDerivation {
@@ -32,11 +32,6 @@ stdenv.mkDerivation {
     url = "https://raw.githubusercontent.com/zurb/reveal/007e38d6a89934c7ef41d0516759fa26c0aa4b11/jquery.reveal.js";
     sha256 = "0w1sv810r9z2vkdkh22gk8mcaqxac82k22b898przx0q9kgxmkkz";
   };
-  markitup = fetchgit {
-    url = "https://github.com/markitup/1.x.git";
-    rev = "3c736e5a3ee0836ed8ca67c72beb9dfce102b51b";
-    sha256 = "105d280c6a958a9b2ca7a383bc28e84aa7d804bc8edc68a77fe2581d57333294";
-  };
   showdown = fetchurl {
     url = "https://raw.githubusercontent.com/showdownjs/showdown/33e6d6709683432c36b80c8e5b954b14355dc31e/src/showdown.js";
     sha256 = "04db4dh9xgqm2rm1zwil5k70fq2yz7lcd492ig46a5klmapmldh3";
@@ -49,7 +44,11 @@ stdenv.mkDerivation {
     url = "https://raw.githubusercontent.com/gdsmith/jquery.easing/0ea4f96be8b46215ec63a84108ceec74ef3374f2/jquery.easing.1.3.js";
     sha256 = "0d6xi10mxpcb5s0ak188i1flgxqcbqnd9qm548cmhsjzdvzzfmq7";
   };
-  buildInputs = [ bash uglify stylus glue optipng pandoc ];
+  silkicons = fetchurl {
+    url = "http://www.famfamfam.com/lab/icons/silk/famfamfam_silk_icons_v013.zip";
+    sha256 = "0ncs9w6fkaha9rdcyn4g1ahylkflni5ad2kjm90pjv1ibjwyr6x7";
+  };
+  buildInputs = [ bash uglify stylus glue optipng pandoc unzip ];
   # Allow overriding domain (for testing, i.e. vocabulink.com -> vocabulink.lan).
   postPatch = ''
     for f in $(find js css -type f); do sed -i -e 's/vocabulink\.com/${domain}/g' "$f"; done
