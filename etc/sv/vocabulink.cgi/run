@@ -1,2 +1,0 @@
-#!/bin/sh
-exec chpst -uwww-data:www-data /home/jekor/vocabulink/vocabulink.cgi 2>&1
