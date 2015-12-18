@@ -225,12 +225,10 @@ reviewPage :: E (String -> String -> IO Html)
 reviewPage learn known = withLoggedInMember $ \m -> do
   -- Send the initial batch of data with this page.
   due <- liftIO $ dueForReview m learn known 100
-  let learnLang = fromMaybe "Unknown Language" $ lookup learn languages
-      knownLang = fromMaybe "Unknown Language" $ lookup known languages
-      vars = "var review = " ++ (BLU.toString $ encode $ map compactLinkJSON due) ++ ";\n"
-          ++ "var learnLanguage = '" ++ learnLang ++ "';"
-          ++ "var knownLanguage = '" ++ knownLang ++ "';"
-  stdPage ("Reviewing " ++ learnLang ++ " Words") [JS "review", CSS "review", JS "link", CSS "link", InlineJS vars] mempty $ do
+  let vars = "var review = " ++ (BLU.toString $ encode $ map compactLinkJSON due) ++ ";\n"
+          ++ "var learnLanguage = '" ++ languageName learn ++ "';"
+          ++ "var knownLanguage = '" ++ languageName known ++ "';"
+  stdPage ("Reviewing " ++ languageName learn ++ " Words") [JS "review", CSS "review", JS "link", CSS "link", InlineJS vars] mempty $ do
     div ! id "review-header" $ do
       h2 $ "Loading..."
 

@@ -89,14 +89,12 @@ pronunciationFile staticPath link filetype = staticPath </> "audio" </> "pronunc
 
 instance ToMarkup Link where
   toMarkup link = do
-    let learnLanguage = fromMaybe "Unknown Language" $ lookup (linkLearnLang link) languages
-        knownLanguage = fromMaybe "Unknown Language" $ lookup (linkKnownLang link) languages
     h1 ! class_ (toValue $ "link " ++ linkTypeName link) $ do
-      span ! class_ "foreign" ! customAttribute "lang" (toValue $ linkLearnLang link) ! title (toValue learnLanguage) $ do
+      span ! class_ "foreign" ! customAttribute "lang" (toValue $ linkLearnLang link) ! title (toValue (languageName (linkLearnLang link))) $ do
         toMarkup $ linkLearn link
         pronunciation
       span ! class_ "link" ! title (toValue $ linkTypeName link) $ linkExtra
-      span ! class_ "familiar" ! customAttribute "lang" (toValue $ linkKnownLang link) ! title (toValue knownLanguage) $ toMarkup $ linkKnown link
+      span ! class_ "familiar" ! customAttribute "lang" (toValue $ linkKnownLang link) ! title (toValue (languageName (linkKnownLang link))) $ toMarkup $ linkKnown link
    where linkExtra = maybe mempty toMarkup $ linkWord link
          pronunciation = if pronounceable link
                            then button ! id "pronounce" ! class_ "button light" $ do
@@ -258,9 +256,7 @@ linkPage link = do
   comments <- maybe (return mempty) renderComments row
   stories <- do ss <- linkStories $ linkNumber link
                 return $ mconcat $ map toMarkup ss
-  let learnLanguage = fromMaybe "Unknown Language" $ lookup (linkLearnLang link) languages
-      knownLanguage = fromMaybe "Unknown Language" $ lookup (linkKnownLang link) languages
-  stdPage (linkLearn link ++ " → " ++ linkKnown link ++ " — " ++ learnLanguage ++ " to " ++ knownLanguage) [CSS "link", JS "link"] mempty $ do
+  stdPage (linkLearn link ++ " → " ++ linkKnown link ++ " — " ++ languageName (linkLearnLang link) ++ " to " ++ languageName (linkKnownLang link)) [CSS "link", JS "link"] mempty $ do
     toMarkup link
     div ! id "linkword-stories" $ do
       div ! class_ "header" $ h2 "Linkword Stories:"

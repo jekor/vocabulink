@@ -21,7 +21,7 @@
 -- simpler (if potentially unsafe) approach.
 
 module Vocabulink.Env ( E
-                      , compileYear, languages, staticManifest
+                      , compileYear, languages, languageName, staticManifest
                       , withVerifiedMember, withLoggedInMember
                       ) where
 
@@ -45,6 +45,9 @@ languages = $(runIO (do h <- thConnection
                         return $ ListE $ map (\[Just abbr, Just name] ->
                                                  TupE [ LitE $ StringL $ BLU.toString abbr
                                                       , LitE $ StringL $ BLU.toString name]) res))
+
+languageName :: String -> String
+languageName languageCode = fromMaybe "Unknown Language" (lookup languageCode languages)
 
 staticManifest :: [(FilePath, String)]
 staticManifest = $(runIO (do man <- manifest =<< getEnv "MANIFEST"

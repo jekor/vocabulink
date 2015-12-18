@@ -45,7 +45,7 @@ readerPage lang name' page = do
                            \WHERE member_no = {memberNo} \
                              \AND reader_no = (SELECT reader_no FROM reader \
                                               \WHERE short_name = {name'} AND lang = {lang})") ?db
-      Just `liftM` (stdPage (title' ++ " - Page " ++ show page ++ " - A Vocabulink " ++ language ++ " Reader") [CSS "reader", JS "reader", JS "link"] mempty $ do
+      Just `liftM` (stdPage (title' ++ " - Page " ++ show page ++ " - A Vocabulink " ++ languageName lang ++ " Reader") [CSS "reader", JS "reader", JS "link"] mempty $ do
         div ! id "book" $ do
           when (page > 1) $ a ! class_ "pager prev sprite sprite-icon-arrow-left" ! title "Previous Page" ! href (toValue (page > 1 ? show (page - 1) $ ".")) $ mempty
           let nextRef = show (page + 1)
@@ -61,4 +61,3 @@ readerPage lang name' page = do
               "Click a word on the left to see some information about it here."
           div ! style "clear: both" $ mempty) -- We can't use overflow: hidden here.
     _ -> return Nothing
- where language = fromMaybe "Unknown Language" $ lookup lang languages
