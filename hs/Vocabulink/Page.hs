@@ -132,9 +132,6 @@ footerBar = do
             ] ! class_ "hyperlinks"
   p $ do
     copyrightNotice
-    span ! id "design-attribution" $ do
-      "Design by: "
-      a ! href "http://www.designcharisma.com" $ "Design Charisma"
  where mailto = "mailto:support@vocabulink.com?subject=support%20request" ++ (maybe "" (\m -> "%20from%20" ++ escapeURIString' (memberName m)) ?member)
 
 -- We want a copyright notice at the bottom of every page. Since this is a
