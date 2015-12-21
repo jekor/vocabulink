@@ -77,7 +77,7 @@
                       ,'time': recallTime}})
        .fail(function () {V.toastError('Failed to record grade.');});
       if (g >= 0.5) {
-        // Update the "X links to review" in the header.
+        // Update the "X words to review" in the header.
         V.incrReviewCount(-1);
       }
     }
