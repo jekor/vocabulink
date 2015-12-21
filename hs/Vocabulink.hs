@@ -93,7 +93,12 @@ main = do
          listen s 5
          return s
        handleError :: SomeException -> SCGI Response
-       handleError = bounce MsgError . show
+       handleError e = do
+         path <- SCGI.path
+         case path of
+           -- We can't bounce on the front page or we'll get an infinite loop.
+           (Just "/") -> return (SCGI.Response "500 Internal Server Error" (BLU.fromString (show e)))
+           _ -> bounce MsgError (show e)
 
 handleRequest :: FilePath -> FilePath -> String -> SCGI Response
 handleRequest staticPath sendmail tokenKey = do
