@@ -64,7 +64,7 @@ signup = do
   liftIO $ mapM_ (newReview m) learned
   setCookie =<< liftIO (authCookie memberNo ?tokenKey)
   bounce MsgSuccess "Welcome! Please check your email to confirm your account."
- where parseLearned :: String -> Maybe [Integer]
+ where parseLearned :: String -> Maybe [Int32]
        parseLearned = decode . BLU.fromString
 
 -- This should be in the App monad and look up the support address itself.
@@ -122,16 +122,16 @@ usernameAvailable u =
   if' (length u < 4)  (return False) $
   if' (length u > 24) (return False) $
   if' ('@' `elem` u) (return False) $
-  isNothing <$> $(queryTuple "SELECT username FROM member \
-                             \WHERE username ILIKE {u}") ?db
+  (isNothing :: Maybe Text -> Bool) <$> $(queryTuple "SELECT username FROM member \
+                                                     \WHERE username ILIKE {u}") ?db
 
 -- TODO: Validate email addresses.
 emailAvailable :: E (String -> IO Bool)
 emailAvailable e =
   -- We could check if the address exists in member_confirmation, but that
   -- would allow someone who doesn't control an address to block its use.
-  isNothing <$> $(queryTuple "SELECT email FROM member \
-                             \WHERE email ILIKE {e}") ?db
+  (isNothing :: Maybe (Maybe Text) -> Bool) <$> $(queryTuple "SELECT email FROM member \
+                                                             \WHERE email ILIKE {e}") ?db
 
 -- This is the place that the dispatcher will send the client to if they click
 -- the hyperlink in the email. If confirmation is successful it redirects them
@@ -181,7 +181,7 @@ sendPasswordReset email = do
                            \SELECT member_no FROM member_confirmation WHERE email = {email} \
                            \LIMIT 1") ?db
   case memberNo of
-    Just (Just mn) -> do
+    Just (Just (mn :: Int32)) -> do
       $(execute "DELETE FROM password_reset_token WHERE member_no = {mn}") ?db
       hash <- fromJust <$> $(queryTuple
         "INSERT INTO password_reset_token (member_no, hash, expires) \
@@ -202,7 +202,7 @@ passwordResetPage hash = do
   memberNo <- $(queryTuple "SELECT member_no FROM password_reset_token \
                            \WHERE hash = {hash} AND expires > current_timestamp") ?db
   case memberNo of
-    Just _ -> simplePage "Change Your Password" [] $ do
+    Just (_ :: Int32) -> simplePage "Change Your Password" [] $ do
                 form ! action (toValue $ "/member/password/reset/" ++ hash)
                      ! method "post"
                      ! style "width: 33em; margin-left: auto; margin-right: auto; text-align: center" $ do
@@ -219,7 +219,7 @@ passwordReset hash = do
   memberNo <- liftIO $ $(queryTuple "SELECT member_no FROM password_reset_token \
                                     \WHERE hash = {hash} AND expires > current_timestamp") ?db
   case memberNo of
-    Just mn -> do
+    Just (mn :: Int32) -> do
       member' <- uncurryN Member <$$> (liftIO $ $(queryTuple "UPDATE member SET password_hash = crypt({password}, password_hash) \
                                                              \WHERE member_no = {mn} \
                                                              \RETURNING member_no, username, email") ?db)

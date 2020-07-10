@@ -6,16 +6,17 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , safeHead, safeTail, every2nd, every3rd, maybeM
                         , partitionHalves, partitionThirds
                         , translate, trim, convertLineEndings
-                        , currentDay, currentYear, diffTimeToSeconds
+                        , currentDay, currentYear, diffTimeToSeconds, utcFromEpoch
                         , isFileReadable, logError, prettyPrint
                         , escapeURIString', addToQueryString
                         , gravatarHash, lowercase, traceShow', manifest
+                        , languageName
+                        {- Vocabulink.Constants -}
+                        , languages
                         {- Control.Arrow -}
                         , first, second, (***)
                         {- Control.Monad -}
-                        , liftM, Control.Monad.join, msum, when, unless, replicateM, mzero, forM, forM_, (>=>), (<=<)
-                        {- Control.Monad.CatchIO -}
-                        , MonadCatchIO(..)
+                        , liftM, Control.Monad.join, msum, when, unless, replicateM, mzero, forM, forM_, (>=>), (<=<), void
                         {- Control.Monad.Trans -}
                         , liftIO, MonadIO
                         {- Data.Aeson -}
@@ -34,12 +35,16 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , fromRight
                         {- Data.Either.Utils -}
                         , forceEither
+                        {- Data.Int -}
+                        , Int16, Int32, Int64
                         {- Data.List -}
                         , intercalate, intersperse, (\\), intersect, nub
                         {- Data.List.Split -}
                         , splitOn, chunksOf
                         {- Data.Maybe -}
                         , maybe, fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes
+                        {- Data.Text -}
+                        , Text, pack
                         {- Data.Time.Calendar -}
                         , Day
                         {- Data.Time.Clock -}
@@ -49,7 +54,7 @@ module Vocabulink.Utils ( (?), (<$$>)
                         {- Data.Tuple.Curry -}
                         , uncurryN
                         {- Database.TemplatePG -}
-                        , withTransaction, rollback, execute, queryTuple, queryTuples, insertIgnore, PGException(..)
+                        , withTransaction, rollback, execute, queryTuple, queryTuples, insertIgnore, PGError(..)
                         {- Debug.Trace -}
                         , trace, traceShow
                         {- System.FilePath -}
@@ -64,9 +69,10 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , readMaybe
                         ) where
 
+import Vocabulink.Constants
+
 import Control.Arrow (first, second, (***))
 import Control.Monad
-import Control.Monad.CatchIO (MonadCatchIO(..))
 import Control.Monad.Trans (liftIO, MonadIO)
 import Data.Aeson (Value(..), object, (.=), ToJSON(..), FromJSON(..), encode, decode)
 import Data.Aeson.TH (deriveJSON, deriveToJSON, deriveFromJSON)
@@ -77,11 +83,15 @@ import Data.Default (def)
 import Data.Digest.Pure.MD5 (md5)
 import Data.Either.Combinators (fromRight)
 import Data.Either.Utils (forceEither) -- MissingH
+import Data.Int (Int16, Int32, Int64)
 import Data.List (intercalate, intersperse, (\\), intersect, nub)
 import Data.List.Split (splitOn, chunksOf)
 import Data.List.Utils as LU -- MissingH
+import qualified Data.Map.Strict as M
+import Data.Text (Text, pack)
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
-import Database.TemplatePG
+import Database.PostgreSQL.Typed (PGError(..))
+import Database.PostgreSQL.Typed.TemplatePG
 import Debug.Trace (trace, traceShow)
 import Data.Bool.HT (if')
 -- Time is notoriously difficult to deal with in Haskell. It gets especially
@@ -89,8 +99,9 @@ import Data.Bool.HT (if')
 -- formats.
 import Data.Time.Calendar (Day, toGregorian)
 import Data.Time.Clock (UTCTime, DiffTime, getCurrentTime, diffUTCTime, secondsToDiffTime)
-import Data.Time.Format (formatTime, readTime, FormatTime(..), defaultTimeLocale)
-import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, utcToZonedTime, utc, LocalTime(..))
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
+import Data.Time.Format (formatTime, readTime, defaultTimeLocale)
+import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, LocalTime(..))
 import Data.Tuple.Curry (uncurryN)
 import Network.URI (escapeURIString, isUnescapedInURI, URI(..), uriQuery)
 import System.Directory (getPermissions, doesFileExist, readable)
@@ -220,8 +231,7 @@ serverDate time = toGregorian <$> serverDay time
 diffTimeToSeconds :: DiffTime -> Integer
 diffTimeToSeconds = floor . toRational
 
-instance FormatTime EpochTime where
-  formatCharacter c = fmap (\f locale mpado t -> f locale mpado (utcToZonedTime utc (convert t))) (formatCharacter c)
+utcFromEpoch = posixSecondsToUTCTime . realToFrac
 
 isFileReadable :: FilePath -> IO Bool
 isFileReadable f = do
@@ -243,6 +253,9 @@ class PrettyPrint a where
 instance PrettyPrint Integer where
   prettyPrint = reverse . intercalate "," . chunksOf 3 . reverse . show
 
+instance PrettyPrint Int64 where
+  prettyPrint = reverse . intercalate "," . chunksOf 3 . reverse . show
+
 -- TODO: instance PrettyPrint Float
 
 instance PrettyPrint Day where
@@ -262,7 +275,7 @@ addToQueryString s uri =
   uri {uriQuery = query'}
 
 maybeM :: Monad m => (a -> m b) -> (Maybe a -> m (Maybe b))
-maybeM a = \ x' ->
+maybeM a x' =
   case x' of
     Nothing -> return Nothing
     Just x -> Just `liftM` a x
@@ -280,3 +293,6 @@ traceShow' arg = traceShow arg arg
 -- ef07d9a34e14c00d8cf4292e652d3b8e  css/member.css
 -- 6fbbae39b99945bdf35d044f67bbc6ab  img/icon.png
 manifest = fmap (map words . lines) . readFile
+
+languageName :: String -> String
+languageName = (M.!) languages

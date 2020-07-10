@@ -1,4 +1,4 @@
--- vocabulink.sql
+\set ON_ERROR_STOP on
 
 CREATE DATABASE vocabulink;
 CREATE ROLE vocabulink LOGIN;
@@ -242,6 +242,15 @@ INSERT INTO language (abbr, name) VALUES
 ('za','Zhuang'),
 ('zh','Chinese'),
 ('zu','Zulu');
+
+CREATE FUNCTION languages_haskell () RETURNS TEXT AS $$
+  SELECT E'languages = M.fromList [' || string_agg('("' || abbr || '", "' || name || '")', ', ') || ']' FROM language
+$$ LANGUAGE SQL VOLATILE SET search_path FROM CURRENT;
+
+-- CREATE FUNCTION language_names_haskell () RETURNS SETOF TEXT AS $$
+--   SELECT 'languageName "' || abbr || '" = "' || name || '"'
+--   FROM language
+-- $$ LANGUAGE SQL VOLATILE SET search_path FROM CURRENT;
 
 CREATE TABLE link (
        link_no SERIAL PRIMARY KEY,

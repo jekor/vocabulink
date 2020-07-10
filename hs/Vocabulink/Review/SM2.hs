@@ -19,7 +19,7 @@ import Vocabulink.Utils
 -- This should return Nothing if there was an error or 0 if the item needs to
 -- be repeated immediatey.
 
-reviewInterval :: E (Integer -> Integer -> DiffTime -> Float -> IO DiffTime)
+reviewInterval :: E (Int32 -> Int32 -> DiffTime -> Float -> IO DiffTime)
 reviewInterval memberNo linkNo previous recallGrade = do
   let p = daysFromSeconds $ diffTimeToSeconds previous
       q = round $ recallGrade * 5 -- The algorithm expects 0-5, not 0-1.
@@ -54,7 +54,7 @@ secondsFromDays d = round $ d * 24 * 60 * 60
 -- The first 2 review intervals are fixed. The following are based on the
 -- duration of the previous interval (|p|) and the easiness factor (|ef|).
 
-interval :: Float -> Integer -> Float -> Float
+interval :: Float -> Int16 -> Float -> Float
 interval _ 1 _  = 1.0
 interval _ 2 _  = 6.0
 interval p _ ef = p * ef
@@ -74,14 +74,14 @@ easinessFactor ef q = max 1.3 $ ef + (0.1 - x * (0.08 + x * 0.02))
 -- for each link. This establishes the variable record in the database the
 -- first time a link is reviewed.
 
-createSM2 :: E (Integer -> Integer -> Integer -> Float -> IO ())
+createSM2 :: E (Int32 -> Int32 -> Int16 -> Float -> IO ())
 createSM2 memberNo linkNo n ef = $(execute
   "INSERT INTO link_sm2 (member_no, link_no, n, EF) \
                 \VALUES ({memberNo}, {linkNo}, {n}, {ef})") ?db
 
 -- When a link is already being reviewed, this updates the SM2 variables.
 
-updateSM2 :: E (Integer -> Integer -> Integer -> Float -> IO ())
+updateSM2 :: E (Int32 -> Int32 -> Int16 -> Float -> IO ())
 updateSM2 memberNo linkNo n ef = $(execute
   "UPDATE link_sm2 SET n = {n}, EF = {ef} \
   \WHERE member_no = {memberNo} AND link_no = {linkNo}") ?db

@@ -10,7 +10,7 @@ import Vocabulink.Utils
 
 import Prelude hiding (div, id, span)
 
-readerPage :: E (String -> String -> Int -> IO (Maybe Html))
+readerPage :: E (String -> String -> Int32 -> IO (Maybe Html))
 readerPage lang name' page = do
   row <- $(queryTuple "SELECT title, body, (SELECT MAX(page_no) \
                                            \FROM reader_page \

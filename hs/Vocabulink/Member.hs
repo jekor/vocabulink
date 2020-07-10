@@ -9,10 +9,10 @@ import Vocabulink.Utils
 
 import qualified Data.ByteString.Lazy.Char8 as BC8
 import qualified Data.ByteString.UTF8 as BU
-import Data.Digest.Pure.SHA (hmacSha1, showDigest)
+import Data.Digest.Pure.SHA (hmacSha1)
 import Web.Cookie (SetCookie(..))
 
-data Member = Member { memberNumber :: Integer
+data Member = Member { memberNumber :: Int32
                      , memberName   :: String
                      , memberEmail  :: Maybe String
                      } deriving (Eq, Show)
@@ -27,8 +27,8 @@ instance ToJSON Member where
 -- Each time a member logs in, we send an authentication cookie to their
 -- browser. The cookie is a digest of some state information. We then use the
 -- cookie for authenticating their identity on subsequent requests.
- 
-data AuthToken = AuthToken { authMemberNumber  :: Integer
+
+data AuthToken = AuthToken { authMemberNumber  :: Int32
                            , authExpiry        :: EpochTime
                            , authDigest        :: String -- HMAC hash
                            }
@@ -55,7 +55,7 @@ instance Read AuthToken where
 
 -- | Create an AuthToken with the default expiration time, automatically
 -- calculating the digest.
-authToken :: Integer -> String -> IO AuthToken
+authToken :: Int32 -> String -> IO AuthToken
 authToken memberNo tokenKey = do
   now <- epochTime
   let expires = now + authShelfLife
@@ -73,13 +73,13 @@ authToken memberNo tokenKey = do
 -- storing old keys long enough to use them for any valid login session. Without
 -- this, authentication is less secure.
 tokenDigest :: AuthToken -> String -> String
-tokenDigest a tokenKey = showDigest $ hmacSha1 (BC8.pack tokenKey) (BC8.pack token)
+tokenDigest a tokenKey = show $ hmacSha1 (BC8.pack tokenKey) (BC8.pack token)
   where token = show (authMemberNumber a) ++ show (authExpiry a)
 
 -- -- Setting the cookie is rather simple by this point. We just create the auth
 -- -- token and send it to the client.
 
-authCookie :: Integer -> String -> IO SetCookie
+authCookie :: Int32 -> String -> IO SetCookie
 authCookie memberNo tokenKey = do
   token <- authToken memberNo tokenKey
   return $ emptyAuthCookie { setCookieValue  = BU.fromString $ show token

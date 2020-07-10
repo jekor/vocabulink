@@ -9,8 +9,8 @@ import Vocabulink.Utils
 
 import Prelude hiding (div, span, id)
 
-data Comment = Comment { commentNo       :: Integer
-                       , commentLevel    :: Integer
+data Comment = Comment { commentNo       :: Int32
+                       , commentLevel    :: Int32
                        , commentUsername :: String
                        , commentEmail    :: String
                        , commentTime     :: UTCTime
@@ -35,7 +35,7 @@ commentBox c = do
 
 -- Storing a comment establishes and returns its unique comment number.
 
-storeComment :: E (Integer -> String -> Maybe Integer -> IO Integer)
+storeComment :: E (Int32 -> String -> Maybe Int32 -> IO Int32)
 storeComment memberNo body parent = do
   when (body == "") $ error "Empty comment body"
   fromJust <$> query ?db
@@ -47,7 +47,7 @@ storeComment memberNo body parent = do
                                                       \VALUES ({memberNo}, {body}, {p'}) \
                                          \RETURNING comment_no")
 
-getComments :: E (Integer -> IO [Comment])
+getComments :: E (Int32 -> IO [Comment])
 getComments root = map commentFromValues <$> $(queryTuples "SELECT * FROM comment_tree({root})") ?db
  where commentFromValues (n, l, u, e, t, b) = Comment (fromJust n) (fromJust l) (fromJust u) (fromJust e) (fromJust t) (fromJust b)
 
@@ -55,7 +55,7 @@ getComments root = map commentFromValues <$> $(queryTuples "SELECT * FROM commen
 -- branching from a fake root comment. We examine the level of the first
 -- comment coming back from getComments to determine which we're dealing with.
 
-renderComments :: E (Integer -> IO Html)
+renderComments :: E (Int32 -> IO Html)
 renderComments root = do
   cs <- getComments root
   let cs'  = if length cs > 0 && commentLevel (head cs) == 0

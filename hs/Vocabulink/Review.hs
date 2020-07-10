@@ -19,7 +19,10 @@ import Vocabulink.Member
 import Vocabulink.Page
 import Vocabulink.Utils
 
+import Control.Exception (catch)
 import qualified Data.ByteString.Lazy.UTF8 as BLU
+import qualified Data.Map.Lazy as ML
+import Database.PostgreSQL.Typed.ErrCodes (not_null_violation)
 import Data.Time.Calendar (toGregorian)
 
 import Prelude hiding (div, span, id)
@@ -38,7 +41,7 @@ import Prelude hiding (div, span, id)
 -- that they're reviewing the link now). However, this is a good candidate for
 -- an asynchronous JavaScript call.
 
-newReview :: E (Member -> Integer -> IO ())
+newReview :: E (Member -> Int32 -> IO ())
 newReview m linkNo = insertIgnore $
   $(execute "INSERT INTO link_to_review (member_no, link_no) \
                                 \VALUES ({memberNumber m}, {linkNo})") ?db
@@ -58,7 +61,7 @@ newReview m linkNo = insertIgnore $
 
 -- All database updates during this process are wrapped in a transaction.
 
-scheduleNextReview :: E (Member -> Integer -> Float -> Integer -> EpochTime -> IO ())
+scheduleNextReview :: E (Member -> Int32 -> Float -> Int32 -> EpochTime -> IO ())
 scheduleNextReview m linkNo recallGrade recallTime reviewedAt = do
   previous <- fromJust <$> previousInterval m linkNo
   diff <- SM2.reviewInterval (memberNumber m) linkNo previous recallGrade
@@ -66,12 +69,12 @@ scheduleNextReview m linkNo recallGrade recallTime reviewedAt = do
     $(execute
       "INSERT INTO link_review (member_no, link_no, recall_grade, recall_time, actual_time, \
                                \target_time) \
-                       \VALUES ({memberNumber m}, {linkNo}, {recallGrade}, {recallTime}, {reviewedAt}, \
+                       \VALUES ({memberNumber m}, {linkNo}, {recallGrade}, {recallTime}, {utcFromEpoch reviewedAt}, \
                                \(SELECT target_time FROM link_to_review \
                                 \WHERE member_no = {memberNumber m} AND link_no = {linkNo}))") ?db
     $(execute
       "UPDATE link_to_review \
-      \SET target_time = {reviewedAt}::timestamp with time zone + {diff}::interval \
+      \SET target_time = {utcFromEpoch reviewedAt}::timestamp with time zone + {diff}::interval \
       \WHERE member_no = {memberNumber m} AND link_no = {linkNo}") ?db
 
 -- There are at least 2 ways to decide which links should be brought up for
@@ -97,7 +100,7 @@ scheduleNextReview m linkNo recallGrade recallTime reviewedAt = do
 -- should also have the side effect of reducing the size of the queue faster
 -- because links that the learner has been studying longer are likely to have
 -- bigger payoff (time until the next review date) if they nail them.
-dueForReview :: E (Member -> String -> String -> Int -> IO [Link])
+dueForReview :: E (Member -> String -> String -> Int64 -> IO [Link])
 dueForReview m learn' known' n = map (uncurryN Link) <$> $(queryTuples
   "SELECT l.link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
   \FROM link_to_review l \
@@ -117,9 +120,9 @@ dueForReview m learn' known' n = map (uncurryN Link) <$> $(queryTuples
 -- that the review algorithm does not have to be used for determining the first
 -- review (immediate).
 
-previousInterval :: E (Member -> Integer -> IO (Maybe DiffTime))
+previousInterval :: E (Member -> Int32 -> IO (Maybe DiffTime))
 previousInterval m linkNo =
-  (secondsToDiffTime . fromJust) <$$> $(queryTuple
+  (secondsToDiffTime . (fromIntegral :: Int32 -> Integer) . fromJust) <$$> $(queryTuple
     "SELECT COALESCE(extract(epoch from current_timestamp - \
                             \(SELECT actual_time FROM link_review \
                              \WHERE member_no = {memberNumber m} AND link_no = {linkNo} \
@@ -139,9 +142,9 @@ reviewStats m = do
   links <- fromJust . fromJust <$> $(queryTuple
     "SELECT COUNT(*) FROM link_to_review \
     \WHERE member_no = {memberNumber m}") ?db
-  return $ object [ "due" .= (due :: Integer)
-                  , "reviews" .= (reviews :: Integer)
-                  , "links" .= (links :: Integer)
+  return $ object [ "due" .= (due :: Int64)
+                  , "reviews" .= (reviews :: Int64)
+                  , "links" .= (links :: Int64)
                   ]
 
 dailyReviewStats :: E (Member -> Day -> Day -> String -> IO [Value])
@@ -163,12 +166,12 @@ dailyReviewStats m start end tzOffset = do
   return $ map reviewJSON reviews ++ map scheduledJSON scheduled
  where reviewJSON (day, links, recallTime) =
          object [ "date" .= (toGregorian $ fromJust day)
-                , "reviewed" .= (fromJust links ::Integer)
-                , "recallTime" .= (fromJust recallTime :: Integer)
+                , "reviewed" .= (fromJust links :: Int64)
+                , "recallTime" .= (fromJust recallTime :: Int64)
                 ]
        scheduledJSON (day, links) =
          object [ "date" .= (toGregorian $ fromJust day)
-                , "scheduled" .= (fromJust links :: Integer)
+                , "scheduled" .= (fromJust links :: Int64)
                 ]
 
 detailedReviewStats :: E (Member -> Day -> Day -> String -> IO Value)
@@ -191,17 +194,17 @@ detailedReviewStats m start end tzOffset = do
     \ORDER BY target_time") ?db
   return $ object ["reviewed" .= map reviewJSON reviews, "scheduled" .= map scheduledJSON scheduled]
  where reviewJSON (linkNo, time, grade, learn, known) =
-         object [ "linkNumber" .= (linkNo :: Integer)
-                , "time" .= (fromJust time :: Integer)
-                , "grade" .= (round (grade * 5) :: Integer)
-                , "learn" .= learn
-                , "known" .= known
+         object [ "linkNumber" .= (linkNo :: Int32)
+                , "time" .= (fromJust time :: Int32)
+                , "grade" .= (round ((grade :: Double) * 5) :: Int32)
+                , "learn" .= (learn :: Text)
+                , "known" .= (known :: Text)
                 ]
        scheduledJSON (linkNo, time, learn, known) = do
-         object [ "linkNumber" .= (linkNo :: Integer)
-                , "time" .= (fromJust time :: Integer)
-                , "learn" .= learn
-                , "known" .= known
+         object [ "linkNumber" .= (linkNo :: Int32)
+                , "time" .= (fromJust time :: Int32)
+                , "learn" .= (learn :: Text)
+                , "known" .= (known :: Text)
                 ]
 
 reviewPage :: E (String -> String -> IO Html)
@@ -218,15 +221,15 @@ reviewPage learn known = withLoggedInMember $ \m -> do
 -- The client sends us a list of links that it thinks it's reviewing. We tell
 -- it if we have any it doesn't. If it has some we don't, then we record them
 -- server-side.
-syncLinks :: E (Member -> [Integer] -> IO ([Integer], [Integer]))
+syncLinks :: E (Member -> [Int32] -> IO ([Int32], [Int32]))
 syncLinks m retained = do
   reviewing <- reviewingLinks
   deleted <- reviewingDeleted
   missingLinks <- catMaybes `liftM` (forM (traceShow' $ (retained \\ reviewing) \\ deleted) $ \linkNo -> do
     catch (newReview m linkNo >> return Nothing)
-          (\(PGException code _) -> return $ case code of
-                                               "23503" -> Just linkNo
-                                               _ -> Nothing))
+          (\(PGError fields) -> return $ if (ML.!) fields 'C' == not_null_violation
+                                           then Just linkNo
+                                           else Nothing))
   let toDelete = missingLinks ++ (retained `intersect` deleted)
   return (reviewing \\ retained, toDelete)
  where reviewingLinks = $(queryTuples

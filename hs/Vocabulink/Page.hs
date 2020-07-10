@@ -31,7 +31,7 @@ stdPage title' deps head' body' = do
   return $ docTypeHtml $ do
     head $ do
       title $ toMarkup title'
-      link ! rel "icon" ! type_ "image/png" ! href "http://s.vocabulink.com/img/favicon.png"
+      link ! rel "icon" ! type_ "image/png" ! href "//s.vocabulink.com/img/favicon.png"
       mconcat cssDeps
       inlineCSS $ intercalate "\n" [ css | InlineCSS css <- deps' ]
       head'
@@ -42,7 +42,6 @@ stdPage title' deps head' body' = do
         div ! id "body" $ body'
         div ! id "foot" $ footerBar
       inlineJS $ memberJS
-      script ! src "http://www.google-analytics.com/ga.js" $ mempty
       mconcat jsDeps
       inlineJS $ intercalate "\n" [ js | InlineJS js <- deps' ]
       readyJS $ intercalate "\n" [ js | ReadyJS js <- deps' ]
@@ -82,7 +81,7 @@ includeDep d =
  where depPath (CSS n) = "css/" ++ n ++ ".css"
        depPath (JS n) = "js/" ++ n ++ ".js"
        depPath _ = error "Only CSS and JS dependencies live on the filesystem."
-       depURL checksum = "http://s.vocabulink.com/" ++ depPath d ++ "?" ++ take 7 checksum
+       depURL checksum = "//s.vocabulink.com/" ++ depPath d ++ "?" ++ take 7 checksum
 
 -- The standard header bar shows the Vocabulink logo (currently just some
 -- text), a list of hyperlinks, a search box, and either a login/sign up button
@@ -94,7 +93,7 @@ headerBar :: E ([Html] -> Html)
 headerBar extras = do
   a ! href "/" ! accesskey "1" $ do
     img ! class_ "logo" ! alt "Vocabulink: Learn Languages through Fiction"
-        ! src "http://s.vocabulink.com/img/logo.png"
+        ! src "//s.vocabulink.com/img/logo.png"
   div ! id "head-decoration" $ mempty
   div ! id "head-bar" $ do
     searchBox
@@ -163,6 +162,6 @@ reviewBox = do
                       \AND learn_lang = 'es' AND known_lang = 'en' \
                       \AND current_timestamp > target_time \
                       \AND NOT deleted") ?db
-       message :: Integer -> Html
+       message :: Int64 -> Html
        message 1 = strong "1" >> " word to review"
        message n = strong (toMarkup n) >> " words to review"

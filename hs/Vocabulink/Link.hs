@@ -29,7 +29,7 @@ import qualified Data.Aeson.Types as AT
 
 import Prelude hiding (span, id, div)
 
-data Link = Link { linkNumber     :: Integer
+data Link = Link { linkNumber     :: Int32
                  , linkLearn      :: String
                  , linkKnown      :: String
                  , linkLearnLang  :: String
@@ -82,8 +82,8 @@ instance ToMarkup Link where
          pronunciation = if pronounceable link
                            then button ! id "pronounce" ! class_ "button light" $ do
                                   audio ! preload "auto" $ do
-                                    source ! src (toValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".ogg")
-                                    source ! src (toValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".mp3")
+                                    source ! src (toValue $ "//s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".ogg")
+                                    source ! src (toValue $ "//s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".mp3")
                                   sprite "icon" "audio"
                            else mempty
 
@@ -101,8 +101,8 @@ compactLinkMarkup link = div $ do
  where pronunciation = if pronounceable link
                        then button ! id "pronounce" ! class_ "button light" $ do
                               audio ! preload "auto" $ do
-                                source ! src (toValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".ogg")
-                                source ! src (toValue $ "http://s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".mp3")
+                                source ! src (toValue $ "//s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".ogg")
+                                source ! src (toValue $ "//s.vocabulink.com/audio/pronunciation/" ++ show (linkNumber link) ++ ".mp3")
                               sprite "icon" "audio"
                        else mempty
        mnemonic = case (linkWord link, linkSoundalike link) of
@@ -127,7 +127,7 @@ compactLinkJSON link =
          | linkSoundalike l    = [aesonQQ| {"soundalike": #{True}} |]
          | otherwise           = Null
 
-linkDetails :: E (Integer -> IO (Maybe Link))
+linkDetails :: E (Int32 -> IO (Maybe Link))
 linkDetails linkNo =
   uncurryN Link <$$> $(queryTuple
     "SELECT link_no, learn, known, learn_lang, known_lang, soundalike, linkword \
@@ -160,7 +160,7 @@ linksContaining q = do
     \ORDER BY char_length(learn)") ?db
   return $ nub $ exacts ++ closes
 
-data Story = Story { storyNumber :: Integer
+data Story = Story { storyNumber :: Int32
                    , storyBody :: String
                    , storyAuthor :: Member
                    , storyEdited :: UTCTime
@@ -185,24 +185,24 @@ $(deriveToJSON AT.defaultOptions { AT.fieldLabelModifier = (drop 5) } ''Story)
 compactStoryMarkup :: Story -> Html
 compactStoryMarkup story = blockquote $ fromRight "Failed to parse story." (markdownToHtml (storyBody story))
 
-addStory :: E (Integer -> String -> IO ())
+addStory :: E (Int32 -> String -> IO ())
 addStory linkNo story = withVerifiedMember $ \ m -> do
   $(execute "INSERT INTO linkword_story (link_no, author, story) \
                                 \VALUES ({linkNo}, {memberNumber m}, {story})") ?db
 
 -- Return the unformatted body of the story.
 -- TODO: Why isn't this returning a Story value?
-getStory :: E (Integer -> IO (Maybe String))
+getStory :: E (Int32 -> IO (Maybe String))
 getStory storyNo = $(queryTuple "SELECT story FROM linkword_story WHERE story_no = {storyNo}") ?db
 
 -- TODO: Throw an error when not authorized.
-editStory :: E (Integer -> String -> IO ())
+editStory :: E (Int32 -> String -> IO ())
 editStory n s = withVerifiedMember $ \m -> do
   $(execute "UPDATE linkword_story \
             \SET story = {s}, edited = NOW() \
             \WHERE story_no = {n} AND (author = {memberNumber m} OR {memberNumber m} = 1)") ?db
 
-linkStories :: E (Integer -> IO [Story])
+linkStories :: E (Int32 -> IO [Story])
 linkStories linkNo = map mkStory <$> $(queryTuples
     "SELECT story_no, story, edited, member_no, username, email \
     \FROM linkword_story s INNER JOIN member m ON (m.member_no = s.author) \

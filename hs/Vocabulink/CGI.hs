@@ -33,13 +33,13 @@ import Web.Cookie (SetCookie(..), renderSetCookie)
 type SCGI = SCGIT IO
 
 notFound :: Response
-notFound = Response "404 Resource Not Found" ""
+notFound = Response "404 Resource Not Found" "Not found"
 
 notAuthorized :: Response
-notAuthorized = Response "401 Unauthorized" ""
+notAuthorized = Response "401 Unauthorized" "Unauthorized"
 
 notAllowed :: Response
-notAllowed = Response "504 Method not allowed" ""
+notAllowed = Response "504 Method not allowed" "Method not allowed"
 
 emptyResponse :: Response
 emptyResponse = Response "200 OK" ""

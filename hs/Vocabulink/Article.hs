@@ -22,7 +22,7 @@ import Prelude hiding (div, span, id, readFile)
 -- relative filename in the articles directory, not an absolute path.
 
 data Article = Article { articleFilename    :: FilePath
-                       , articleAuthor      :: Integer
+                       , articleAuthor      :: Int32
                        , articlePublishTime :: UTCTime
                        , articleUpdateTime  :: UTCTime
                        , articleSection     :: Maybe String
@@ -42,7 +42,7 @@ getArticle filename = liftM articleFromTuple <$> $(queryTuple
 
 -- As with links, we use a helper function to convert a raw SQL tuple.
 
-articleFromTuple :: (FilePath, Integer, UTCTime, UTCTime, Maybe String, String) -> Article
+articleFromTuple :: (FilePath, Int32, UTCTime, UTCTime, Maybe String, String) -> Article
 articleFromTuple (f, a', p', u, s, t) =
   Article { articleFilename     = f
           , articleAuthor       = a'

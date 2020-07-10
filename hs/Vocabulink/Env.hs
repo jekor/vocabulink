@@ -4,33 +4,21 @@
 -- simpler (if potentially unsafe) approach.
 
 module Vocabulink.Env ( E
-                      , compileYear, languages, languageName, staticManifest
+                      , compileYear, staticManifest
                       , withVerifiedMember, withLoggedInMember
                       ) where
 
 import Vocabulink.Member
 import Vocabulink.Utils
 
-import qualified Data.ByteString.Lazy.UTF8 as BLU
-import Database.TemplatePG.Protocol (executeSimpleQuery)
-import Database.TemplatePG.SQL (thConnection)
+import Database.PostgreSQL.Typed (PGConnection)
 import Language.Haskell.TH.Syntax (runIO, Exp(..), Lit(..))
 import System.Environment (getEnv)
 
-type E a = (?db::Handle, ?static::FilePath, ?tokenKey::String, ?member::Maybe Member, ?sendmail::FilePath) => a
+type E a = (?db::PGConnection, ?static::FilePath, ?tokenKey::String, ?member::Maybe Member, ?sendmail::FilePath) => a
 
 compileYear :: Int
 compileYear = $((LitE . IntegerL) `liftM` runIO currentYear)
-
-languages :: [(String, String)]
-languages = $(runIO (do h <- thConnection
-                        res <- executeSimpleQuery "SELECT abbr, name FROM language" h
-                        return $ ListE $ map (\[Just abbr, Just name] ->
-                                                 TupE [ LitE $ StringL $ BLU.toString abbr
-                                                      , LitE $ StringL $ BLU.toString name]) res))
-
-languageName :: String -> String
-languageName languageCode = fromMaybe "Unknown Language" (lookup languageCode languages)
 
 staticManifest :: [(FilePath, String)]
 staticManifest = $(runIO (do man <- manifest =<< getEnv "MANIFEST"

@@ -39,8 +39,8 @@ import Text.Blaze.Html5.Attributes ( id, class_, href, type_, src, style, title,
                                    , method, action, name, value, required, placeholder, autofocus
                                    , tabindex, enctype, readonly, disabled
                                    )
-import Text.Pandoc (readMarkdown, writeHtml, writerHtml5, readerSmart)
-import Text.Pandoc.Error (PandocError(..))
+import Text.Pandoc (readMarkdown, readerExtensions, Extension(Ext_smart, Ext_footnotes), extensionsFromList, runPure)
+import Text.Pandoc.Writers (writeHtml5)
 
 import Prelude hiding (div, id, span)
 
@@ -91,8 +91,7 @@ menu choices = select $ mconcat
 -- link bodies. We need to sanitize incoming HTML so that we don't end up with
 -- XSS attacks.
 
-markdownToHtml :: String -> Either PandocError Html
-markdownToHtml s = writeHtml def {writerHtml5 = True} `fmap` readMarkdown def {readerSmart = True} s
+markdownToHtml s = runPure $ writeHtml5 def =<< readMarkdown def {readerExtensions = extensionsFromList [Ext_smart, Ext_footnotes]} (pack s)
 
 -- Helper for inline JavaScript.
 inlineJS :: String -> Html

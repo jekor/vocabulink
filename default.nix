@@ -1,5 +1,16 @@
-{ stdenv, fetchurl, fetchgit, bash, coreutils, findutils, pandoc, unzip
-, uglify, stylus, glue, optipng, domain }:
+{ stdenv
+, fetchurl
+, fetchgit
+, bash
+, coreutils
+, findutils
+, glue
+, pandoc
+, unzip
+, uglify
+, stylus
+, optipng
+, domain }:
 
 stdenv.mkDerivation {
   name = "vocabulink";
@@ -25,7 +36,7 @@ stdenv.mkDerivation {
     sha256 = "0wgzdrgwyvlzxn8hl4fr17sl788wpqhnznbajp89ifw9x0cpcid0";
   };
   loadmask = fetchurl {
-    url = "https://jquery-loadmask.googlecode.com/svn/trunk/src/jquery.loadmask.js";
+    url = "https://raw.githubusercontent.com/wallynm/jquery-loadmask/5e5d46bb9774528944187efd58561e4f7b4b0e62/jquery.loadmask.js";
     sha256 = "0jwrcv5zjmirpr6cp9nc6zbwpqq7h3vjad4yixsmayc63mx06vcr";
   };
   reveal = fetchurl {

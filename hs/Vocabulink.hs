@@ -41,12 +41,14 @@ import Prelude hiding (div, span, id, words)
 import Control.Concurrent (forkIO)
 import Control.Exception (finally, SomeException)
 import Control.Monad (forever)
+import Control.Monad.Catch (catch)
 import qualified Data.ByteString.UTF8 as BU
 import qualified Data.ByteString.Lazy.UTF8 as BLU
 import Data.List (find)
-import Database.TemplatePG (pgConnect)
-import Network (PortID(..), accept)
-import Network.Socket (listen, Socket(..), getAddrInfo, socket, Family(..), SocketType(..), defaultProtocol, bindSocket, addrAddress, SocketOption(..), setSocketOption)
+import qualified Data.Map.Strict as M
+import Database.PostgreSQL.Typed (PGDatabase(pgDBAddr, pgDBName, pgDBUser), pgConnect, defaultPGDatabase)
+import Network (accept)
+import Network.Socket (listen, Socket(..), getAddrInfo, socket, Family(..), SocketType(..), defaultProtocol, bindSocket, addrAddress, SocketOption(..), setSocketOption, SockAddr(SockAddrUnix))
 import qualified Network.SCGI as SCGI
 import Network.URI (unEscapeString)
 import System.Environment (getArgs, getProgName)
@@ -85,7 +87,7 @@ main = do
 
 handleRequest :: FilePath -> FilePath -> String -> SCGI Response
 handleRequest staticPath sendmail tokenKey = do
-  db <- liftIO $ pgConnect "localhost" (PortNumber 5432) "vocabulink" "vocabulink" ""
+  db <- liftIO $ pgConnect defaultPGDatabase {pgDBAddr = Right (SockAddrUnix "/var/run/postgresql/.s.PGSQL.5432"), pgDBName = "vocabulink", pgDBUser = "vocabulink"}
   member <- loggedIn db
   method' <- SCGI.method
   path' <- SCGI.path
@@ -167,7 +169,7 @@ dispatch :: E (String -> [String] -> SCGI Response)
 -- from Muse Mode files by Emacs, but we don't really care where they come
 -- from.
 
-dispatch "GET" ["help"]         = bounce MsgSuccess "Just testing, escaping." -- toResponse $ articlePage "help"
+dispatch "GET" ["help"]         = toResponse $ articlePage "help"
 dispatch "GET" ["privacy"]      = toResponse $ articlePage "privacy"
 dispatch "GET" ["terms-of-use"] = toResponse $ articlePage "terms-of-use"
 dispatch "GET" ["source"]       = toResponse $ articlePage "source"
@@ -245,7 +247,7 @@ dispatch "GET" ["links"] = do
   dl' <- queryVar "dl"
   case (ol', dl') of
     (Just ol, Just dl)  -> do
-      case (lookup ol languages, lookup dl languages) of
+      case (M.lookup ol languages, M.lookup dl languages) of
         (Just olang, Just dlang) -> do links <- liftIO $ languagePairLinks ol dl
                                        toResponse $ linksPage ("Links from " ++ olang ++ " to " ++ dlang) links
         _                        -> return notFound
@@ -294,7 +296,7 @@ dispatch "GET" ["languages"] = permRedirect "/links"
 dispatch "GET" ["review"] = do
   learn <- queryVarRequired "learn"
   known <- queryVarRequired "known"
-  case (lookup learn languages, lookup known languages) of
+  case (M.lookup learn languages, M.lookup known languages) of
     (Just _, Just _) -> toResponse $ reviewPage learn known
     _ -> return notFound
 
@@ -433,7 +435,7 @@ frontPage = do
                     return $ case row of
                       Nothing -> buyButton
                       Just pageNo -> div ! class_ "button_buy" $ do
-                                       a ! href (toValue $ "/reader/es/para-bailar/" ++ show pageNo) ! class_ "gradient" ! title "Continue Reading" $ do
+                                       a ! href (toValue $ "/reader/es/para-bailar/" ++ show (pageNo :: Int32)) ! class_ "gradient" ! title "Continue Reading" $ do
                                          span ! class_ "button_price" $ "Continue"
                                          span ! class_ "button_text" $ "Reading"
   stdPage ("Learn Spanish Through Fiction - Vocabulink") [] (do

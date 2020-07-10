@@ -60,7 +60,7 @@ latestStories m = map renderStory <$> $(queryTuples
   "SELECT story_no, link_no, story FROM linkword_story \
   \WHERE author = {memberNumber m} \
   \ORDER BY edited DESC LIMIT 10") ?db
- where renderStory (sn, ln, s) = a ! href (toValue $ "/link/" ++ show ln ++ "#" ++ show sn)
+ where renderStory (sn, ln, s) = a ! href (toValue $ "/link/" ++ show (ln :: Int32) ++ "#" ++ show (sn :: Int32))
                                    $ fromRight "Failed to parse story." (markdownToHtml s)
 
 studyStats :: E (Member -> IO Html)
@@ -69,8 +69,8 @@ studyStats m = do
     "SELECT COUNT(*) FROM link_to_review WHERE member_no = {memberNumber m}") ?db
   numReviews <- fromJust . fromJust <$> $(queryTuple
     "SELECT COUNT(*) FROM link_review WHERE member_no = {memberNumber m}") ?db
-  return $ tableOfPairs [ ("# of links in review", prettyPrint (numLinks::Integer))
-                        , ("# of reviews", prettyPrint (numReviews::Integer))
+  return $ tableOfPairs [ ("# of links in review", prettyPrint (numLinks :: Int64))
+                        , ("# of reviews", prettyPrint (numReviews :: Int64))
                         ]
 
 dashboardPage :: E (IO Html)
