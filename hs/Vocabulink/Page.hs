@@ -102,12 +102,11 @@ headerBar extras = do
 
 footerBar :: E (Html)
 footerBar = do
-  unordList [ a ! href "https://getsatisfaction.com/vocabulink" $ "Help"
-            , a ! href "/articles" $ "Articles"
+  unordList [ a ! href "/articles" $ "Articles"
             , a ! href (toValue mailto) ! class_ "contact-us" $ "Contact Us"
             , a ! href "/privacy" $ "Privacy Policy"
             , a ! href "/terms-of-use" $ "Terms of Use"
-            , a ! href "/source" $ "Source Code"
+            , a ! href "https://github.com/jekor/vocabulink" $ "Source Code"
             , a ! href "http://twitter.com/vocabulink" $ do
                 sprite "icon" "twitter"
                 " Twitter"
