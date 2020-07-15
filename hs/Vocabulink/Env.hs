@@ -15,7 +15,7 @@ import Database.PostgreSQL.Typed (PGConnection)
 import Language.Haskell.TH.Syntax (runIO, Exp(..), Lit(..))
 import System.Environment (getEnv)
 
-type E a = (?db::PGConnection, ?static::FilePath, ?tokenKey::String, ?member::Maybe Member, ?sendmail::FilePath) => a
+type E a = (?db::PGConnection, ?static::FilePath, ?tokenKey::String, ?member::Maybe Member, ?sendmail::FilePath, ?referrer::(Maybe String)) => a
 
 compileYear :: Int
 compileYear = $((LitE . IntegerL) `liftM` runIO currentYear)

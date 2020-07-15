@@ -51,7 +51,7 @@ instance Read AuthToken where
   readsPrec _ =
     \s -> case splitOn "." s of
             [m,e,d] -> [(AuthToken (read m) (read e) d, "")]
-            _ -> []                    
+            _ -> []
 
 -- | Create an AuthToken with the default expiration time, automatically
 -- calculating the digest.

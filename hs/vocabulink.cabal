@@ -3,7 +3,7 @@ Version:       0
 Cabal-Version: >= 1.2
 License:       OtherLicense
 License-File:  COPYING
-Copyright:     2008, 2009, 2010, 2011, 2012, 2013, 2015 Chris Forno
+Copyright:     2008, 2009, 2010, 2011, 2012, 2013, 2015, 2020 Chris Forno
 Author:        Chris Forno (jekor)
 Maintainer:    jekor@jekor.com
 Stability:     stable
@@ -11,15 +11,14 @@ Bug-Reports:   jekor@jekor.com
 Homepage:      http://www.vocabulink.com/source
 Category:      Education
 Synopsis:      a web application for learning languages through fiction (mnemonics)
-Description:   This is Vocabulink, the SCGI program that handles all web
-               requests for http://www.vocabulink.com/. The site helps people
-               learn languages through fiction. It provides a mnemonics
-               database ordered by word frequency and a spaced repetition
-               (review) tool.
-Tested-With:   GHC == 7.10.2
+Description:   This is Vocabulink, the program that handles all web requests for
+               www.vocabulink.com. The site helps people learn languages through
+               fiction. It provides a mnemonics database ordered by
+               word frequency and a spaced repetition (review) tool.
+Tested-With:   GHC == 8.6.5
 Build-Type:    Simple
 
-Executable vocabulink.cgi
+Executable vocabulink
   Main-Is:       Vocabulink.hs
   Build-Depends: aeson >= 0.6,
                  aeson-qq,
@@ -40,6 +39,8 @@ Executable vocabulink.cgi
                  exceptions,
                  filepath,
                  hashmap,
+                 http-media,
+                 http-types,
                  MissingH,
                  mtl,
                  network,
@@ -51,9 +52,12 @@ Executable vocabulink.cgi
                  process,
                  pureMD5,
                  random,
+                 servant,
+                 servant-multipart,
+                 servant-server,
                  SHA,
                  split,
-                 sscgi >= 0.3.1,
+                 string-conv,
                  syb,
                  template-haskell,
                  text,
@@ -62,11 +66,14 @@ Executable vocabulink.cgi
                  unix,
                  utf8-string,
                  utility-ht,
-                 vector
+                 vector,
+                 wai,
+                 warp
   Default-Extensions:  AllowAmbiguousTypes,
                        DataKinds,
                        DeriveAnyClass,
                        -- DeriveGeneric,
+                       EmptyDataDecls,
                        -- ExtendedDefaultRules,
                        FlexibleContexts,
                        FlexibleInstances,
@@ -85,8 +92,8 @@ Executable vocabulink.cgi
                        ScopedTypeVariables,
                        TemplateHaskell,
                        TupleSections,
-                       TypeSynonymInstances
+                       TypeSynonymInstances,
                        -- TypeFamilies,
-                       -- TypeOperators,
+                       TypeOperators
                        -- ViewPatterns
-  GHC-Options:   -Wall -fno-warn-missing-signatures -fno-warn-type-defaults -fno-warn-unused-do-bind -fno-warn-orphans -fno-warn-missing-home-modules -threaded -O2
+  GHC-Options:   -Wall -fno-warn-missing-signatures -fno-warn-partial-type-signatures -fno-warn-type-defaults -fno-warn-unused-do-bind -fno-warn-orphans -fno-warn-missing-home-modules -threaded -O2

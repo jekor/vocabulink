@@ -147,7 +147,7 @@ reviewStats m = do
                   , "links" .= (links :: Int64)
                   ]
 
-dailyReviewStats :: E (Member -> Day -> Day -> String -> IO [Value])
+dailyReviewStats :: E (Member -> Day -> Day -> String -> IO Value)
 dailyReviewStats m start end tzOffset = do
   reviews <- $(queryTuples
     "SELECT (actual_time AT TIME ZONE {tzOffset})::date AS day, COUNT(DISTINCT link_no), SUM(recall_time) \
@@ -163,7 +163,7 @@ dailyReviewStats m start end tzOffset = do
       \AND (target_time AT TIME ZONE {tzOffset})::date BETWEEN {start}::date AND {end}::date \
     \GROUP BY day \
     \ORDER BY day") ?db
-  return $ map reviewJSON reviews ++ map scheduledJSON scheduled
+  return $ toJSONList (map reviewJSON reviews <> map scheduledJSON scheduled)
  where reviewJSON (day, links, recallTime) =
          object [ "date" .= (toGregorian $ fromJust day)
                 , "reviewed" .= (fromJust links :: Int64)

@@ -1,7 +1,7 @@
 -- Links are the center of interest in our program. Most activities revolve
 -- around them.
 
-module Vocabulink.Link ( Link(..), linkDetails, linkTypeName, compactLinkJSON
+module Vocabulink.Link ( Link(..), LinkOutput(..), linkDetails, linkTypeName, compactLinkJSON
                        , languagePairLinks, linksContaining
                        , pronounceable
                        , Story(..), addStory, getStory, editStory, linkStories
@@ -38,6 +38,8 @@ data Link = Link { linkNumber     :: Int32
                  , linkWord       :: Maybe String
                  }
   deriving Eq
+
+data LinkOutput = LinkOutput Link Html
 
 linkTypeName :: Link -> String
 linkTypeName link

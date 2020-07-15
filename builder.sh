@@ -41,7 +41,7 @@ mkdir -p "$out/js" "$out/img" "$out/css" "$out/articles"
 pushd js
 
 for k in "${!jses[@]}"; do
-  uglifyjs ${jses[$k]} --mangle --screw-ie8 -o "$out/js/$k.js"
+  uglifyjs ${jses[$k]} --mangle -o "$out/js/$k.js"
 done
 
 popd

@@ -3,12 +3,11 @@
 
 module Vocabulink.Member.Registration ( usernameAvailable, emailAvailable
                                       , signup, confirmEmail, resendConfirmEmail
-                                      , login, logout
+                                      , login
                                       , sendPasswordReset, passwordResetPage, passwordReset
                                       , changeEmail, changePassword, deleteAccount
                                       ) where
 
-import Vocabulink.CGI
 import Vocabulink.Env
 import Vocabulink.Html
 import Vocabulink.Member
@@ -18,9 +17,6 @@ import Vocabulink.Review
 import Vocabulink.Utils
 
 import qualified Data.ByteString.Lazy.UTF8 as BLU
-import System.Exit (ExitCode(..))
-import System.IO (hPutStr, hClose)
-import System.Process (createProcess, waitForProcess, proc, std_in, StdStream(..))
 
 import Prelude hiding (div, id, span)
 
@@ -32,18 +28,13 @@ import Prelude hiding (div, id, span)
 -- emailing it to the member as a hyperlink. Once they click the hyperlink we
 -- consider the email address confirmed.
 
-signup :: E (SCGI Response)
-signup = do
-  when (isJust ?member) $ error "You're already logged in."
-  username <- bodyVarRequired "username"
-  email    <- bodyVarRequired "email"
-  password <- bodyVarRequired "password"
-  learned  <- fromMaybe [] `liftM` (parseLearned =<<) `liftM` bodyVar "learned"
-  userAvail <- liftIO $ usernameAvailable username
-  emailAvail <- liftIO $ emailAvailable email
-  unless userAvail $ error "The username you chose is unavailable or invalid."
-  unless emailAvail $ error "The email address you gave is unavailable or invalid."
-  memberNo <- liftIO $ withTransaction ?db $ do
+signup username email password learned = do
+  when (isJust ?member) (vError "You're already logged in.")
+  userAvail <- usernameAvailable username
+  emailAvail <- emailAvailable email
+  unless userAvail (vError "The username you chose is unavailable or invalid.")
+  unless emailAvail (vError "The email address you gave is unavailable or invalid.")
+  memberNo <- withTransaction ?db $ do
     memberNo' <- fromJust <$> $(queryTuple
                                 "INSERT INTO member (username, password_hash) \
                                 \VALUES ({username}, crypt({password}, gen_salt('bf'))) \
@@ -61,16 +52,14 @@ signup = do
                  , memberName   = username
                  , memberEmail  = Nothing
                  }
-  liftIO $ mapM_ (newReview m) learned
-  setCookie =<< liftIO (authCookie memberNo ?tokenKey)
-  bounce MsgSuccess "Welcome! Please check your email to confirm your account."
+  mapM_ (newReview m) (fromMaybe [] (parseLearned =<< learned))
+  authCookie memberNo ?tokenKey
  where parseLearned :: String -> Maybe [Int32]
        parseLearned = decode . BLU.fromString
 
 -- This should be in the App monad and look up the support address itself.
 -- However, TemplatePG's withTransaction only works in the IO monad. So we have
 -- to duplicate some effort here with the from argument.
-sendConfirmationEmail :: E (String -> String -> String -> IO ())
 sendConfirmationEmail email username hash =
   let body = unlines ["Welcome to Vocabulink, " ++ username ++ "."
                      ,""
@@ -79,37 +68,26 @@ sendConfirmationEmail email username hash =
                      ] in
   sendMail email "Please confirm your email address." body
 
-resendConfirmEmail :: E (Member -> IO ())
 resendConfirmEmail m = do
   (hash, email) <- fromJust <$> $(queryTuple
                      "SELECT hash, email FROM member_confirmation \
                      \WHERE member_no = {memberNumber m}") ?db
   sendConfirmationEmail email (memberName m) hash
 
-login :: E (SCGI Response)
-login = do
-  userid' <- bodyVarRequired "userid"
-  password' <- bodyVarRequired "password"
-  match' <- liftIO $ $(queryTuple "SELECT username, password_hash = crypt({password'}, password_hash) \
-                                  \FROM member WHERE username = {userid'} OR email = {userid'}") ?db
-  match <- liftIO $ if' (isJust match') match' <$> $(queryTuple "SELECT username, password_hash = crypt({password'}, password_hash) \
-                                                                \FROM member \
-                                                                \INNER JOIN member_confirmation mc USING (member_no) \
-                                                                \WHERE mc.email = {userid'}") ?db
+login userid password = do
+  match' <- $(queryTuple "SELECT username, password_hash = crypt({password}, password_hash) \
+                         \FROM member WHERE username = {userid} OR email = {userid}") ?db
+  match <- if' (isJust match') match' <$> $(queryTuple "SELECT username, password_hash = crypt({password}, password_hash) \
+                                                       \FROM member \
+                                                       \INNER JOIN member_confirmation mc USING (member_no) \
+                                                       \WHERE mc.email = {userid}") ?db
   case match of
     Just (username, Just True) -> do
-      member' <- liftIO $ memberByName username
+      member' <- memberByName username
       case member' of
-        Nothing -> error "Failed to lookup username."
-        Just m -> do
-          setCookie =<< liftIO (authCookie (memberNumber m) ?tokenKey)
-          redirect =<< referrerOrVocabulink
-    _ -> bounce MsgError "Username and password do not match (or don't exist)."
-
-logout :: SCGI Response
-logout = do
-  setCookie $ emptyAuthCookie {setCookieMaxAge = Just $ secondsToDiffTime 0}
-  redirect "http://www.vocabulink.com/"
+        Nothing -> vError "Failed to lookup username."
+        Just m -> authCookie (memberNumber m) ?tokenKey
+    _ -> vError "Username and password do not match (or don't exist)."
 
 -- We could attempt to check username availability by looking for a user's
 -- page. However, a 404 does not necessarily indicate that a username is
@@ -117,7 +95,6 @@ logout = do
 -- 1. The username might be invalid.
 -- 2. The page might be hidden.
 -- 3. The casing might be different.
-usernameAvailable :: E (String -> IO Bool)
 usernameAvailable u =
   if' (length u < 4)  (return False) $
   if' (length u > 24) (return False) $
@@ -126,7 +103,6 @@ usernameAvailable u =
                                                      \WHERE username ILIKE {u}") ?db
 
 -- TODO: Validate email addresses.
-emailAvailable :: E (String -> IO Bool)
 emailAvailable e =
   -- We could check if the address exists in member_confirmation, but that
   -- would allow someone who doesn't control an address to block its use.
@@ -140,20 +116,17 @@ emailAvailable e =
 -- Once we have confirmed the member's email, we need to set a new auth token
 -- cookie for them that contains their gravatar hash.
 
-confirmEmail :: E (String -> SCGI Response)
 confirmEmail hash =
   case ?member of
-    Nothing -> do
-      toResponse $ simplePage "Please Login to Confirm Your Account"
-        [ReadyJS "V.loginPopup();"] mempty
+    Nothing -> Left `fmap` simplePage "Please Login to Confirm Your Account" [ReadyJS "V.loginPopup();"] mempty
     Just m  -> do
       case (memberEmail m) of
         Nothing -> do
-          match <- liftIO $ maybe False fromJust <$> $(queryTuple
+          match <- maybe False fromJust <$> $(queryTuple
             "SELECT hash = {hash} FROM member_confirmation \
             \WHERE member_no = {memberNumber m}") ?db
           if match
-            then do liftIO $ withTransaction ?db $ do
+            then do withTransaction ?db $ do
                       $(execute "UPDATE member SET email = \
                                  \(SELECT email FROM member_confirmation \
                                   \WHERE member_no = {memberNumber m}) \
@@ -163,12 +136,10 @@ confirmEmail hash =
                     -- We can't just look at the App's member object, since we just
                     -- updated it.
                     -- TODO: The logic isn't quite right on this.
-                    setCookie =<< liftIO (authCookie (memberNumber m) ?tokenKey)
-                    bounce MsgSuccess "Congratulations! You've confirmed your account."
-            else bounce MsgError "The confirmation code does not match who you're logged in as."
-        Just _ -> bounce MsgNotice "You've already confirmed your email."
+                    Right `fmap` authCookie (memberNumber m) ?tokenKey
+            else vError "The confirmation code does not match who you're logged in as."
+        Just _ -> vError "You've already confirmed your email."
 
-sendPasswordReset :: E (String -> IO ())
 sendPasswordReset email = do
   -- The member's email address is either in the member table (for confirmed
   -- email addresses), or in the member_confirmation table. We keep them
@@ -195,9 +166,8 @@ sendPasswordReset email = do
                          , "The password reset page will only be available for 4 hours."
                          ]
       sendMail email "Vocabulink Password Reset" body
-    _ -> error "No member exists with that email address. Please try again."
+    _ -> vError "No member exists with that email address. Please try again."
 
-passwordResetPage :: E (String -> IO Html)
 passwordResetPage hash = do
   memberNo <- $(queryTuple "SELECT member_no FROM password_reset_token \
                            \WHERE hash = {hash} AND expires > current_timestamp") ?db
@@ -211,35 +181,28 @@ passwordResetPage hash = do
                   br
                   br
                   input ! class_ "light" ! type_ "submit" ! value "Change Password"
-    _ -> error "Invalid or expired password reset."
+    _ -> vError "Invalid or expired password reset."
 
-passwordReset :: E (String -> SCGI Response)
-passwordReset hash = do
-  password <- bodyVarRequired "password"
-  memberNo <- liftIO $ $(queryTuple "SELECT member_no FROM password_reset_token \
-                                    \WHERE hash = {hash} AND expires > current_timestamp") ?db
+passwordReset hash password = do
+  memberNo <- $(queryTuple "SELECT member_no FROM password_reset_token \
+                           \WHERE hash = {hash} AND expires > current_timestamp") ?db
   case memberNo of
     Just (mn :: Int32) -> do
-      member' <- uncurryN Member <$$> (liftIO $ $(queryTuple "UPDATE member SET password_hash = crypt({password}, password_hash) \
-                                                             \WHERE member_no = {mn} \
-                                                             \RETURNING member_no, username, email") ?db)
+      member' <- uncurryN Member <$$> ($(queryTuple "UPDATE member SET password_hash = crypt({password}, password_hash) \
+                                                    \WHERE member_no = {mn} \
+                                                    \RETURNING member_no, username, email") ?db)
       -- As a convenience, log the user in before redirecting them.
       case member' of
-        Nothing -> error "Failed to lookup member."
-        Just m -> do
-          setCookie =<< liftIO (authCookie (memberNumber m) ?tokenKey)
-          bounce MsgSuccess "Password reset successfully."
-    _ -> error "Invalid or expired password reset."
+        Nothing -> vError "Failed to lookup member."
+        Just m -> authCookie (memberNumber m) ?tokenKey
+    _ -> vError "Invalid or expired password reset."
 
-changeEmail :: E (SCGI Response)
-changeEmail = withLoggedInMember $ \ m -> do
-  email <- bodyVarRequired "email"
-  password <- bodyVarRequired "password"
-  match <- liftIO $ $(queryTuple "SELECT password_hash = crypt({password}, password_hash) \
-                                 \FROM member WHERE member_no = {memberNumber m}") ?db
+changeEmail email password = withLoggedInMember $ \ m -> do
+  match <- $(queryTuple "SELECT password_hash = crypt({password}, password_hash) \
+                        \FROM member WHERE member_no = {memberNumber m}") ?db
   case match of
     Just (Just True) -> do
-      liftIO $ withTransaction ?db $ do
+      withTransaction ?db $ do
         $(execute "UPDATE member SET email = NULL WHERE member_no = {memberNumber m}") ?db
         $(execute "DELETE FROM member_confirmation WHERE member_no = {memberNumber m}") ?db
         hash' <- fromJust <$> $(queryTuple
@@ -250,43 +213,20 @@ changeEmail = withLoggedInMember $ \ m -> do
         $(execute "UPDATE member_confirmation \
                   \SET email_sent = current_timestamp \
                   \WHERE member_no = {memberNumber m}") ?db
-      bounce MsgSuccess "Email address changed successfully. Please check your email to confirm the change."
-    _ -> error "Wrong password."
+    _ -> vError "Wrong password."
 
-changePassword :: E (SCGI Response)
-changePassword = withLoggedInMember $ \ m -> do
-  oldPassword <- bodyVarRequired "old-password"
-  newPassword <- bodyVarRequired "new-password"
-  match <- liftIO $ $(queryTuple "SELECT password_hash = crypt({oldPassword}, password_hash) \
-                                 \FROM member WHERE member_no = {memberNumber m}") ?db
+changePassword oldPassword newPassword = withLoggedInMember $ \ m -> do
+  match <- $(queryTuple "SELECT password_hash = crypt({oldPassword}, password_hash) \
+                        \FROM member WHERE member_no = {memberNumber m}") ?db
+  case match of
+    Just (Just True) -> $(execute "UPDATE member SET password_hash = crypt({newPassword}, gen_salt('bf'))") ?db
+    _ -> vError "Wrong password."
+
+deleteAccount password = withLoggedInMember $ \ m -> do
+  match <- $(queryTuple "SELECT password_hash = crypt({password}, password_hash) \
+                        \FROM member WHERE member_no = {memberNumber m}") ?db
   case match of
     Just (Just True) -> do
-      liftIO $ $(execute "UPDATE member SET password_hash = crypt({newPassword}, gen_salt('bf'))") ?db
-      bounce MsgSuccess "Password changed successfully."
-    _ -> error "Wrong password."
-
-deleteAccount :: E (SCGI Response)
-deleteAccount = withLoggedInMember $ \ m -> do
-  password <- bodyVarRequired "password"
-  match <- liftIO $ $(queryTuple "SELECT password_hash = crypt({password}, password_hash) \
-                                 \FROM member WHERE member_no = {memberNumber m}") ?db
-  case match of
-    Just (Just True) -> do
-      liftIO $ $(execute "DELETE FROM member WHERE member_no = {memberNumber m}") ?db
-      liftIO $ sendMail "support@vocabulink.com" "Member deleted account." ("Member " ++ memberName m ++ " deleted their account.")
-      setCookie $ emptyAuthCookie {setCookieMaxAge = Just $ secondsToDiffTime 0}
-      bounce MsgSuccess "Your account was successfully deleted."
-    _ -> error "Wrong password."
-
-sendMail :: E (String -> String -> String -> IO ())
-sendMail address subject body = do
-  (Just inF, _, _, pr) <- createProcess (proc ?sendmail [address]) {std_in = CreatePipe}
-  hPutStr inF message >> hClose inF
-  status <- waitForProcess pr
-  when (status /= ExitSuccess) $ error "There was an error sending email from our servers. Please try again later or contact support@vocabulink.com."
- where message = unlines [ "From: \"Vocabulink\" <support@vocabulink.com>"
-                         , "To: " ++ address
-                         , "Subject: " ++ subject
-                         , ""
-                         , body
-                         ]
+      $(execute "DELETE FROM member WHERE member_no = {memberNumber m}") ?db
+      sendMail "support@vocabulink.com" "Member deleted account." ("Member " ++ memberName m ++ " deleted their account.")
+    _ -> vError "Wrong password."

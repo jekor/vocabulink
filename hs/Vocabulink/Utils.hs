@@ -11,10 +11,14 @@ module Vocabulink.Utils ( (?), (<$$>)
                         , escapeURIString', addToQueryString
                         , gravatarHash, lowercase, traceShow', manifest
                         , languageName
+                        , vError, VError(..)
+                        , sendMail
                         {- Vocabulink.Constants -}
                         , languages
                         {- Control.Arrow -}
                         , first, second, (***)
+                        {- Control.Exception -}
+                        , throwIO
                         {- Control.Monad -}
                         , liftM, Control.Monad.join, msum, when, unless, replicateM, mzero, forM, forM_, (>=>), (<=<), void
                         {- Control.Monad.Trans -}
@@ -72,6 +76,7 @@ module Vocabulink.Utils ( (?), (<$$>)
 import Vocabulink.Constants
 
 import Control.Arrow (first, second, (***))
+import Control.Exception (Exception, throwIO)
 import Control.Monad
 import Control.Monad.Trans (liftIO, MonadIO)
 import Data.Aeson (Value(..), object, (.=), ToJSON(..), FromJSON(..), encode, decode)
@@ -88,8 +93,9 @@ import Data.List (intercalate, intersperse, (\\), intersect, nub)
 import Data.List.Split (splitOn, chunksOf)
 import Data.List.Utils as LU -- MissingH
 import qualified Data.Map.Strict as M
-import Data.Text (Text, pack)
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing, mapMaybe, catMaybes)
+import Data.Text (Text, pack)
+import Data.Typeable (Typeable)
 import Database.PostgreSQL.Typed (PGError(..))
 import Database.PostgreSQL.Typed.TemplatePG
 import Debug.Trace (trace, traceShow)
@@ -105,10 +111,12 @@ import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime, LocalTime(..))
 import Data.Tuple.Curry (uncurryN)
 import Network.URI (escapeURIString, isUnescapedInURI, URI(..), uriQuery)
 import System.Directory (getPermissions, doesFileExist, readable)
+import System.Exit (ExitCode(..))
 import System.FilePath ((</>), (<.>), takeExtension, replaceExtension, takeBaseName, takeFileName)
-import System.IO (Handle, hPutStrLn, stderr)
+import System.IO (Handle, hPutStrLn, stderr, hPutStr, hClose)
 import System.Posix.Time (epochTime)
 import System.Posix.Types (EpochTime)
+import System.Process (createProcess, waitForProcess, proc, std_in, StdStream(..))
 import Text.Read (readMaybe)
 
 -- It's often useful to have the compactness of the traditional tertiary
@@ -245,6 +253,11 @@ isFileReadable f = do
 logError :: String -> String -> IO ()
 logError typ msg = hPutStrLn stderr $ "[" ++ typ ++ "] " ++ msg
 
+data VError = VError String deriving (Typeable, Show)
+instance Exception VError
+
+vError = throwIO . VError
+
 class PrettyPrint a where
   prettyPrint :: a -> String
 
@@ -296,3 +309,15 @@ manifest = fmap (map words . lines) . readFile
 
 languageName :: String -> String
 languageName = (M.!) languages
+
+sendMail address subject body = do
+  (Just inF, _, _, pr) <- createProcess (proc ?sendmail [address]) {std_in = CreatePipe}
+  hPutStr inF message >> hClose inF
+  status <- waitForProcess pr
+  when (status /= ExitSuccess) $ error "There was an error sending email from our servers. Please try again later or contact support@vocabulink.com."
+ where message = unlines [ "From: \"Vocabulink\" <support@vocabulink.com>"
+                         , "To: " ++ address
+                         , "Subject: " ++ subject
+                         , ""
+                         , body
+                         ]

@@ -19,6 +19,8 @@
 , exceptions
 , filepath
 , hashmap
+, http-media
+, http-types
 , MissingH
 , mtl
 , network
@@ -30,10 +32,13 @@
 , process
 , pureMD5
 , random
+, servant
+, servant-multipart
+, servant-server
 , SHA
 , split
-, sscgi
 , stdenv
+, string-conv
 , syb
 , template-haskell
 , text
@@ -43,6 +48,8 @@
 , utf8-string
 , utility-ht
 , vector
+, wai
+, warp
 , postgresql
 , vocabulink-sql
 , domain
@@ -50,7 +57,7 @@
 }:
 mkDerivation rec {
   pname = "Vocabulink";
-  version = "2015.12.15";
+  version = "2020.07.15";
   src = ./.;
   isLibrary = false;
   isExecutable = true;
@@ -74,6 +81,8 @@ mkDerivation rec {
     exceptions
     filepath
     hashmap
+    http-media
+    http-types
     MissingH
     mtl
     network
@@ -85,9 +94,12 @@ mkDerivation rec {
     process
     pureMD5
     random
+    servant
+    servant-multipart
+    servant-server
     SHA
     split
-    sscgi
+    string-conv
     syb
     template-haskell
     text
@@ -97,6 +109,8 @@ mkDerivation rec {
     utf8-string
     utility-ht
     vector
+    wai
+    warp
   ];
   buildDepends = [
     cabal-install

@@ -73,6 +73,5 @@ studyStats m = do
                         , ("# of reviews", prettyPrint (numReviews :: Int64))
                         ]
 
-dashboardPage :: E (IO Html)
 dashboardPage = stdPage "Dashboard" [JS "dashboard", CSS "dashboard"] mempty $ do
                   mempty

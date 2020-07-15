@@ -22,6 +22,7 @@
 
 module Main where
 
+import Vocabulink.API
 import Vocabulink.Article
 import Vocabulink.CGI
 import Vocabulink.Comment
@@ -38,127 +39,77 @@ import Vocabulink.Utils
 
 import Prelude hiding (div, span, id, words)
 
-import Control.Concurrent (forkIO)
-import Control.Exception (finally, SomeException)
-import Control.Monad (forever)
-import Control.Monad.Catch (catch)
-import qualified Data.ByteString.UTF8 as BU
-import qualified Data.ByteString.Lazy.UTF8 as BLU
-import Data.List (find)
-import qualified Data.Map.Strict as M
-import Database.PostgreSQL.Typed (PGDatabase(pgDBAddr, pgDBName, pgDBUser), pgConnect, defaultPGDatabase)
-import Network (accept)
-import Network.Socket (listen, Socket(..), getAddrInfo, socket, Family(..), SocketType(..), defaultProtocol, bindSocket, addrAddress, SocketOption(..), setSocketOption, SockAddr(SockAddrUnix))
-import qualified Network.SCGI as SCGI
-import Network.URI (unEscapeString)
+import Control.Exception (bracket, SomeException, Handler(..), catches, try)
+import Data.Bits ((.|.))
+import Data.String.Conv (toS)
+import Database.PostgreSQL.Typed (PGDatabase(pgDBAddr, pgDBName, pgDBUser), pgConnect, pgDisconnect, defaultPGDatabase)
+import Network.HTTP.Types (status500, status302)
+import Network.Socket (socket, bind, listen, close, SockAddr(SockAddrUnix), Family(AF_UNIX), SocketType(Stream))
+import Network.Wai (requestHeaders, requestHeaderReferer, responseLBS)
+import Network.Wai.Handler.Warp (runSettingsSocket, defaultSettings, setServerName)
+import Servant (Proxy(Proxy), serve, (:<|>) ((:<|>)), NoContent(NoContent))
+import System.Directory (removeFile)
 import System.Environment (getArgs, getProgName)
-import System.IO (hClose, hPutStrLn, stderr)
+import System.IO (hPutStrLn, stderr)
+import System.Posix.Files (setFileMode, ownerReadMode, ownerWriteMode, groupReadMode, groupWriteMode, otherReadMode, otherWriteMode)
 import Web.Cookie (parseCookies)
 
-main :: IO ()
 main = do
   args <- getArgs
   case args of
     [staticPath, sendmail, tokenKey] -> do
-      s <- listenLocal "10033"
-      forever $ do
-        (handle, _, _) <- accept s
-        _ <- forkIO $ finally (SCGI.runRequest handle (catch (handleRequest staticPath sendmail tokenKey) handleError))
-                          (hClose handle)
-        return ()
+      bracket
+        (socket AF_UNIX Stream 0)
+        (\ sock -> do
+            close sock
+            try' (removeFile "vocabulink.sock"))
+        (\ sock -> do
+            bind sock (SockAddrUnix "vocabulink.sock")
+            setFileMode "vocabulink.sock" (ownerReadMode .|. ownerWriteMode .|. groupReadMode .|. groupWriteMode .|. otherReadMode .|. otherWriteMode)
+            listen sock 1024
+            runSettingsSocket (setServerName "" defaultSettings) sock (handleRequest staticPath sendmail tokenKey))
     _ -> do
       progName <- getProgName
       hPutStrLn stderr ("Usage: " ++ progName ++ " static-dir sendmail token-key")
- where listenLocal :: String -> IO Socket
-       listenLocal port = do
-         addrs <- getAddrInfo Nothing (Just "127.0.0.1") (Just port)
-         s <- socket AF_INET Stream defaultProtocol
-         setSocketOption s ReuseAddr 1
-         bindSocket s $ addrAddress $ head addrs
-         listen s 5
-         return s
-       handleError :: SomeException -> SCGI Response
-       handleError e = do
-         path <- SCGI.path
-         case path of
-           -- We can't bounce on the front page or we'll get an infinite loop.
-           (Just "/") -> return (SCGI.Response "500 Internal Server Error" (BLU.fromString (show e)))
-           _ -> bounce MsgError (show e)
+ where try' :: IO a -> IO (Either SomeException a)
+       try' = try
 
-handleRequest :: FilePath -> FilePath -> String -> SCGI Response
-handleRequest staticPath sendmail tokenKey = do
-  db <- liftIO $ pgConnect defaultPGDatabase {pgDBAddr = Right (SockAddrUnix "/var/run/postgresql/.s.PGSQL.5432"), pgDBName = "vocabulink", pgDBUser = "vocabulink"}
-  member <- loggedIn db
-  method' <- SCGI.method
-  path' <- SCGI.path
-  case (method', path') of
-    (Just method, Just path) -> let ?db = db
-                                    ?static = staticPath
-                                    ?sendmail = sendmail
-                                    ?tokenKey = tokenKey
-                                    ?member = member in dispatch' (BU.toString method) (pathList $ BU.toString path)
-    _ -> error "Missing request method or path."
+handleRequest staticPath sendmail tokenKey req sendResponse = do
+  bracket
+    (pgConnect defaultPGDatabase {pgDBAddr = Right (SockAddrUnix "/var/run/postgresql/.s.PGSQL.5432"), pgDBName = "vocabulink", pgDBUser = "vocabulink"})
+    pgDisconnect
+    (\ db -> do
+        member <- loggedIn db
+        let ?db = db
+            ?static = staticPath
+            ?sendmail = sendmail
+            ?tokenKey = tokenKey
+            ?member = member
+            ?referrer = (toS `fmap` requestHeaderReferer req) :: Maybe String
+        vocabulinkApp req sendResponse `catches` [Handler (vocabulinkHandler sendResponse), Handler defaultHandler])
  where loggedIn db = do
-         auth <- (lookup "auth" . parseCookies =<<) `liftM` SCGI.header "HTTP_COOKIE"
-         token' <- liftIO $ maybe (return Nothing) (validAuth tokenKey . BU.toString) auth
+         let auth = (lookup "auth" . parseCookies) =<< (lookup "Cookie" (requestHeaders req))
+         token' <- maybe (return Nothing) (validAuth tokenKey . toS) auth
          case token' of
            Nothing -> return Nothing
            Just token -> do
-             -- We want to renew the expiry of the auth token if the user
-             -- remains active. But we don't want to be sending out a new
-             -- cookie with every request. Instead, we check to see that one
-             -- day has passed since the auth cookie was set. If so, we refresh
-             -- it.
-             now <- liftIO epochTime
-             when (authExpiry token - now < authShelfLife - (24 * 60 * 60)) $ do
-               setCookie =<< liftIO (authCookie (authMemberNumber token) tokenKey)
-             row <- liftIO $ $(queryTuple
+             row <- $(queryTuple
                       "SELECT username, email FROM member \
                       \WHERE member_no = {authMemberNumber token}") db
-             return $ liftM (\(username, email) -> Member { memberNumber = authMemberNumber token
-                                                          , memberName   = username
-                                                          , memberEmail  = email
-                                                          }) row
+             return ((\(username, email) -> Member { memberNumber = authMemberNumber token
+                                                   , memberName   = username
+                                                   , memberEmail  = email
+                                                   }) `fmap` row)
+       defaultHandler :: SomeException -> _
+       defaultHandler _ = sendResponse $ responseLBS status500 [] "An error occurred."
 
--- We extract the path part of the URI, ``unescape it'' (convert % codes back
--- to characters), decode it (convert UTF-8 characters to Unicode Chars), and
--- finally parse it into directory and filename components. For example,
+vocabulinkHandler sendResponse (VError msg) =
+  let (headers, body) = redirectWithMsg' referrerOrVocabulink [] MsgError msg
+  in sendResponse (responseLBS status302 headers body)
 
--- /some/directory/and/a/filename
-
--- becomes
-
--- ["some","directory","and","a","filename"]
-
--- Note that the parser does not have to deal with query strings or fragments
--- because |uriPath| has already stripped them.
-
--- The one case this doesn't handle correctly is @//something@, because it's
--- handled differently by |Network.CGI|.
-
-pathList :: String -> [String]
-pathList = splitOn "/" . unEscapeString
-
--- Before we actually dispatch the request, we use the opportunity to clean up
--- the URI and redirect the client if necessary. This handles cases like
--- trailing slashes. We want only one URI to point to a resource.
-
-dispatch' :: E (String -> [String] -> SCGI Response)
-dispatch' meth path =
-  case path of
-    ["",""] -> toResponse $ frontPage -- "/"
-    ("":xs) -> case find (== "") xs of
-                 Nothing -> dispatch meth xs
-                 Just _  -> redirect $ '/' : intercalate "/" (filter (/= "") xs)
-    _       -> return notFound
-
--- Here is where we dispatch each request to a function. We can match the
--- request on method and path components. This means that we can dispatch a
--- @GET@ request to one function and a @POST@ request to another.
-
-dispatch :: E (String -> [String] -> SCGI Response)
-
--- Articles
+vocabulinkApp = serve (Proxy :: Proxy VocabulinkAPI) app
+ where app = liftIO frontPage
+        :<|> redirect "https://github.com/jekor/vocabulink/tarball/master"
 
 -- Some permanent URIs are essentially static files. To display them, we make
 -- use of the article system (formatting, metadata, etc). You could call these
@@ -169,22 +120,20 @@ dispatch :: E (String -> [String] -> SCGI Response)
 -- from Muse Mode files by Emacs, but we don't really care where they come
 -- from.
 
-dispatch "GET" ["help"]         = toResponse $ articlePage "help"
-dispatch "GET" ["privacy"]      = toResponse $ articlePage "privacy"
-dispatch "GET" ["terms-of-use"] = toResponse $ articlePage "terms-of-use"
-dispatch "GET" ["source"]       = toResponse $ articlePage "source"
-dispatch "GET" ["api"]          = toResponse $ articlePage "api"
-dispatch "GET" ["download"]     = redirect "https://github.com/jekor/vocabulink/tarball/master"
-
 -- Other articles are dynamic and can be created without recompilation. We just
 -- have to rescan the filesystem for them. They also live in the @/article@
 -- namespace (specifically at @/article/title@).
 
-dispatch "GET" ["article",x] = toResponse $ articlePage x
+        :<|> ((maybeNotFound . liftIO . articlePage)
 
 -- We have 1 page for getting a listing of all published articles.
 
-dispatch "GET" ["articles"] = toResponse $ articlesPage
+         :<|> liftIO articlesPage
+         :<|> maybeNotFound (liftIO (articlePage "help"))
+         :<|> maybeNotFound (liftIO (articlePage "privacy"))
+         :<|> maybeNotFound (liftIO (articlePage "terms-of-use"))
+         :<|> maybeNotFound (liftIO (articlePage "source"))
+         :<|> maybeNotFound (liftIO (articlePage "api")))
 
 -- Link Pages
 
@@ -198,83 +147,43 @@ dispatch "GET" ["articles"] = toResponse $ articlesPage
 -- GET    /link/10               → link page
 -- POST   /link/10/stories       → add a linkword story
 
-dispatch meth ["link","story",x] =
-  case readMaybe x of
-    Nothing -> return notFound
-    Just n  -> case meth of
-                 "GET" -> toResponse $ getStory n
-                 "PUT" -> do
-                   story <- SCGI.body
-                   liftIO $ editStory n (BLU.toString story)
-                   return emptyResponse
-                 -- temporarily allow POST until AJAX forms are better
-                 "POST" -> do
-                   story <- bodyVarRequired "story"
-                   liftIO $ editStory n story
-                   redirect =<< referrerOrVocabulink -- TODO: This redirect masks the result of editStory
-                 _ -> return notAllowed
+        :<|> ((\ n -> maybeNotFound (liftIO (getStory n))
+                 :<|> (\ story -> liftIO (editStory n story) >> return NoContent)
+                 :<|> (\ data' -> do
+                           let story = bodyVarRequired "story" data'
+                           liftIO $ editStory n story
+                           -- TODO: This redirect masks the result of editStory
+                           redirect (toS referrerOrVocabulink)))
 
-dispatch meth ("link":x:part) =
-  case readMaybe x of
-    Nothing -> return notFound
-    Just n  -> case (meth, part) of
-                 ("GET", []) -> do
-                   link' <- liftIO $ linkDetails n
-                   reps <- SCGI.negotiate ["application/json", "text/html"]
-                   case (reps, link') of
-                     (("application/json":_), Just link) -> toResponse $ toJSON link
-                     (("text/html":_), Just link) -> toResponse $ linkPage link
-                     _ -> return notFound
-                 ("GET", ["compact"]) -> do
-                   link' <- liftIO $ linkDetails n
-                   case link' of
-                     Just link -> toResponse $ compactLinkPage link
-                     Nothing -> return notFound
-                 ("GET", ["stories"]) -> do
-                   -- TODO: Support HTML/JSON output based on content-type negotiation.
-                   stories <- liftIO $ linkStories n
-                   toResponse $ mconcat $ map toMarkup stories
-                 ("POST", ["stories"]) -> do
-                   story <- bodyVarRequired "story"
-                   liftIO $ addStory n story
-                   redirect $ "/link/" ++ show n -- TODO: This redirect masks the result of addStory
-                 _ -> return notAllowed
+         -- TODO: Find a way to negotiate content types without always rendering the link HTML
+         --       (which is not needed for the JSON case).
+         :<|> (\ n -> maybeNotFound (liftIO ((\ l -> case l of Nothing -> return Nothing; Just l' -> (Just . LinkOutput l') `fmap` linkPage l') =<< linkDetails n))
+                 :<|> maybeNotFound (liftIO ((\ l -> case l of Nothing -> return Nothing; Just l' -> Just `fmap` compactLinkPage l') =<< linkDetails n))
+                -- TODO: 404 when link number doesn't exist
+                 :<|> liftIO (linkStories n)
+                 :<|> (\ data' -> do
+                           let story = bodyVarRequired "story" data'
+                           liftIO $ addStory n story
+                           -- TODO: This redirect masks the result of editStory
+                           redirect (toS ("/link/" ++ show n)))))
 
 -- Retrieving a listing of links is easier.
 
-dispatch "GET" ["links"] = do
-  ol' <- queryVar "ol"
-  dl' <- queryVar "dl"
-  case (ol', dl') of
-    (Just ol, Just dl)  -> do
-      case (M.lookup ol languages, M.lookup dl languages) of
-        (Just olang, Just dlang) -> do links <- liftIO $ languagePairLinks ol dl
-                                       toResponse $ linksPage ("Links from " ++ olang ++ " to " ++ dlang) links
-        _                        -> return notFound
-    _ -> return notFound
+        :<|> (\ (Language ol) (Language dl) -> do
+                  links <- liftIO (languagePairLinks ol dl)
+                  liftIO (linksPage ("Links from " ++ ol ++ " to " ++ dl) links))
 
 -- Readers
 
-dispatch "GET" ["reader", lang, name', pg] = case readMaybe pg of
-                                               Nothing -> return notFound
-                                               Just n  -> toResponse $ readerPage lang name' n
+        :<|> (\ lang name' page -> maybeNotFound (liftIO (readerPage lang name' page)))
 
 -- Searching
 
-dispatch "GET" ["search"] = do
-  q <- queryVarRequired "q"
-  links <- if q == ""
-              then return []
-              else liftIO $ linksContaining q
-  toResponse $ linksPage ("Search Results for \"" ++ q ++ "\"") links
-
--- Languages
-
--- Browsing through every link on the site doesn't work with a significant
--- number of links. A languages page shows what's available and contains
--- hyperlinks to language-specific browsing.
-
-dispatch "GET" ["languages"] = permRedirect "/links"
+        :<|> (\ q -> do
+                links <- if q == ""
+                           then return []
+                           else liftIO (linksContaining q)
+                liftIO (linksPage ("Search Results for \"" <> q <> "\"") links))
 
 -- Review
 
@@ -293,54 +202,24 @@ dispatch "GET" ["languages"] = permRedirect "/links"
 -- Reviewing links is one of the only things that logged-in-but-unverified
 -- members are allowed to do.
 
-dispatch "GET" ["review"] = do
-  learn <- queryVarRequired "learn"
-  known <- queryVarRequired "known"
-  case (M.lookup learn languages, M.lookup known languages) of
-    (Just _, Just _) -> toResponse $ reviewPage learn known
-    _ -> return notFound
-
-dispatch meth ("review":rpath) = do
-  case ?member of
-    Nothing -> return notFound
-    Just m ->
-      case (meth, rpath) of
-        ("GET",  ["stats"])    -> toResponse . toJSON =<< liftIO (reviewStats m)
-        ("GET",  ["stats",x])  -> do
-          start <- read `liftM` queryVarRequired "start"
-          end   <- read `liftM` queryVarRequired "end"
-          tzOffset <- queryVarRequired "tzoffset"
-          case x of
-            "daily"    -> toResponse . toJSON =<< liftIO (dailyReviewStats m start end tzOffset)
-            "detailed" -> toResponse . toJSON =<< liftIO (detailedReviewStats m start end tzOffset)
-            _          -> return notFound
-        ("PUT",  [x]) ->
-          case readMaybe x of
-            Nothing -> error "Link number must be an integer"
-            Just n  -> liftIO (newReview m n) >> return emptyResponse
-        ("POST", ["sync"]) -> do
-          clientSync <- bodyJSON
-          case clientSync of
-            Just retained -> toResponse . toJSON =<< liftIO (syncLinks m retained)
-            _ -> error "Invalid sync object."
-        ("POST", [x]) ->
-          case readMaybe x of
-            Nothing -> error "Link number must be an integer"
-            Just n  -> do
-              grade <- read `liftM` bodyVarRequired "grade"
-              recallTime <- read `liftM` bodyVarRequired "time"
-              reviewedAt' <- maybe Nothing readMaybe `liftM` bodyVar "when"
-              reviewedAt <- case reviewedAt' of
-                              Nothing -> liftIO epochTime
-                              Just ra -> return ra
-              -- TODO: Sanity-check this time. It should at least not be in the future.
-              liftIO $ scheduleNextReview m n grade recallTime reviewedAt
-              return emptyResponse
-        _ -> return notFound
+        :<|> ((\ (Language learn) (Language known) -> liftIO (reviewPage learn known))
+         :<|> (\ n -> withLoggedInMember (\ m -> liftIO (newReview m n) >> return NoContent))
+         :<|> withLoggedInMember (liftIO . reviewStats)
+         :<|> (\ statType start end tzOffset ->
+                 withLoggedInMember (\ m -> liftIO ((case statType of StatTypeDaily -> dailyReviewStats; StatTypeDetailed -> detailedReviewStats) m start end tzOffset)))
+         :<|> (\ n data' ->
+                 do let grade = read (bodyVarRequired "grade" data')
+                        recallTime = read (bodyVarRequired "time" data')
+                        reviewedAt' = maybe Nothing readMaybe (bodyVar "when" data')
+                    reviewedAt <- case reviewedAt' of
+                                    Nothing -> liftIO epochTime
+                                    Just ra -> return ra
+                    -- TODO: Sanity-check this time. It should at least not be in the future.
+                    withLoggedInMember (\ m -> liftIO $ scheduleNextReview m n grade recallTime reviewedAt >> return NoContent)))
 
 -- Dashboard
 
-dispatch "GET" ["dashboard"] = withLoggedInMember $ const $ toResponse dashboardPage
+        :<|> withLoggedInMember (const (liftIO dashboardPage))
 
 -- Membership
 
@@ -351,79 +230,86 @@ dispatch "GET" ["dashboard"] = withLoggedInMember $ const $ toResponse dashboard
 -- HTTPS pages from HTTP pages and can't be done in JavaScript without a lot of
 -- not-well-supported cross-domain policy hacking.
 
-dispatch "POST" ["member","signup"] = signup
+        :<|> ((\ data' ->
+                 let username = bodyVarRequired "username" data'
+                     email = bodyVarRequired "email" data'
+                     password = bodyVarRequired "password" data'
+                     learned = bodyVar "learned" data'
+                 in liftIO (signup username email password learned) >>= \ c -> cookieBounce [c] MsgSuccess "Welcome! Please check your email to confirm your account.")
 
 -- But to use most of the site, we require email confirmation.
 
-dispatch "GET" ["member","confirmation",x] = confirmEmail x
-dispatch "POST" ["member","confirmation"] =
-  case ?member of
-    Nothing -> do
-      toResponse $ simplePage "Please Login to Resend Your Confirmation Email" [ReadyJS "V.loginPopup();"] mempty
-    Just m  -> do
-      liftIO $ resendConfirmEmail m
-      bounce MsgSuccess "Your confirmation email has been sent."
+         :<|> (\ hash -> liftIO (confirmEmail hash) >>= \case
+                           Left pg -> return pg
+                           Right c -> cookieBounce [c] MsgSuccess "Congratulations! You've confirmed your account.")
+         :<|> (case ?member of
+                 Nothing -> do
+                   liftIO (simplePage "Please Login to Resend Your Confirmation Email" [ReadyJS "V.loginPopup();"] mempty)
+                 Just m  -> do
+                   liftIO $ resendConfirmEmail m
+                   bounce MsgSuccess "Your confirmation email has been sent.")
 
 -- Logging in is a similar process.
 
-dispatch "POST" ["member","login"] = login
+         :<|> (\ data' -> do
+                 let userid = bodyVarRequired "userid" data'
+                     password = bodyVarRequired "password" data'
+                 liftIO (login userid password) >>= \ c -> cookieBounce [c] MsgSuccess "Login successful.")
 
 -- Logging out can be done without a form.
 
-dispatch "POST" ["member","logout"] = logout
+         :<|> cookieRedirect [emptyAuthCookie {setCookieMaxAge = Just (secondsToDiffTime 0)}] "https://www.vocabulink.com/"
+         :<|> (\ data' -> do
+                 let password = bodyVarRequired "password" data'
+                 liftIO (deleteAccount password)
+                 cookieBounce [emptyAuthCookie {setCookieMaxAge = Just $ secondsToDiffTime 0}] MsgSuccess "Your account was successfully deleted.")
+         :<|> ((\ data' -> do
+                  let email = bodyVarRequired "email" data'
+                  liftIO (sendPasswordReset email)
+                  bounce MsgSuccess "Password reset instructions have been sent to your email.")
+          :<|> (liftIO . passwordResetPage)
+          :<|> (\ hash data' -> do
+                  let password = bodyVarRequired "password" data'
+                  liftIO (passwordReset hash password) >>= \ c -> cookieBounce [c] MsgSuccess "Password reset successfully.")
+          :<|> (\ data' -> do
+                  let oldPassword = bodyVarRequired "old-password" data'
+                      newPassword = bodyVarRequired "new-password" data'
+                  liftIO (changePassword oldPassword newPassword)
+                  bounce MsgSuccess "Password changed successfully."))
 
-dispatch "POST" ["member","delete"] = deleteAccount
-
-dispatch "POST" ["member","password","reset"] = do
-  email <- bodyVarRequired "email"
-  liftIO $ sendPasswordReset email
-  return emptyResponse
-dispatch "GET"  ["member","password","reset",x] = toResponse $ passwordResetPage x
-dispatch "POST" ["member","password","reset",x] = passwordReset x
-dispatch "POST" ["member","password","change"] = changePassword
-dispatch "POST" ["member","email","change"] = changeEmail
+         :<|> (\ data' -> do
+                let email = bodyVarRequired "email" data'
+                    password = bodyVarRequired "password" data'
+                liftIO (changeEmail email password)
+                bounce MsgSuccess "Email address changed successfully. Please check your email to confirm the change."))
 
 -- Member Pages
 
-dispatch "GET" ["user", username] = toResponse $ memberPage <$$> memberByName username
-dispatch "GET" ["user", username, "available"] = toResponse . toJSON =<< liftIO (usernameAvailable username)
-dispatch "GET" ["email", email, "available"] = toResponse . toJSON =<< liftIO (emailAvailable email)
+         :<|> (\ username ->
+                 maybeNotFound (liftIO (maybe (return Nothing) (\ m -> memberPage m >>= \ m' -> return (Just m')) =<< memberByName username))
+            :<|> liftIO (usernameAvailable username))
+
+         :<|> (liftIO . emailAvailable)
 
 -- ``reply'' is used here as a noun.
 
-dispatch meth ("comment":x:meth') =
-  case readMaybe x of
-    Nothing -> return notFound
-    Just n  -> case (meth, meth') of
-                 -- Every comment posted is actually a reply thanks to the fake root comment.
-                 ("POST", ["reply"]) -> do
-                   body <- bodyVarRequired "body"
-                   withVerifiedMember (\m -> liftIO $ storeComment (memberNumber m) body (Just n))
-                   redirect =<< referrerOrVocabulink
-                 _ -> return notFound
+         :<|> (\ n data' -> do
+                 let body = bodyVarRequired "body" data'
+                 liftIO $ withVerifiedMember (\m -> storeComment (memberNumber m) body (Just n))
+                 redirect (toS referrerOrVocabulink))
 
 -- Everything Else
 
 -- For Google Webmaster Tools, we need to respond to a certain URI that acts as
 -- a kind of ``yes, we really do run this site''.
 
-dispatch "GET" ["google1e7c25c4bdfc5be7.html"] = toResponse ("google-site-verification: google1e7c25c4bdfc5be7.html"::String)
+         :<|> return (unlines [ "User-agent: *"
+                              , "Disallow:" ])
 
-dispatch "GET" ["robots.txt"] = toResponse $ unlines [ "User-agent: *"
-                                                     , "Disallow:"
-                                                     ]
-
--- It would be nice to automatically respond with ``Method Not Allowed'' on
--- URIs that exist but don't make sense for the requested method (presumably
--- @POST@). However, we need to take a simpler approach because of how the
--- dispatch method was designed (pattern matching is limited). We output a
--- qualified 404 error.
-
-dispatch _ _ = return notFound
+         :<|> return "google-site-verification: google1e7c25c4bdfc5be7.html"
 
 -- Finally, we get to an actual page of the site: the front page.
 
-frontPage :: E (IO Html)
 frontPage = do
   mainButton <- case ?member of
                   Nothing -> return buyButton
